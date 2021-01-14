@@ -23,6 +23,7 @@
 </br></br>
 
 CometChat React Native Chat UI Kit is a collection of custom **UI Components** designed to build chat application with fully customizable UI. It is designed to avoid boilerplate code for building UI.
+
 ---
 
 ## Prerequisites
