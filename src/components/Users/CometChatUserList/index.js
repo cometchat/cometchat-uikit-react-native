@@ -63,9 +63,18 @@ class CometChatUserList extends React.PureComponent {
     //   }
     // }
 
-    this.UserListManager = new UserListManager(this.friendsOnly);
-    this.getUsers();
-    this.UserListManager.attachListeners(this.userUpdated);
+    
+
+    this.navListener = this.props.navigation.addListener('focus', () => {
+      this.decoratorMessage = 'Loading...';
+      if (this.UserListManager) {
+        this.UserListManager.removeListeners();
+      }
+      this.setState({ userlist: [] });
+      this.UserListManager = new UserListManager(this.friendsOnly);
+      this.getUsers();
+      this.UserListManager.attachListeners(this.userUpdated);
+    });
   }
 
   componentDidUpdate(prevProps) {

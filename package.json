@@ -1,5 +1,5 @@
 {
-  "name": "react-native-chat-ui-kit",
+  "name": "cometchat-pro-react-native-ui-kit",
   "version": "1.0.0",
   "description": "Chat UI Kit for React Native App",
   "main": "./src/index.js",
@@ -7,8 +7,28 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint 'src/**/*.{js,jsx}' --quiet --fix"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx}": [
+      "npm run lint",
+      "git add --all"
+    ],
+    "*.json": [
+      "git add --all"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@git.geekyants.com:cometchat/react-native.git"
+  },
   "peerDependencies": {
     "@react-native-community/async-storage": "^1.12.1",
+    "@react-native-community/masked-view": "^0.1.10",
+    "@react-native-picker/picker": "^1.9.4",
     "react-native-sound": "^0.11.0",
     "react-native-vector-icons": "^7.1.0",
     "react-native-elements": "^3.0.0-alpha.1",
@@ -18,13 +38,20 @@
     "react-native": "^0.63.3",
     "react-native-gesture-handler": "^1.9.0",
     "react-native-reanimated": "^1.13.2",
+    "react-native-screens": "^2.16.1",
     "reanimated-bottom-sheet": "^1.0.0-alpha.22",
     "react-native-video": "^5.1.0-alpha8",
     "react": "^16.0.1",
     "@react-navigation/bottom-tabs": "^5.11.2",
     "@react-navigation/native": "^5.8.10",
     "@react-navigation/stack": "^5.12.8",
-    "react-native-video-controls": "^2.7.1"
+    "react-native-video-controls": "^2.7.1",
+    "rn-fetch-blob": "^0.12.0",
+    "lodash": "^4.17.20",
+    "react-native-autolink": "^3.0.0",
+    "@cometchat-pro/react-native-calls": "1.0.7",
+    "@cometchat-pro/react-native-chat": "2.1.7",
+    "emoji-mart-native": "^0.6.2-beta"
   },
   "author": "Inscripts",
   "license": "ISC",
@@ -43,14 +70,5 @@
     "metro-react-native-babel-preset": "^0.63.0",
     "prettier": "^2.1.2"
   },
-  "dependencies": {
-    "@cometchat-pro/react-native-calls": "1.0.3",
-    "@cometchat-pro/react-native-chat": "2.1.6",
-    "@react-native-community/async-storage": "^1.12.1",
-    "lodash": "^4.17.20",
-    "react-native-autolink": "^3.0.0",
-    "redux": "^4.0.5",
-    "redux-thunk": "^2.3.0",
-    "emoji-mart-native": "^0.6.2-beta"
-  }
+  "dependencies": {}
 }

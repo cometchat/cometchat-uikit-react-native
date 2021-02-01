@@ -147,11 +147,6 @@ class CometChatStickerKeyboard extends React.PureComponent {
 
       stickers = (
         <>
-          <TouchableOpacity
-            style={{ paddingRight: 5, paddingTop: 5 }}
-            onPress={() => this.props.actionGenerated('closeSticker')}>
-            <Icon style={{ alignSelf: 'flex-end' }} name="close" size={20} color="#000000" />
-          </TouchableOpacity>
           <ScrollView bounces={false}>
             <View style={style.stickerListStyle}>{activeStickerList}</View>
           </ScrollView>
@@ -185,6 +180,19 @@ class CometChatStickerKeyboard extends React.PureComponent {
             backgroundColor: this.ViewTheme.backgroundColor.grey,
           },
         ]}>
+        <TouchableOpacity
+          style={{
+            paddingRight: 5,
+            paddingTop: 5,
+          }}
+          onPress={() => this.props.actionGenerated('closeSticker')}>
+          <Icon
+            style={{ alignSelf: 'flex-end' }}
+            name="close"
+            size={20}
+            color="#000000"
+          />
+        </TouchableOpacity>
         {messageContainer}
         {stickers}
       </View>

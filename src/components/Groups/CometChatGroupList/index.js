@@ -67,9 +67,16 @@ class CometChatGroupList extends React.Component {
   }
 
   componentDidMount() {
-    this.GroupListManager = new GroupListManager();
-    this.getGroups(); /// /you are getting groups here.
-    this.GroupListManager.attachListeners(this.groupUpdated);
+    this.navListener = this.props.navigation.addListener('focus', () => {
+      this.decoratorMessage = 'Loading...';
+      if (this.GroupListManager) {
+        this.GroupListManager.removeListeners();
+      }
+      this.setState({ grouplist: [] });
+      this.GroupListManager = new GroupListManager();
+      this.getGroups(); /// /you are getting groups here.
+      this.GroupListManager.attachListeners(this.groupUpdated);
+    });
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -486,7 +493,7 @@ class CometChatGroupList extends React.Component {
   listEmptyContainer = () => {
     /// for loading purposes....
     return (
-      <View style={styles.contactMsgStyle}>
+      <View style={styles.contactMsgStyle}> 
         <Text
           style={[
             styles.contactMsgTxtStyle,
@@ -728,7 +735,7 @@ class CometChatGroupList extends React.Component {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.groupWrapperStyle}>
-          <SafeAreaView>
+          <SafeAreaView style={{flex:1}}>
             <View style={styles.headerContainer}>
               <Text
                 style={{
@@ -739,7 +746,6 @@ class CometChatGroupList extends React.Component {
             </View>
             {this.ListHeaderComponent()}
             <FlatList
-              style={{ height: heightRatio * 476 }}
               data={this.state.grouplist}
               scrollEnabled
               renderItem={({ item }) => {

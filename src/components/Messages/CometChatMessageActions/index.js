@@ -25,6 +25,7 @@ export default class MessageActionsView extends React.Component {
           <TouchableWithoutFeedback
             onPress={() => {
               this.sheetRef.current.snapTo(1);
+              this.props.close();
             }}>
             <View style={{ flex: 1 }}>
               <BottomSheet

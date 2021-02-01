@@ -48,6 +48,7 @@ export default class ReactionDetails extends React.Component {
           <TouchableOpacity
             onPress={() => {
               this.sheetRef.current.snapTo(1);
+              this.props.close();
             }}>
             <Text style={style.reactionDetailsHeaderCloseText}>Close</Text>
           </TouchableOpacity>

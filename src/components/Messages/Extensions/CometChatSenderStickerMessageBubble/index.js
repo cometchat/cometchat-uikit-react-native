@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, TouchableWithoutFeedback } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { CometChatReadReceipt, CometChatThreadedMessageReplyCount } from '../../';
-// import { CometChatMessageReactions } from '../index';
+import { CometChatMessageReactions } from '../index';
 import style from './styles';
 
 export default (props) => {
@@ -30,14 +30,19 @@ export default (props) => {
   return (
     <View style={style.messageContainerStyle}>
       <TouchableWithoutFeedback
-        onLongPress={() => props.actionGenerated('openMessageActions', message)}>
+        onLongPress={() =>
+          props.actionGenerated('openMessageActions', message)
+        }>
         <View style={style.messageWrapperStyle}>{stickerImg}</View>
       </TouchableWithoutFeedback>
       <View style={style.messageInfoWrapperStyle}>
         <CometChatThreadedMessageReplyCount {...props} message={message} />
-        <CometChatReadReceipt {...props} />
+        <CometChatReadReceipt {...props} message={message} />
       </View>
-      {/* <CometChatMessageReactions theme={props.theme} {...props} message={message} ></CometChatMessageReactions> */}
+      <CometChatMessageReactions
+        theme={props.theme}
+        {...props}
+        message={message}></CometChatMessageReactions>
     </View>
   );
 };

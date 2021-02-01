@@ -14,7 +14,7 @@ class imageView extends React.Component {
     this.sheetRef = React.createRef(null);
   }
 
-  render() {
+  render() { 
     // let thumbnailGenerationObject = null;
     // if (Object.prototype.hasOwnProperty.call(this.props, 'message')) {
     //   const { message } = this.props;

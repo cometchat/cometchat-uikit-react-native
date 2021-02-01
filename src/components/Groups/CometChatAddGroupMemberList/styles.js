@@ -1,4 +1,4 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Platform } from 'react-native';
 
 import { calc } from '../../../utils/consts';
 
@@ -6,8 +6,9 @@ export default StyleSheet.create({
   reactionDetailsContainer: {
     backgroundColor: 'white',
     paddingVertical: 20,
+    paddingBottom:Platform.OS==="ios"?30:20,
     borderRadius: 20,
-    minHeight: Dimensions.get('window').height,
+    height: Dimensions.get('window').height- 90,
   },
   contactWrapperStyle: {
     height: '100%',
@@ -31,11 +32,12 @@ export default StyleSheet.create({
   },
   contactSearchStyle: {
     padding: 4,
-    marginTop: 10,
+    marginHorizontal:15,
+    marginBottom: 10,
     flexDirection: 'row',
     position: 'relative',
     alignItems: 'center',
-    width: '100%',
+    // width: '100%',
     borderWidth: 0,
     borderRadius: 8,
     shadowColor: '#000',
@@ -90,10 +92,11 @@ export default StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    height: 40,
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
   },
   addBtnStyle: {
     borderRadius: 10,

@@ -8,7 +8,7 @@ import BottomSheet from 'reanimated-bottom-sheet';
 
 import { CometChatViewGroupMemberListItem } from '../index';
 import GroupDetailContext from '../CometChatGroupDetails/context';
-
+import _ from 'lodash';
 import style from './styles';
 
 import theme from '../../../resources/theme';
@@ -51,7 +51,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
       .then((response) => {
         if (response) {
           // console.log('banGroupMember success with response: ', response);
-          this.props.actionGenerated('removeGroupParticipants', memberToBan);
+          this.props.actionGenerated('banGroupMembers', memberToBan);
         }
       })
       .catch(() => {
@@ -148,7 +148,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
 
   render() {
     const group = this.context;
-    const membersList = [...group.memberlist];
+    const membersList = _.uniqBy([...group.memberlist],'uid');
 
     return (
       <React.Fragment>
@@ -168,23 +168,24 @@ export default class CometChatViewGroupMemberList extends React.Component {
                     <View style={style.headerContainer}>
                       <View
                         style={{
-                          width: Dimensions.get('window').width - 60,
+                          // width: Dimensions.get('window').width - 60,
                           justifyContent: 'center',
                           alignItems: 'center',
-                          paddingLeft: 60,
+                          // paddingLeft: 60,
                         }}>
-                        <Text
-                          style={{
-                            fontSize: 18,
-                            display: this.state.showSmallHeader ? 'flex' : 'none',
-                          }}>
+                        <Text style={style.contactHeaderTitleStyle}>
                           Group Members
                         </Text>
                       </View>
                       <TouchableOpacity
-                        onPress={() => this.sheetRef.current.snapTo(1)}
-                        style={{ width: 60 }}>
-                        <Text style={{ color: this.theme.color.blue }}>Close</Text>
+                        onPress={() => {
+                          this.sheetRef.current.snapTo(1);
+                          this.props.close();
+                        }}
+                        style={{  }}>
+                        <Text style={{ color: this.theme.color.blue }}>
+                          Close
+                        </Text>
                       </TouchableOpacity>
                     </View>
                     <FlatList
@@ -199,18 +200,23 @@ export default class CometChatViewGroupMemberList extends React.Component {
                             lang={this.props.lang}
                             widgetsettings={this.props.widgetsettings}
                             actionGenerated={this.updateMembers}
+                            loggedInUser={this.props.loggedInUser}
                           />
                         );
                       }}
-                      ListHeaderComponent={this.listHeaderComponent}
+                      // ListHeaderComponent={this.listHeaderComponent}
                       ListEmptyComponent={this.listEmptyContainer}
                       ItemSeparatorComponent={this.itemSeparatorComponent}
                       onScroll={this.handleScroll}
                       onEndReached={this.endReached}
                       onEndReachedThreshold={0.3}
+                      contentContainerStyle={{
+                        paddingBottom: 0.09 * Dimensions.get('window').height,
+                      }}
                       style={{
                         height:
-                          Dimensions.get('window').height - 0.25 * Dimensions.get('window').height,
+                          Dimensions.get('window').height -
+                          0.25 * Dimensions.get('window').height,
                       }}
                       showsVerticalScrollIndicator={false}
                     />

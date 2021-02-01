@@ -90,10 +90,11 @@ export default StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    height: 40,
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal:15,
+    paddingVertical:15,
   },
   addBtnStyle: {
     borderRadius: 10,

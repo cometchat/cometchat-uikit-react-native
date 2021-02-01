@@ -32,7 +32,7 @@ export default StyleSheet.create({
     width: '85%',
     borderColor: 'green',
     fontSize: 16, /// //
-    height: 32,
+    // height: 32,
     alignSelf: 'center',
   },
   ContainerForDelete: {

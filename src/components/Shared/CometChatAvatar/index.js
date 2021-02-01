@@ -8,6 +8,7 @@ export default (props) => {
   const borderColor = _get(props, 'borderColor', '#AAA');
   const cornerRadius = _get(props, 'cornerRadius', 1000);
   const textFontSize = _get(props, 'textFontSize', 18);
+  const textColor = _get(props, 'textColor', 'black');
   const { image, name } = props;
 
   if (!(image && image.uri) && name) {
@@ -23,7 +24,7 @@ export default (props) => {
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-        <Text style={{ fontSize: textFontSize }}>{name[0].toUpperCase()}</Text>
+        <Text style={{ fontSize: textFontSize,color:textColor }}>{name[0].toUpperCase()}</Text>
       </View>
     );
   }

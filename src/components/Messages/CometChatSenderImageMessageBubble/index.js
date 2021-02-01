@@ -65,10 +65,10 @@ export default (props) => {
           <FastImage
             style={style.messageImg}
             source={{
-              // uri: message.data.url,
-              uri: thumbnailGenerationObject
-                ? thumbnailGenerationObject.url_small
-                : message.data.url,
+              uri: message.data.url,
+              // uri: thumbnailGenerationObject
+              //   ? thumbnailGenerationObject.url_small
+              //   : message.data.url,
             }}
             resizeMode={FastImage.resizeMode.contain}
           />

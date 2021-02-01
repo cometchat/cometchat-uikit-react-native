@@ -116,5 +116,5 @@ export default (props) => {
     return <Text style={style.callMessageTxtStyle}>{message}</Text>;
   }, [props]);
 
-  return <View style={style}>{getMessage()}</View>;
+  return <View style={style.callMessageStyle}>{getMessage()}</View>;
 };

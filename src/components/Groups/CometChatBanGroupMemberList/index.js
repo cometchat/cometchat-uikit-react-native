@@ -128,24 +128,20 @@ export default class CometChatBanGroupMemberList extends React.Component {
                   <View style={style.reactionDetailsContainer}>
                     <View style={style.headerContainer}>
                       <View
-                        style={{
-                          width: Dimensions.get('window').width - 60,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          paddingLeft: 60,
-                        }}>
-                        <Text
-                          style={{
-                            fontSize: 18,
-                            display: this.state.showSmallHeader ? 'flex' : 'none',
-                          }}>
+                        style={{}}>
+                        <Text style={style.contactHeaderTitleStyle}>
                           Banned Members
                         </Text>
                       </View>
                       <TouchableOpacity
-                        onPress={() => this.sheetRef.current.snapTo(1)}
-                        style={{ width: 60 }}>
-                        <Text style={{ color: this.theme.color.blue }}>Close</Text>
+                        onPress={() => {
+                          this.sheetRef.current.snapTo(1);
+                          this.props.close();
+                        }}
+                        style={{ }}>
+                        <Text style={{ color: this.theme.color.blue }}>
+                          Close
+                        </Text>
                       </TouchableOpacity>
                     </View>
                     <FlatList
@@ -157,22 +153,26 @@ export default class CometChatBanGroupMemberList extends React.Component {
                             key={index}
                             member={item}
                             item={this.props.item}
-                            loggedinuser={group.loggedinuser}
+                            loggedInUser={this.props.loggedInUser}
                             lang={this.props.lang}
                             widgetsettings={this.props.widgetsettings}
                             actionGenerated={this.updateMembers}
                           />
                         );
                       }}
-                      ListHeaderComponent={this.listHeaderComponent}
+                      // ListHeaderComponent={this.listHeaderComponent}
                       ListEmptyComponent={this.listEmptyContainer}
                       ItemSeparatorComponent={this.itemSeparatorComponent}
                       onScroll={this.handleScroll}
                       onEndReached={this.endReached}
                       onEndReachedThreshold={0.3}
+                      contentContainerStyle={{
+                        paddingBottom: 0.09 * Dimensions.get('window').height,
+                      }}
                       style={{
                         height:
-                          Dimensions.get('window').height - 0.25 * Dimensions.get('window').height,
+                          Dimensions.get('window').height -
+                          0.25 * Dimensions.get('window').height,
                       }}
                       showsVerticalScrollIndicator={false}
                     />

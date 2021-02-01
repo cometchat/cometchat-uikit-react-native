@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Image, Modal, SafeAreaView, Text } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Image,
+  Modal,
+  SafeAreaView,
+  Text,
+} from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import Sound from 'react-native-sound';
 
@@ -28,11 +35,13 @@ export default (props) => {
       Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
       props.widgetsettings &&
       Object.prototype.hasOwnProperty.call(props.widgetsettings, 'main') &&
-      (Object.prototype.hasOwnProperty.call(props.widgetsettings.main, 'enable_sound_for_calls') ===
-        false ||
+      (Object.prototype.hasOwnProperty.call(
+        props.widgetsettings.main,
+        'enable_sound_for_calls',
+      ) === false ||
         (Object.prototype.hasOwnProperty.call(
           props.widgetsettings.main,
-          'enable_sound_for_calls'
+          'enable_sound_for_calls',
         ) &&
           props.widgetsettings.main.enable_sound_for_calls === false))
     ) {
@@ -49,11 +58,13 @@ export default (props) => {
       Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
       props.widgetsettings &&
       Object.prototype.hasOwnProperty.call(props.widgetsettings, 'main') &&
-      (Object.prototype.hasOwnProperty.call(props.widgetsettings.main, 'enable_sound_for_calls') ===
-        false ||
+      (Object.prototype.hasOwnProperty.call(
+        props.widgetsettings.main,
+        'enable_sound_for_calls',
+      ) === false ||
         (Object.prototype.hasOwnProperty.call(
           props.widgetsettings.main,
-          'enable_sound_for_calls'
+          'enable_sound_for_calls',
         ) &&
           props.widgetsettings.main.enable_sound_for_calls === false))
     ) {
@@ -65,7 +76,8 @@ export default (props) => {
 
   const markMessageAsRead = (message) => {
     const { receiverType } = message;
-    const receiverId = receiverType === 'user' ? message.sender.uid : message.receiverId;
+    const receiverId =
+      receiverType === 'user' ? message.sender.uid : message.receiverId;
 
     if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
       CometChat.markAsRead(message.id, receiverId, receiverType);
@@ -73,7 +85,10 @@ export default (props) => {
   };
 
   const incomingCallReceived = (call) => {
-    if (props.loggedInUser && call.callInitiator.uid === props.loggedInUser.uid) {
+    if (
+      props.loggedInUser &&
+      call.callInitiator.uid === props.loggedInUser.uid
+    ) {
       return;
     }
 
@@ -116,9 +131,16 @@ export default (props) => {
   const rejectCall = () => {
     pauseIncomingAlert();
 
-    CometChatManager.rejectCall(incomingCall.sessionId, CometChat.CALL_STATUS.REJECTED)
+    CometChatManager.rejectCall(
+      incomingCall.sessionId,
+      CometChat.CALL_STATUS.REJECTED,
+    )
       .then((rejectedCall) => {
-        props.actionGenerated('rejectedIncomingCall', incomingCall, rejectedCall);
+        props.actionGenerated(
+          'rejectedIncomingCall',
+          incomingCall,
+          rejectedCall,
+        );
         setIncomingCall(null);
       })
       .catch((error) => {
@@ -130,8 +152,8 @@ export default (props) => {
   const acceptCall = () => {
     pauseIncomingAlert();
 
-    setIncomingCall(null);
     props.actionGenerated('acceptIncomingCall', incomingCall);
+    setIncomingCall(null);
   };
 
   useEffect(() => {
@@ -150,7 +172,8 @@ export default (props) => {
     return (
       <Modal transparent animated animationType="fade">
         <SafeAreaView>
-          <View style={[style.callContainerStyle, { backgroundColor: '#444444' }]}>
+          <View
+            style={[style.callContainerStyle, { backgroundColor: '#444444' }]}>
             <View style={style.senderDetailsContainer}>
               <View>
                 <Text numberOfLines={1} style={style.nameStyle}>
@@ -177,19 +200,35 @@ export default (props) => {
                 )}
               </View>
               <View style={style.avatarStyle}>
-                <CometChatAvatar cornerRadius={1000} image={{ uri: incomingCall.sender.avatar }} />
+                <CometChatAvatar
+                  cornerRadius={1000}
+                  borderWidth={0}
+                  textColor="white"
+                  image={{ uri: incomingCall.sender.avatar }}
+                  name={incomingCall.sender.name}
+                />
               </View>
             </View>
             <View style={style.headerButtonStyle}>
               <TouchableOpacity
-                style={[style.buttonStyle, { backgroundColor: ViewTheme.backgroundColor.red }]}
+                style={[
+                  style.buttonStyle,
+                  { backgroundColor: ViewTheme.backgroundColor.red },
+                ]}
                 onPress={rejectCall}>
-                <Text style={{ color: 'white', textAlign: 'center' }}>Decline</Text>
+                <Text style={{ color: 'white', textAlign: 'center' }}>
+                  Decline
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[style.buttonStyle, { backgroundColor: ViewTheme.backgroundColor.blue }]}
+                style={[
+                  style.buttonStyle,
+                  { backgroundColor: ViewTheme.backgroundColor.blue },
+                ]}
                 onPress={acceptCall}>
-                <Text style={{ color: 'white', textAlign: 'center' }}>Accept</Text>
+                <Text style={{ color: 'white', textAlign: 'center' }}>
+                  Accept
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

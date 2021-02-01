@@ -35,7 +35,6 @@ export class ConversationListManager {
         },
       })
     );
-
     CometChat.addGroupListener(
       this.groupListenerId,
       new CometChat.GroupListener({
@@ -58,10 +57,16 @@ export class ConversationListManager {
           callback(enums.GROUP_MEMBER_UNBANNED, unbannedFrom, message, { user: unbannedUser });
         },
         onMemberAddedToGroup: (message, userAdded, userAddedBy, userAddedIn) => {
-          callback(enums.GROUP_MEMBER_ADDED, userAddedIn, message, {
-            user: userAdded,
-            hasJoined: true,
-          });
+          callback(
+            enums.GROUP_MEMBER_ADDED,
+            userAddedIn,
+            message,
+            {
+              user: userAdded,
+              hasJoined: true,
+            },
+            userAddedBy,
+          );
         },
         onGroupMemberLeft: (message, leavingUser, group) => {
           callback(enums.GROUP_MEMBER_LEFT, group, message, { user: leavingUser });

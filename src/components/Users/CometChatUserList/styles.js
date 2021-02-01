@@ -55,7 +55,7 @@ export default StyleSheet.create({
   },
   contactMsgTxtStyle: {
     margin: 0,
-    height: 30,
+    // height: 30,
     fontSize: 24,
     fontWeight: '600',
   },

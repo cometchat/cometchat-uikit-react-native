@@ -233,7 +233,7 @@ class CometChatConversationListWithMessages extends React.Component {
   };
 
   deleteGroup = (group) => {
-    this.toggleSideBar();
+    // this.toggleSideBar();
     this.setState({
       groupToDelete: group,
       item: {},
@@ -243,7 +243,7 @@ class CometChatConversationListWithMessages extends React.Component {
   };
 
   leaveGroup = (group) => {
-    this.toggleSideBar();
+    // this.toggleSideBar();
     this.setState({
       groupToLeave: group,
       item: {},
@@ -304,10 +304,15 @@ class CometChatConversationListWithMessages extends React.Component {
   rejectedIncomingCall = (incomingCallMessage, rejectedCallMessage) => {
     let { receiverType } = incomingCallMessage;
     let receiverId =
-      receiverType === 'user' ? incomingCallMessage.sender.uid : incomingCallMessage.receiverId;
+      receiverType === 'user'
+        ? incomingCallMessage.sender.uid
+        : incomingCallMessage.receiverId;
 
     // marking the incoming call message as read
-    if (Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') === false) {
+    if (
+      Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') ===
+      false
+    ) {
       CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
     }
 
@@ -321,7 +326,9 @@ class CometChatConversationListWithMessages extends React.Component {
     receiverId = rejectedCallMessage.receiverId;
 
     if (
-      (type === 'group' && receiverType === 'group' && receiverId === item.guid) ||
+      (type === 'group' &&
+        receiverType === 'group' &&
+        receiverId === item.guid) ||
       (type === 'user' && receiverType === 'user' && receiverId === item.uid)
     ) {
       this.appendCallMessage(rejectedCallMessage);
@@ -420,6 +427,7 @@ class CometChatConversationListWithMessages extends React.Component {
             lastMessage={this.state.lastmessage}
             actionGenerated={this.actionHandler}
             enableCloseMenu={Object.keys(this.state.item).length}
+            navigation={this.props.navigation}
           />
         </View>
         {/* {threadMessageView} */}

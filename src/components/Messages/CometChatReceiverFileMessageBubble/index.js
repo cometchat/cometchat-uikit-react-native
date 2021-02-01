@@ -18,16 +18,28 @@ export default (props) => {
   }
 
   const download = () => {
+    let PictureDir = RNFetchBlob.fs.dirs.PictureDir;
+    let date = new Date();
+    let ext = '.' + props.message.data.attachments[0].extension;
     RNFetchBlob.config({
       // add option that makes response data to be stored as a file,
       // is much more performant.
       fileCache: true,
-      appendExt: props.message.data.attachments[0].ext,
+      appendExt: props.message.data.attachments[0].extension,
+      addAndroidDownloads: {
+        useDownloadManager: true,
+        notification: true,
+        path:
+          PictureDir +
+          '/' +
+          Math.floor(date.getTime() + date.getSeconds() / 2) +
+          ext,
+      },
     })
       .fetch('GET', props.message.data.attachments[0].url, {
         // some headers ..
       })
-      .then(() => {
+      .then((res) => {
         Alert.alert('File Downloaded');
       });
   };

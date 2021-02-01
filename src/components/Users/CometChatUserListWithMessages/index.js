@@ -101,6 +101,28 @@ class CometChatUserListWithMessages extends React.Component {
     }
   };
 
+  blockUser = () => {
+    const usersList = [this.state.item.uid];
+    CometChatManager.blockUsers(usersList)
+      .then(() => {
+        this.setState({ item: { ...this.state.item, blockedByMe: true } });
+      })
+      .catch(() => {
+        // console.log('Blocking user fails with error', error);
+      });
+  };
+
+  unblockUser = () => {
+    const usersList = [this.state.item.uid];
+    CometChatManager.unblockUsers(usersList)
+      .then(() => {
+        this.setState({ item: { ...this.state.item, blockedByMe: false } });
+      })
+      .catch(() => {
+        // console.log('unblocking user fails with error', error);
+      });
+  };
+
   toggleImageView = (message) => {
     this.setState({ imageView: message });
   };
@@ -254,9 +276,10 @@ class CometChatUserListWithMessages extends React.Component {
           type={this.state.type}
           onItemClick={this.itemClicked}
           actionGenerated={this.actionHandler}
+          navigation={this.props.navigation}
           // enableCloseMenu={Object.keys(this.state.item).length}
         />
-        {imageView}
+        {imageView} 
         <CometChatIncomingCall
           theme={this.props.theme}
           loggedInUser={this.loggedInUser}

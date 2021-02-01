@@ -32,6 +32,9 @@ import {
 } from '../index';
 import styles from './styles';
 
+let cDate = null;
+
+
 class CometChatMessageList extends React.PureComponent {
   loggedInUser = null;
 
@@ -58,13 +61,13 @@ class CometChatMessageList extends React.PureComponent {
         this.props.widgetsettings,
         this.props.item,
         this.props.type,
-        this.props.parentMessageId
+        this.props.parentMessageId,
       );
     } else {
       this.MessageListManager = new MessageListManager(
         this.props.widgetsettings,
         this.props.item,
-        this.props.type
+        this.props.type,
       );
     }
 
@@ -76,7 +79,10 @@ class CometChatMessageList extends React.PureComponent {
     const previousMessageStr = JSON.stringify(prevProps.messages);
     const currentMessageStr = JSON.stringify(this.props.messages);
 
-    if (this.props.type === 'user' && prevProps.item.uid !== this.props.item.uid) {
+    if (
+      this.props.type === 'user' &&
+      prevProps.item.uid !== this.props.item.uid
+    ) {
       this.decoratorMessage = 'Loading...';
       this.MessageListManager.removeListeners();
 
@@ -85,19 +91,22 @@ class CometChatMessageList extends React.PureComponent {
           this.props.widgetsettings,
           this.props.item,
           this.props.type,
-          this.props.parentMessageId
+          this.props.parentMessageId,
         );
       } else {
         this.MessageListManager = new MessageListManager(
           this.props.widgetsettings,
           this.props.item,
-          this.props.type
+          this.props.type,
         );
       }
 
       this.getMessages();
       this.MessageListManager.attachListeners(this.messageUpdated);
-    } else if (this.props.type === 'group' && prevProps.item.guid !== this.props.item.guid) {
+    } else if (
+      this.props.type === 'group' &&
+      prevProps.item.guid !== this.props.item.guid
+    ) {
       this.decoratorMessage = 'Loading...';
       this.MessageListManager.removeListeners();
 
@@ -106,13 +115,13 @@ class CometChatMessageList extends React.PureComponent {
           this.props.widgetsettings,
           this.props.item,
           this.props.type,
-          this.props.parentMessageId
+          this.props.parentMessageId,
         );
       } else {
         this.MessageListManager = new MessageListManager(
           this.props.widgetsettings,
           this.props.item,
-          this.props.type
+          this.props.type,
         );
       }
 
@@ -125,7 +134,7 @@ class CometChatMessageList extends React.PureComponent {
         this.props.widgetsettings,
         this.props.item,
         this.props.type,
-        this.props.parentMessageId
+        this.props.parentMessageId,
       );
       this.getMessages();
       this.MessageListManager.attachListeners(this.messageUpdated);
@@ -163,23 +172,29 @@ class CometChatMessageList extends React.PureComponent {
             }
 
             messageList.forEach((message) => {
-              if (message.category === 'action' && message.sender.uid === 'app_system') {
+              if (
+                message.category === 'action' &&
+                message.sender.uid === 'app_system'
+              ) {
                 actionMessages.push(message);
               }
 
               // if the sender of the message is not the loggedin user, mark it as read.
-              if (message.getSender().getUid() !== user.getUid() && !message.getReadAt()) {
+              if (
+                message.getSender().getUid() !== user.getUid() &&
+                !message.getReadAt()
+              ) {
                 if (message.getReceiverType() === 'user') {
                   CometChat.markAsRead(
                     message.getId().toString(),
                     message.getSender().getUid(),
-                    message.getReceiverType()
+                    message.getReceiverType(),
                   );
                 } else if (message.getReceiverType() === 'group') {
                   CometChat.markAsRead(
                     message.getId().toString(),
                     message.getReceiverId(),
-                    message.getReceiverType()
+                    message.getReceiverType(),
                   );
                 }
               }
@@ -217,7 +232,7 @@ class CometChatMessageList extends React.PureComponent {
   };
 
   // callback for listener functions
-  messageUpdated = (key, message, group, options) => {
+  messageUpdated = (key, message, group, options,actionBy) => {
     switch (key) {
       case enums.MESSAGE_DELETED:
         this.messageDeleted(message);
@@ -238,12 +253,15 @@ class CometChatMessageList extends React.PureComponent {
         break;
       case enums.GROUP_MEMBER_SCOPE_CHANGED:
       case enums.GROUP_MEMBER_JOINED:
-      case enums.GROUP_MEMBER_LEFT:
+        case enums.GROUP_MEMBER_LEFT:
+        this.groupUpdated(key, message, group, options);
+        break;
       case enums.GROUP_MEMBER_ADDED:
       case enums.GROUP_MEMBER_KICKED:
       case enums.GROUP_MEMBER_BANNED:
       case enums.GROUP_MEMBER_UNBANNED:
-        this.groupUpdated(key, message, group, options);
+        if (this.loggedInUser.uid !== actionBy.uid)
+          this.groupUpdated(key, message, group, options);
         break;
       case enums.INCOMING_CALL_RECEIVED:
       case enums.INCOMING_CALL_CANCELLED:
@@ -333,7 +351,9 @@ class CometChatMessageList extends React.PureComponent {
 
       if (message.getReceiptType() === 'delivery') {
         // search for message
-        const messageKey = messageList.findIndex((m) => m.id === message.messageId);
+        const messageKey = messageList.findIndex(
+          (m) => m.id === message.messageId,
+        );
 
         if (messageKey > -1) {
           const messageObj = { ...messageList[messageKey] };
@@ -347,7 +367,9 @@ class CometChatMessageList extends React.PureComponent {
         }
       } else if (message.getReceiptType() === 'read') {
         // search for message
-        const messageKey = messageList.findIndex((m) => m.id === message.messageId);
+        const messageKey = messageList.findIndex(
+          (m) => m.id === message.messageId,
+        );
 
         if (messageKey > -1) {
           const messageObj = { ...messageList[messageKey] };
@@ -376,7 +398,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getReceiverId(),
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -390,7 +412,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getSender().uid,
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -409,7 +431,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getReceiverId(),
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -432,7 +454,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getSender().uid,
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -486,7 +508,12 @@ class CometChatMessageList extends React.PureComponent {
   };
 
   callUpdated = (message) => {
-    if (validateWidgetSettings(this.props.widgetsettings, 'show_call_notifications') === false) {
+    if (
+      validateWidgetSettings(
+        this.props.widgetsettings,
+        'show_call_notifications',
+      ) === false
+    ) {
       return false;
     }
 
@@ -499,7 +526,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getReceiverId(),
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -513,7 +540,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getSender().uid,
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -531,7 +558,7 @@ class CometChatMessageList extends React.PureComponent {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getReceiverId(),
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
 
@@ -875,7 +902,9 @@ class CometChatMessageList extends React.PureComponent {
       // if action messages are set to hide in config
       if (this.props.messageconfig) {
         const found = this.props.messageconfig.find((cfg) => {
-          return cfg.action === message.action && cfg.category === message.category;
+          return (
+            cfg.action === message.action && cfg.category === message.category
+          );
         });
 
         if (found && found.enabled === false) {
@@ -918,10 +947,9 @@ class CometChatMessageList extends React.PureComponent {
     return component;
   };
 
-  render() {
-    let messageContainer = null;
-    if (this.props.messages.length === 0) {
-      messageContainer = (
+  listEmptyComponent = () => {
+    return (
+      <View style={[styles.chatListStyle]}>
         <View style={styles.decoratorMessageStyle}>
           <Text
             style={[
@@ -933,99 +961,81 @@ class CometChatMessageList extends React.PureComponent {
             {this.decoratorMessage}
           </Text>
         </View>
+      </View>
+    );
+  };
+
+  renderItem = ({ item, index }) => {
+    let messages = [...this.props.messages];
+    if (messages.length) {
+      messages = messages.reverse();
+      if(!cDate){
+      cDate = new Date(messages[0].sentAt * 1000).toLocaleDateString();
+      }
+    }
+
+    const message = item;
+    let dateSeparator = null;
+    const nextMessage = messages[index + 1];
+    const messageSentDate = nextMessage
+      ? new Date(nextMessage.sentAt * 1000).toLocaleDateString()
+      : null;
+    if (cDate !== messageSentDate) {
+      dateSeparator = (
+        <View
+          style={[
+            styles.messageDateContainerStyle,
+            {
+              backgroundColor: `${this.props.theme.backgroundColor.grey}`,
+            },
+          ]}>
+          <Text
+            style={[
+              styles.messageDateStyle,
+              {
+                color: `${this.props.theme.color.primary}`,
+              },
+            ]}>
+            {cDate}
+          </Text>
+        </View>
       );
     }
-
-    //* **********************************This holds messages mapping ************************* */
-
-    // const messages = this.props.messages.map((message, key) => {
-    //   let dateSeparator = null;
-    //   const messageSentDate = new Date(message.sentAt * 1000).toLocaleDateString();
-    //   if (cDate !== messageSentDate) {
-    //     dateSeparator = (<View style={styles.messageDateContainerStyle} ><Text style={styles.messageDateStyle}>{messageSentDate}</Text></View>);
-    //   }
-    //   cDate = messageSentDate;
-    //   return (
-    //     <View key={key}>
-    //       {dateSeparator}
-    //       {this.getComponent(message, key)}
-    //     </View>
-    //   )
-    // });
-    //* **********************************This holds messages mapping ************************* */
-    let cDate = null;
-    let messages = [...this.props.messages];
-    if (this.props.messages.length) {
-      messages = messages.reverse();
-      cDate = new Date(messages[0].sentAt * 1000).toLocaleDateString();
-    }
+    cDate =
+    messageSentDate ||
+    new Date(messages[0].sentAt * 1000).toLocaleDateString();
     return (
-      <FlatList
-        ref={this.flatlistRef}
-        ListEmptyComponent={() => {
-          return (
-            <View
-              style={[
-                styles.chatListStyle,
-                {
-                  backgroundColor: `${this.props.theme.backgroundColor.blue}`,
-                },
-              ]}>
-              {messageContainer}
-            </View>
-          );
-        }}
-        onEndReached={() => this.getMessages(true)}
-        onEndReachedThreshold={0.3}
-        inverted={messages.length ? -1 : 0}
-        style={{ flex: 1, paddingHorizontal: 5 }}
-        data={messages}
-        renderItem={({ item, index }) => {
-          const message = item;
-          let dateSeparator = null;
-          const nextMessage = messages[index + 1];
-          const messageSentDate = nextMessage
-            ? new Date(nextMessage.sentAt * 1000).toLocaleDateString()
-            : null;
-          if (cDate !== messageSentDate) {
-            dateSeparator = (
-              <View
-                style={[
-                  styles.messageDateContainerStyle,
-                  {
-                    backgroundColor: `${this.props.theme.backgroundColor.grey}`,
-                  },
-                ]}>
-                <Text
-                  style={[
-                    styles.messageDateStyle,
-                    {
-                      color: `${this.props.theme.color.primary}`,
-                    },
-                  ]}>
-                  {cDate}
-                </Text>
-              </View>
-            );
+      <View>
+        {index ? dateSeparator : null}
+        {this.getComponent(message)}
+      </View>
+    );
+  };
+
+  render() {
+    let messages = [...this.props.messages];
+    if (messages.length) {
+      messages = messages.reverse();
+    }
+
+    return (
+        <FlatList
+          ref={this.flatlistRef}
+          ListEmptyComponent={this.listEmptyComponent}
+          onEndReached={() => this.getMessages(true)}
+          onEndReachedThreshold={0.3}
+          inverted={-1}
+          style={{ flex: 1, paddingHorizontal: 5 }}
+          contentContainerStyle={!messages.length ? { flex: 1 } : {}}
+          ListFooterComponent={
+            messages.length && this.props.parentMessageComponent
+              ? this.props.parentMessageComponent
+              : null
           }
-          cDate = messageSentDate || new Date(messages[0].sentAt * 1000).toLocaleDateString();
-          return (
-            <View>
-              {index ? dateSeparator : null}
-              {this.getComponent(message)}
-            </View>
-          );
-        }}
-      />
+          data={messages}
+          renderItem={this.renderItem}
+        />
     );
   }
 }
 export default CometChatMessageList;
-
-//* *********The following was used under messagecontainer :==>>>>>
-
-/* <View style={styles.listWrapperStyle} ref={(el) => { this.messagesEnd = el; }} onScroll={this.handleScroll}>
-          {messages}     
-        </View> */
-
-//* *********The above was used under messagecontainer :==>>>>>

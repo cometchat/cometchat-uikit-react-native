@@ -17,6 +17,7 @@ import {
   Modal,
   Dimensions,
   TouchableOpacity,
+  KeyboardAvoidingView,
 } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 
@@ -192,6 +193,7 @@ class CometChatAddGroupMemberList extends React.Component {
 
     if (membersList.length) {
       const membersToAdd = [];
+      this.props.close();
       CometChat.addMembersToGroup(guid, membersList, [])
         .then((response) => {
           if (Object.keys(response).length) {
@@ -204,7 +206,6 @@ class CometChatAddGroupMemberList extends React.Component {
             }
             this.props.actionGenerated('addGroupParticipants', membersToAdd);
           }
-          this.props.close();
         })
         .catch(() => {
           // console.log('addMembersToGroup failed with exception:', error);
@@ -216,39 +217,7 @@ class CometChatAddGroupMemberList extends React.Component {
     return (
       <View style={[style.contactHeaderStyle]}>
         <Text style={style.contactHeaderTitleStyle}>Add Members</Text>
-        <TouchableWithoutFeedback onPress={() => this.textInputRef.current.focus()}>
-          <View
-            style={[
-              style.contactSearchStyle,
-              {
-                backgroundColor: `${this.theme.backgroundColor.grey}`,
-              },
-            ]}>
-            <Icon name="search" size={15} color={this.theme.color.textInputPlaceholder} />
-            <TextInput
-              ref={this.textInputRef}
-              autoCompleteType="off"
-              value={this.state.textInputValue}
-              placeholder="Search"
-              placeholderTextColor={this.theme.color.textInputPlaceholder}
-              onChangeText={this.searchUsers}
-              onFocus={() => {
-                this.setState({ textInputFocused: true });
-              }}
-              onBlur={() => {
-                this.setState({ textInputFocused: false });
-              }}
-              clearButtonMode="always"
-              numberOfLines={1}
-              style={[
-                style.contactSearchInputStyle,
-                {
-                  color: `${this.theme.color.primary}`,
-                },
-              ]}
-            />
-          </View>
-        </TouchableWithoutFeedback>
+        
       </View>
     );
   };
@@ -297,11 +266,15 @@ class CometChatAddGroupMemberList extends React.Component {
 
     return (
       <React.Fragment>
-        <Modal transparent animated animationType="fade" visible={this.props.open}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <Modal
+          transparent
+          animated
+          animationType="fade"
+          visible={this.props.open}>
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
             <BottomSheet
               ref={this.sheetRef}
-              snapPoints={[Dimensions.get('window').height - 80, 0]}
+              snapPoints={[Dimensions.get('window').height - 90, 0]}
               borderRadius={30}
               initialSnap={0}
               enabledInnerScrolling={false}
@@ -311,27 +284,62 @@ class CometChatAddGroupMemberList extends React.Component {
                 return (
                   <View style={style.reactionDetailsContainer}>
                     <View style={style.headerContainer}>
-                      <View
-                        style={{
-                          width: Dimensions.get('window').width - 60,
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          paddingLeft: 60,
-                        }}>
-                        <Text
-                          style={{
-                            fontSize: 18,
-                            display: this.state.showSmallHeader ? 'flex' : 'none',
-                          }}>
+                      <View style={{}}>
+                        <Text style={style.contactHeaderTitleStyle}>
                           Add Members
                         </Text>
                       </View>
                       <TouchableOpacity
-                        onPress={() => this.sheetRef.current.snapTo(1)}
-                        style={{ width: 60 }}>
-                        <Text style={{ color: this.theme.color.blue }}>Close</Text>
+                        onPress={() => {
+                          this.sheetRef.current.snapTo(1);
+                          this.props.close();
+                        }}
+                        style={{}}>
+                        <Text style={{ color: this.theme.color.blue }}>
+                          Close
+                        </Text>
                       </TouchableOpacity>
                     </View>
+                    <TouchableWithoutFeedback
+                      onPress={() => this.textInputRef.current.focus()}>
+                      <View
+                        style={[
+                          style.contactSearchStyle,
+                          {
+                            backgroundColor: `${this.theme.backgroundColor.grey}`,
+                          },
+                        ]}>
+                        <Icon
+                          name="search"
+                          size={15}
+                          color={this.theme.color.textInputPlaceholder}
+                        />
+                        <TextInput
+                          ref={this.textInputRef}
+                          autoCompleteType="off"
+                          value={this.state.textInputValue}
+                          placeholder="Search"
+                          placeholderTextColor={
+                            this.theme.color.textInputPlaceholder
+                          }
+                          onChangeText={this.searchUsers}
+                          onFocus={() => {
+                            this.setState({ textInputFocused: true });
+                          }}
+                          onBlur={() => {
+                            this.setState({ textInputFocused: false });
+                          }}
+                          clearButtonMode="always"
+                          numberOfLines={1}
+                          style={[
+                            style.contactSearchInputStyle,
+                            {
+                              color: `${this.theme.color.primary}`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </TouchableWithoutFeedback>
                     <FlatList
                       data={filteredUserList}
                       renderItem={({ item }) => {
@@ -356,16 +364,12 @@ class CometChatAddGroupMemberList extends React.Component {
                           </React.Fragment>
                         );
                       }}
-                      ListHeaderComponent={this.listHeaderComponent}
+                      // ListHeaderComponent={this.listHeaderComponent}
                       ListEmptyComponent={this.listEmptyContainer}
                       ItemSeparatorComponent={this.itemSeparatorComponent}
                       onScroll={this.handleScroll}
                       onEndReached={this.endReached}
                       onEndReachedThreshold={0.3}
-                      style={{
-                        height:
-                          Dimensions.get('window').height - 0.25 * Dimensions.get('window').height,
-                      }}
                       showsVerticalScrollIndicator={false}
                     />
                     <TouchableOpacity
@@ -374,8 +378,6 @@ class CometChatAddGroupMemberList extends React.Component {
                         {
                           backgroundColor: this.theme.backgroundColor.blue,
                           alignSelf: 'center',
-                          marginBottom:
-                            Dimensions.get('window').height - 0.4 * Dimensions.get('window').height,
                         },
                       ]}
                       onPress={this.updateMembers}>
@@ -396,7 +398,7 @@ class CometChatAddGroupMemberList extends React.Component {
                 this.props.close();
               }}
             />
-          </View>
+            </View>
         </Modal>
       </React.Fragment>
     );

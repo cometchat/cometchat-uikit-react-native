@@ -43,9 +43,16 @@ class CometChatConversationList extends React.Component {
   }
 
   componentDidMount() {
-    this.ConversationListManager = new ConversationListManager();
-    this.getConversations();
-    this.ConversationListManager.attachListeners(this.conversationUpdated);
+    this.navListener = this.props.navigation.addListener('focus', () => {
+      this.decoratorMessage = 'Loading...';
+      if(this.ConversationListManager){
+        this.ConversationListManager.removeListeners();
+      }
+      this.setState({conversationlist:[]})
+      this.ConversationListManager = new ConversationListManager();
+      this.getConversations();
+      this.ConversationListManager.attachListeners(this.conversationUpdated);
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -181,11 +188,26 @@ class CometChatConversationList extends React.Component {
         this.setState({ conversationlist: conversationList });
       }
     }
+
+    if (prevProps.groupToDelete && prevProps.groupToDelete.guid !== this.props.groupToDelete.guid) {
+      let conversationList = [...this.state.conversationlist];
+      const groupKey = conversationList.findIndex((member) => member.conversationWith.guid === this.props.groupToDelete.guid);
+      if (groupKey > -1) {
+        conversationList.splice(groupKey, 1);
+        this.setState({ conversationlist: conversationList });
+        if (conversationList.length === 0) {
+          this.decoratorMessage = 'No chats found';
+        }
+      }
+    }
   }
 
   componentWillUnmount() {
-    this.ConversationListManager.removeListeners();
+    if(this.ConversationListManager){
+      this.ConversationListManager.removeListeners();
+    }
     this.ConversationListManager = null;
+    if (this.navListener) this.navListener();
   }
 
   setAvatar = (conversation) => {
@@ -200,7 +222,7 @@ class CometChatConversationList extends React.Component {
     }
   };
 
-  conversationUpdated = (key, item, message, options) => {
+  conversationUpdated = (key, item, message, options,actionBy) => {
     switch (key) {
       case enums.USER_ONLINE:
       case enums.USER_OFFLINE:
@@ -220,7 +242,8 @@ class CometChatConversationList extends React.Component {
         this.updateConversation(message, false);
         break;
       case enums.GROUP_MEMBER_ADDED:
-        this.updateGroupMemberAdded(message, options);
+        if (this.loggedInUser.uid!==actionBy.uid)
+          this.updateGroupMemberAdded(message, options);
         break;
       case enums.GROUP_MEMBER_KICKED:
       case enums.GROUP_MEMBER_BANNED:
@@ -321,24 +344,26 @@ class CometChatConversationList extends React.Component {
     }
 
     let unreadMessageCount = parseInt(conversation.unreadMessageCount);
-    if (
-      this.state.selectedConversation &&
-      this.state.selectedConversation.conversationId === conversation.conversationId
-    ) {
-      unreadMessageCount = 0;
-    } else if (
-      (Object.prototype.hasOwnProperty.call(this.props, 'item') &&
-        Object.prototype.hasOwnProperty.call(this.props.item, 'guid') &&
-        Object.prototype.hasOwnProperty.call(conversation.conversationWith, 'guid') &&
-        this.props.item.guid === conversation.conversationWith.guid) ||
-      (Object.prototype.hasOwnProperty.call(this.props, 'item') &&
-        Object.prototype.hasOwnProperty.call(this.props.item, 'uid') &&
-        Object.prototype.hasOwnProperty.call(conversation.conversationWith, 'uid') &&
-        this.props.item.uid === conversation.conversationWith.uid)
-    ) {
-      unreadMessageCount = 0;
-    } else if (operator && operator === 'decrement') {
-      unreadMessageCount = unreadMessageCount ? unreadMessageCount - 1 : 0;
+    // if (
+    //   this.state.selectedConversation &&
+    //   this.state.selectedConversation.conversationId === conversation.conversationId
+    // ) {
+    //   unreadMessageCount = 0;
+    // } else 
+    // if (
+    //   (Object.prototype.hasOwnProperty.call(this.props, 'item') &&
+    //     Object.prototype.hasOwnProperty.call(this.props.item, 'guid') &&
+    //     Object.prototype.hasOwnProperty.call(conversation.conversationWith, 'guid') &&
+    //     this.props.item.guid === conversation.conversationWith.guid) ||
+    //   (Object.prototype.hasOwnProperty.call(this.props, 'item') &&
+    //     Object.prototype.hasOwnProperty.call(this.props.item, 'uid') &&
+    //     Object.prototype.hasOwnProperty.call(conversation.conversationWith, 'uid') &&
+    //     this.props.item.uid === conversation.conversationWith.uid)
+    // ) {
+    //   unreadMessageCount = 0;
+    // } else
+     if (operator && operator === 'decrement') {
+       unreadMessageCount = unreadMessageCount ? unreadMessageCount - 1 : 0;
     } else {
       unreadMessageCount += 1;
     }
@@ -357,7 +382,7 @@ class CometChatConversationList extends React.Component {
         const { conversationKey, conversationObj, conversationList } = response;
 
         if (conversationKey > -1) {
-          const unreadMessageCount = this.makeUnreadMessageCount(conversationObj);
+          const unreadMessageCount = this.makeUnreadMessageCount(conversationList[conversationKey]);
           const lastMessageObj = this.makeLastMessage(message, conversationObj);
 
           const newConversationObj = {
@@ -639,20 +664,20 @@ class CometChatConversationList extends React.Component {
                 conversation.conversationWith.icon = this.setAvatar(conversation);
               }
 
-              if (
-                Object.prototype.hasOwnProperty.call(this.props, 'type') &&
-                Object.prototype.hasOwnProperty.call(this.props, 'item') &&
-                this.props.type === conversation.conversationType
-              ) {
-                if (
-                  (conversation.conversationType === 'user' &&
-                    this.props.item.uid === conversation.conversationWith.uid) ||
-                  (conversation.conversationType === 'group' &&
-                    this.props.item.guid === conversation.conversationWith.guid)
-                ) {
-                  conversation.unreadMessageCount = 0;
-                }
-              }
+              // if (
+              //   Object.prototype.hasOwnProperty.call(this.props, 'type') &&
+              //   Object.prototype.hasOwnProperty.call(this.props, 'item') &&
+              //   this.props.type === conversation.conversationType
+              // ) {
+              //   if (
+              //     (conversation.conversationType === 'user' &&
+              //       this.props.item.uid === conversation.conversationWith.uid) ||
+              //     (conversation.conversationType === 'group' &&
+              //       this.props.item.guid === conversation.conversationWith.guid)
+              //   ) {
+              //     conversation.unreadMessageCount = 0;
+              //   }
+              // }
             });
             this.setState({
               conversationlist: [...this.state.conversationlist, ...conversationList],

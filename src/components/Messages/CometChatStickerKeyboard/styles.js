@@ -48,7 +48,8 @@ export default StyleSheet.create({
   stickerWrapperStyle: {
     borderWidth: 1,
     borderRadius: 10,
+    flexDirection:"column",
     height: 230 * heightRatio,
-    justifyContent: 'center',
+    alignItems:"flex-end"
   },
 });

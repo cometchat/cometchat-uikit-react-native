@@ -63,11 +63,11 @@ export default (props) => {
     const secondOption = optionTwoRef.trim();
     const optionItems = [firstOption, secondOption];
     if (question.length === 0) {
-      setError({ error: 'Question cannnot be blank.' });
+      setError({ error: 'Question cannot be blank.' });
       return false;
     }
     if (firstOption.length === 0 || secondOption.length === 0) {
-      setError({ error: 'Option cannnot be blank.' });
+      setError({ error: 'Option cannot be blank.' });
       return false;
     }
     optionArray.forEach((option) => {
@@ -116,7 +116,7 @@ export default (props) => {
         // setError({ error: null });
       })
       .catch((err) => {
-        setError({ error: err.message ? err.message : err });
+        setError({ error: err });
       });
   };
   const onChangeScreenSize = (contentWidth, contentHeight) => {
@@ -232,7 +232,13 @@ export default (props) => {
           overdragResistanceFactor={10}
           renderContent={() => {
             return ( */}
-              <View style={{ backgroundColor: 'white', height: '90%',borderTopLeftRadius:15,borderTopRightRadius:15 }}>
+              <View
+                style={{
+                  backgroundColor: 'white',
+                  height: '90%',
+                  borderTopLeftRadius: 15,
+                  borderTopRightRadius: 15,
+                }}>
                 <View style={styles.ModalWrapperStyle}>
                   <View style={styles.ModalHeader}>
                     <View style={styles.ModalHeadingContainer}>
@@ -245,9 +251,13 @@ export default (props) => {
                         {close}
                       </TouchableOpacity>
                     </View>
-                    <View style={styles.ModalErrorContainer}>
-                      <Text style={styles.ErrorText}>{error.error}</Text>
-                    </View>
+                    {error && (error.error || error.error.message) ? (
+                      <View style={styles.ModalErrorContainer}>
+                        <Text style={styles.ErrorText}>
+                          {error.error.message || error.error}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
                   {pollOptionView}
                   <View style={styles.WrapperForCreateButton}>

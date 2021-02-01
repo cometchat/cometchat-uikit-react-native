@@ -3,9 +3,10 @@ import theme from '../../../resources/theme';
 
 export default StyleSheet.create({
   chatWrapperStyle: {
-    height: '100%',
-    width: '100%',
-    position: 'relative',
+    // height: '100%',
+    // width: '100%',
+    flex:1,
+    // position: 'relative',
     fontFamily: `${theme.fontFamily}`,
     backgroundColor: 'white',
   },

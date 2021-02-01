@@ -3,7 +3,7 @@
 /* eslint-disable import/no-dynamic-require */
 /* eslint-disable react/no-did-update-set-state */
 import React from 'react';
-import { View, TouchableOpacity, TextInput, Text } from 'react-native';
+import { View, TouchableOpacity, TextInput, Text,Keyboard, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDIcon from 'react-native-vector-icons/AntDesign';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -18,6 +18,7 @@ import ComposerActions from './composerActions';
 import { outgoingMessageAlert } from '../../../resources/audio';
 import { validateWidgetSettings } from '../../../utils/common';
 import * as enums from '../../../utils/enums';
+import { heightRatio } from '../../../utils/consts';
 
 export default class CometChatMessageComposer extends React.PureComponent {
   constructor(props) {
@@ -44,9 +45,28 @@ export default class CometChatMessageComposer extends React.PureComponent {
       stickerViewer: false,
       composerActionsVisible: false,
       user: null,
+      keyboardActivity: false,
     };
 
     this.audio = new Sound(outgoingMessageAlert);
+  }
+
+  componentDidMount(){
+    this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this._keyboardDidShow);
+    this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', this._keyboardDidHide);
+  }
+
+  componentWillUnmount () {
+    this.keyboardDidShowListener.remove();
+    this.keyboardDidHideListener.remove();
+  }
+
+  _keyboardDidShow =()=> {
+    this.setState({ keyboardActivity :true})
+  }
+
+  _keyboardDidHide =() =>{
+    this.setState({ keyboardActivity: false });
   }
 
   componentDidUpdate(prevProps) {
@@ -333,6 +353,9 @@ export default class CometChatMessageComposer extends React.PureComponent {
       customType,
       customData
     );
+    if (this.props.parentMessageId) {
+      customMessage.setParentMessageId(this.props.parentMessageId);
+    }
     CometChat.sendCustomMessage(customMessage)
       .then((message) => {
         this.messageSending = false;
@@ -554,7 +577,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       />
     );
     return (
-      <View>
+      <View style={Platform.OS==="android"&&this.state.keyboardActivity?{ marginBottom: 21*heightRatio }:{}}>
         {blockedPreview}
         {editPreview}
         {createPoll}
@@ -569,7 +592,8 @@ export default class CometChatMessageComposer extends React.PureComponent {
           toggleCreatePoll={this.toggleCreatePoll}
           sendMediaMessage={this.sendMediaMessage}
         />
-        <View style={{ flexDirection: 'row', padding: 10, alignItems: 'center' }}>
+        <View
+          style={{ flexDirection: 'row', padding: 10, alignItems: 'center' }}>
           <TouchableOpacity
             style={{ marginRight: 10 }}
             disabled={disabled}

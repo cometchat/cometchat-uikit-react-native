@@ -6,6 +6,8 @@ export default StyleSheet.create({
     width: '100%',
     flex: 1,
     position: 'relative',
+    alignItems:"center",
+    justifyContent:"center"
   },
   listWrapperStyle: {
     flexDirection: 'column',
@@ -51,12 +53,12 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    top: '50%',
   },
   decoratorMessageTxtStyle: {
     margin: 0,
     height: 30,
     fontSize: 24,
     fontWeight: '600',
+    transform: [{ rotateX: '180deg' }],
   },
 });

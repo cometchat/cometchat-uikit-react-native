@@ -41,7 +41,7 @@ export default (props) => {
   /* toggle tooltip code to be added */
 
   // let editClassName = false;
-  const { name } = props.member;
+  let { name } = props.member;
   let receivedScope = (
     <Text style={{ flex: 1, paddingLeft: 15 * widthRatio }}>{roles[props.member.scope]}</Text>
   );
@@ -150,12 +150,12 @@ export default (props) => {
     kick = null;
   }
 
-  //  if(group.loggedinuser.uid === props.member.uid) {
-  //     name = "You";
-  //     changescope = receivedScope;
-  //     ban = null;
-  //     kick = null;
-  // }
+   if (props.loggedInUser.uid === props.member.uid) {
+     name = 'You';
+     changescope = receivedScope;
+     ban = null;
+     kick = null;
+   }
 
   // if the loggedin user is moderator, don't allow to change scope, ban, kick group moderators or administrators
   if (
@@ -171,7 +171,7 @@ export default (props) => {
   // if the loggedin user is administrator but not group owner, don't allow to change scope, ban, kick group administrators
   if (
     props.item.scope === CometChat.GROUP_MEMBER_SCOPE.ADMIN &&
-    // && props.item.owner !== group.loggedinuser.uid                    {{{{{{comment to remove after resolving}}}}}}
+    props.item.owner !== props.loggedInUser.uid &&
     props.member.scope === CometChat.GROUP_MEMBER_SCOPE.ADMIN
   ) {
     changescope = receivedScope;
@@ -244,7 +244,6 @@ export default (props) => {
       borderWidth={1}
     />
   );
-  // console.log("",props)
 
   return (
     <View

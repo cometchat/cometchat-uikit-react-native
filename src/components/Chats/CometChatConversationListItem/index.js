@@ -123,7 +123,7 @@ class CometChatConversationListItem extends React.Component {
 
     if (diffTimestamp < 24 * 60 * 60 * 1000) {
       timestamp = messageTimestamp.toLocaleTimeString('en-US', {
-        hour: 'numeric',
+        hour: 'numeric', 
         minute: 'numeric',
         hour12: true,
       });

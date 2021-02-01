@@ -43,6 +43,8 @@ export default class ComposerActions extends Component {
           },
         );
       }
+      this.sheetRef.current.snapTo(1);
+      this.props.close()
       if (Platform.OS==="ios"||granted === PermissionsAndroid.RESULTS.GRANTED) {
         launchCamera(
           {
@@ -74,14 +76,13 @@ export default class ComposerActions extends Component {
                   : response.uri.replace('file://', ''),
             };
             this.props.sendMediaMessage(file, CometChat.MESSAGE_TYPE.IMAGE);
-            this.sheetRef.current.snapTo(1);
           },
         );
-      } else {
-        this.sheetRef.current.snapTo(1);
+      
       }
     } catch (err) {
       this.sheetRef.current.snapTo(1);
+      this.props.close();
     }
   };
 
@@ -119,6 +120,7 @@ export default class ComposerActions extends Component {
             : CometChat.MESSAGE_TYPE.VIDEO,
         );
         this.sheetRef.current.snapTo(1);
+        this.props.close();
       },
     );
   };
@@ -135,6 +137,7 @@ export default class ComposerActions extends Component {
       };
       this.props.sendMediaMessage(file, CometChat.MESSAGE_TYPE.FILE);
       this.sheetRef.current.snapTo(1);
+      this.props.close();
     } catch (err) {
       if (DocumentPicker.isCancel(err)) {
         // User cancelled the picker, exit any dialogs or menus and move on
@@ -274,6 +277,7 @@ export default class ComposerActions extends Component {
           <TouchableWithoutFeedback
             onPress={() => {
               this.sheetRef.current.snapTo(1);
+              this.props.close();
             }}>
             <View style={{ flex: 1 }}>
               <BottomSheet

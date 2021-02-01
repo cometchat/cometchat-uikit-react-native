@@ -24,6 +24,8 @@ export default StyleSheet.create({
     flexWrap: 'wrap',
     width: 34,
     height: 34,
+    borderRadius: 22,
+    backgroundColor: 'rgba(51,153,255,0.25)',
   },
   callTypeStyle: {
     flexDirection: 'row',

@@ -133,22 +133,28 @@ export class MessageListManager {
           });
         },
         onGroupMemberKicked: (message, kickedUser, kickedBy, kickedFrom) => {
-          callback(enums.GROUP_MEMBER_KICKED, message, kickedFrom, {
-            user: kickedUser,
-            hasJoined: false,
-          });
+          callback(
+            enums.GROUP_MEMBER_KICKED,
+            message,
+            kickedFrom,
+            {
+              user: kickedUser,
+              hasJoined: false,
+            },
+            kickedBy,
+          );
         },
         onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
-          callback(enums.GROUP_MEMBER_BANNED, message, bannedFrom, { user: bannedUser });
+          callback(enums.GROUP_MEMBER_BANNED, message, bannedFrom, { user: bannedUser },bannedBy);
         },
         onGroupMemberUnbanned: (message, unbannedUser, unbannedBy, unbannedFrom) => {
-          callback(enums.GROUP_MEMBER_UNBANNED, message, unbannedFrom, { user: unbannedUser });
+          callback(enums.GROUP_MEMBER_UNBANNED, message, unbannedFrom, { user: unbannedUser },unbannedBy);
         },
         onMemberAddedToGroup: (message, userAdded, userAddedBy, userAddedIn) => {
           callback(enums.GROUP_MEMBER_ADDED, message, userAddedIn, {
             user: userAdded,
             hasJoined: true,
-          });
+          },userAddedBy);
         },
         onGroupMemberLeft: (message, leavingUser, group) => {
           callback(enums.GROUP_MEMBER_LEFT, message, group, { user: leavingUser });

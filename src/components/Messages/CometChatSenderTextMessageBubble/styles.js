@@ -44,7 +44,6 @@ export default StyleSheet.create({
     marginBottom: 8,
   },
   previewDescStyle: {
-    flexWrap: 'wrap',
     textAlign: 'left',
     paddingVertical: 8,
   },

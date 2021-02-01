@@ -3,7 +3,7 @@ import { widthRatio, heightRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
   groupWrapperStyle: {
-    height: '100%',
+    flex:1,
     backgroundColor: 'white',
   },
   headingContainer: {
@@ -60,9 +60,9 @@ export default StyleSheet.create({
   },
   contactMsgTxtStyle: {
     margin: 0,
-    height: 30 * heightRatio,
     fontSize: 24,
     fontWeight: '600',
+    padding:5*heightRatio
   },
   itemSeperatorStyle: {
     borderBottomWidth: 1,

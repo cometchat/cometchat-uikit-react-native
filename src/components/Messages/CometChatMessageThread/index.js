@@ -20,7 +20,14 @@ import {
   CometChatReceiverVideoMessageBubble,
 } from '../index';
 import styles from './style';
-import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  SafeAreaView,
+  TouchableOpacity,
+  Keyboard,
+  Platform,
+} from 'react-native';
 
 import _ from 'lodash';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -43,8 +50,36 @@ class CometChatMessageThread extends React.PureComponent {
       replyPreview: null,
       messageToBeEdited: null,
       parentMessage: props.parentMessage,
+      keyboardActivity: false,
     };
   }
+
+  componentDidMount() {
+    this.keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      this._keyboardDidShow,
+    );
+    this.keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      this._keyboardDidHide,
+    );
+  }
+
+  componentWillUnmount() {
+    this.keyboardDidShowListener.remove();
+    this.keyboardDidHideListener.remove();
+  }
+
+  _keyboardDidShow = (e) => {
+    this.setState({
+      keyboardActivity: true,
+      keyboardHeight: e.endCoordinates.height,
+    });
+  };
+
+  _keyboardDidHide = () => {
+    this.setState({ keyboardActivity: false });
+  };
 
   componentDidUpdate(prevProps) {
     if (prevProps.parentMessage !== this.props.parentMessage) {
@@ -54,7 +89,9 @@ class CometChatMessageThread extends React.PureComponent {
           scrollToBottom: true,
           parentMessage: this.props.parentMessage,
         });
-      } else if (prevProps.parentMessage.data !== this.props.parentMessage.data) {
+      } else if (
+        prevProps.parentMessage.data !== this.props.parentMessage.data
+      ) {
         this.setState({ parentMessage: this.props.parentMessage });
       }
     }
@@ -90,7 +127,7 @@ class CometChatMessageThread extends React.PureComponent {
           ) {
             const replyCount = Object.prototype.hasOwnProperty.call(
               this.state.parentMessage,
-              'replyCount'
+              'replyCount',
             )
               ? this.state.parentMessage.replyCount
               : 0;
@@ -113,7 +150,7 @@ class CometChatMessageThread extends React.PureComponent {
 
           const replyCount = Object.prototype.hasOwnProperty.call(
             this.state.parentMessage,
-            'replyCount'
+            'replyCount',
           )
             ? this.state.parentMessage.replyCount
             : 0;
@@ -218,11 +255,21 @@ class CometChatMessageThread extends React.PureComponent {
       const { metadata } = message;
       if (Object.prototype.hasOwnProperty.call(metadata, '@injected')) {
         const injectedObject = metadata['@injected'];
-        if (Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')) {
+        if (
+          Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')
+        ) {
           const extensionsObject = injectedObject.extensions;
-          if (Object.prototype.hasOwnProperty.call(extensionsObject, 'smart-reply')) {
+          if (
+            Object.prototype.hasOwnProperty.call(
+              extensionsObject,
+              'smart-reply',
+            )
+          ) {
             const smartReply = extensionsObject['smart-reply'];
-            if (Object.prototype.hasOwnProperty.call(smartReply, 'error') === false) {
+            if (
+              Object.prototype.hasOwnProperty.call(smartReply, 'error') ===
+              false
+            ) {
               this.setState({ replyPreview: message });
             } else {
               this.setState({ replyPreview: null });
@@ -257,7 +304,9 @@ class CometChatMessageThread extends React.PureComponent {
     const deletedMessage = messages[0];
     const messagelist = [...this.state.messageList];
 
-    const messageKey = messagelist.findIndex((message) => message.id === deletedMessage.id);
+    const messageKey = messagelist.findIndex(
+      (message) => message.id === deletedMessage.id,
+    );
     if (messageKey > -1) {
       const messageObj = { ...messagelist[messageKey] };
       const newMessageObj = { ...messageObj, ...deletedMessage };
@@ -447,14 +496,23 @@ class CometChatMessageThread extends React.PureComponent {
     const backIcon = (
       <Icon
         name="md-chevron-back"
-        style={[styles.backIcon, { color: this.props.theme.backgroundColor.blue }]}
+        style={[
+          styles.backIcon,
+          { color: this.props.theme.backgroundColor.blue },
+        ]}
       />
     );
     const parentMessage = this.getMessageComponent(this.state.parentMessage);
     let seperator = <View style={styles.messageSeparatorStyle} />;
-    if (Object.prototype.hasOwnProperty.call(this.state.parentMessage, 'replyCount')) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        this.state.parentMessage,
+        'replyCount',
+      )
+    ) {
       const { replyCount } = this.state.parentMessage;
-      const replyText = replyCount === 1 ? `${replyCount} reply` : `${replyCount} replies`;
+      const replyText =
+        replyCount === 1 ? `${replyCount} reply` : `${replyCount} replies`;
 
       seperator = (
         <View style={styles.messageSeparatorStyle}>
@@ -471,7 +529,7 @@ class CometChatMessageThread extends React.PureComponent {
       );
     }
     return (
-      <SafeAreaView>
+      <SafeAreaView style={{ flex: 1 }}>
         <CometChatMessageActions
           open={!!this.state.messageToReact}
           message={this.state.messageToReact}
@@ -480,7 +538,13 @@ class CometChatMessageThread extends React.PureComponent {
             this.actionHandler('closeMessageActions');
           }}
         />
-        <View style={[styles.wrapperStyle]}>
+        <View
+          style={[
+            { flex: 1 },
+            this.state.keyboardActivity && Platform.OS==="ios"
+              ? { marginBottom: this.state.keyboardHeight }
+              : {},
+          ]}>
           <View
             style={[
               styles.headerStyle,
@@ -492,68 +556,88 @@ class CometChatMessageThread extends React.PureComponent {
             ]}>
             <View style={[styles.headerWrapperStyle]}>
               <TouchableOpacity
-                style={styles.headerCloseStyle}
-                onPress={() => this.props.actionGenerated('closeThreadClicked')}>
+                style={[styles.headerCloseStyle]}
+                onPress={() =>
+                  this.props.actionGenerated('closeThreadClicked')
+                }>
                 {backIcon}
-                <Text style={{ fontSize: 15, color: this.props.theme.backgroundColor.blue }}>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: this.props.theme.backgroundColor.blue,
+                  }}>
                   Back
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.headerDetailStyle}>
                 <Text style={[styles.headerTitleStyle]}>Thread</Text>
-                <Text style={styles.headerNameStyle}>{this.props.item.name}</Text>
+                <Text style={styles.headerNameStyle}>
+                  {this.props.item.name}
+                </Text>
               </View>
             </View>
           </View>
+
           <View
             style={[
               styles.messageContainerStyle,
-              { height: 530 * heightRatio, paddingHorizontal: 5 * widthRatio },
+              {
+                paddingHorizontal: 5 * widthRatio,
+                flex: 1,
+              },
             ]}>
-            <View style={[styles.parentMessageStyle]}>
-              <View style={{ height: '100%', padding: 5 * heightRatio }}>{parentMessage}</View>
-            </View>
-            <View
-              style={[
-                {
-                  height: 28 * heightRatio,
-                  justifyContent: 'center',
-                  borderColor: this.props.theme.backgroundColor.primary,
-                },
-              ]}>
-              {seperator}
-            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <CometChatMessageList
+                  theme={this.props.theme}
+                  messages={this.state.messageList}
+                  item={this.props.item}
+                  type={this.props.type}
+                  scrollToBottom={this.state.scrollToBottom}
+                  config={this.props.config}
+                  widgetsettings={this.props.widgetsettings}
+                  parentMessageId={this.props.parentMessage.id}
+                  loggedInUser={this.props.loggedInUser}
+                  actionGenerated={this.actionHandler}
+                  parentMessageComponent={() => (
+                    <>
+                      <View style={{ paddingTop: 5 * heightRatio }}>
+                        {parentMessage}
+                      </View>
+                      <View
+                        style={[
+                          {
+                            paddingTop: 5 * heightRatio,
+                            paddingBottom: 5 * heightRatio,
+                            justifyContent: 'center',
+                            borderColor: this.props.theme.backgroundColor
+                              .primary,
+                          },
+                        ]}>
+                        {seperator}
+                      </View>
+                    </>
+                  )}
+                />
+              </View>
 
-            <View style={{ height: 280 * heightRatio }}>
-              <CometChatMessageList
-                theme={this.props.theme}
-                messages={this.state.messageList}
-                item={this.props.item}
-                type={this.props.type}
-                scrollToBottom={this.state.scrollToBottom}
-                config={this.props.config}
-                widgetsettings={this.props.widgetsettings}
-                parentMessageId={this.props.parentMessage.id}
-                loggedInUser={this.props.loggedInUser}
-                actionGenerated={this.actionHandler}
-              />
-            </View>
-            <View style={{ height: 100 * heightRatio, justifyContent: 'center' }}>
-              <CometChatMessageComposer
-                ref={(el) => {
-                  this.composerRef = el;
-                }}
-                theme={this.props.theme}
-                item={this.props.item}
-                type={this.props.type}
-                widgetsettings={this.props.widgetsettings}
-                parentMessageId={this.props.parentMessage.id}
-                messageToBeEdited={this.state.messageToBeEdited}
-                replyPreview={this.state.replyPreview}
-                messageToReact={this.state.messageToReact}
-                actionGenerated={this.actionHandler}
-              />
+              <View style={{}}>
+                <CometChatMessageComposer
+                  ref={(el) => {
+                    this.composerRef = el;
+                  }}
+                  theme={this.props.theme}
+                  item={this.props.item}
+                  type={this.props.type}
+                  widgetsettings={this.props.widgetsettings}
+                  parentMessageId={this.props.parentMessage.id}
+                  messageToBeEdited={this.state.messageToBeEdited}
+                  replyPreview={this.state.replyPreview}
+                  messageToReact={this.state.messageToReact}
+                  actionGenerated={this.actionHandler}
+                />
+              </View>
             </View>
           </View>
         </View>

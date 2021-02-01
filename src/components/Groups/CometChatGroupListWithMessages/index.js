@@ -445,13 +445,15 @@ class CometChatGroupListWithMessages extends React.Component {
       );
     }
     return (
-      <SafeAreaView style={{ backgroundColor: 'white' }}>
+      <SafeAreaView style={{ backgroundColor: 'white',flex:1 }}>
         <CometChatGroupList
           theme={this.theme}
           item={this.state.item}
           type={this.state.type}
           onItemClick={this.itemClicked}
           actionGenerated={this.actionHandler}
+          groupToDelete={this.state.groupToDelete}
+          navigation={this.props.navigation}
           // enableCloseMenu={Object.keys(this.state.item).length}
         />
         {imageView}
