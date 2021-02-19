@@ -10,7 +10,7 @@ export default (props) => {
 
   return (
     <TouchableHighlight
-      onPress={() => props.clickeHandler(props.user)}
+      onPress={() => props.clickHandler(props.user)}
       underlayColor={ViewTheme.backgroundColor.listUnderlayColor}>
       <View style={style.listItem}>
         <View style={[style.avatarStyle, { borderRadius: 22 }]}>
@@ -32,9 +32,6 @@ export default (props) => {
         <View
           style={{
             width: '100%',
-            //  borderBottomColor: ViewTheme.borderColor.primary,
-            //         borderBottomWidth: 1,
-            // paddingBottom: 10,
             justifyContent: 'center',
           }}>
           <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: '600', maxWidth: '80%' }}>

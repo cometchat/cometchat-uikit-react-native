@@ -4,11 +4,6 @@ import { Slider } from 'react-native-elements';
 import Sound from 'react-native-sound';
 import RNFetchBlob from 'rn-fetch-blob';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-// const imgSpeaker = require('./resources/ui_speaker.png');
-// const imgPause = require('./resources/ui_pause.png');
-// const imgPlay = require('./resources/ui_play.png');
-// const imgPlayJumpLeft = require('./resources/ui_playjumpleft.png');
-// const imgPlayJumpRight = require('./resources/ui_playjumpright.png');
 
 export default class AudioControls extends React.Component {
   constructor() {
@@ -106,9 +101,11 @@ export default class AudioControls extends React.Component {
   //   jumpPrev15Seconds = () => {
   //     this.jumpSeconds(-15);
   //   };
+
   //   jumpNext15Seconds = () => {
   //     this.jumpSeconds(15);
   //   };
+  
   jumpSeconds = (secsDelta) => {
     if (this.sound) {
       this.sound.getCurrentTime((secs) => {
@@ -187,9 +184,7 @@ export default class AudioControls extends React.Component {
           </TouchableOpacity>
         )}
         {this.state.playState === 'loading' && (
-          // <TouchableOpacity onPress={this.play}>
           <ActivityIndicator color="#000000" size="small" />
-          // </TouchableOpacity>
         )}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={{ color: 'black', alignSelf: 'center', fontSize: 15 }}>

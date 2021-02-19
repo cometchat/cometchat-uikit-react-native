@@ -19,7 +19,6 @@ export default StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     textTransform: 'uppercase',
-    // display: 'inline-block',
   },
   avatarStyle: {
     flexWrap: 'wrap',

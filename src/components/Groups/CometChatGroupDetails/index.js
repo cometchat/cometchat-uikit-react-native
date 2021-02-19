@@ -82,95 +82,100 @@ export default class CometChatGroupDetails extends React.Component {
   }
 
   groupUpdated = (key, message, group, options, actionBy) => {
-    const { guid } = this.props.item;
-    if (guid !== group.guid) {
-      return false;
-    }
+    try {
+      const { guid } = this.props.item;
+      if (guid !== group.guid) {
+        return false;
+      }
 
-    switch (key) {
-      case enums.USER_ONLINE:
-      case enums.USER_OFFLINE:
-        this.groupMemberUpdated(options.user);
-        break;
-      case enums.GROUP_MEMBER_ADDED:
-      case enums.GROUP_MEMBER_JOINED:
-        {
-          const member = options.user;
-          // this.setAvatar(member);
-
-          const updatedMember = {
-            ...member,
-            scope: CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT,
-          };
-          if (this.props.loggedInUser.uid !== updatedMember.uid) {
-            this.addParticipants([updatedMember], false);
+      switch (key) {
+        case enums.USER_ONLINE:
+        case enums.USER_OFFLINE:
+          this.groupMemberUpdated(options.user);
+          break;
+        case enums.GROUP_MEMBER_ADDED:
+        case enums.GROUP_MEMBER_JOINED:
+          {
+            const member = options.user;
+            const updatedMember = {
+              ...member,
+              scope: CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT,
+            };
+            if (this.props.loggedInUser.uid !== updatedMember.uid) {
+              this.addParticipants([updatedMember], false);
+            }
           }
-        }
-        break;
-      case enums.GROUP_MEMBER_LEFT:
-      case enums.GROUP_MEMBER_KICKED:
-        {
-          const member = options.user;
-          if (this.props.loggedInUser.uid !== member.uid) {
-            this.removeParticipants(member, false);
+          break;
+        case enums.GROUP_MEMBER_LEFT:
+        case enums.GROUP_MEMBER_KICKED:
+          {
+            const member = options.user;
+            if (this.props.loggedInUser.uid !== member.uid) {
+              this.removeParticipants(member, false);
+            }
           }
-        }
-        break;
-      case enums.GROUP_MEMBER_BANNED:
-        {
-          const member = options.user;
-          // this.setAvatar(member);
-          if (this.props.loggedInUser.uid !== actionBy.uid) {
-            this.banMembers([member], false);
-            this.removeParticipants(member, false);
+          break;
+        case enums.GROUP_MEMBER_BANNED:
+          {
+            const member = options.user;
+            if (this.props.loggedInUser.uid !== actionBy.uid) {
+              this.banMembers([member], false);
+              this.removeParticipants(member, false);
+            }
           }
-        }
-        break;
-      case enums.GROUP_MEMBER_UNBANNED:
-        {
-          const member = options.user;
-          if (this.props.loggedInUser.uid !== actionBy.uid) {
-            this.unbanMembers([member], false);
+          break;
+        case enums.GROUP_MEMBER_UNBANNED:
+          {
+            const member = options.user;
+            if (this.props.loggedInUser.uid !== actionBy.uid) {
+              this.unbanMembers([member], false);
+            }
           }
-        }
-        break;
-      case enums.GROUP_MEMBER_SCOPE_CHANGED:
-        {
-          const member = options.user;
-          const updatedMember = { ...member, scope: options.scope };
-          this.updateParticipants(updatedMember, false);
-        }
-        break;
-      default:
-        break;
+          break;
+        case enums.GROUP_MEMBER_SCOPE_CHANGED:
+          {
+            const member = options.user;
+            const updatedMember = { ...member, scope: options.scope };
+            this.updateParticipants(updatedMember, false);
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   groupMemberUpdated = (member) => {
-    const memberlist = [...this.state.memberlist];
-    // search for user
-    const memberKey = memberlist.findIndex((m) => m.uid === member.uid);
-    // if found in the list, update user object
-    if (memberKey > -1) {
-      const memberObj = memberlist[memberKey];
-      const newMemberObj = { ...memberObj, ...member };
-      memberlist.splice(memberKey, 1, newMemberObj);
+    try {
+      const memberlist = [...this.state.memberlist];
+      // search for user
+      const memberKey = memberlist.findIndex((m) => m.uid === member.uid);
+      // if found in the list, update user object
+      if (memberKey > -1) {
+        const memberObj = memberlist[memberKey];
+        const newMemberObj = { ...memberObj, ...member };
+        memberlist.splice(memberKey, 1, newMemberObj);
 
-      this.setState({ memberlist });
-    }
+        this.setState({ memberlist });
+      }
 
-    const bannedmemberlist = [...this.state.bannedmemberlist];
-    // search for user
-    const bannedMemberKey = bannedmemberlist.findIndex(
-      (m) => m.uid === member.uid,
-    );
-    // if found in the list, update user object
-    if (bannedMemberKey > -1) {
-      const bannedMemberObj = bannedmemberlist[bannedMemberKey];
-      const newBannedMemberObj = { ...bannedMemberObj, ...member };
-      bannedmemberlist.splice(bannedMemberKey, 1, newBannedMemberObj);
+      const bannedmemberlist = [...this.state.bannedmemberlist];
+      // search for user
+      const bannedMemberKey = bannedmemberlist.findIndex(
+        (m) => m.uid === member.uid,
+      );
+      // if found in the list, update user object
+      if (bannedMemberKey > -1) {
+        const bannedMemberObj = bannedmemberlist[bannedMemberKey];
+        const newBannedMemberObj = { ...bannedMemberObj, ...member };
+        bannedmemberlist.splice(bannedMemberKey, 1, newBannedMemberObj);
 
-      this.setState({ bannedmemberlist });
+        this.setState({ bannedmemberlist });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -260,16 +265,20 @@ export default class CometChatGroupDetails extends React.Component {
   };
 
   leaveGroup = () => {
-    const item = { ...this.props.item };
-    const { guid } = item;
-    CometChat.leaveGroup(guid)
-      .then(() => {
-        // console.log('Group left successfully:', hasLeft);
-        this.props.actionGenerated('leftGroup', item);
-      })
-      .catch(() => {
-        // console.log('Group leaving failed with exception:', error);
-      });
+    try {
+      const item = { ...this.props.item };
+      const { guid } = item;
+      CometChat.leaveGroup(guid)
+        .then(() => {
+          // console.log('Group left successfully:', hasLeft);
+          this.props.actionGenerated('leftGroup', item);
+        })
+        .catch(() => {
+          // console.log('Group leaving failed with exception:', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   clickHandler = (action, flag) => {
@@ -317,107 +326,127 @@ export default class CometChatGroupDetails extends React.Component {
   };
 
   banMembers = (members, triggerUpdate = true) => {
-    const newMembersList = this.state.memberlist.filter((bannedmember) => {
-      const found = members.find((member) => bannedmember.uid === member.uid);
-      if (found) {
-        return false;
+    try {
+      const newMembersList = this.state.memberlist.filter((bannedmember) => {
+        const found = members.find((member) => bannedmember.uid === member.uid);
+        if (found) {
+          return false;
+        }
+        return true;
+      });
+
+      this.setState({
+        bannedmemberlist: [...this.state.bannedmemberlist, ...members],
+        memberlist: newMembersList,
+      });
+
+      if (triggerUpdate) {
+        this.props.actionGenerated('memberBanned', members);
+        this.props.actionGenerated(
+          'membersUpdated',
+          this.props.item,
+          newMembersList.length,
+        );
       }
-      return true;
-    });
-
-    this.setState({
-      bannedmemberlist: [...this.state.bannedmemberlist, ...members],
-      memberlist: newMembersList,
-    });
-
-    if (triggerUpdate) {
-      this.props.actionGenerated('memberBanned', members);
-      this.props.actionGenerated(
-        'membersUpdated',
-        this.props.item,
-        newMembersList.length,
-      );
+    } catch (error) {
+      console.log(error);
     }
   };
 
   unbanMembers = (members, triggerUpdate = true) => {
-    const bannedMembers = [...this.state.bannedmemberlist];
-    const unbannedMembers = [];
+    try {
+      const bannedMembers = [...this.state.bannedmemberlist];
+      const unbannedMembers = [];
 
-    const filteredBannedMembers = bannedMembers.filter((bannedmember) => {
-      const found = members.find((member) => bannedmember.uid === member.uid);
-      if (found) {
-        unbannedMembers.push(found);
-        return false;
+      const filteredBannedMembers = bannedMembers.filter((bannedmember) => {
+        const found = members.find((member) => bannedmember.uid === member.uid);
+        if (found) {
+          unbannedMembers.push(found);
+          return false;
+        }
+        return true;
+      });
+
+      this.setState({
+        bannedmemberlist: [...filteredBannedMembers],
+      });
+
+      if (triggerUpdate) {
+        this.props.actionGenerated('memberUnbanned', unbannedMembers);
       }
-      return true;
-    });
-
-    this.setState({
-      bannedmemberlist: [...filteredBannedMembers],
-    });
-
-    if (triggerUpdate) {
-      this.props.actionGenerated('memberUnbanned', unbannedMembers);
+    } catch (error) {
+      console.log(error);
     }
   };
 
   addParticipants = (members, triggerUpdate = true) => {
-    const memberlist = [...this.state.memberlist, ...members];
+    try {
+      const memberlist = [...this.state.memberlist, ...members];
 
-    this.setState({
-      memberlist,
-    });
-    if (triggerUpdate) {
-      this.props.actionGenerated('membersAdded', members);
-      this.props.actionGenerated(
-        'membersUpdated',
-        this.props.item,
-        memberlist.length,
-      );
+      this.setState({
+        memberlist,
+      });
+      if (triggerUpdate) {
+        this.props.actionGenerated('membersAdded', members);
+        this.props.actionGenerated(
+          'membersUpdated',
+          this.props.item,
+          memberlist.length,
+        );
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   removeParticipants = (member, triggerUpdate = true) => {
-    const groupmembers = [...this.state.memberlist];
-    const filteredMembers = groupmembers.filter((groupmember) => {
-      if (groupmember.uid === member.uid) {
-        return false;
-      }
-      return true;
-    });
+    try {
+      const groupmembers = [...this.state.memberlist];
+      const filteredMembers = groupmembers.filter((groupmember) => {
+        if (groupmember.uid === member.uid) {
+          return false;
+        }
+        return true;
+      });
 
-    this.setState({ memberlist: filteredMembers });
-    if (triggerUpdate) {
-      this.props.actionGenerated('membersRemoved', [member]);
-      this.props.actionGenerated(
-        'membersUpdated',
-        this.props.item,
-        filteredMembers.length,
-      );
+      this.setState({ memberlist: filteredMembers });
+      if (triggerUpdate) {
+        this.props.actionGenerated('membersRemoved', [member]);
+        this.props.actionGenerated(
+          'membersUpdated',
+          this.props.item,
+          filteredMembers.length,
+        );
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   updateParticipants = (updatedMember, triggerUpdate) => {
-    const memberlist = [...this.state.memberlist];
+    try {
+      const memberlist = [...this.state.memberlist];
 
-    const memberKey = memberlist.findIndex(
-      (member) => member.uid === updatedMember.uid,
-    );
-    if (memberKey > -1) {
-      const memberObj = memberlist[memberKey];
-      const newMemberObj = {
-        ...memberObj,
-        ...updatedMember,
-        scope: updatedMember.scope,
-      };
+      const memberKey = memberlist.findIndex(
+        (member) => member.uid === updatedMember.uid,
+      );
+      if (memberKey > -1) {
+        const memberObj = memberlist[memberKey];
+        const newMemberObj = {
+          ...memberObj,
+          ...updatedMember,
+          scope: updatedMember.scope,
+        };
 
-      memberlist.splice(memberKey, 1, newMemberObj);
+        memberlist.splice(memberKey, 1, newMemberObj);
 
-      if (triggerUpdate) {
-        this.props.actionGenerated('memberScopeChanged', [newMemberObj]);
+        if (triggerUpdate) {
+          this.props.actionGenerated('memberScopeChanged', [newMemberObj]);
+        }
+        this.setState({ memberlist });
       }
-      this.setState({ memberlist });
+    } catch (error) {
+      console.log(error);
     }
   };
 

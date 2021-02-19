@@ -48,10 +48,7 @@ export default class ComposerActions extends Component {
       if (Platform.OS==="ios"||granted === PermissionsAndroid.RESULTS.GRANTED) {
         launchCamera(
           {
-            // mediaType: 'photo',
             includeBase64: false,
-            // maxHeight: 200,
-            // maxWidth: 200,
           },
           (response) => {
             if (response.didCancel) {
@@ -60,8 +57,6 @@ export default class ComposerActions extends Component {
             let type = null;
             let name = null;
             if (Platform.OS === 'ios' && response.fileName !== undefined) {
-              // const ext = response.fileName.split('.')[1].toLowerCase();
-              // type = this.getMimeType(ext);
               name = response.fileName;
             } else {
               type = response.type;

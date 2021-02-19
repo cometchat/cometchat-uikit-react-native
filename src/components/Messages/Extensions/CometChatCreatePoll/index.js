@@ -15,16 +15,12 @@ import styles from './styles';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { heightRatio } from '../../../../utils/consts';
 
-import BottomSheet from 'reanimated-bottom-sheet';
-
 const close = <Icon name="close" style={styles.closeIcon} />;
 
 export default (props) => {
-  const [showscroll, setScroll] = useState(false);
+  const [showScroll, setScroll] = useState(false);
   const [optionArray, setOptions] = useState([]);
   const [error, setError] = useState('');
-  const sheetRef = createRef(null);
-
   const thirdInputReference = useRef(null);
   const secondInputReference = useRef(null);
   const [questionRef, setQuestionRef] = useState('');
@@ -208,30 +204,16 @@ export default (props) => {
       keyExtractor={(item) => String(item.id)}
       showsVerticalScrollIndicator={false}
       showsHorizontalScrollIndicator={false}
-      scrollEnabled={showscroll}
+      scrollEnabled={showScroll}
       ListHeaderComponent={HeaderComponentForList}
       ListFooterComponent={FooterComponentForList}
       onContentSizeChange={onChangeScreenSize}
     />
   );
 
-  // useEffect(()=>{
-  //   sheetRef.current.snapTo(0);
-  // },[props.open])
-
   return (
     <Modal transparent animated animationType="fade" visible={props.open}>
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',justifyContent:"flex-end" }}>
-        {/* <BottomSheet
-          ref={sheetRef}
-          snapPoints={[Dimensions.get('window').height - 80, 0]}
-          borderRadius={30}
-          initialSnap={0}
-          // enabledInnerScrolling={false}
-          enabledContentTapInteraction={false}
-          overdragResistanceFactor={10}
-          renderContent={() => {
-            return ( */}
               <View
                 style={{
                   backgroundColor: 'white',
@@ -271,12 +253,6 @@ export default (props) => {
                   </View>
                 </View>
               </View>
-            {/* ); */}
-          {/* }}
-          onCloseEnd={() => {
-            props.close();
-          }}
-        /> */}
       </View>
     </Modal>
   );

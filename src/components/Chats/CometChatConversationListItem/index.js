@@ -30,211 +30,246 @@ class CometChatConversationListItem extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const previousItem = JSON.stringify(prevProps.conversation);
-    const currentItem = JSON.stringify(this.props.conversation);
+    try {
+      const previousItem = JSON.stringify(prevProps.conversation);
+      const currentItem = JSON.stringify(this.props.conversation);
 
-    if (previousItem !== currentItem) {
-      const message = this.getLastMessage();
-      const timestamp = this.getLastMessageTimestamp();
+      if (previousItem !== currentItem) {
+        const message = this.getLastMessage();
+        const timestamp = this.getLastMessageTimestamp();
 
-      this.setState({ lastMessage: message, lastMessageTimestamp: timestamp });
+        this.setState({
+          lastMessage: message,
+          lastMessageTimestamp: timestamp,
+        });
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
   getLastMessage = () => {
-    if (
-      Object.prototype.hasOwnProperty.call(this.props, 'conversation') === false
-    ) {
-      return false;
+    try {
+      if (
+        Object.prototype.hasOwnProperty.call(this.props, 'conversation') ===
+        false
+      ) {
+        return false;
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          this.props.conversation,
+          'lastMessage',
+        ) === false
+      ) {
+        return false;
+      }
+
+      let message = null;
+      const { lastMessage } = this.props.conversation;
+
+      if (Object.prototype.hasOwnProperty.call(lastMessage, 'deletedAt')) {
+        message =
+          this.props.loggedInUser.uid === lastMessage.sender.uid
+            ? '⚠ You deleted this message.'
+            : '⚠ This message was deleted.';
+      } else {
+        switch (lastMessage.category) {
+          case 'message':
+            message = this.getMessage(lastMessage);
+            break;
+          case 'call':
+            message = this.getCallMessage(lastMessage);
+            break;
+          case 'action':
+            message = lastMessage.message;
+            break;
+          case 'custom':
+            message = this.getCustomMessage(lastMessage);
+            break;
+          default:
+            break;
+        }
+      }
+
+      return message;
+    } catch (error) {
+      console.log(error);
     }
+  };
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        this.props.conversation,
-        'lastMessage',
-      ) === false
-    ) {
-      return false;
+  getLastMessageTimestamp = () => {
+    try {
+      if (
+        Object.prototype.hasOwnProperty.call(this.props, 'conversation') ===
+        false
+      ) {
+        return false;
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          this.props.conversation,
+          'lastMessage',
+        ) === false
+      ) {
+        return false;
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          this.props.conversation.lastMessage,
+          'sentAt',
+        ) === false
+      ) {
+        return false;
+      }
+
+      let timestamp = null;
+
+      const messageTimestamp = new Date(
+        this.props.conversation.lastMessage.sentAt * 1000,
+      );
+      const currentTimestamp = Date.now();
+
+      const diffTimestamp = currentTimestamp - messageTimestamp;
+
+      if (diffTimestamp < 24 * 60 * 60 * 1000) {
+        timestamp = messageTimestamp.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true,
+        });
+        if (Platform.OS === 'android' && timestamp !== 'Yesterday') {
+          let time = timestamp.split(':'); // convert to array
+
+          // fetch
+          var hours = Number(time[0]);
+          var minutes = Number(time[1]);
+
+          // calculate
+          var timeValue;
+
+          if (hours > 0 && hours <= 12) {
+            timeValue = '' + hours;
+          } else if (hours > 12) {
+            timeValue = '' + (hours - 12);
+          } else if (hours == 0) {
+            timeValue = '12';
+          }
+
+          timeValue += minutes < 10 ? ':0' + minutes : ':' + minutes; // get minutes
+          timeValue += hours >= 12 ? ' PM' : ' AM'; // get AM/PM
+          timestamp = timeValue;
+        }
+      } else if (diffTimestamp < 48 * 60 * 60 * 1000) {
+        timestamp = 'Yesterday';
+      } else if (diffTimestamp < 7 * 24 * 60 * 60 * 1000) {
+        timestamp = messageTimestamp.toLocaleString('en-US', {
+          weekday: 'long',
+        });
+      } else {
+        timestamp = messageTimestamp.toLocaleDateString('en-US', {
+          year: '2-digit',
+          month: '2-digit',
+          day: '2-digit',
+        });
+      }
+
+      return timestamp;
+    } catch (error) {
+      console.log(error);
     }
+  };
 
-    let message = null;
-    const { lastMessage } = this.props.conversation;
-
-    if (Object.prototype.hasOwnProperty.call(lastMessage, 'deletedAt')) {
-      message =
-        this.props.loggedInUser.uid === lastMessage.sender.uid
-          ? '⚠ You deleted this message.'
-          : '⚠ This message was deleted.';
-    } else {
-      switch (lastMessage.category) {
-        case 'message':
-          message = this.getMessage(lastMessage);
+  getCustomMessage = (lastMessage) => {
+    try {
+      let message = null;
+      switch (lastMessage.type) {
+        case enums.CUSTOM_TYPE_POLL:
+          message = 'Poll';
           break;
-        case 'call':
-          message = this.getCallMessage(lastMessage);
-          break;
-        case 'action':
-          message = lastMessage.message;
-          break;
-        case 'custom':
-          message = this.getCustomMessage(lastMessage);
+        case enums.CUSTOM_TYPE_STICKER:
+          message = 'Sticker';
           break;
         default:
           break;
       }
+
+      return message;
+    } catch (error) {
+      console.log(error);
     }
-
-    return message;
-  };
-
-  getLastMessageTimestamp = () => {
-    if (
-      Object.prototype.hasOwnProperty.call(this.props, 'conversation') === false
-    ) {
-      return false;
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        this.props.conversation,
-        'lastMessage',
-      ) === false
-    ) {
-      return false;
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(
-        this.props.conversation.lastMessage,
-        'sentAt',
-      ) === false
-    ) {
-      return false;
-    }
-
-    let timestamp = null;
-
-    const messageTimestamp = new Date(
-      this.props.conversation.lastMessage.sentAt * 1000,
-    );
-    const currentTimestamp = Date.now();
-
-    const diffTimestamp = currentTimestamp - messageTimestamp;
-
-    if (diffTimestamp < 24 * 60 * 60 * 1000) {
-      timestamp = messageTimestamp.toLocaleTimeString('en-US', {
-        hour: 'numeric', 
-        minute: 'numeric',
-        hour12: true,
-      });
-      if (Platform.OS === 'android' && timestamp !== 'Yesterday') {
-        let time = timestamp.split(':'); // convert to array
-
-        // fetch
-        var hours = Number(time[0]);
-        var minutes = Number(time[1]);
-
-        // calculate
-        var timeValue;
-
-        if (hours > 0 && hours <= 12) {
-          timeValue = '' + hours;
-        } else if (hours > 12) {
-          timeValue = '' + (hours - 12);
-        } else if (hours == 0) {
-          timeValue = '12';
-        }
-
-        timeValue += minutes < 10 ? ':0' + minutes : ':' + minutes; // get minutes
-        timeValue += hours >= 12 ? ' PM' : ' AM'; // get AM/PM
-        timestamp = timeValue;
-      }
-    } else if (diffTimestamp < 48 * 60 * 60 * 1000) {
-      timestamp = 'Yesterday';
-    } else if (diffTimestamp < 7 * 24 * 60 * 60 * 1000) {
-      timestamp = messageTimestamp.toLocaleString('en-US', { weekday: 'long' });
-    } else {
-      timestamp = messageTimestamp.toLocaleDateString('en-US', {
-        year: '2-digit',
-        month: '2-digit',
-        day: '2-digit',
-      });
-    }
-
-    return timestamp;
-  };
-
-  getCustomMessage = (lastMessage) => {
-    let message = null;
-    switch (lastMessage.type) {
-      case enums.CUSTOM_TYPE_POLL:
-        message = 'Poll';
-        break;
-      case enums.CUSTOM_TYPE_STICKER:
-        message = 'Sticker';
-        break;
-      default:
-        break;
-    }
-
-    return message;
   };
 
   getMessage = (lastMessage) => {
-    let message = null;
-    switch (lastMessage.type) {
-      case CometChat.MESSAGE_TYPE.TEXT:
-        message = lastMessage.text;
-        break;
-      case CometChat.MESSAGE_TYPE.MEDIA:
-        message = 'Media message';
-        break;
-      case CometChat.MESSAGE_TYPE.IMAGE:
-        message = '📷 Image ';
-        break;
-      case CometChat.MESSAGE_TYPE.FILE:
-        message = '📁 File';
-        break;
-      case CometChat.MESSAGE_TYPE.VIDEO:
-        message = '🎥 Video';
-        break;
-      case CometChat.MESSAGE_TYPE.AUDIO:
-        message = '🎵 Audio';
-        break;
-      case CometChat.MESSAGE_TYPE.CUSTOM:
-        message = 'Custom message';
-        break;
-      default:
-        break;
-    }
+    try {
+      let message = null;
+      switch (lastMessage.type) {
+        case CometChat.MESSAGE_TYPE.TEXT:
+          message = lastMessage.text;
+          break;
+        case CometChat.MESSAGE_TYPE.MEDIA:
+          message = 'Media message';
+          break;
+        case CometChat.MESSAGE_TYPE.IMAGE:
+          message = '📷 Image ';
+          break;
+        case CometChat.MESSAGE_TYPE.FILE:
+          message = '📁 File';
+          break;
+        case CometChat.MESSAGE_TYPE.VIDEO:
+          message = '🎥 Video';
+          break;
+        case CometChat.MESSAGE_TYPE.AUDIO:
+          message = '🎵 Audio';
+          break;
+        case CometChat.MESSAGE_TYPE.CUSTOM:
+          message = 'Custom message';
+          break;
+        default:
+          break;
+      }
 
-    return message;
+      return message;
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   getCallMessage = (lastMessage) => {
-    let message = null;
-    switch (lastMessage.type) {
-      case CometChat.MESSAGE_TYPE.VIDEO:
-        message = 'Video call';
-        break;
-      case CometChat.MESSAGE_TYPE.AUDIO:
-        message = 'Audio call';
-        break;
-      default:
-        break;
-    }
+    try {
+      let message = null;
+      switch (lastMessage.type) {
+        case CometChat.MESSAGE_TYPE.VIDEO:
+          message = 'Video call';
+          break;
+        case CometChat.MESSAGE_TYPE.AUDIO:
+          message = 'Audio call';
+          break;
+        default:
+          break;
+      }
 
-    return message;
+      return message;
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   getAvatar = () => {
-    let avatar;
-    if (this.props.conversation.conversationType === 'user') {
-      avatar = { uri: this.props.conversation.conversationWith.avatar };
-    } else if (this.props.conversation.conversationType === 'group') {
-      avatar = { uri: this.props.conversation.conversationWith.icon };
+    try {
+      let avatar;
+      if (this.props.conversation.conversationType === 'user') {
+        avatar = { uri: this.props.conversation.conversationWith.avatar };
+      } else if (this.props.conversation.conversationType === 'group') {
+        avatar = { uri: this.props.conversation.conversationWith.icon };
+      }
+      return avatar;
+    } catch (error) {
+      console.log(error);
     }
-    return avatar;
   };
 
   render() {

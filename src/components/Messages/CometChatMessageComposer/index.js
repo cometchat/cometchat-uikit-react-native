@@ -70,32 +70,33 @@ export default class CometChatMessageComposer extends React.PureComponent {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.messageToBeEdited !== this.props.messageToBeEdited) {
-      const { messageToBeEdited } = this.props;
-      this.setState({
-        messageInput: messageToBeEdited.text,
-        messageToBeEdited,
-      });
-
-      const element = this.messageInputRef.current;
-      if (messageToBeEdited) {
-        element.focus();
-        // this.pasteHtmlAtCaret(messageToBeEdited.text, false);
-      } else {
+    try {
+      if (prevProps.messageToBeEdited !== this.props.messageToBeEdited) {
+        const { messageToBeEdited } = this.props;
         this.setState({
-          messageInput: '',
+          messageInput: messageToBeEdited.text,
+          messageToBeEdited,
         });
+
+        const element = this.messageInputRef.current;
+        if (messageToBeEdited) {
+          element.focus();
+        } else {
+          this.setState({
+            messageInput: '',
+          });
+        }
       }
-    }
 
-    if (prevProps.replyPreview !== this.props.replyPreview) {
-      // const message = this.props.replyPreview;
-      this.setState({ replyPreview: this.props.replyPreview });
-    }
+      if (prevProps.replyPreview !== this.props.replyPreview) {
+        this.setState({ replyPreview: this.props.replyPreview });
+      }
 
-    if (prevProps.item !== this.props.item) {
-      // const message = this.props.replyPreview;
-      this.setState({ stickerViewer: false });
+      if (prevProps.item !== this.props.item) {
+        this.setState({ stickerViewer: false });
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -111,17 +112,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
 
   changeHandler = (text) => {
     this.startTyping();
-
-    // const elem = event.currentTarget;
-    // const messageInput = elem.textContent.trim();
-
-    // if (!messageInput.length) {
-    //   // eslint-disable-next-line no-param-reassign
-    //   event.currentTarget.textContent = messageInput;
-    //   // return false;
-    // }
-
-    // this.setState({ messageInput: text, messageType: 'text' });
     this.setState({ messageInput: text, messageType: 'text' });
   };
 
@@ -141,107 +131,125 @@ export default class CometChatMessageComposer extends React.PureComponent {
   };
 
   sendMediaMessage = (messageInput, messageType) => {
-    // this.toggleFilePicker();
+    try {
+      if (this.messageSending) {
+        return false;
+      }
 
-    if (this.messageSending) {
-      return false;
+      this.messageSending = true;
+
+      const { receiverId, receiverType } = this.getReceiverDetails();
+
+      const mediaMessage = new CometChat.MediaMessage(
+        receiverId,
+        messageInput,
+        messageType,
+        receiverType,
+      );
+      if (this.props.parentMessageId) {
+        mediaMessage.setParentMessageId(this.props.parentMessageId);
+      }
+
+      this.endTyping();
+      CometChat.sendMessage(mediaMessage)
+        .then((response) => {
+          this.messageSending = false;
+          this.playAudio();
+          this.props.actionGenerated('messageComposed', [response]);
+        })
+        .catch(() => {
+          this.messageSending = false;
+          // console.log('Message sending failed with error:', error);
+        });
+    } catch (error) {
+      console.log(error);
     }
-
-    this.messageSending = true;
-
-    const { receiverId, receiverType } = this.getReceiverDetails();
-
-    const mediaMessage = new CometChat.MediaMessage(
-      receiverId,
-      messageInput,
-      messageType,
-      receiverType
-    );
-    if (this.props.parentMessageId) {
-      mediaMessage.setParentMessageId(this.props.parentMessageId);
-    }
-
-    this.endTyping();
-    CometChat.sendMessage(mediaMessage)
-      .then((response) => {
-        this.messageSending = false;
-        this.playAudio();
-        this.props.actionGenerated('messageComposed', [response]);
-      })
-      .catch(() => {
-        this.messageSending = false;
-        // console.log('Message sending failed with error:', error);
-      });
   };
 
   sendTextMessage = () => {
-    if (this.state.emojiViewer) {
-      this.setState({ emojiViewer: false });
+    try {
+      if (this.state.emojiViewer) {
+        this.setState({ emojiViewer: false });
+      }
+
+      if (!this.state.messageInput.trim().length) {
+        return false;
+      }
+
+      if (this.messageSending) {
+        return false;
+      }
+
+      this.messageSending = true;
+
+      if (this.state.messageToBeEdited) {
+        this.editMessage();
+        return false;
+      }
+
+      const { receiverId, receiverType } = this.getReceiverDetails();
+      const messageInput = this.state.messageInput.trim();
+      const textMessage = new CometChat.TextMessage(
+        receiverId,
+        messageInput,
+        receiverType,
+      );
+      if (this.props.parentMessageId) {
+        textMessage.setParentMessageId(this.props.parentMessageId);
+      }
+
+      this.endTyping();
+
+      CometChat.sendMessage(textMessage)
+        .then((message) => {
+          this.setState({ messageInput: '' });
+          this.messageSending = false;
+          this.messageInputRef.current.textContent = '';
+          this.playAudio();
+          this.props.actionGenerated('messageComposed', [message]);
+        })
+        .catch(() => {
+          // console.log('Message sending failed with error:', error);
+          this.messageSending = false;
+        });
+    } catch (error) {
+      console.log(error);
     }
-
-    if (!this.state.messageInput.trim().length) {
-      return false;
-    }
-
-    if (this.messageSending) {
-      return false;
-    }
-
-    this.messageSending = true;
-
-    if (this.state.messageToBeEdited) {
-      this.editMessage();
-      return false;
-    }
-
-    const { receiverId, receiverType } = this.getReceiverDetails();
-    const messageInput = this.state.messageInput.trim();
-    const textMessage = new CometChat.TextMessage(receiverId, messageInput, receiverType);
-    if (this.props.parentMessageId) {
-      textMessage.setParentMessageId(this.props.parentMessageId);
-    }
-
-    this.endTyping();
-
-    CometChat.sendMessage(textMessage)
-      .then((message) => {
-        this.setState({ messageInput: '' });
-        this.messageSending = false;
-        this.messageInputRef.current.textContent = '';
-        this.playAudio();
-        this.props.actionGenerated('messageComposed', [message]);
-      })
-      .catch(() => {
-        // console.log('Message sending failed with error:', error);
-        this.messageSending = false;
-      });
   };
 
   editMessage = () => {
-    const { messageToBeEdited } = this.props;
+    try {
+      const { messageToBeEdited } = this.props;
 
-    const { receiverId, receiverType } = this.getReceiverDetails();
+      const { receiverId, receiverType } = this.getReceiverDetails();
 
-    const messageText = this.state.messageInput.trim();
-    const textMessage = new CometChat.TextMessage(receiverId, messageText, receiverType);
-    textMessage.setId(messageToBeEdited.id);
+      const messageText = this.state.messageInput.trim();
+      const textMessage = new CometChat.TextMessage(
+        receiverId,
+        messageText,
+        receiverType,
+      );
+      textMessage.setId(messageToBeEdited.id);
 
-    this.endTyping();
+      this.endTyping();
 
-    CometChat.editMessage(textMessage)
-      .then((message) => {
-        this.setState({ messageInput: '' });
-        this.messageSending = false;
-        this.messageInputRef.current.textContent = '';
-        this.playAudio();
+      CometChat.editMessage(textMessage)
+        .then((message) => {
+          this.setState({ messageInput: '' });
+          this.messageSending = false;
+          this.messageInputRef.current.textContent = '';
+          this.playAudio();
 
-        this.closeEditPreview();
-        this.props.actionGenerated('messageEdited', message);
-      })
-      .catch(() => {
-        this.messageSending = false;
-        // console.log('Message editing failed with error:', error);
-      });
+          this.closeEditPreview();
+          this.props.actionGenerated('messageEdited', message);
+        })
+        .catch(() => {
+          this.messageSending = false;
+          // console.log('Message editing failed with error:', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   closeEditPreview = () => {
@@ -249,51 +257,69 @@ export default class CometChatMessageComposer extends React.PureComponent {
   };
 
   startTyping = (timer, metadata) => {
-    const typingInterval = timer || 5000;
+    try {
+      const typingInterval = timer || 5000;
 
-    // if typing indicator is disabled for chat wigdet in dashboard
-    if (validateWidgetSettings(this.props.widgetsettings, 'show_typing_indicators') === false) {
-      return false;
+      // if typing indicator is disabled for chat wigdet in dashboard
+      if (
+        validateWidgetSettings(
+          this.props.widgetsettings,
+          'show_typing_indicators',
+        ) === false
+      ) {
+        return false;
+      }
+
+      if (this.isTyping) {
+        return false;
+      }
+
+      const { receiverId, receiverType } = this.getReceiverDetails();
+      const typingMetadata = metadata || undefined;
+
+      const typingNotification = new CometChat.TypingIndicator(
+        receiverId,
+        receiverType,
+        typingMetadata,
+      );
+      CometChat.startTyping(typingNotification);
+
+      this.isTyping = setTimeout(() => {
+        this.endTyping();
+      }, typingInterval);
+    } catch (error) {
+      console.log(error);
     }
-
-    if (this.isTyping) {
-      return false;
-    }
-
-    const { receiverId, receiverType } = this.getReceiverDetails();
-    const typingMetadata = metadata || undefined;
-
-    const typingNotification = new CometChat.TypingIndicator(
-      receiverId,
-      receiverType,
-      typingMetadata
-    );
-    CometChat.startTyping(typingNotification);
-
-    this.isTyping = setTimeout(() => {
-      this.endTyping();
-    }, typingInterval);
   };
 
   endTyping = (metadata) => {
-    // if typing indicator is disabled for chat wigdet in dashboard
-    if (validateWidgetSettings(this.props.widgetsettings, 'show_typing_indicators') === false) {
-      return false;
+    try {
+      // if typing indicator is disabled for chat wigdet in dashboard
+      if (
+        validateWidgetSettings(
+          this.props.widgetsettings,
+          'show_typing_indicators',
+        ) === false
+      ) {
+        return false;
+      }
+
+      const { receiverId, receiverType } = this.getReceiverDetails();
+
+      const typingMetadata = metadata || undefined;
+
+      const typingNotification = new CometChat.TypingIndicator(
+        receiverId,
+        receiverType,
+        typingMetadata,
+      );
+      CometChat.endTyping(typingNotification);
+
+      clearTimeout(this.isTyping);
+      this.isTyping = null;
+    } catch (error) {
+      console.log(error);
     }
-
-    const { receiverId, receiverType } = this.getReceiverDetails();
-
-    const typingMetadata = metadata || undefined;
-
-    const typingNotification = new CometChat.TypingIndicator(
-      receiverId,
-      receiverType,
-      typingMetadata
-    );
-    CometChat.endTyping(typingNotification);
-
-    clearTimeout(this.isTyping);
-    this.isTyping = null;
   };
 
   toggleStickerPicker = () => {
@@ -369,21 +395,29 @@ export default class CometChatMessageComposer extends React.PureComponent {
   };
 
   sendReplyMessage = (messageInput) => {
-    const { receiverId, receiverType } = this.getReceiverDetails();
-    const textMessage = new CometChat.TextMessage(receiverId, messageInput, receiverType);
-    if (this.props.parentMessageId) {
-      textMessage.setParentMessageId(this.props.parentMessageId);
-    }
+    try {
+      const { receiverId, receiverType } = this.getReceiverDetails();
+      const textMessage = new CometChat.TextMessage(
+        receiverId,
+        messageInput,
+        receiverType,
+      );
+      if (this.props.parentMessageId) {
+        textMessage.setParentMessageId(this.props.parentMessageId);
+      }
 
-    CometChat.sendMessage(textMessage)
-      .then((message) => {
-        this.playAudio();
-        this.setState({ replyPreview: null });
-        this.props.actionGenerated('messageComposed', [message]);
-      })
-      .catch(() => {
-        // console.log('Message sending failed with error:', error);
-      });
+      CometChat.sendMessage(textMessage)
+        .then((message) => {
+          this.playAudio();
+          this.setState({ replyPreview: null });
+          this.props.actionGenerated('messageComposed', [message]);
+        })
+        .catch(() => {
+          // console.log('Message sending failed with error:', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   clearReplyPreview = () => {
@@ -622,39 +656,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           {liveReactionBtn}
         </View>
       </View>
-      // <View
-      // style={style.chatComposerStyle}
-      // >
-      // {/* {editPreview} */}
-      //
-      //   {stickerViewer}
-      //   <View
-      //   style={style.composerInputStyle}
-      //   >
-      //     <View
-      //     style={style.inputInnerStyle}
-      //     >
-      //
-      //       <View
-      //       style={style.inputStickyStyle}
-      //       >
-      //         {/* {attach} */}
-      //         <View
-      //           style={style.stickyButtonStyle}
-      //           ref={(node) => {
-      //             this.node = node;
-      //           }}>
-      //           {stickerBtn}
-      //           {/* {emojiPicker}
-      //           {emojiBtn} */}
-      //
-      //
-      //         </View>
-      //       </View>
-      //     </View>
-      //   </View>
-      //   {/* {createPoll} */}
-      // </View>
     );
   }
 }

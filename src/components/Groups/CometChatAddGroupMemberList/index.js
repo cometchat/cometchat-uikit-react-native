@@ -60,63 +60,91 @@ class CometChatAddGroupMemberList extends React.Component {
   }
 
   componentDidUpdate() {
-    if (this.state.textInputFocused) {
-      this.textInputRef.current.focus();
+    try {
+      if (this.state.textInputFocused) {
+        this.textInputRef.current.focus();
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
   componentWillUnmount() {
-    this.AddMembersManager.removeListeners();
-    this.AddMembersManager = null;
+    try {
+      this.AddMembersManager.removeListeners();
+      this.AddMembersManager = null;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   userUpdated = (user) => {
-    const userlist = [...this.state.userlist];
+    try {
+      const userlist = [...this.state.userlist];
 
-    // search for user
-    const userKey = userlist.findIndex((u) => u.uid === user.uid);
+      // search for user
+      const userKey = userlist.findIndex((u) => u.uid === user.uid);
 
-    // if found in the list, update user object
-    if (userKey > -1) {
-      const userObj = userlist[userKey]; // {...userlist[userKey]};
-      const newUserObj = { ...userObj, ...user };
-      userlist.splice(userKey, 1, newUserObj);
+      // if found in the list, update user object
+      if (userKey > -1) {
+        const userObj = userlist[userKey]; // {...userlist[userKey]};
+        const newUserObj = { ...userObj, ...user };
+        userlist.splice(userKey, 1, newUserObj);
 
-      this.setState({ userlist });
+        this.setState({ userlist });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   handleScroll = ({ nativeEvent }) => {
-    if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: true,
-      });
-    }
-    if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: false,
-      });
+    try {
+      if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: true,
+        });
+      }
+      if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: false,
+        });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   searchUsers = (val) => {
-    this.setState(
-      { textInputValue: val },
+    try {
+      this.setState(
+        { textInputValue: val },
 
-      () => {
-        if (this.timeout) {
-          clearTimeout(this.timeout);
-        }
+        () => {
+          if (this.timeout) {
+            clearTimeout(this.timeout);
+          }
 
-        this.timeout = setTimeout(() => {
-          this.AddMembersManager = new AddMembersManager(this.friendsOnly, val);
-          this.setState(
-            { userlist: [], membersToAdd: [], membersToRemove: [], filteredlist: [] },
-            () => this.getUsers()
-          );
-        }, 500);
-      }
-    );
+          this.timeout = setTimeout(() => {
+            this.AddMembersManager = new AddMembersManager(
+              this.friendsOnly,
+              val,
+            );
+            this.setState(
+              {
+                userlist: [],
+                membersToAdd: [],
+                membersToRemove: [],
+                filteredlist: [],
+              },
+              () => this.getUsers(),
+            );
+          }, 500);
+        },
+      );
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   getUsers = () => {
@@ -172,44 +200,52 @@ class CometChatAddGroupMemberList extends React.Component {
   };
 
   updateMembers = () => {
-    const group = this.context;
+    try {
+      const group = this.context;
 
-    const { guid } = this.props.item;
-    const membersList = [];
+      const { guid } = this.props.item;
+      const membersList = [];
 
-    this.state.membersToAdd.forEach((newmember) => {
-      // if a selected member is already part of the member list, don't add
-      const IndexFound = group.memberlist.findIndex((member) => member.uid === newmember.uid);
-      if (IndexFound === -1) {
-        const newMember = new CometChat.GroupMember(
-          newmember.uid,
-          CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT
+      this.state.membersToAdd.forEach((newmember) => {
+        // if a selected member is already part of the member list, don't add
+        const IndexFound = group.memberlist.findIndex(
+          (member) => member.uid === newmember.uid,
         );
-        membersList.push(newMember);
+        if (IndexFound === -1) {
+          const newMember = new CometChat.GroupMember(
+            newmember.uid,
+            CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT,
+          );
+          membersList.push(newMember);
 
-        newmember.type = 'add';
-      }
-    });
+          newmember.type = 'add';
+        }
+      });
 
-    if (membersList.length) {
-      const membersToAdd = [];
-      this.props.close();
-      CometChat.addMembersToGroup(guid, membersList, [])
-        .then((response) => {
-          if (Object.keys(response).length) {
-            for (const member in response) {
-              if (response[member] === 'success') {
-                const found = this.state.userlist.find((user) => user.uid === member);
-                found.scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
-                membersToAdd.push(found);
+      if (membersList.length) {
+        const membersToAdd = [];
+        this.props.close();
+        CometChat.addMembersToGroup(guid, membersList, [])
+          .then((response) => {
+            if (Object.keys(response).length) {
+              for (const member in response) {
+                if (response[member] === 'success') {
+                  const found = this.state.userlist.find(
+                    (user) => user.uid === member,
+                  );
+                  found.scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
+                  membersToAdd.push(found);
+                }
               }
+              this.props.actionGenerated('addGroupParticipants', membersToAdd);
             }
-            this.props.actionGenerated('addGroupParticipants', membersToAdd);
-          }
-        })
-        .catch(() => {
-          // console.log('addMembersToGroup failed with exception:', error);
-        });
+          })
+          .catch(() => {
+            // console.log('addMembersToGroup failed with exception:', error);
+          });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 

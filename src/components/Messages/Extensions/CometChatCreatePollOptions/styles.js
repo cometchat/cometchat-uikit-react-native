@@ -25,14 +25,13 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '70%', /// ////
+    width: '70%',
     alignSelf: 'center',
   },
   Inputbox: {
     width: '85%',
     borderColor: 'green',
-    fontSize: 16, /// //
-    // height: 32,
+    fontSize: 16, 
     alignSelf: 'center',
   },
   ContainerForDelete: {

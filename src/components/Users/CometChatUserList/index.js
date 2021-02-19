@@ -31,7 +31,7 @@ class CometChatUserList extends React.PureComponent {
     super(props);
 
     this.state = {
-      userlist: [],
+      userList: [],
       selectedUser: null,
       textInputValue: '',
       textInputFocused: false,
@@ -44,106 +44,107 @@ class CometChatUserList extends React.PureComponent {
   }
 
   componentDidMount() {
-    if (Object.prototype.hasOwnProperty.call(this.props, 'friendsOnly')) {
-      this.friendsOnly = this.props.friendsOnly;
-    }
-
-    // if (
-    //   Object.prototype.hasOwnProperty.call(this.props, 'widgetsettings') &&
-    //   this.props.widgetsettings &&
-    //   Object.prototype.hasOwnProperty.call(this.props.widgetsettings, 'sidebar') &&
-    //   Object.prototype.hasOwnProperty.call(this.props.widgetsettings.sidebar, 'user_listing')
-    // ) {
-    //   switch (this.props.widgetsettings.sidebar.user_listing) {
-    //     case 'friends':
-    //       this.friendsOnly = true;
-    //       break;
-    //     default:
-    //       break;
-    //   }
-    // }
-
-    
-
-    this.navListener = this.props.navigation.addListener('focus', () => {
-      this.decoratorMessage = 'Loading...';
-      if (this.UserListManager) {
-        this.UserListManager.removeListeners();
+    try {
+      if (Object.prototype.hasOwnProperty.call(this.props, 'friendsOnly')) {
+        this.friendsOnly = this.props.friendsOnly;
       }
-      this.setState({ userlist: [] });
-      this.UserListManager = new UserListManager(this.friendsOnly);
-      this.getUsers();
-      this.UserListManager.attachListeners(this.userUpdated);
-    });
+
+      this.navListener = this.props.navigation.addListener('focus', () => {
+        this.decoratorMessage = 'Loading...';
+        if (this.UserListManager) {
+          this.UserListManager.removeListeners();
+        }
+        this.setState({ userList: [] });
+        this.UserListManager = new UserListManager(this.friendsOnly);
+        this.getUsers();
+        this.UserListManager.attachListeners(this.userUpdated);
+      });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   componentDidUpdate(prevProps) {
-    if (this.state.textInputFocused) {
-      this.textInputRef.current.focus();
-    }
-    const previousItem = JSON.stringify(prevProps.item);
-    const currentItem = JSON.stringify(this.props.item);
+    try {
+      if (this.state.textInputFocused) {
+        this.textInputRef.current.focus();
+      }
+      const previousItem = JSON.stringify(prevProps.item);
+      const currentItem = JSON.stringify(this.props.item);
 
-    if (previousItem !== currentItem) {
-      if (Object.keys(this.props.item).length === 0) {
-        this.userListRef.scrollTop = 0;
-        this.setState({ selectedUser: {} });
-      } else {
-        const userlist = [...this.state.userlist];
+      if (previousItem !== currentItem) {
+        if (Object.keys(this.props.item).length === 0) {
+          this.userListRef.scrollTop = 0;
+          this.setState({ selectedUser: {} });
+        } else {
+          const userList = [...this.state.userList];
+
+          // search for user
+          const userKey = userList.findIndex(
+            (u) => u.uid === this.props.item.uid,
+          );
+          if (userKey > -1) {
+            const userObj = { ...userList[userKey] };
+            this.setState({ selectedUser: userObj });
+          }
+        }
+      }
+
+      // if user is blocked/unblocked, update userList in state
+      if (
+        prevProps.item &&
+        Object.keys(prevProps.item).length &&
+        prevProps.item.uid === this.props.item.uid &&
+        prevProps.item.blockedByMe !== this.props.item.blockedByMe
+      ) {
+        const userList = [...this.state.userList];
 
         // search for user
-        const userKey = userlist.findIndex(
+        const userKey = userList.findIndex(
           (u) => u.uid === this.props.item.uid,
         );
         if (userKey > -1) {
-          const userObj = { ...userlist[userKey] };
-          this.setState({ selectedUser: userObj });
+          const userObj = { ...userList[userKey] };
+          const newUserObj = {
+            ...userObj,
+            blockedByMe: this.props.item.blockedByMe,
+          };
+          userList.splice(userKey, 1, newUserObj);
+
+          this.setState({ userList });
         }
       }
-    }
-
-    // if user is blocked/unblocked, update userlist in state
-    if (
-      prevProps.item &&
-      Object.keys(prevProps.item).length &&
-      prevProps.item.uid === this.props.item.uid &&
-      prevProps.item.blockedByMe !== this.props.item.blockedByMe
-    ) {
-      const userlist = [...this.state.userlist];
-
-      // search for user
-      const userKey = userlist.findIndex((u) => u.uid === this.props.item.uid);
-      if (userKey > -1) {
-        const userObj = { ...userlist[userKey] };
-        const newUserObj = {
-          ...userObj,
-          blockedByMe: this.props.item.blockedByMe,
-        };
-        userlist.splice(userKey, 1, newUserObj);
-
-        this.setState({ userlist });
-      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
   componentWillUnmount() {
-    this.UserListManager.removeListeners();
-    this.UserListManager = null;
+    try {
+      this.UserListManager.removeListeners();
+      this.UserListManager = null;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   userUpdated = (user) => {
-    const userlist = [...this.state.userlist];
+    try {
+      const userList = [...this.state.userList];
 
-    // search for user
-    const userKey = userlist.findIndex((u) => u.uid === user.uid);
+      // search for user
+      const userKey = userList.findIndex((u) => u.uid === user.uid);
 
-    // if found in the list, update user object
-    if (userKey > -1) {
-      const userObj = { ...userlist[userKey] };
-      const newUserObj = { ...userObj, ...user };
-      userlist.splice(userKey, 1, newUserObj);
+      // if found in the list, update user object
+      if (userKey > -1) {
+        const userObj = { ...userList[userKey] };
+        const newUserObj = { ...userObj, ...user };
+        userList.splice(userKey, 1, newUserObj);
 
-      this.setState({ userlist });
+        this.setState({ userList });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -158,14 +159,6 @@ class CometChatUserList extends React.PureComponent {
     this.props.onItemClick(user, 'user');
   };
 
-  // handleMenuClose = () => {
-  //   if (!this.props.actionGenerated) {
-  //     return false;
-  //   }
-
-  //   this.props.actionGenerated('closeMenuClicked');
-  // };
-
   searchUsers = (val) => {
     this.setState(
       { textInputValue: val },
@@ -177,7 +170,7 @@ class CometChatUserList extends React.PureComponent {
 
         this.timeout = setTimeout(() => {
           this.UserListManager = new UserListManager(this.friendsOnly, val);
-          this.setState({ userlist: [] }, () => this.getUsers());
+          this.setState({ userList: [] }, () => this.getUsers());
         }, 500);
       },
     );
@@ -192,7 +185,7 @@ class CometChatUserList extends React.PureComponent {
             if (userList.length === 0) {
               this.decoratorMessage = 'No users found';
             }
-            this.setState({ userlist: [...this.state.userlist, ...userList] });
+            this.setState({ userList: [...this.state.userList, ...userList] });
           })
           .catch(() => {
             this.decoratorMessage = 'Error';
@@ -222,7 +215,7 @@ class CometChatUserList extends React.PureComponent {
         user={user}
         selectedUser={this.state.selectedUser}
         widgetsettings={this.props.widgetsettings}
-        clickeHandler={this.handleClick}
+        clickHandler={this.handleClick}
       />
     );
   };
@@ -319,7 +312,7 @@ class CometChatUserList extends React.PureComponent {
   };
 
   render() {
-    const userList = [...this.state.userlist];
+    const userList = [...this.state.userList];
     const userListWithHeaders = [];
     let headerIndices = [0];
     if (userList.length) {
@@ -341,17 +334,6 @@ class CometChatUserList extends React.PureComponent {
         }
       });
     }
-    // let closeBtn = (
-    //   <TouchableOpacity onPress={this.handleMenuClose} >
-    //     <Image source={navigateIcon} style={style.contactHeaderCloseStyle}></Image>
-    //   </TouchableOpacity>
-    // );
-    // if (
-    //   !Object.prototype.hasOwnProperty.call('enableCloseMenu') ||
-    //   (Object.prototype.hasOwnProperty.call('enableCloseMenu') && this.props.enableCloseMenu === 0)
-    // ) {
-    //   closeBtn = null;
-    // }
 
     return (
       <TouchableWithoutFeedback
@@ -362,19 +344,11 @@ class CometChatUserList extends React.PureComponent {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={style.contactWrapperStyle}>
           <View style={style.headerContainer}>
-            {/* <Text
-              style={{
-                fontSize: 18,
-                display: this.state.showSmallHeader ? 'flex' : 'none',
-              }}>
-              Users
-            </Text> */}
           </View>
           {this.listHeaderComponent()}
           <FlatList
             data={userListWithHeaders}
             renderItem={this.renderUserView}
-            // ListHeaderComponent={this.listHeaderComponent}
             ListEmptyComponent={this.listEmptyContainer}
             ItemSeparatorComponent={this.itemSeparatorComponent}
             stickyHeaderIndices={

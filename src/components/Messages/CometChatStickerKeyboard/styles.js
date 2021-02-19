@@ -11,8 +11,6 @@ export default StyleSheet.create({
     top: '35%',
   },
   stickerMsgTxtStyle: {
-    // margin: 0,
-    // height: 30,
     fontSize: 24,
     fontWeight: '600',
   },

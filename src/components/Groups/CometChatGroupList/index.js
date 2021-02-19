@@ -67,110 +67,123 @@ class CometChatGroupList extends React.Component {
   }
 
   componentDidMount() {
-    this.navListener = this.props.navigation.addListener('focus', () => {
-      this.decoratorMessage = 'Loading...';
-      if (this.GroupListManager) {
-        this.GroupListManager.removeListeners();
-      }
-      this.setState({ grouplist: [] });
-      this.GroupListManager = new GroupListManager();
-      this.getGroups(); /// /you are getting groups here.
-      this.GroupListManager.attachListeners(this.groupUpdated);
-    });
+    try {
+      this.navListener = this.props.navigation.addListener('focus', () => {
+        this.decoratorMessage = 'Loading...';
+        if (this.GroupListManager) {
+          this.GroupListManager.removeListeners();
+        }
+        this.setState({ grouplist: [] });
+        this.GroupListManager = new GroupListManager();
+        this.getGroups(); /// /you are getting groups here.
+        this.GroupListManager.attachListeners(this.groupUpdated);
+      });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.textInputFocused !== this.state.textInputFocused) {
-      this.textInputRef.current.focus();
-    }
+    try {
+      if (prevState.textInputFocused !== this.state.textInputFocused) {
+        this.textInputRef.current.focus();
+      }
 
-    const previousItem = JSON.stringify(prevProps.item);
-    const currentItem = JSON.stringify(this.props.item);
+      const previousItem = JSON.stringify(prevProps.item);
+      const currentItem = JSON.stringify(this.props.item);
 
-    // if different group is selected
-    if (previousItem !== currentItem) {
-      if (Object.keys(this.props.item).length === 0) {
-        // this.groupListRef.scrollTop = 0;
-        this.setState({ selectedGroup: {} });
-      } else {
-        const grouplist = [...this.state.grouplist];
+      // if different group is selected
+      if (previousItem !== currentItem) {
+        if (Object.keys(this.props.item).length === 0) {
+          this.setState({ selectedGroup: {} });
+        } else {
+          const grouplist = [...this.state.grouplist];
 
-        // search for user
-        const groupKey = grouplist.findIndex((g) => g.guid === this.props.item.guid);
+          // search for user
+          const groupKey = grouplist.findIndex(
+            (g) => g.guid === this.props.item.guid,
+          );
+          if (groupKey > -1) {
+            const groupObj = { ...grouplist[groupKey] };
+            this.setState({ selectedGroup: groupObj });
+          }
+        }
+      }
+
+      if (
+        prevProps.groupToLeave &&
+        prevProps.groupToLeave.guid !== this.props.groupToLeave.guid
+      ) {
+        const groups = [...this.state.grouplist];
+        const groupKey = groups.findIndex(
+          (member) => member.guid === this.props.groupToLeave.guid,
+        );
+
         if (groupKey > -1) {
-          const groupObj = { ...grouplist[groupKey] };
-          this.setState({ selectedGroup: groupObj });
+          const { groupToLeave } = this.props;
+          const groupObj = { ...groups[groupKey] };
+          const membersCount = parseInt(groupToLeave.membersCount) - 1;
+
+          const newgroupObj = { ...groupObj, membersCount, hasJoined: false };
+
+          groups.splice(groupKey, 1, newgroupObj);
+          this.setState({ grouplist: groups });
         }
       }
-    }
 
-    if (prevProps.groupToLeave && prevProps.groupToLeave.guid !== this.props.groupToLeave.guid) {
-      const groups = [...this.state.grouplist];
-      const groupKey = groups.findIndex((member) => member.guid === this.props.groupToLeave.guid);
-
-      if (groupKey > -1) {
-        const { groupToLeave } = this.props;
-        const groupObj = { ...groups[groupKey] };
-        const membersCount = parseInt(groupToLeave.membersCount) - 1;
-
-        const newgroupObj = { ...groupObj, membersCount, hasJoined: false };
-
-        groups.splice(groupKey, 1, newgroupObj);
-        this.setState({ grouplist: groups });
-      }
-    }
-
-    if (prevProps.groupToDelete && prevProps.groupToDelete.guid !== this.props.groupToDelete.guid) {
-      const groups = [...this.state.grouplist];
-      const groupKey = groups.findIndex((member) => member.guid === this.props.groupToDelete.guid);
-      if (groupKey > -1) {
-        groups.splice(groupKey, 1);
-        this.setState({ grouplist: groups });
-        if (groups.length === 0) {
-          this.decoratorMessage = 'No groups found';
+      if (
+        prevProps.groupToDelete &&
+        prevProps.groupToDelete.guid !== this.props.groupToDelete.guid
+      ) {
+        const groups = [...this.state.grouplist];
+        const groupKey = groups.findIndex(
+          (member) => member.guid === this.props.groupToDelete.guid,
+        );
+        if (groupKey > -1) {
+          groups.splice(groupKey, 1);
+          this.setState({ grouplist: groups });
+          if (groups.length === 0) {
+            this.decoratorMessage = 'No groups found';
+          }
         }
       }
-    }
 
-    if (
-      prevProps.groupToUpdate &&
-      (prevProps.groupToUpdate.guid !== this.props.groupToUpdate.guid ||
-        (prevProps.groupToUpdate.guid === this.props.groupToUpdate.guid &&
-          (prevProps.groupToUpdate.membersCount !== this.props.groupToUpdate.membersCount ||
-            prevProps.groupToUpdate.scope !== this.props.groupToUpdate.scope)))
-    ) {
-      const groups = [...this.state.grouplist];
-      const { groupToUpdate } = this.props;
+      if (
+        prevProps.groupToUpdate &&
+        (prevProps.groupToUpdate.guid !== this.props.groupToUpdate.guid ||
+          (prevProps.groupToUpdate.guid === this.props.groupToUpdate.guid &&
+            (prevProps.groupToUpdate.membersCount !==
+              this.props.groupToUpdate.membersCount ||
+              prevProps.groupToUpdate.scope !==
+                this.props.groupToUpdate.scope)))
+      ) {
+        const groups = [...this.state.grouplist];
+        const { groupToUpdate } = this.props;
 
-      const groupKey = groups.findIndex((group) => group.guid === groupToUpdate.guid);
-      if (groupKey > -1) {
-        const groupObj = groups[groupKey];
-        const newGroupObj = {
-          ...groupObj,
-          ...groupToUpdate,
-          scope: groupToUpdate.scope,
-          membersCount: groupToUpdate.membersCount,
-        };
+        const groupKey = groups.findIndex(
+          (group) => group.guid === groupToUpdate.guid,
+        );
+        if (groupKey > -1) {
+          const groupObj = groups[groupKey];
+          const newGroupObj = {
+            ...groupObj,
+            ...groupToUpdate,
+            scope: groupToUpdate.scope,
+            membersCount: groupToUpdate.membersCount,
+          };
 
-        groups.splice(groupKey, 1, newGroupObj);
-        this.setState({ grouplist: groups });
+          groups.splice(groupKey, 1, newGroupObj);
+          this.setState({ grouplist: groups });
+        }
       }
+    } catch (error) {
+      console.log(error);
     }
   }
 
   componentWillUnmount() {
     this.GroupListManager = null;
   }
-
-  setAvatar = (group) => {
-    if (Object.prototype.hasOwnProperty.call(group, 'icon') === false) {
-      // finction for adding image.
-      // const guid = group.guid;
-      // const char = group.name.charAt(0).toUpperCase();
-      // for dummy.                   ////dummy /////svg avatar here.
-    }
-    return group;
-  };
 
   groupUpdated = (key, message, group, options) => {
     switch (key) {
@@ -194,110 +207,122 @@ class CometChatGroupList extends React.Component {
   };
 
   updateMemberAdded = (group, options) => {
-    const grouplist = [...this.state.grouplist];
+    try {
+      const grouplist = [...this.state.grouplist];
 
-    // search for group
-    const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
+      // search for group
+      const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
 
-    if (groupKey > -1) {
-      const groupObj = { ...grouplist[groupKey] };
+      if (groupKey > -1) {
+        const groupObj = { ...grouplist[groupKey] };
 
-      const membersCount = parseInt(group.membersCount);
+        const membersCount = parseInt(group.membersCount);
 
-      let scope = Object.prototype.hasOwnProperty.call(group, 'scope') ? group.scope : '';
-      let hasJoined = Object.prototype.hasOwnProperty.call(group, 'hasJoined')
-        ? group.hasJoined
-        : false;
+        let scope = Object.prototype.hasOwnProperty.call(group, 'scope')
+          ? group.scope
+          : '';
+        let hasJoined = Object.prototype.hasOwnProperty.call(group, 'hasJoined')
+          ? group.hasJoined
+          : false;
 
-      if (options && this.loggedInUser.uid === options.user.uid) {
-        scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
-        hasJoined = true;
+        if (options && this.loggedInUser.uid === options.user.uid) {
+          scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
+          hasJoined = true;
+        }
+
+        const newgroupObj = {
+          ...groupObj,
+          membersCount,
+          scope,
+          hasJoined,
+        };
+
+        grouplist.splice(groupKey, 1, newgroupObj);
+        this.setState({ grouplist });
+      } else {
+        const groupObj = { ...group };
+
+        let scope = Object.prototype.hasOwnProperty.call(groupObj, 'scope')
+          ? groupObj.scope
+          : {};
+        let hasJoined = Object.prototype.hasOwnProperty.call(
+          groupObj,
+          'hasJoined',
+        )
+          ? groupObj.hasJoined
+          : false;
+        const membersCount = parseInt(groupObj.membersCount);
+        if (options && this.loggedInUser.uid === options.user.uid) {
+          scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
+          hasJoined = true;
+        }
+
+        const newgroupObj = {
+          ...groupObj,
+          membersCount,
+          scope,
+          hasJoined,
+        };
+
+        const groupList = [newgroupObj, ...this.state.grouplist];
+        this.setState({ grouplist: groupList });
       }
-
-      const newgroupObj = {
-        ...groupObj,
-        membersCount,
-        scope,
-        hasJoined,
-      };
-
-      grouplist.splice(groupKey, 1, newgroupObj);
-      this.setState({ grouplist });
-    } else {
-      const groupObj = { ...group };
-
-      let scope = Object.prototype.hasOwnProperty.call(groupObj, 'scope') ? groupObj.scope : {};
-      let hasJoined = Object.prototype.hasOwnProperty.call(groupObj, 'hasJoined')
-        ? groupObj.hasJoined
-        : false;
-      const membersCount = parseInt(groupObj.membersCount);
-      this.setAvatar(groupObj);
-      if (options && this.loggedInUser.uid === options.user.uid) {
-        scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
-        hasJoined = true;
-      }
-
-      const newgroupObj = {
-        ...groupObj,
-        membersCount,
-        scope,
-        hasJoined,
-      };
-
-      const groupList = [newgroupObj, ...this.state.grouplist];
-      this.setState({ grouplist: groupList });
+    } catch (error) {
+      console.log(error);
     }
   };
 
   updateMemberJoined = (group, options) => {
-    const grouplist = [...this.state.grouplist];
+    try {
+      const grouplist = [...this.state.grouplist];
 
-    // search for group
-    const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
+      // search for group
+      const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
 
-    if (groupKey > -1) {
-      const groupObj = { ...grouplist[groupKey] };
+      if (groupKey > -1) {
+        const groupObj = { ...grouplist[groupKey] };
 
-      let { scope } = groupObj;
-      const membersCount = parseInt(group.membersCount);
+        let { scope } = groupObj;
+        const membersCount = parseInt(group.membersCount);
 
-      if (options && this.loggedInUser.uid === options.user.uid) {
-        scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
-      }
+        if (options && this.loggedInUser.uid === options.user.uid) {
+          scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
+        }
 
-      const newgroupObj = { ...groupObj, membersCount, scope };
-
-      grouplist.splice(groupKey, 1, newgroupObj);
-      this.setState({ grouplist });
-    }
-  };
-
-  updateMemberChanged = (group, options) => {
-    const grouplist = [...this.state.grouplist];
-
-    // search for group
-    const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
-
-    if (groupKey > -1) {
-      const groupObj = { ...grouplist[groupKey] };
-      if (options && this.loggedInUser.uid === options.user.uid) {
-        const newgroupObj = { ...groupObj, scope: options.scope };
+        const newgroupObj = { ...groupObj, membersCount, scope };
 
         grouplist.splice(groupKey, 1, newgroupObj);
         this.setState({ grouplist });
       }
+    } catch (error) {
+      console.log(error);
     }
   };
 
-  // handleScroll = (e) => {
-  //   const bottom =
-  //     Math.round(e.currentTarget.scrollHeight - e.currentTarget.scrollTop) === Math.round(e.currentTarget.clientHeight);
-  //   if (bottom) this.getGroups();
-  // }
+  updateMemberChanged = (group, options) => {
+    try {
+      const grouplist = [...this.state.grouplist];
+
+      // search for group
+      const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
+
+      if (groupKey > -1) {
+        const groupObj = { ...grouplist[groupKey] };
+        if (options && this.loggedInUser.uid === options.user.uid) {
+          const newgroupObj = { ...groupObj, scope: options.scope };
+
+          grouplist.splice(groupKey, 1, newgroupObj);
+          this.setState({ grouplist });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   joinGroup = (passcode) => {
     if (passcode !== null) {
-      /// coded here   ************
+      // coded here   ************
       CometChat.joinGroup(this.state.guid, this.state.groupType, passcode)
         .then((response) => {
           const groups = [...this.state.grouplist];
@@ -322,7 +347,7 @@ class CometChatGroupList extends React.Component {
   };
 
   handleClick = (group) => {
-    /// //////////////////handleclick ehereeee
+    //handle click here
     if (!this.props.onItemClick) return;
     if (group.hasJoined === false) {
       if (
@@ -339,9 +364,7 @@ class CometChatGroupList extends React.Component {
         return false;
       }
 
-      // let password = null;
       if (group.type === CometChat.GROUP_TYPE.PASSWORD) {
-        // password = prompt('Enter your password');
         this.setState({ showPasswordScreen: true, guid: group.guid, groupType: group.type });
       }
       if (group.type === CometChat.GROUP_TYPE.PUBLIC) {
@@ -373,16 +396,9 @@ class CometChatGroupList extends React.Component {
       this.props.onItemClick(group, 'group');
     }
   };
-
-  handleMenuClose = () => {
-    if (!this.props.actionGenerated) {
-      return false;
-    }
-    this.props.actionGenerated('closeMenuClicked');
-  };
-
+  
   searchGroup = (e) => {
-    /// //search grouppppp here
+    //search group here
     this.setState(
       {
         textInputValue: e,
@@ -433,8 +449,6 @@ class CometChatGroupList extends React.Component {
             if (groupList.length === 0) {
               this.decoratorMessage = 'No groups found';
             }
-
-            groupList.map((group) => (group = this.setAvatar(group))); /// ////setavatar in get groups here
             this.setState({
               grouplist: [...this.state.grouplist, ...groupList],
             });
@@ -455,34 +469,37 @@ class CometChatGroupList extends React.Component {
   };
 
   updateMemberRemoved = (group, options) => {
-    const grouplist = [...this.state.grouplist];
+    try {
+      const grouplist = [...this.state.grouplist];
 
-    // search for group
-    const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
+      // search for group
+      const groupKey = grouplist.findIndex((g) => g.guid === group.guid);
 
-    if (groupKey > -1) {
-      if (options && this.loggedInUser.uid === options.user.uid) {
-        const groupObj = { ...grouplist[groupKey] };
+      if (groupKey > -1) {
+        if (options && this.loggedInUser.uid === options.user.uid) {
+          const groupObj = { ...grouplist[groupKey] };
 
-        const newgroupObj = { ...groupObj, ...group };
+          const newgroupObj = { ...groupObj, ...group };
 
-        grouplist.splice(groupKey, 1, newgroupObj);
-        this.setState({ grouplist });
-      } else {
-        const groupObj = { ...grouplist[groupKey] };
-        const membersCount = parseInt(group.membersCount);
+          grouplist.splice(groupKey, 1, newgroupObj);
+          this.setState({ grouplist });
+        } else {
+          const groupObj = { ...grouplist[groupKey] };
+          const membersCount = parseInt(group.membersCount);
 
-        const newgroupObj = { ...groupObj, membersCount };
+          const newgroupObj = { ...groupObj, membersCount };
 
-        grouplist.splice(groupKey, 1, newgroupObj);
-        this.setState({ grouplist });
+          grouplist.splice(groupKey, 1, newgroupObj);
+          this.setState({ grouplist });
+        }
       }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   createGroupActionHandler = (action, group) => {
     if (action === 'groupCreated') {
-      this.setAvatar(group);
       const groupList = [group, ...this.state.grouplist];
 
       this.handleClick(group);
@@ -491,7 +508,7 @@ class CometChatGroupList extends React.Component {
   };
 
   listEmptyContainer = () => {
-    /// for loading purposes....
+    // for loading purposes....
     return (
       <View style={styles.contactMsgStyle}> 
         <Text
@@ -524,15 +541,19 @@ class CometChatGroupList extends React.Component {
   };
 
   handleScroll = ({ nativeEvent }) => {
-    if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: true,
-      });
-    }
-    if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: false,
-      });
+    try {
+      if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: true,
+        });
+      }
+      if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: false,
+        });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -555,7 +576,6 @@ class CometChatGroupList extends React.Component {
                 backgroundColor: `${this.theme.backgroundColor.grey}`,
               },
             ]}>
-            {/* <Image source={searchIcon} style={{ height: 14, width: 14 }} /> */}
             <Icon name="search" size={15} color={this.theme.color.textInputPlaceholder} />
             <TextInput
               ref={this.textInputRef}
@@ -723,12 +743,6 @@ class CometChatGroupList extends React.Component {
     ) {
       this.creategroup = null;
     }
-
-    // let closeBtn = (
-    // <TouchableOpacity style={styles.groupHeaderCloseStyle} onPress={this.handleMenuClose}><Text>navigateIcon</Text></TouchableOpacity>);
-    // if (!Object.prototype.hasOwnProperty.call(this.props,"enableCloseMenu") || (Object.prototype.hasOwnProperty.call(this.props,"enableCloseMenu") && this.props.enableCloseMenu === 0)) {
-    //   closeBtn = null;
-    // }
 
     return (
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

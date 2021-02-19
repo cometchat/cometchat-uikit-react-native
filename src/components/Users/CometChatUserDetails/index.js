@@ -54,7 +54,7 @@ export default class CometChatUserDetails extends React.Component {
       </View>
     );
 
-    let sharedmediaView = (
+    let sharedMediaView = (
       <CometChatSharedMedia
         theme={this.props.theme}
         containerHeight={50}
@@ -82,7 +82,7 @@ export default class CometChatUserDetails extends React.Component {
         Object.prototype.hasOwnProperty.call(this.props.widgetsettings.main, 'view_shared_media') &&
         this.props.widgetsettings.main.view_shared_media === false
       ) {
-        sharedmediaView = null;
+        sharedMediaView = null;
       }
     }
 
@@ -119,7 +119,7 @@ export default class CometChatUserDetails extends React.Component {
                   </View>
                   <View style={{ padding: 16, flex: 1, flexGrow: 1 }}>
                     {blockUserView}
-                    {sharedmediaView}
+                    {sharedMediaView}
                   </View>
                 </View>
               );

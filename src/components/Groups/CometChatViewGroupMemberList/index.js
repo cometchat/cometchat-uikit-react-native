@@ -46,59 +46,78 @@ export default class CometChatViewGroupMemberList extends React.Component {
   };
 
   banMember = (memberToBan) => {
-    const { guid } = this.props.item;
-    CometChat.banGroupMember(guid, memberToBan.uid)
-      .then((response) => {
-        if (response) {
-          // console.log('banGroupMember success with response: ', response);
-          this.props.actionGenerated('banGroupMembers', memberToBan);
-        }
-      })
-      .catch(() => {
-        // console.log('banGroupMember failed with error: ', error);
-      });
+    try {
+      const { guid } = this.props.item;
+      CometChat.banGroupMember(guid, memberToBan.uid)
+        .then((response) => {
+          if (response) {
+            // console.log('banGroupMember success with response: ', response);
+            this.props.actionGenerated('banGroupMembers', memberToBan);
+          }
+        })
+        .catch(() => {
+          // console.log('banGroupMember failed with error: ', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   kickMember = (memberToKick) => {
-    const { guid } = this.props.item;
-    CometChat.kickGroupMember(guid, memberToKick.uid)
-      .then((response) => {
-        if (response) {
-          // console.log('kickGroupMember success with response: ', response);
-          this.props.actionGenerated('removeGroupParticipants', memberToKick);
-        }
-      })
-      .catch(() => {
-        // console.log('kickGroupMember failed with error: ', error);
-      });
+    try {
+      const { guid } = this.props.item;
+      CometChat.kickGroupMember(guid, memberToKick.uid)
+        .then((response) => {
+          if (response) {
+            // console.log('kickGroupMember success with response: ', response);
+            this.props.actionGenerated('removeGroupParticipants', memberToKick);
+          }
+        })
+        .catch(() => {
+          // console.log('kickGroupMember failed with error: ', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   changeScope = (member, scope) => {
-    const { guid } = this.props.item;
+    try {
+      const { guid } = this.props.item;
 
-    CometChat.updateGroupMemberScope(guid, member.uid, scope)
-      .then((response) => {
-        if (response) {
-          // console.log('updateGroupMemberScope success with response: ', response);
-          const updatedMember = { ...member, scope };
-          this.props.actionGenerated('updateGroupParticipants', updatedMember);
-        }
-      })
-      .catch(() => {
-        // console.log('updateGroupMemberScope failed with error: ', error);
-      });
+      CometChat.updateGroupMemberScope(guid, member.uid, scope)
+        .then((response) => {
+          if (response) {
+            // console.log('updateGroupMemberScope success with response: ', response);
+            const updatedMember = { ...member, scope };
+            this.props.actionGenerated(
+              'updateGroupParticipants',
+              updatedMember,
+            );
+          }
+        })
+        .catch(() => {
+          // console.log('updateGroupMemberScope failed with error: ', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   handleScroll = ({ nativeEvent }) => {
-    if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: true,
-      });
-    }
-    if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: false,
-      });
+    try {
+      if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: true,
+        });
+      }
+      if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: false,
+        });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -168,10 +187,8 @@ export default class CometChatViewGroupMemberList extends React.Component {
                     <View style={style.headerContainer}>
                       <View
                         style={{
-                          // width: Dimensions.get('window').width - 60,
                           justifyContent: 'center',
                           alignItems: 'center',
-                          // paddingLeft: 60,
                         }}>
                         <Text style={style.contactHeaderTitleStyle}>
                           Group Members

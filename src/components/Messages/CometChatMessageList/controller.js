@@ -21,7 +21,6 @@ export class MessageListManager {
     enums.CATEGORY_CALL,
   ];
 
-  // categories = [enums.CATEGORY_CUSTOM];
   types = [
     enums.MESSAGE_TYPE_TEXT,
     enums.MESSAGE_TYPE_IMAGE,
@@ -34,7 +33,6 @@ export class MessageListManager {
     enums.CALL_TYPE_AUDIO,
     enums.CALL_TYPE_VIDEO,
   ];
-  // types = [];
 
   msgListenerId = `message_${new Date().getTime()}`;
 
@@ -52,7 +50,6 @@ export class MessageListManager {
     const types = messageFilterManager.getTypes(widgetSettings);
 
     if (type === 'user') {
-      //   console.log('in manager', type);
       if (this.parentMessageId) {
         this.messageRequest = new CometChat.MessagesRequestBuilder()
           .setUID(item.uid)

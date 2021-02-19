@@ -145,9 +145,6 @@ class CometChatMessageThread extends React.PureComponent {
 
       case 'messageComposed':
         {
-          // let replyCount = this.state.replyCount;
-          // this.setState({replyCount: ++replyCount});
-
           const replyCount = Object.prototype.hasOwnProperty.call(
             this.state.parentMessage,
             'replyCount',
@@ -302,17 +299,17 @@ class CometChatMessageThread extends React.PureComponent {
   // messages are deleted
   removeMessages = (messages) => {
     const deletedMessage = messages[0];
-    const messagelist = [...this.state.messageList];
+    const messageList = [...this.state.messageList];
 
-    const messageKey = messagelist.findIndex(
+    const messageKey = messageList.findIndex(
       (message) => message.id === deletedMessage.id,
     );
     if (messageKey > -1) {
-      const messageObj = { ...messagelist[messageKey] };
+      const messageObj = { ...messageList[messageKey] };
       const newMessageObj = { ...messageObj, ...deletedMessage };
 
-      messagelist.splice(messageKey, 1, newMessageObj);
-      this.setState({ messageList: messagelist, scrollToBottom: false });
+      messageList.splice(messageKey, 1, newMessageObj);
+      this.setState({ messageList: messageList, scrollToBottom: false });
     }
   };
 
@@ -503,7 +500,7 @@ class CometChatMessageThread extends React.PureComponent {
       />
     );
     const parentMessage = this.getMessageComponent(this.state.parentMessage);
-    let seperator = <View style={styles.messageSeparatorStyle} />;
+    let separator = <View style={styles.messageSeparatorStyle} />;
     if (
       Object.prototype.hasOwnProperty.call(
         this.state.parentMessage,
@@ -514,7 +511,7 @@ class CometChatMessageThread extends React.PureComponent {
       const replyText =
         replyCount === 1 ? `${replyCount} reply` : `${replyCount} replies`;
 
-      seperator = (
+      separator = (
         <View style={styles.messageSeparatorStyle}>
           <Text style={[styles.messageReplyStyle]}>{replyText}</Text>
           <View
@@ -615,7 +612,7 @@ class CometChatMessageThread extends React.PureComponent {
                               .primary,
                           },
                         ]}>
-                        {seperator}
+                        {separator}
                       </View>
                     </>
                   )}

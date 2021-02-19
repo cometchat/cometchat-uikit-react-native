@@ -67,30 +67,6 @@ export class CometChatManager {
     return promise;
   };
 
-  static audioCall = (receiverID, receiverType, callType) => {
-    const promise = new Promise((resolve, reject) => {
-      const call = new CometChat.Call(receiverID, callType, receiverType);
-      CometChat.initiateCall(call).then(
-        (initiatedCall) => resolve(initiatedCall),
-        (error) => reject(error)
-      );
-    });
-
-    return promise;
-  };
-
-  static videoCall = (receiverID, receiverType, callType) => {
-    const promise = new Promise((resolve, reject) => {
-      const call = new CometChat.Call(receiverID, callType, receiverType);
-      CometChat.initiateCall(call).then(
-        (initiatedCall) => resolve(initiatedCall),
-        (error) => reject(error)
-      );
-    });
-
-    return promise;
-  };
-
   static acceptCall = (sessionId) => {
     const promise = new Promise((resolve, reject) => {
       CometChat.acceptCall(sessionId).then(

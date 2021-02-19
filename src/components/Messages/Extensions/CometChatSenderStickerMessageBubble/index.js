@@ -19,9 +19,6 @@ export default (props) => {
     stickerData = message.data.customData;
 
     if (Object.prototype.hasOwnProperty.call(stickerData, 'sticker_url')) {
-      // const stickerName = Object.prototype.hasOwnProperty.call(stickerData, 'sticker_name')
-      //   ? stickerData.sticker_name
-      //   : 'Sticker';
       stickerImg = (
         <FastImage source={{ uri: stickerData.sticker_url }} style={style.messageImgWrapper} />
       );

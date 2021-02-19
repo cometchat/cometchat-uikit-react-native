@@ -32,19 +32,6 @@ export default (props) => {
     senderAvatar = { uri: message.sender.avatar };
   }
   const getMessageText = () => {
-    // let showVariation = true;
-    // if (
-    //   Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
-    //   props.widgetsettings &&
-    //   Object.prototype.hasOwnProperty.call(props.widgetsettings, 'main') &&
-    //   Object.prototype.hasOwnProperty.call(
-    //     props.widgetsettings.main,
-    //     'show_emojis_in_larger_size',
-    //   ) &&
-    //   props.widgetsettings.main.show_emojis_in_larger_size === false
-    // ) {
-    //   showVariation = false;
-    // }
     return (
       <Autolink
         text={message.text}

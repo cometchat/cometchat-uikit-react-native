@@ -26,7 +26,6 @@ export default class ReactionDetails extends React.Component {
   );
 
   renderSectionHeader = ({ section: { title } }) => {
-    // const reactionName = title.replaceAll(':', '');
       const reactionName = _.trim(title, ':');
 
     return (

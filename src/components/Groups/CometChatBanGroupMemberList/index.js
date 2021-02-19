@@ -49,15 +49,19 @@ export default class CometChatBanGroupMemberList extends React.Component {
   };
 
   handleScroll = ({ nativeEvent }) => {
-    if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: true,
-      });
-    }
-    if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
-      this.setState({
-        showSmallHeader: false,
-      });
+    try {
+      if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: true,
+        });
+      }
+      if (nativeEvent.contentOffset.y <= 35 && this.state.showSmallHeader) {
+        this.setState({
+          showSmallHeader: false,
+        });
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
