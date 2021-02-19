@@ -49,7 +49,6 @@ export default (props) => {
         let width = '0%';
         if (total) {
           const fraction = vote / total;
-          // width = fraction.toLocaleString('en', { style: 'percent' });
           width = String(fraction * 100) + '%';
         }
         return (

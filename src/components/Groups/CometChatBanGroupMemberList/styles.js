@@ -15,7 +15,6 @@ export default StyleSheet.create({
   },
   contactHeaderStyle: {
     paddingBottom: 14,
-    // paddingHorizontal: 10,
     position: 'relative',
     paddingHorizontal: 25,
   },

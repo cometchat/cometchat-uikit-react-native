@@ -26,9 +26,6 @@ export default class MessageFilter {
       [enums.CALL_TYPE_AUDIO]: enums.CALL_TYPE_AUDIO,
       [enums.CALL_TYPE_VIDEO]: enums.CALL_TYPE_VIDEO,
     };
-
-    // console.log('this.categories ', this.categories);
-    // console.log('this.types', this.types);
   }
 
   getCategories = (widgetSettings) => {
@@ -39,8 +36,6 @@ export default class MessageFilter {
     if (validateWidgetSettings(widgetSettings, 'show_call_notifications') === false) {
       delete this.categories[enums.CATEGORY_CALL];
     }
-
-    // console.log("this.categories ", this.categories);
 
     return Object.keys(this.categories);
   };
@@ -54,8 +49,6 @@ export default class MessageFilter {
       delete this.types[enums.CALL_TYPE_AUDIO];
       delete this.types[enums.CALL_TYPE_VIDEO];
     }
-
-    // console.log("this.types", this.types);
 
     return Object.keys(this.types);
   };

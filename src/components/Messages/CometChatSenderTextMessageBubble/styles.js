@@ -21,7 +21,6 @@ export default StyleSheet.create({
   },
   messagePreviewContainerStyle: {
     borderRadius: 12,
-    // overflow:"hidden",
     flex: 1,
   },
   previewImageStyle: {

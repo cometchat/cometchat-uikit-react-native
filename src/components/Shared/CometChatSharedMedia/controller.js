@@ -7,20 +7,20 @@ export class SharedMediaManager {
 
   mediaMessageRequest = null;
 
-  constructor(item, type, messagetype) {
+  constructor(item, type, messageType) {
     if (type === 'user') {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
         .setUID(item.uid)
         .setLimit(10)
         .setCategory('message')
-        .setType(messagetype)
+        .setType(messageType)
         .build();
     } else {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
         .setGUID(item.guid)
         .setLimit(10)
         .setCategory('message')
-        .setType(messagetype)
+        .setType(messageType)
         .build();
     }
   }

@@ -38,9 +38,6 @@ export default (props) => {
 
   // scopechangeHandler for setScope.
 
-  /* toggle tooltip code to be added */
-
-  // let editClassName = false;
   let { name } = props.member;
   let receivedScope = (
     <Text style={{ flex: 1, paddingLeft: 15 * widthRatio }}>{roles[props.member.scope]}</Text>
@@ -82,7 +79,6 @@ export default (props) => {
         <View style={{ width: 30, alignItems: 'center', justifyContent: 'center' }}>
           {doneIcon}
         </View>
-        {/* {clearIcon} */}
       </View>
     );
 
@@ -117,7 +113,6 @@ export default (props) => {
           <View style={{ width: 30, alignItems: 'center', justifyContent: 'center' }}>
             {doneIcon}
           </View>
-          {/* {clearIcon} */}
         </View>
       );
     }
@@ -183,7 +178,6 @@ export default (props) => {
   // if the loggedin user is participant, don't show change scope, ban, kick group members
   if (props.item.scope === CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT) {
     editAccess = null;
-    // editClassName = 'true';
   } else {
     editAccess = (
       <View
@@ -209,7 +203,6 @@ export default (props) => {
         </TouchableOpacity>
       </View>
     );
-    // Object.prototype.hasOwnProperty.call(props, 'widgetsettings')
     if (
       Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
       props.widgetsettings &&

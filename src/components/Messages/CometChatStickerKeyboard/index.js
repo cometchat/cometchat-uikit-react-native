@@ -13,8 +13,8 @@ class CometChatStickerKeyboard extends React.PureComponent {
     this.decoratorMessage = 'Loading...';
     this.ViewTheme = { ...theme, ...this.props.theme };
     this.state = {
-      stickerset: {},
-      activestickerlist: [],
+      stickerSet: {},
+      activeStickerList: [],
     };
   }
 
@@ -70,15 +70,15 @@ class CometChatStickerKeyboard extends React.PureComponent {
         }
 
         this.setState({
-          stickerset: stickerSet,
-          activestickerlist: activeStickerList,
+          stickerSet: stickerSet,
+          activeStickerList: activeStickerList,
         });
       })
       .catch(() => {
-        // Some error occured
+        // Some error occurred
         this.decoratorMessage = 'No stickers found';
 
-        this.setState({ activestickerlist: [], stickerset: {} });
+        this.setState({ activeStickerList: [], stickerSet: {} });
       });
   };
 
@@ -87,18 +87,18 @@ class CometChatStickerKeyboard extends React.PureComponent {
   };
 
   onStickerSetClicked = (sectionItem) => {
-    this.setState({ activestickerlist: [] }, () => {
-      const stickerSet = { ...this.state.stickerset };
+    this.setState({ activeStickerList: [] }, () => {
+      const stickerSet = { ...this.state.stickerSet };
       const activeStickerList = stickerSet[sectionItem];
       this.setState({
-        activestickerlist: activeStickerList,
+        activeStickerList: activeStickerList,
       });
     });
   };
 
   render() {
     let messageContainer = null;
-    if (this.state.activestickerlist.length === 0) {
+    if (this.state.activeStickerList.length === 0) {
       messageContainer = (
         <View style={style.stickerMsgStyle}>
           <Text style={[style.stickerMsgTxtStyle, { color: this.ViewTheme.color.secondary }]}>
@@ -109,9 +109,9 @@ class CometChatStickerKeyboard extends React.PureComponent {
     }
 
     let stickers = null;
-    if (Object.keys(this.state.stickerset).length) {
-      const sectionItems = Object.keys(this.state.stickerset).map((sectionItem, key) => {
-        const stickerSetThumbnail = this.state.stickerset[sectionItem][0].stickerUrl;
+    if (Object.keys(this.state.stickerSet).length) {
+      const sectionItems = Object.keys(this.state.stickerSet).map((sectionItem, key) => {
+        const stickerSetThumbnail = this.state.stickerSet[sectionItem][0].stickerUrl;
         return (
           <TouchableOpacity
             key={key}
@@ -127,8 +127,8 @@ class CometChatStickerKeyboard extends React.PureComponent {
       });
 
       let activeStickerList = [];
-      if (this.state.activestickerlist.length) {
-        const stickerList = [...this.state.activestickerlist];
+      if (this.state.activeStickerList.length) {
+        const stickerList = [...this.state.activeStickerList];
         activeStickerList = stickerList.map((stickerItem, key) => {
           return (
             <TouchableOpacity

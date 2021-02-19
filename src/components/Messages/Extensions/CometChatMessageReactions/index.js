@@ -22,7 +22,6 @@ class CometChatMessageReactions extends Component {
     super(props);
     this.state = {
       message: props.message,
-      // reaction: props.reaction,
       pickerVisible: false,
       reactionsDetailContainer: false,
     };
@@ -131,7 +130,6 @@ class CometChatMessageReactions extends Component {
         messageReactions.unshift(addReactionEmoji);
       }
     }
-    // _reactNative.Dimensions.get('window').width - 30
     return (
       // eslint-disable-next-line react/jsx-fragments
       <>

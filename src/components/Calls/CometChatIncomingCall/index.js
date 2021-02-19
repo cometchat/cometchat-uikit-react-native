@@ -31,6 +31,7 @@ export default (props) => {
   const [incomingCall, setIncomingCall] = useState(null);
 
   const playIncomingAlert = () => {
+    try{
     if (
       Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
       props.widgetsettings &&
@@ -51,109 +52,140 @@ export default (props) => {
     incomingAlert.setCurrentTime(0);
     incomingAlert.setNumberOfLoops(-1);
     incomingAlert.play();
+  }catch(error){
+    console.log(error)
+  }
   };
 
   const pauseIncomingAlert = () => {
-    if (
-      Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
-      props.widgetsettings &&
-      Object.prototype.hasOwnProperty.call(props.widgetsettings, 'main') &&
-      (Object.prototype.hasOwnProperty.call(
-        props.widgetsettings.main,
-        'enable_sound_for_calls',
-      ) === false ||
+    try {
+      if (
+        Object.prototype.hasOwnProperty.call(props, 'widgetsettings') &&
+        props.widgetsettings &&
+        Object.prototype.hasOwnProperty.call(props.widgetsettings, 'main') &&
         (Object.prototype.hasOwnProperty.call(
           props.widgetsettings.main,
           'enable_sound_for_calls',
-        ) &&
-          props.widgetsettings.main.enable_sound_for_calls === false))
-    ) {
-      return false;
-    }
+        ) === false ||
+          (Object.prototype.hasOwnProperty.call(
+            props.widgetsettings.main,
+            'enable_sound_for_calls',
+          ) &&
+            props.widgetsettings.main.enable_sound_for_calls === false))
+      ) {
+        return false;
+      }
 
-    incomingAlert.pause();
+      incomingAlert.pause();
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const markMessageAsRead = (message) => {
-    const { receiverType } = message;
-    const receiverId =
-      receiverType === 'user' ? message.sender.uid : message.receiverId;
+    try {
+      const { receiverType } = message;
+      const receiverId =
+        receiverType === 'user' ? message.sender.uid : message.receiverId;
 
-    if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
-      CometChat.markAsRead(message.id, receiverId, receiverType);
+      if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
+        CometChat.markAsRead(message.id, receiverId, receiverType);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   const incomingCallReceived = (call) => {
-    if (
-      props.loggedInUser &&
-      call.callInitiator.uid === props.loggedInUser.uid
-    ) {
-      return;
-    }
+    try {
+      if (
+        props.loggedInUser &&
+        call.callInitiator.uid === props.loggedInUser.uid
+      ) {
+        return;
+      }
 
-    const activeCall = CometChat.getActiveCall();
-    // if there is another call in progress
-    if (activeCall) {
-      CometChat.rejectCall(call.sessionId, CometChat.CALL_STATUS.BUSY)
-        .then((rejectedCall) => {
-          // mark as read incoming call message
-          markMessageAsRead(call);
-          props.actionGenerated('rejectedIncomingCall', call, rejectedCall);
-        })
-        .catch((error) => {
-          props.actionGenerated('callError', error);
-        });
-    } else if (incomingCall === null) {
-      playIncomingAlert();
-      setIncomingCall(call);
+      const activeCall = CometChat.getActiveCall();
+      // if there is another call in progress
+      if (activeCall) {
+        CometChat.rejectCall(call.sessionId, CometChat.CALL_STATUS.BUSY)
+          .then((rejectedCall) => {
+            // mark as read incoming call message
+            markMessageAsRead(call);
+            props.actionGenerated('rejectedIncomingCall', call, rejectedCall);
+          })
+          .catch((error) => {
+            props.actionGenerated('callError', error);
+          });
+      } else if (incomingCall === null) {
+        playIncomingAlert();
+        setIncomingCall(call);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   const incomingCallCancelled = () => {
-    pauseIncomingAlert();
-    setIncomingCall(null);
+    try {
+      pauseIncomingAlert();
+      setIncomingCall(null);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const callScreenUpdated = (key, call) => {
-    switch (key) {
-      case enums.INCOMING_CALL_RECEIVED: // occurs at the callee end
-        incomingCallReceived(call);
-        break;
-      case enums.INCOMING_CALL_CANCELLED: // occurs(call dismissed) at the callee end, caller cancels the call
-        incomingCallCancelled(call);
-        break;
-      default:
-        break;
+    try {
+      switch (key) {
+        case enums.INCOMING_CALL_RECEIVED: // occurs at the callee end
+          incomingCallReceived(call);
+          break;
+        case enums.INCOMING_CALL_CANCELLED: // occurs(call dismissed) at the callee end, caller cancels the call
+          incomingCallCancelled(call);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   const rejectCall = () => {
-    pauseIncomingAlert();
+    try {
+      pauseIncomingAlert();
 
-    CometChatManager.rejectCall(
-      incomingCall.sessionId,
-      CometChat.CALL_STATUS.REJECTED,
-    )
-      .then((rejectedCall) => {
-        props.actionGenerated(
-          'rejectedIncomingCall',
-          incomingCall,
-          rejectedCall,
-        );
-        setIncomingCall(null);
-      })
-      .catch((error) => {
-        props.actionGenerated('callError', error);
-        setIncomingCall(null);
-      });
+      CometChatManager.rejectCall(
+        incomingCall.sessionId,
+        CometChat.CALL_STATUS.REJECTED,
+      )
+        .then((rejectedCall) => {
+          props.actionGenerated(
+            'rejectedIncomingCall',
+            incomingCall,
+            rejectedCall,
+          );
+          setIncomingCall(null);
+        })
+        .catch((error) => {
+          props.actionGenerated('callError', error);
+          setIncomingCall(null);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const acceptCall = () => {
-    pauseIncomingAlert();
+    try {
+      pauseIncomingAlert();
 
-    props.actionGenerated('acceptIncomingCall', incomingCall);
-    setIncomingCall(null);
+      props.actionGenerated('acceptIncomingCall', incomingCall);
+      setIncomingCall(null);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
@@ -165,8 +197,6 @@ export default (props) => {
       callAlertManager.removeListeners();
     };
   });
-
-  // console.log("incomingCall",incomingCall)
 
   if (incomingCall) {
     return (

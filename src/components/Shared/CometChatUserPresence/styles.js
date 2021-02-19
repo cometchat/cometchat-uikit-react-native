@@ -6,7 +6,6 @@ export default StyleSheet.create({
     height: 8,
     top: 25,
     right: -2,
-    // float: 'right',
     position: 'absolute',
   },
 });

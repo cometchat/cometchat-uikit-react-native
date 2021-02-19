@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { CometChatManager } from '../../../utils/controller';
-// import { SvgAvatar } from '../../utils/svgavatar';
 import { CometChatAvatar } from '../../Shared';
 import styles from './styles';
 import { View, Text, SafeAreaView } from 'react-native';
@@ -39,8 +38,8 @@ export default (props) => {
         cornerRadius={18}
         borderColor={ViewTheme.color.secondary}
         borderWidth={1}
-        image={{ uri: user.avatar }} // for the time being dummy.
-        name={user.name} // for the time being dummy.
+        image={{ uri: user.avatar }}
+        name={user.name}
       />
     </View>
   );

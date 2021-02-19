@@ -18,7 +18,7 @@ class CometChatUserListWithMessages extends React.Component {
     this.state = {
       item: {},
       type: 'user',
-      callmessage: {},
+      callMessage: {},
       incomingCall: null,
       outgoingCall: null,
       imageView: null,
@@ -62,9 +62,6 @@ class CometChatUserListWithMessages extends React.Component {
       case 'menuClicked':
         this.toggleSideBar();
         this.setState({ item: {} });
-        break;
-      case 'closeMenuClicked':
-        this.toggleSideBar();
         break;
       case 'viewMessageThread':
         // this.viewMessageThread(item);
@@ -140,9 +137,9 @@ class CometChatUserListWithMessages extends React.Component {
       theme: this.theme,
       tab: this.state.tab,
       loggedInUser: this.loggedInUser,
-      callmessage: this.state.callmessage,
+      callMessage: this.state.callMessage,
       actionGenerated: this.actionHandler,
-      composedthreadmessage: this.state.composedthreadmessage,
+      composedThreadMessage: this.state.composedThreadMessage,
     });
   };
 
@@ -157,88 +154,111 @@ class CometChatUserListWithMessages extends React.Component {
   };
 
   audioCall = () => {
-    let receiverId;
-    let receiverType;
-    if (this.state.type === 'user') {
-      receiverId = this.state.item.uid;
-      receiverType = CometChat.RECEIVER_TYPE.USER;
-    } else if (this.state.type === 'group') {
-      receiverId = this.state.item.guid;
-      receiverType = CometChat.RECEIVER_TYPE.GROUP;
-    }
+    try {
+      let receiverId;
+      let receiverType;
+      if (this.state.type === 'user') {
+        receiverId = this.state.item.uid;
+        receiverType = CometChat.RECEIVER_TYPE.USER;
+      } else if (this.state.type === 'group') {
+        receiverId = this.state.item.guid;
+        receiverType = CometChat.RECEIVER_TYPE.GROUP;
+      }
 
-    CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.AUDIO)
-      .then((call) => {
-        this.appendCallMessage(call);
-        this.setState({ outgoingCall: call });
-      })
-      .catch(() => {});
+      CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.AUDIO)
+        .then((call) => {
+          this.appendCallMessage(call);
+          this.setState({ outgoingCall: call });
+        })
+        .catch(() => {});
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   videoCall = () => {
-    let receiverId;
-    let receiverType;
-    if (this.state.type === 'user') {
-      receiverId = this.state.item.uid;
-      receiverType = CometChat.RECEIVER_TYPE.USER;
-    } else if (this.state.type === 'group') {
-      receiverId = this.state.item.guid;
-      receiverType = CometChat.RECEIVER_TYPE.GROUP;
-    }
+    try {
+      let receiverId;
+      let receiverType;
+      if (this.state.type === 'user') {
+        receiverId = this.state.item.uid;
+        receiverType = CometChat.RECEIVER_TYPE.USER;
+      } else if (this.state.type === 'group') {
+        receiverId = this.state.item.guid;
+        receiverType = CometChat.RECEIVER_TYPE.GROUP;
+      }
 
-    CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.VIDEO)
-      .then((call) => {
-        this.appendCallMessage(call);
-        this.setState({ outgoingCall: call });
-      })
-      .catch(() => {
-        // console.log('Call initialization failed with exception:', error);
-      });
+      CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.VIDEO)
+        .then((call) => {
+          this.appendCallMessage(call);
+          this.setState({ outgoingCall: call });
+        })
+        .catch(() => {
+          // console.log('Call initialization failed with exception:', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   acceptIncomingCall = (call) => {
-    this.setState({ incomingCall: call });
+    try {
+      this.setState({ incomingCall: call });
 
-    const type = call.receiverType;
-    const id = type === 'user' ? call.sender.uid : call.receiverId;
+      const type = call.receiverType;
+      const id = type === 'user' ? call.sender.uid : call.receiverId;
 
-    CometChat.getConversation(id, type)
-      .then((conversation) => {
-        this.itemClicked(conversation.conversationWith, type);
-      })
-      .catch(() => {
-        // console.log('error while fetching a conversation', error);
-      });
+      CometChat.getConversation(id, type)
+        .then((conversation) => {
+          this.itemClicked(conversation.conversationWith, type);
+        })
+        .catch(() => {
+          // console.log('error while fetching a conversation', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   rejectedIncomingCall = (incomingCallMessage, rejectedCallMessage) => {
-    let { receiverType } = incomingCallMessage;
-    let receiverId =
-      receiverType === 'user' ? incomingCallMessage.sender.uid : incomingCallMessage.receiverId;
+    try {
+      let { receiverType } = incomingCallMessage;
+      let receiverId =
+        receiverType === 'user'
+          ? incomingCallMessage.sender.uid
+          : incomingCallMessage.receiverId;
 
-    if (Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') === false) {
-      CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
-    }
+      if (
+        Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') ===
+        false
+      ) {
+        CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
+      }
 
-    // this.setState({ messageToMarkRead: incomingCallMessage });
+      // this.setState({ messageToMarkRead: incomingCallMessage });
 
-    const { item, type } = this.state;
+      const { item, type } = this.state;
 
-    receiverType = rejectedCallMessage.receiverType;
-    receiverId = rejectedCallMessage.receiverId;
+      receiverType = rejectedCallMessage.receiverType;
+      receiverId = rejectedCallMessage.receiverId;
 
-    if (
-      (type === 'group' && receiverType === 'group' && receiverId === item.guid) ||
-      (type === 'user' && receiverType === 'user' && receiverId === item.uid)
-    ) {
-      this.appendCallMessage(rejectedCallMessage);
+      if (
+        (type === 'group' &&
+          receiverType === 'group' &&
+          receiverId === item.guid) ||
+        (type === 'user' && receiverType === 'user' && receiverId === item.uid)
+      ) {
+        this.appendCallMessage(rejectedCallMessage);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   appendCallMessage = (call) => {
     const { item, type } = this.state;
     // TODO update params in better way
-    this.setState({ callmessage: call }, () => {
+    this.setState({ callMessage: call }, () => {
       this.navigateToMessageListScreen(item, type);
     });
   };

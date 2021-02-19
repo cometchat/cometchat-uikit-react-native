@@ -66,9 +66,6 @@ export default (props) => {
             style={style.messageImg}
             source={{
               uri: message.data.url,
-              // uri: thumbnailGenerationObject
-              //   ? thumbnailGenerationObject.url_small
-              //   : message.data.url,
             }}
             resizeMode={FastImage.resizeMode.contain}
           />

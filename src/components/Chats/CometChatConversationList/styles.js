@@ -13,7 +13,6 @@ export default StyleSheet.create({
   },
   conversationHeaderStyle: {
     paddingBottom: 12 * heightRatio,
-    // paddingHorizontal: 10,
     position: 'relative',
     paddingHorizontal: 22 * widthRatio,
   },

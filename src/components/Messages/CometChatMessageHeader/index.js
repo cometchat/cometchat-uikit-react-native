@@ -33,19 +33,26 @@ class CometChatMessageHeader extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    this.MessageHeaderManager.removeListeners();
-    this.MessageHeaderManager = new MessageHeaderManager();
-    this.MessageHeaderManager.attachListeners(this.updateHeader);
+    try {
+      this.MessageHeaderManager.removeListeners();
+      this.MessageHeaderManager = new MessageHeaderManager();
+      this.MessageHeaderManager.attachListeners(this.updateHeader);
 
-    if (this.props.type === 'user' && prevProps.item.uid !== this.props.item.uid) {
-      this.setStatusForUser();
-    } else if (
-      this.props.type === 'group' &&
-      (prevProps.item.guid !== this.props.item.guid ||
-        (prevProps.item.guid === this.props.item.guid &&
-          prevProps.item.membersCount !== this.props.item.membersCount))
-    ) {
-      this.setStatusForGroup();
+      if (
+        this.props.type === 'user' &&
+        prevProps.item.uid !== this.props.item.uid
+      ) {
+        this.setStatusForUser();
+      } else if (
+        this.props.type === 'group' &&
+        (prevProps.item.guid !== this.props.item.guid ||
+          (prevProps.item.guid === this.props.item.guid &&
+            prevProps.item.membersCount !== this.props.item.membersCount))
+      ) {
+        this.setStatusForGroup();
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -55,141 +62,149 @@ class CometChatMessageHeader extends React.Component {
   }
 
   setStatusForUser = () => {
-    let { status } = this.props.item;
-    const presence = this.props.item.status === 'online' ? 'online' : 'offline';
+    try {
+      let { status } = this.props.item;
+      const presence =
+        this.props.item.status === 'online' ? 'online' : 'offline';
 
-    if (this.props.item.status === 'offline' && this.props.item.lastActiveAt) {
-      status = `Last active at: ${new Date(this.props.item.lastActiveAt * 1000).toLocaleTimeString(
-        'en-US',
-        {
+      if (
+        this.props.item.status === 'offline' &&
+        this.props.item.lastActiveAt
+      ) {
+        status = `Last active at: ${new Date(
+          this.props.item.lastActiveAt * 1000,
+        ).toLocaleTimeString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
           hour: 'numeric',
           minute: 'numeric',
           hour12: true,
-        }
-      )}`;
-    } else if (this.props.item.status === 'offline') {
-      status = 'offline';
-    }
+        })}`;
+      } else if (this.props.item.status === 'offline') {
+        status = 'offline';
+      }
 
-    this.setState({ status, presence });
+      this.setState({ status, presence });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   setStatusForGroup = () => {
-    const status = `${this.props.item.membersCount} Members`;
-    this.setState({ status });
-  };
-
-  updateHeader = (key, item, groupUser) => {
-    switch (key) {
-      case enums.USER_ONLINE:
-      case enums.USER_OFFLINE: {
-        if (this.props.type === 'user' && this.props.item.uid === item.uid) {
-          if (
-            this.props.widgetsettings &&
-            Object.prototype.hasOwnProperty.call(this.props.widgetsettings, 'main') &&
-            Object.prototype.hasOwnProperty.call(
-              this.props.widgetsettings.main,
-              'show_user_presence'
-            ) &&
-            this.props.widgetsettings.main.show_user_presence === false
-          ) {
-            return false;
-          }
-          this.setState({ status: item.status, presence: item.status });
-        }
-        break;
-      }
-      case enums.GROUP_MEMBER_KICKED:
-      case enums.GROUP_MEMBER_BANNED:
-      case enums.GROUP_MEMBER_LEFT:
-        if (
-          this.props.type === 'group' &&
-          this.props.item.guid === item.guid &&
-          this.props.loggedInUser.uid !== groupUser.uid
-        ) {
-          const membersCount = parseInt(item.membersCount);
-          const status = `${membersCount} Members`;
-          this.setState({ status });
-        }
-        break;
-      case enums.GROUP_MEMBER_JOINED:
-        if (this.props.type === 'group' && this.props.item.guid === item.guid) {
-          const membersCount = parseInt(item.membersCount);
-          const status = `${membersCount} Members`;
-          this.setState({ status });
-        }
-        break;
-      case enums.GROUP_MEMBER_ADDED:
-        if (this.props.type === 'group' && this.props.item.guid === item.guid) {
-          const membersCount = parseInt(item.membersCount);
-          const status = `${membersCount} Members`;
-          this.setState({ status });
-        }
-        break;
-      case enums.TYPING_STARTED: {
-        if (
-          this.props.type === 'group' &&
-          this.props.type === item.receiverType &&
-          this.props.item.guid === item.receiverId
-        ) {
-          this.setState({ status: `${item.sender.name} is typing...` });
-          this.props.actionGenerated('showReaction', item);
-        } else if (
-          this.props.type === 'user' &&
-          this.props.type === item.receiverType &&
-          this.props.item.uid === item.sender.uid
-        ) {
-          this.setState({ status: 'typing...' });
-          this.props.actionGenerated('showReaction', item);
-        }
-        break;
-      }
-      case enums.TYPING_ENDED: {
-        if (
-          this.props.type === 'group' &&
-          this.props.type === item.receiverType &&
-          this.props.item.guid === item.receiverId
-        ) {
-          this.setStatusForGroup();
-          this.props.actionGenerated('stopReaction', item);
-        } else if (
-          this.props.type === 'user' &&
-          this.props.type === item.receiverType &&
-          this.props.item.uid === item.sender.uid
-        ) {
-          this.props.actionGenerated('stopReaction', item);
-
-          if (this.state.presence === 'online') {
-            this.setState({ status: 'online', presence: 'online' });
-          } else {
-            this.setStatusForUser();
-          }
-        }
-        break;
-      }
-      default:
-        break;
+    try {
+      const status = `${this.props.item.membersCount} Members`;
+      this.setState({ status });
+    } catch (error) {
+      console.log(error);
     }
   };
 
-  // toggleTooltip = (event, flag) => {
-  //   const elem = event.target;
-  //   const { scrollWidth } = elem;
-  //   const { clientWidth } = elem;
+  updateHeader = (key, item, groupUser) => {
+    try {
+      switch (key) {
+        case enums.USER_ONLINE:
+        case enums.USER_OFFLINE: {
+          if (this.props.type === 'user' && this.props.item.uid === item.uid) {
+            if (
+              this.props.widgetsettings &&
+              Object.prototype.hasOwnProperty.call(
+                this.props.widgetsettings,
+                'main',
+              ) &&
+              Object.prototype.hasOwnProperty.call(
+                this.props.widgetsettings.main,
+                'show_user_presence',
+              ) &&
+              this.props.widgetsettings.main.show_user_presence === false
+            ) {
+              return false;
+            }
+            this.setState({ status: item.status, presence: item.status });
+          }
+          break;
+        }
+        case enums.GROUP_MEMBER_KICKED:
+        case enums.GROUP_MEMBER_BANNED:
+        case enums.GROUP_MEMBER_LEFT:
+          if (
+            this.props.type === 'group' &&
+            this.props.item.guid === item.guid &&
+            this.props.loggedInUser.uid !== groupUser.uid
+          ) {
+            const membersCount = parseInt(item.membersCount);
+            const status = `${membersCount} Members`;
+            this.setState({ status });
+          }
+          break;
+        case enums.GROUP_MEMBER_JOINED:
+          if (
+            this.props.type === 'group' &&
+            this.props.item.guid === item.guid
+          ) {
+            const membersCount = parseInt(item.membersCount);
+            const status = `${membersCount} Members`;
+            this.setState({ status });
+          }
+          break;
+        case enums.GROUP_MEMBER_ADDED:
+          if (
+            this.props.type === 'group' &&
+            this.props.item.guid === item.guid
+          ) {
+            const membersCount = parseInt(item.membersCount);
+            const status = `${membersCount} Members`;
+            this.setState({ status });
+          }
+          break;
+        case enums.TYPING_STARTED: {
+          if (
+            this.props.type === 'group' &&
+            this.props.type === item.receiverType &&
+            this.props.item.guid === item.receiverId
+          ) {
+            this.setState({ status: `${item.sender.name} is typing...` });
+            this.props.actionGenerated('showReaction', item);
+          } else if (
+            this.props.type === 'user' &&
+            this.props.type === item.receiverType &&
+            this.props.item.uid === item.sender.uid
+          ) {
+            this.setState({ status: 'typing...' });
+            this.props.actionGenerated('showReaction', item);
+          }
+          break;
+        }
+        case enums.TYPING_ENDED: {
+          if (
+            this.props.type === 'group' &&
+            this.props.type === item.receiverType &&
+            this.props.item.guid === item.receiverId
+          ) {
+            this.setStatusForGroup();
+            this.props.actionGenerated('stopReaction', item);
+          } else if (
+            this.props.type === 'user' &&
+            this.props.type === item.receiverType &&
+            this.props.item.uid === item.sender.uid
+          ) {
+            this.props.actionGenerated('stopReaction', item);
 
-  //   if (scrollWidth <= clientWidth) {
-  //     return false;
-  //   }
-
-  //   if (flag) {
-  //     elem.setAttribute('title', elem.textContent);
-  //   } else {
-  //     elem.removeAttribute('title');
-  //   }
-  // };
+            if (this.state.presence === 'online') {
+              this.setState({ status: 'online', presence: 'online' });
+            } else {
+              this.setStatusForUser();
+            }
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   render() {
     let image;
@@ -234,17 +249,11 @@ class CometChatMessageHeader extends React.Component {
       </TouchableOpacity>
     );
 
-    // Remove comments for widget checks
-
-    // if (this.props.viewdetail === false) {
-    //   viewDetailBtn = null;
-    // }
-
-    if (this.props.item.blockedByMe === true || this.props.audiocall === false) {
+    if (this.props.item.blockedByMe === true || this.props.audioCall === false) {
       audioCallBtn = null;
     }
 
-    if (this.props.item.blockedByMe === true || this.props.videocall === false) {
+    if (this.props.item.blockedByMe === true || this.props.videoCall === false) {
       videoCallBtn = null;
     }
 

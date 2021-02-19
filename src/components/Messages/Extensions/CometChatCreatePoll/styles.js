@@ -60,14 +60,12 @@ export default StyleSheet.create({
     borderColor: 'pink',
   },
   ModalBodyItem: {
-    // marginLeft: 26 * widthRatio,
     alignSelf: 'center',
 
     width: '30%',
     alignItems: 'center',
   },
   ItemText: {
-    // width: 80 * widthRatio,
     fontWeight: '500',
     fontSize: 16,
   },
@@ -80,7 +78,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '70%', /// ////
+    width: '70%',
     alignSelf: 'center',
   },
   TextInAddWrapper: {
@@ -101,9 +99,7 @@ export default StyleSheet.create({
   Inputbox: {
     width: '70%',
     borderColor: 'green',
-    fontSize: 16, /// //
-    // height: 32,
-    //  marginLeft: 25,
+    fontSize: 16,
     alignSelf: 'center',
   },
   ModalBody: {

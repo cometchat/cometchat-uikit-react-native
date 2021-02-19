@@ -18,25 +18,25 @@ class CometChatGroupListWithMessages extends React.Component {
     super(props);
 
     this.state = {
-      darktheme: false,
-      viewdetailscreen: false,
+      darkTheme: false,
+      viewDetailScreen: false,
       item: {},
       type: 'group',
       tab: 'groups',
       groupToDelete: {},
       groupToLeave: {},
       groupToUpdate: {},
-      threadmessageview: false,
-      threadmessagetype: null,
-      threadmessageitem: {},
-      threadmessageparent: {},
-      composedthreadmessage: {},
+      threadMessageView: false,
+      threadMessageType: null,
+      threadMessageItem: {},
+      threadMessageParent: {},
+      composedThreadMessage: {},
       incomingCall: null,
       outgoingCall: null,
-      callmessage: {},
-      sidebarview: false,
+      callMessage: {},
+      sidebarView: false,
       imageView: null,
-      groupmessage: {},
+      groupMessage: {},
     };
 
     this.theme = { ...theme, ...this.props.theme };
@@ -54,7 +54,7 @@ class CometChatGroupListWithMessages extends React.Component {
   }
 
   itemClicked = (item, type) => {
-    this.setState({ item: { ...item }, type, viewdetailscreen: false }, () => {
+    this.setState({ item: { ...item }, type, viewDetailScreen: false }, () => {
       this.navigateToMessageListScreen(item, type);
     });
   };
@@ -66,9 +66,9 @@ class CometChatGroupListWithMessages extends React.Component {
       theme: this.theme,
       tab: this.state.tab,
       loggedInUser: this.loggedInUser,
-      callmessage: this.state.callmessage,
+      callMessage: this.state.callMessage,
       actionGenerated: this.actionHandler,
-      composedthreadmessage: this.state.composedthreadmessage,
+      composedThreadMessage: this.state.composedThreadMessage,
     });
   };
 
@@ -102,9 +102,6 @@ class CometChatGroupListWithMessages extends React.Component {
         this.setState({ item: {} });
         break;
       }
-      case 'closeMenuClicked':
-        this.toggleSideBar();
-        break;
       case 'viewDetail':
       case 'closeDetailClicked':
         this.toggleDetailView();
@@ -170,99 +167,115 @@ class CometChatGroupListWithMessages extends React.Component {
 
   updateThreadMessage = (message, action) => {
     if (
-      this.state.threadmessageview === false ||
-      message.id !== this.state.threadmessageparent.id
+      this.state.threadMessageView === false ||
+      message.id !== this.state.threadMessageParent.id
     ) {
       return false;
     }
 
     if (action === 'delete') {
-      this.setState({ threadmessageparent: { ...message }, threadmessageview: false });
+      this.setState({ threadMessageParent: { ...message }, threadMessageView: false });
     } else {
-      this.setState({ threadmessageparent: { ...message } });
+      this.setState({ threadMessageParent: { ...message } });
     }
   };
 
   blockUser = () => {
-    const usersList = [this.state.item.uid];
-    CometChatManager.blockUsers(usersList)
-      .then(() => {
-        this.setState({ item: { ...this.state.item, blockedByMe: true } });
-      })
-      .catch(() => {
-        // console.log('Blocking user fails with error', error);
-      });
+    try {
+      const usersList = [this.state.item.uid];
+      CometChatManager.blockUsers(usersList)
+        .then(() => {
+          this.setState({ item: { ...this.state.item, blockedByMe: true } });
+        })
+        .catch(() => {
+          // console.log('Blocking user fails with error', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   unblockUser = () => {
-    const usersList = [this.state.item.uid];
-    CometChatManager.unblockUsers(usersList)
-      .then(() => {
-        this.setState({ item: { ...this.state.item, blockedByMe: false } });
-      })
-      .catch(() => {
-        // console.log('unblocking user fails with error', error);
-      });
+    try {
+      const usersList = [this.state.item.uid];
+      CometChatManager.unblockUsers(usersList)
+        .then(() => {
+          this.setState({ item: { ...this.state.item, blockedByMe: false } });
+        })
+        .catch(() => {
+          // console.log('unblocking user fails with error', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   audioCall = () => {
-    let receiverId;
-    let receiverType;
-    if (this.state.type === 'user') {
-      receiverId = this.state.item.uid;
-      receiverType = CometChat.RECEIVER_TYPE.USER;
-    } else if (this.state.type === 'group') {
-      receiverId = this.state.item.guid;
-      receiverType = CometChat.RECEIVER_TYPE.GROUP;
-    }
+    try {
+      let receiverId;
+      let receiverType;
+      if (this.state.type === 'user') {
+        receiverId = this.state.item.uid;
+        receiverType = CometChat.RECEIVER_TYPE.USER;
+      } else if (this.state.type === 'group') {
+        receiverId = this.state.item.guid;
+        receiverType = CometChat.RECEIVER_TYPE.GROUP;
+      }
 
-    CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.AUDIO)
-      .then((call) => {
-        this.appendCallMessage(call);
-        this.setState({ outgoingCall: call });
-      })
-      .catch(() => {
-        // console.log('Call initialization failed with exception:', error);
-      });
+      CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.AUDIO)
+        .then((call) => {
+          this.appendCallMessage(call);
+          this.setState({ outgoingCall: call });
+        })
+        .catch(() => {
+          // console.log('Call initialization failed with exception:', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   videoCall = () => {
-    let receiverId;
-    let receiverType;
-    if (this.state.type === 'user') {
-      receiverId = this.state.item.uid;
-      receiverType = CometChat.RECEIVER_TYPE.USER;
-    } else if (this.state.type === 'group') {
-      receiverId = this.state.item.guid;
-      receiverType = CometChat.RECEIVER_TYPE.GROUP;
-    }
+    try {
+      let receiverId;
+      let receiverType;
+      if (this.state.type === 'user') {
+        receiverId = this.state.item.uid;
+        receiverType = CometChat.RECEIVER_TYPE.USER;
+      } else if (this.state.type === 'group') {
+        receiverId = this.state.item.guid;
+        receiverType = CometChat.RECEIVER_TYPE.GROUP;
+      }
 
-    CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.VIDEO)
-      .then((call) => {
-        this.appendCallMessage(call);
-        this.setState({ outgoingCall: call });
-      })
-      .catch(() => {
-        // console.log('Call initialization failed with exception:', error);
-      });
+      CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.VIDEO)
+        .then((call) => {
+          this.appendCallMessage(call);
+          this.setState({ outgoingCall: call });
+        })
+        .catch(() => {
+          // console.log('Call initialization failed with exception:', error);
+        });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   toggleSideBar = () => {
-    const { sidebarview } = this.state;
-    this.setState({ sidebarview: !sidebarview });
+    const { sidebarView } = this.state;
+    this.setState({ sidebarView: !sidebarView });
   };
 
   toggleDetailView = () => {
-    const viewdetail = !this.state.viewdetailscreen;
-    this.setState({ viewdetailscreen: viewdetail, threadmessageview: false });
+    const viewDetail = !this.state.viewDetailScreen;
+    this.setState({ viewDetailScreen: viewDetail, threadMessageView: false });
   };
 
   deleteGroup = (group) => {
-    this.setState({ groupToDelete: group, item: {}, type: 'group', viewdetailscreen: false });
+    this.setState({ groupToDelete: group, item: {}, type: 'group', viewDetailScreen: false });
   };
 
   leaveGroup = (group) => {
-    this.setState({ groupToLeave: group, item: {}, type: 'group', viewdetailscreen: false });
+    this.setState({ groupToLeave: group, item: {}, type: 'group', viewDetailScreen: false });
   };
 
   updateMembersCount = (item, count) => {
@@ -271,58 +284,70 @@ class CometChatGroupListWithMessages extends React.Component {
   };
 
   groupUpdated = (message, key, group, options) => {
-    switch (key) {
-      case enums.GROUP_MEMBER_BANNED:
-      case enums.GROUP_MEMBER_KICKED: {
-        if (options.user.uid === this.loggedInUser.uid) {
-          this.setState({ item: {}, type: 'group', viewdetailscreen: false });
+    try {
+      switch (key) {
+        case enums.GROUP_MEMBER_BANNED:
+        case enums.GROUP_MEMBER_KICKED: {
+          if (options.user.uid === this.loggedInUser.uid) {
+            this.setState({ item: {}, type: 'group', viewDetailScreen: false });
+          }
+          break;
         }
-        break;
-      }
-      case enums.GROUP_MEMBER_SCOPE_CHANGED: {
-        if (options.user.uid === this.loggedInUser.uid) {
-          const newObj = { ...this.state.item, scope: options.scope };
-          this.setState({ item: newObj, type: 'group', viewdetailscreen: false });
+        case enums.GROUP_MEMBER_SCOPE_CHANGED: {
+          if (options.user.uid === this.loggedInUser.uid) {
+            const newObj = { ...this.state.item, scope: options.scope };
+            this.setState({
+              item: newObj,
+              type: 'group',
+              viewDetailScreen: false,
+            });
+          }
+          break;
         }
-        break;
+        default:
+          break;
       }
-      default:
-        break;
+    } catch (error) {
+      console.log(error);
     }
   };
 
   closeThreadMessages = () => {
-    this.setState({ viewdetailscreen: false, threadmessageview: false });
+    this.setState({ viewDetailScreen: false, threadMessageView: false });
   };
 
   viewMessageThread = (parentMessage) => {
     const message = { ...parentMessage };
-    const threaditem = { ...this.state.item };
+    const threadItem = { ...this.state.item };
     this.setState({
-      threadmessageview: true,
-      threadmessageparent: message,
-      threadmessageitem: threaditem,
-      threadmessagetype: this.state.type,
-      viewdetailscreen: false,
+      threadMessageView: true,
+      threadMessageParent: message,
+      threadMessageItem: threadItem,
+      threadMessageType: this.state.type,
+      viewDetailScreen: false,
     });
   };
 
   onThreadMessageComposed = (composedMessage) => {
-    if (this.state.type !== this.state.threadmessagetype) {
-      return false;
-    }
+    try {
+      if (this.state.type !== this.state.threadMessageType) {
+        return false;
+      }
 
-    if (
-      (this.state.threadmessagetype === 'group' &&
-        this.state.item.guid !== this.state.threadmessageitem.guid) ||
-      (this.state.threadmessagetype === 'user' &&
-        this.state.item.uid !== this.state.threadmessageitem.uid)
-    ) {
-      return false;
-    }
+      if (
+        (this.state.threadMessageType === 'group' &&
+          this.state.item.guid !== this.state.threadMessageItem.guid) ||
+        (this.state.threadMessageType === 'user' &&
+          this.state.item.uid !== this.state.threadMessageItem.uid)
+      ) {
+        return false;
+      }
 
-    const message = { ...composedMessage };
-    this.setState({ composedthreadmessage: message });
+      const message = { ...composedMessage };
+      this.setState({ composedThreadMessage: message });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   acceptIncomingCall = (call) => {
@@ -341,26 +366,35 @@ class CometChatGroupListWithMessages extends React.Component {
   };
 
   rejectedIncomingCall = (incomingCallMessage, rejectedCallMessage) => {
-    let { receiverType } = incomingCallMessage;
-    let receiverId =
-      receiverType === 'user' ? incomingCallMessage.sender.uid : incomingCallMessage.receiverId;
+    try {
+      let { receiverType } = incomingCallMessage;
+      let receiverId =
+        receiverType === 'user'
+          ? incomingCallMessage.sender.uid
+          : incomingCallMessage.receiverId;
 
-    if (Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') === false) {
-      CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
-    }
+      if (
+        Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') ===
+        false
+      ) {
+        CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
+      }
 
-    // this.setState({ messageToMarkRead: incomingCallMessage });
+      const { item, type } = this.state;
 
-    const { item, type } = this.state;
+      receiverType = rejectedCallMessage.receiverType;
+      receiverId = rejectedCallMessage.receiverId;
 
-    receiverType = rejectedCallMessage.receiverType;
-    receiverId = rejectedCallMessage.receiverId;
-
-    if (
-      (type === 'group' && receiverType === 'group' && receiverId === item.guid) ||
-      (type === 'user' && receiverType === 'user' && receiverId === item.uid)
-    ) {
-      this.appendCallMessage(rejectedCallMessage);
+      if (
+        (type === 'group' &&
+          receiverType === 'group' &&
+          receiverId === item.guid) ||
+        (type === 'user' && receiverType === 'user' && receiverId === item.uid)
+      ) {
+        this.appendCallMessage(rejectedCallMessage);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -374,61 +408,72 @@ class CometChatGroupListWithMessages extends React.Component {
   };
 
   membersAdded = (members) => {
-    const messageList = [];
-    members.forEach((eachMember) => {
-      const message = `${this.loggedInUser.name} added ${eachMember.name}`;
-      const sentAt = (new Date() / 1000) | 0;
-      const messageObj = {
-        category: 'action',
-        message,
-        type: enums.ACTION_TYPE_GROUPMEMBER,
-        sentAt,
-      };
-      messageList.push(messageObj);
-    });
+    try {
+      const messageList = [];
+      members.forEach((eachMember) => {
+        const message = `${this.loggedInUser.name} added ${eachMember.name}`;
+        const sentAt = (new Date() / 1000) | 0;
+        const messageObj = {
+          category: 'action',
+          message,
+          type: enums.ACTION_TYPE_GROUPMEMBER,
+          sentAt,
+        };
+        messageList.push(messageObj);
+      });
 
-    this.setState({ groupmessage: messageList });
+      this.setState({ groupMessage: messageList });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   memberUnbanned = (members) => {
-    const messageList = [];
-    members.forEach((eachMember) => {
-      const message = `${this.loggedInUser.name} unbanned ${eachMember.name}`;
-      const sentAt = (new Date() / 1000) | 0;
-      const messageObj = {
-        category: 'action',
-        message,
-        type: enums.ACTION_TYPE_GROUPMEMBER,
-        sentAt,
-      };
-      messageList.push(messageObj);
-    });
+    try {
+      const messageList = [];
+      members.forEach((eachMember) => {
+        const message = `${this.loggedInUser.name} unbanned ${eachMember.name}`;
+        const sentAt = (new Date() / 1000) | 0;
+        const messageObj = {
+          category: 'action',
+          message,
+          type: enums.ACTION_TYPE_GROUPMEMBER,
+          sentAt,
+        };
+        messageList.push(messageObj);
+      });
 
-    this.setState({ groupmessage: messageList });
+      this.setState({ groupMessage: messageList });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   memberScopeChanged = (members) => {
-    const messageList = [];
+    try {
+      const messageList = [];
 
-    members.forEach((eachMember) => {
-      const message = `${this.loggedInUser.name} made ${eachMember.name} ${eachMember.scope}`;
-      const sentAt = (new Date() / 1000) | 0;
-      const messageObj = {
-        category: 'action',
-        message,
-        type: enums.ACTION_TYPE_GROUPMEMBER,
-        sentAt,
-      };
-      messageList.push(messageObj);
-    });
+      members.forEach((eachMember) => {
+        const message = `${this.loggedInUser.name} made ${eachMember.name} ${eachMember.scope}`;
+        const sentAt = (new Date() / 1000) | 0;
+        const messageObj = {
+          category: 'action',
+          message,
+          type: enums.ACTION_TYPE_GROUPMEMBER,
+          sentAt,
+        };
+        messageList.push(messageObj);
+      });
 
-    this.setState({ groupmessage: messageList });
+      this.setState({ groupMessage: messageList });
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   appendCallMessage = (call) => {
     const { item, type } = this.state;
-    // TODO update params in better way
-    this.setState({ callmessage: call }, () => {
+    this.setState({ callMessage: call }, () => {
       this.navigateToMessageListScreen(item, type);
     });
   };
@@ -454,7 +499,6 @@ class CometChatGroupListWithMessages extends React.Component {
           actionGenerated={this.actionHandler}
           groupToDelete={this.state.groupToDelete}
           navigation={this.props.navigation}
-          // enableCloseMenu={Object.keys(this.state.item).length}
         />
         {imageView}
         <CometChatIncomingCall
