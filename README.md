@@ -21,7 +21,10 @@
 
 </br></br>
 
-CometChat React Native UI Kit is a collection of custom **UI Components** designed to build chat application with fully customizable UI. It is designed to avoid boilerplate code for building UI.
+CometChat React Native UI Kit is a collection of custom UI Components designed to build text chat and voice/video calling features in your application. 
+
+The UI Kit is developed to keep developers in mind and aims to reduce development efforts significantly. 
+
 ---
 
 ## Prerequisites
@@ -35,6 +38,12 @@ Before you begin, ensure you have met the following requirements:
 - [npm](https://www.npmjs.com/get-npm)
 
 - [React-Native](https://reactnative.dev/docs/environment-setup)
+
+---
+
+| :exclamation:  Support for Expo CLI based apps.   |
+|-----------------------------------------|
+|If you are using Expo CLI to build a React Native app, the calling component will not work as our calling component needs native-level changes.However, you can create a React Native app using React Native CLI or use the 'expo eject' command to convert your app from an expo-managed workflow to a bare workflow.|
 
 ---
 
@@ -74,7 +83,7 @@ These packages help make the ui-kit smooth and functioning
 [@react-navigation/native](https://reactnavigation.org/docs/getting-started)</br>
 [@react-navigation/stack](https://reactnavigation.org/docs/stack-navigator/)</br>
 [@react-native-picker/picker](https://github.com/react-native-picker/picker)</br>
-[@react-native-community/async-storage](https://github.com/react-native-async-storage/async-storage)</br>
+[react-native-async-storage/async-storage](https://github.com/react-native-async-storage/async-storage)</br>
 [@cometchat-pro/react-native-calls](https://www.npmjs.com/package/@cometchat-pro/react-native-calls)</br>
 <br/>
 
