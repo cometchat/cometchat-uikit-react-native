@@ -21,7 +21,7 @@ export class MessageHeaderManager {
           /* when someuser/friend went offline, user will be received here */
           callback(enums.USER_OFFLINE, offlineUser);
         },
-      })
+      }),
     );
 
     CometChat.addMessageListener(
@@ -33,7 +33,7 @@ export class MessageHeaderManager {
         onTypingEnded: (typingIndicator) => {
           callback(enums.TYPING_ENDED, typingIndicator);
         },
-      })
+      }),
     );
 
     CometChat.addGroupListener(
@@ -45,7 +45,12 @@ export class MessageHeaderManager {
         onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
           callback(enums.GROUP_MEMBER_BANNED, bannedFrom, bannedUser);
         },
-        onMemberAddedToGroup: (message, userAdded, userAddedBy, userAddedIn) => {
+        onMemberAddedToGroup: (
+          message,
+          userAdded,
+          userAddedBy,
+          userAddedIn,
+        ) => {
           callback(enums.GROUP_MEMBER_ADDED, userAddedIn);
         },
         onGroupMemberLeft: (message, leavingUser, group) => {
@@ -54,7 +59,7 @@ export class MessageHeaderManager {
         onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
           callback(enums.GROUP_MEMBER_JOINED, joinedGroup);
         },
-      })
+      }),
     );
   }
 

@@ -30,33 +30,32 @@ export const USER_OFFLINE = 'onUserOffline';
 export const TYPING_STARTED = 'onTypingStarted';
 export const TYPING_ENDED = 'onTypingEnded';
 
-export const CATEGORY_MESSAGE = 'message';
-export const MESSAGE_TYPE_TEXT = 'text';
-export const MESSAGE_TYPE_IMAGE = 'image';
-export const MESSAGE_TYPE_VIDEO = 'video';
-export const MESSAGE_TYPE_AUDIO = 'audio';
-export const MESSAGE_TYPE_FILE = 'file';
-
-export const CATEGORY_CUSTOM = 'custom';
 export const CUSTOM_TYPE_POLL = 'extension_poll';
 export const CUSTOM_TYPE_STICKER = 'extension_sticker';
 export const CUSTOM_TYPE_DOCUMENT = 'extension_document';
 export const CUSTOM_TYPE_WHITEBOARD = 'extension_whiteboard';
 
-export const CATEGORY_ACTION = 'action';
 export const ACTION_TYPE_GROUPMEMBER = 'groupMember';
 export const ACTION_TYPE_MESSAGE = 'message';
 
-export const CATEGORY_CALL = 'call';
-export const CALL_TYPE_AUDIO = 'audio';
-export const CALL_TYPE_VIDEO = 'video';
+export const STATUS_TYPE_AVAILABLE = 'available';
+
+export const MESSAGE_FROM_RECEIVER = 'receiver';
+export const MESSAGE_FROM_SENDER = 'sender';
+export const MESSAGE_OF_SENDER = 'sender';
+export const MESSAGE_OF_RECEIVER = 'receiver';
 
 export const LIVE_REACTION_KEY = 'live_reaction';
+
 export const LIVE_REACTIONS = {
   heart: './resources/heart.png',
   thumbsup: '👍',
   clap: '👏',
   wink: '😉',
+};
+
+export const NAVIGATION_CONSTANTS = {
+  COMET_CHAT_MESSAGES: 'CometChatMessages',
 };
 
 export const LOCALE_KEY = 'cometchat:locale';

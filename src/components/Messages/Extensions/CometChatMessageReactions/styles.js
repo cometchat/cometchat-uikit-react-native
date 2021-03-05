@@ -9,6 +9,7 @@ export default StyleSheet.create({
     paddingVertical: 0,
     paddingHorizontal: 10,
   },
+  reactionDetailBottomSheet: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   reactionContainer: {
     borderRadius: 22,
     width: 40,
@@ -21,6 +22,10 @@ export default StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.1)',
   },
+  sectionItemNameText: { fontSize: 18 },
+  addReactionImage: { width: 16, height: 16, resizeMode: 'contain' },
+  modalPickerStyle: { borderRadius: 20, overflow: 'hidden' },
+  emojiContainer: { marginTop: 11 },
   reactionText: { fontSize: 12, fontWeight: '500' },
   reactionDetailsContainer: {
     backgroundColor: 'white',
@@ -53,7 +58,12 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionItemAvatar: { height: 45, width: 45, marginRight: 15, borderRadius: 22.5 },
+  sectionItemAvatar: {
+    height: 45,
+    width: 45,
+    marginRight: 15,
+    borderRadius: 22.5,
+  },
   sectionItemName: {
     flex: 1,
     borderColor: 'rgba(0,0,0,0.1)',

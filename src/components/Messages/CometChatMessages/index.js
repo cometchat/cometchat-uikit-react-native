@@ -1,7 +1,13 @@
 /* eslint-disable react/no-unused-state */
 /* eslint-disable react/no-did-update-set-state */
 import React from 'react';
-import { View, SafeAreaView, Modal, Dimensions,KeyboardAvoidingView } from 'react-native';
+import {
+  View,
+  SafeAreaView,
+  Modal,
+  Dimensions,
+  KeyboardAvoidingView,
+} from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import _ from 'lodash';
 import { CometChatUserDetails } from '../../Users';
@@ -18,25 +24,24 @@ import { CometChatGroupDetails } from '../../Groups';
 import theme from '../../../resources/theme';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
-import { checkMessageForExtensionsData, validateWidgetSettings } from '../../../utils/common';
+import { checkMessageForExtensionsData } from '../../../utils/common';
 
 import BottomSheet from 'reanimated-bottom-sheet';
 import style from './styles';
 
 class CometChatMessages extends React.PureComponent {
   loggedInUser = null;
-
   constructor(props) {
     super(props);
     const { route } = props;
-
+    const params = route?.params || props;
     this.state = {
       messageList: [],
       scrollToBottom: true,
       messageToBeEdited: '',
       replyPreview: null,
       tab: 'conversations',
-      item: route.params.item,
+      item: params.item,
       liveReaction: false,
       messageToReact: null,
       threadMessageView: false,
@@ -45,14 +50,14 @@ class CometChatMessages extends React.PureComponent {
       threadMessageParent: {},
       userDetailVisible: false,
       groupDetailVisible: false,
-      user: route.params.type === 'user' ? route.params.item : null,
+      user: params.type === 'user' ? params.item : null,
     };
 
     this.composerRef = React.createRef();
     this.sheetRef = React.createRef(null); /// //ref here
 
     this.reactionName = props.reaction || 'heart';
-    this.theme = { ...theme, ...route.params.theme };
+    this.theme = { ...theme, ...params.theme };
   }
 
   componentDidMount() {
@@ -69,13 +74,13 @@ class CometChatMessages extends React.PureComponent {
   componentDidUpdate(prevProps, prevState) {
     const { route: prevRoute } = prevProps;
     const { route } = this.props;
+    const params = route?.params || this.props;
+    const prevParams = prevRoute?.params || prevProps;
+
     if (!prevState.threadMessageView && this.state.threadMessageView) {
       this.sheetRef.current.snapTo(0);
     }
-    if (
-      route.params.type === 'user' &&
-      prevRoute.params.item.uid !== route.params.item.uid
-    ) {
+    if (params.type === 'user' && prevParams.item.uid !== params.item.uid) {
       this.setState({
         messageList: [],
         scrollToBottom: true,
@@ -83,15 +88,15 @@ class CometChatMessages extends React.PureComponent {
       });
       // this.setUserDetails()
     } else if (
-      route.params.type === 'group' &&
-      prevRoute.params.item.guid !== route.params.item.guid
+      params.type === 'group' &&
+      prevParams.item.guid !== params.item.guid
     ) {
       this.setState({
         messageList: [],
         scrollToBottom: true,
         messageToBeEdited: '',
       });
-    } else if (prevRoute.params.type !== route.params.type) {
+    } else if (prevParams.type !== params.type) {
       this.setState({
         messageList: [],
         scrollToBottom: true,
@@ -101,18 +106,9 @@ class CometChatMessages extends React.PureComponent {
       prevState.composedThreadMessage !== this.state.composedThreadMessage
     ) {
       this.updateReplyCount(this.state.composedThreadMessage);
-    } else if (prevRoute.params.callMessage !== route.params.callMessage) {
-      if (prevRoute.params.callMessage.id !== route.params.callMessage.id) {
-        this.actionHandler('callUpdated', route.params.callMessage);
-      }
-    } else if (prevRoute.params.groupMessage !== route.params.groupMessage) {
-      if (
-        validateWidgetSettings(
-          route.params.widgetsettings,
-          'hide_join_leave_notifications',
-        ) !== true
-      ) {
-        this.appendMessage(route.params.groupMessage);
+    } else if (prevParams.callMessage !== params.callMessage) {
+      if (prevParams.callMessage.id !== params.callMessage.id) {
+        this.actionHandler('callUpdated', params.callMessage);
       }
     }
   }
@@ -127,8 +123,9 @@ class CometChatMessages extends React.PureComponent {
         viewDetailScreen: false,
       },
       () => {
-        this.props.route.params.actionGenerated('groupDeleted', group);
-        this.props.navigation.goBack();
+        this.props.route?.params?.actionGenerated('groupDeleted', group) ||
+          this.props.actionGenerated('groupDeleted', group);
+        this.props.navigation?.goBack();
       },
     );
   };
@@ -143,20 +140,23 @@ class CometChatMessages extends React.PureComponent {
         viewDetailScreen: false,
       },
       () => {
-        this.props.navigation.goBack();
+        this.props.navigation?.goBack();
       },
     );
   };
 
   updateMembersCount = (item, count) => {
-    const {route} = this.props;
+    const { route } = this.props;
+    const params = route?.params || this.props;
+
     const group = { ...this.state.item, membersCount: count };
     this.setState({ item: group, groupToUpdate: group });
-    route.params.actionGenerated('membersUpdated',item,count);
+    params.actionGenerated('membersUpdated', item, count);
   };
-  
+
   actionHandler = (action, messages, key, group, options) => {
     const { route } = this.props;
+    const params = route?.params || this.props;
 
     switch (action) {
       case 'customMessageReceived':
@@ -181,11 +181,11 @@ class CometChatMessages extends React.PureComponent {
         this.updateMembersCount(messages, key);
         break;
       case 'messageRead':
-        route.params.actionGenerated(action, messages);
+        params.actionGenerated(action, messages);
         break;
       case 'messageComposed': {
         this.appendMessage(messages);
-        route.params.actionGenerated('messageComposed', messages);
+        params.actionGenerated('messageComposed', messages);
         break;
       }
       case 'viewMessageThread':
@@ -211,7 +211,7 @@ class CometChatMessages extends React.PureComponent {
         this.removeMessages(messages);
         break;
       case 'threadMessageDeleted':
-        route.params.actionGenerated('messageDeleted', messages);
+        params.actionGenerated('messageDeleted', messages);
         break;
       case 'deleteMessage':
         this.setState({ messageToReact: null });
@@ -240,12 +240,12 @@ class CometChatMessages extends React.PureComponent {
         this.appendPollMessage(messages);
         break;
       case 'viewActualImage':
-        route.params.actionGenerated('viewActualImage', messages);
+        params.actionGenerated('viewActualImage', messages);
         break;
       case 'audioCall':
       case 'videoCall':
       case 'menuClicked':
-        route.params.actionGenerated(action);
+        params.actionGenerated(action);
         break;
       case 'sendReaction':
         this.toggleReaction(true);
@@ -260,13 +260,13 @@ class CometChatMessages extends React.PureComponent {
         this.reactToMessage(messages);
         break;
       case 'goBack':
-        this.props.navigation.goBack();
+        this.props.navigation?.goBack();
         break;
       case 'closeDetail':
         this.setState({ userDetailVisible: false, groupDetailVisible: false });
         break;
       case 'viewDetail':
-        if (route.params.type === 'user') {
+        if (params.type === 'user') {
           this.setState({ userDetailVisible: true });
         } else {
           this.setState({ groupDetailVisible: true });
@@ -289,7 +289,7 @@ class CometChatMessages extends React.PureComponent {
         break;
       case 'threadMessageComposed':
         this.onThreadMessageComposed(messages);
-        route.params.actionGenerated('threadMessageComposed', messages);
+        params.actionGenerated('threadMessageComposed', messages);
         // this.updateLastMessage(item[0]);
         break;
       case 'memberScopeChanged':
@@ -406,20 +406,23 @@ class CometChatMessages extends React.PureComponent {
 
   viewMessageThread = (parentMessage) => {
     const { route } = this.props;
+    const params = route?.params || this.props;
     const message = { ...parentMessage };
     const threadItem = { ...this.state.item };
     this.setState({
       threadMessageView: true,
       threadMessageParent: message,
       threadMessageItem: threadItem,
-      threadMessageType: route.params.type,
+      threadMessageType: params.type,
       viewDetailScreen: false,
     });
   };
 
   onThreadMessageComposed = (composedMessage) => {
     const { route } = this.props;
-    if (route.params.type !== this.state.threadMessageType) {
+    const params = route?.params || this.props;
+
+    if (params.type !== this.state.threadMessageType) {
       return false;
     }
 
@@ -438,11 +441,13 @@ class CometChatMessages extends React.PureComponent {
 
   blockUser = () => {
     const { route } = this.props;
+    const params = route?.params || this.props;
+
     const usersList = [this.state.item.uid];
     CometChatManager.blockUsers(usersList)
       .then(() => {
         this.setState({ user: { ...this.state.item, blockedByMe: true } });
-        route.params.actionGenerated('blockUser');
+        params.actionGenerated('blockUser');
       })
       .catch((error) => {
         console.log('Blocking user fails with error', error);
@@ -451,11 +456,13 @@ class CometChatMessages extends React.PureComponent {
 
   unblockUser = () => {
     const { route } = this.props;
+    const params = route?.params || this.props;
+
     const usersList = [this.state.item.uid];
     CometChatManager.unblockUsers(usersList)
       .then(() => {
         this.setState({ user: { ...this.state.item, blockedByMe: false } });
-        route.params.actionGenerated('unblockUser');
+        params.actionGenerated('unblockUser');
       })
       .catch((error) => {
         console.log('unblocking user fails with error', error);
@@ -510,6 +517,8 @@ class CometChatMessages extends React.PureComponent {
 
   deleteMessage = (message) => {
     const { route } = this.props;
+    const params = route?.params || this.props;
+
     const messageId = message.id;
     CometChat.deleteMessage(messageId)
       .then((deletedMessage) => {
@@ -519,14 +528,14 @@ class CometChatMessages extends React.PureComponent {
         const messageKey = messageList.findIndex((m) => m.id === message.id);
 
         this.actionHandler('updateThreadMessage', [deletedMessage], 'delete');
-        route.params.actionGenerated(
+        params.actionGenerated(
           'updateThreadMessage',
           [deletedMessage],
           'delete',
         );
 
         if (messageList.length - messageKey === 1 && !message.replyCount) {
-          route.params.actionGenerated('messageDeleted', [deletedMessage]);
+          params.actionGenerated('messageDeleted', [deletedMessage]);
         }
       })
       .catch(() => {});
@@ -538,6 +547,8 @@ class CometChatMessages extends React.PureComponent {
 
   messageEdited = (message) => {
     const { route } = this.props;
+    const params = route?.params || this.props;
+
     const messageList = [...this.state.messageList];
     const messageKey = messageList.findIndex((m) => m.id === message.id);
     if (messageKey > -1) {
@@ -548,14 +559,10 @@ class CometChatMessages extends React.PureComponent {
       messageList.splice(messageKey, 1, newMessageObj);
       this.updateMessages(messageList);
 
-      route.params.actionGenerated(
-        'updateThreadMessage',
-        [newMessageObj],
-        'edit',
-      );
+      params.actionGenerated('updateThreadMessage', [newMessageObj], 'edit');
 
       if (messageList.length - messageKey === 1 && !message.replyCount) {
-        route.params.actionGenerated('messageEdited', [newMessageObj]);
+        params.actionGenerated('messageEdited', [newMessageObj]);
       }
     }
   };
@@ -636,14 +643,7 @@ class CometChatMessages extends React.PureComponent {
 
   groupUpdated = (message, key, group, options) => {
     const { route } = this.props;
-    if (
-      validateWidgetSettings(
-        route.params.widgetsettings,
-        'hide_join_leave_notifications',
-      ) !== true
-    ) {
-      this.appendMessage([message]);
-    }
+    const params = route?.params || this.props;
 
     switch (key) {
       case enums.GROUP_MEMBER_BANNED:
@@ -668,20 +668,12 @@ class CometChatMessages extends React.PureComponent {
         break;
     }
 
-    route.params.actionGenerated('groupUpdated', message, key, group, options);
+    params.actionGenerated('groupUpdated', message, key, group, options);
   };
 
   callUpdated = (message) => {
     const { route } = this.props;
-    // if call actions messages are disabled in chat widget
-    if (
-      validateWidgetSettings(
-        route.params.widgetsettings,
-        'show_call_notifications',
-      ) === false
-    ) {
-      return false;
-    }
+    const params = route?.params || this.props;
 
     this.appendMessage([message]);
   };
@@ -711,11 +703,12 @@ class CometChatMessages extends React.PureComponent {
 
   smartReplyPreview = (messages) => {
     const { route } = this.props;
+    const params = route?.params || this.props;
 
     const message = messages[0];
     if (
-      message.sender.uid === route.params.loggedInUser.uid ||
-      message.category === enums.CATEGORY_CUSTOM
+      message.sender.uid === params.loggedInUser.uid ||
+      message.category === CometChat.MESSAGE_TYPE.CUSTOM
     ) {
       return false;
     }
@@ -744,16 +737,18 @@ class CometChatMessages extends React.PureComponent {
 
   render() {
     const { route } = this.props;
+    const params = route?.params || this.props;
+
     let messageComposer = (
       <CometChatMessageComposer
         ref={(el) => {
           this.composerRef = el;
         }}
         theme={this.theme}
-        item={route.params.type === 'user' ? this.state.user : this.state.item}
-        type={route.params.type}
+        item={params.type === 'user' ? this.state.user : this.state.item}
+        type={params.type}
         // widgetsettings={route.params.widgetsettings}
-        loggedInUser={route.params.loggedInUser}
+        loggedInUser={this.loggedInUser}
         messageToBeEdited={this.state.messageToBeEdited}
         replyPreview={this.state.replyPreview}
         reaction={this.reactionName}
@@ -761,16 +756,6 @@ class CometChatMessages extends React.PureComponent {
         actionGenerated={this.actionHandler}
       />
     );
-
-    // if sending messages are disabled for chat wigdet in dashboard
-    if (
-      validateWidgetSettings(
-        route.params.widgetsettings,
-        'enable_sending_messages',
-      ) === false
-    ) {
-      messageComposer = null;
-    }
 
     let liveReactionView = null;
     if (this.state.liveReaction) {
@@ -835,22 +820,20 @@ class CometChatMessages extends React.PureComponent {
             <CometChatUserDetails
               open={this.state.userDetailVisible}
               theme={this.theme}
-              item={
-                route.params.type === 'user' ? this.state.user : this.state.item
-              }
-              type={route.params.type}
+              item={params.type === 'user' ? this.state.user : this.state.item}
+              type={params.type}
               actionGenerated={this.actionHandler}
             />
           ) : null}
           {threadMessageView}
-            <CometChatGroupDetails
-              theme={this.theme}
-              open={this.state.groupDetailVisible}
-              item={this.state.item}
-              type={route.params.type}
-              actionGenerated={this.actionHandler}
-              loggedInUser={this.loggedInUser}
-            />
+          <CometChatGroupDetails
+            theme={this.theme}
+            open={this.state.groupDetailVisible}
+            item={this.state.item}
+            type={params.type}
+            actionGenerated={this.actionHandler}
+            loggedInUser={this.loggedInUser}
+          />
           <CometChatMessageActions
             open={!!this.state.messageToReact}
             message={this.state.messageToReact}
@@ -860,31 +843,27 @@ class CometChatMessages extends React.PureComponent {
             }}
           />
           <CometChatMessageHeader
-            sidebar={route.params.sidebar}
+            sidebar={params.sidebar}
             theme={this.theme}
-            item={
-              route.params.type === 'user' ? this.state.user : this.state.item
-            }
-            type={route.params.type}
-            viewdetail={route.params.viewdetail !== false}
-            audioCall={route.params.audioCall !== false}
-            videoCall={route.params.videoCall !== false}
+            item={params.type === 'user' ? this.state.user : this.state.item}
+            type={params.type}
+            viewdetail={params.viewdetail !== false}
+            audioCall={params.audioCall !== false}
+            videoCall={params.videoCall !== false}
             // widgetsettings={route.params.widgetsettings}
-            loggedInUser={route.params.loggedInUser}
+            loggedInUser={params.loggedInUser}
             actionGenerated={this.actionHandler}
           />
           <CometChatMessageList
             theme={this.theme}
             messages={this.state.messageList}
-            item={
-              route.params.type === 'user' ? this.state.user : this.state.item
-            }
-            type={route.params.type}
+            item={params.type === 'user' ? this.state.user : this.state.item}
+            type={params.type}
             scrollToBottom={this.state.scrollToBottom}
-            messageConfig={route.params.messageconfig}
+            messageConfig={params.messageconfig}
             // widgetsettings={route.params.widgetsettings}
             // widgetconfig={route.params.widgetconfig}
-            loggedInUser={route.params.loggedInUser}
+            loggedInUser={params.loggedInUser}
             actionGenerated={this.actionHandler}
           />
           {liveReactionView}

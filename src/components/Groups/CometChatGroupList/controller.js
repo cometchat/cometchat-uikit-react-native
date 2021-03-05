@@ -14,7 +14,9 @@ export class GroupListManager {
         .setSearchKeyword(searchKey)
         .build();
     } else {
-      this.groupRequest = new CometChat.GroupsRequestBuilder().setLimit(30).build();
+      this.groupRequest = new CometChat.GroupsRequestBuilder()
+        .setLimit(30)
+        .build();
     }
   }
 
@@ -26,7 +28,13 @@ export class GroupListManager {
     CometChat.addGroupListener(
       this.groupListenerId,
       new CometChat.GroupListener({
-        onGroupMemberScopeChanged: (message, changedUser, newScope, oldScope, changedGroup) => {
+        onGroupMemberScopeChanged: (
+          message,
+          changedUser,
+          newScope,
+          oldScope,
+          changedGroup,
+        ) => {
           callback(enums.GROUP_MEMBER_SCOPE_CHANGED, message, changedGroup, {
             user: changedUser,
             scope: newScope,
@@ -44,25 +52,39 @@ export class GroupListManager {
             hasJoined: false,
           });
         },
-        onGroupMemberUnbanned: (message, unbannedUser, unbannedBy, unbannedFrom) => {
+        onGroupMemberUnbanned: (
+          message,
+          unbannedUser,
+          unbannedBy,
+          unbannedFrom,
+        ) => {
           callback(enums.GROUP_MEMBER_UNBANNED, message, unbannedFrom, {
             user: unbannedUser,
             hasJoined: false,
           });
         },
-        onMemberAddedToGroup: (message, userAdded, userAddedBy, userAddedIn) => {
+        onMemberAddedToGroup: (
+          message,
+          userAdded,
+          userAddedBy,
+          userAddedIn,
+        ) => {
           callback(enums.GROUP_MEMBER_ADDED, message, userAddedIn, {
             user: userAdded,
             hasJoined: true,
           });
         },
         onGroupMemberLeft: (message, leavingUser, group) => {
-          callback(enums.GROUP_MEMBER_LEFT, message, group, { user: leavingUser });
+          callback(enums.GROUP_MEMBER_LEFT, message, group, {
+            user: leavingUser,
+          });
         },
         onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
-          callback(enums.GROUP_MEMBER_JOINED, message, joinedGroup, { user: joinedUser });
+          callback(enums.GROUP_MEMBER_JOINED, message, joinedGroup, {
+            user: joinedUser,
+          });
         },
-      })
+      }),
     );
   }
 

@@ -38,7 +38,6 @@ export default StyleSheet.create({
     width: 200,
     flexWrap: 'wrap',
     flexDirection: 'row',
-    // width: 44,
     height: 200,
     borderRadius: 200,
     backgroundColor: 'rgba(51,153,255,0.25)',

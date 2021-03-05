@@ -6,7 +6,7 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     width: '100%',
-    color: '#151515', // #349afe blue #cccccc lightgray
+    color: '#151515',
   },
   headingContainer: {
     height: 62 * heightRatio,

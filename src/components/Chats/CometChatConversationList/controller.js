@@ -14,7 +14,9 @@ export class ConversationListManager {
   callListenerId = `chatlist_call_${new Date().getTime()}`;
 
   constructor() {
-    this.conversationRequest = new CometChat.ConversationsRequestBuilder().setLimit(30).build();
+    this.conversationRequest = new CometChat.ConversationsRequestBuilder()
+      .setLimit(30)
+      .build();
   }
 
   fetchNextConversation() {
@@ -33,12 +35,18 @@ export class ConversationListManager {
           /* when someuser/friend went offline, user will be received here */
           callback(enums.USER_OFFLINE, offlineUser);
         },
-      })
+      }),
     );
     CometChat.addGroupListener(
       this.groupListenerId,
       new CometChat.GroupListener({
-        onGroupMemberScopeChanged: (message, changedUser, newScope, oldScope, changedGroup) => {
+        onGroupMemberScopeChanged: (
+          message,
+          changedUser,
+          newScope,
+          oldScope,
+          changedGroup,
+        ) => {
           callback(enums.GROUP_MEMBER_SCOPE_CHANGED, changedGroup, message, {
             user: changedUser,
             scope: newScope,
@@ -51,12 +59,26 @@ export class ConversationListManager {
           });
         },
         onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
-          callback(enums.GROUP_MEMBER_BANNED, bannedFrom, message, { user: bannedUser });
+          callback(enums.GROUP_MEMBER_BANNED, bannedFrom, message, {
+            user: bannedUser,
+          });
         },
-        onGroupMemberUnbanned: (message, unbannedUser, unbannedBy, unbannedFrom) => {
-          callback(enums.GROUP_MEMBER_UNBANNED, unbannedFrom, message, { user: unbannedUser });
+        onGroupMemberUnbanned: (
+          message,
+          unbannedUser,
+          unbannedBy,
+          unbannedFrom,
+        ) => {
+          callback(enums.GROUP_MEMBER_UNBANNED, unbannedFrom, message, {
+            user: unbannedUser,
+          });
         },
-        onMemberAddedToGroup: (message, userAdded, userAddedBy, userAddedIn) => {
+        onMemberAddedToGroup: (
+          message,
+          userAdded,
+          userAddedBy,
+          userAddedIn,
+        ) => {
           callback(
             enums.GROUP_MEMBER_ADDED,
             userAddedIn,
@@ -69,12 +91,16 @@ export class ConversationListManager {
           );
         },
         onGroupMemberLeft: (message, leavingUser, group) => {
-          callback(enums.GROUP_MEMBER_LEFT, group, message, { user: leavingUser });
+          callback(enums.GROUP_MEMBER_LEFT, group, message, {
+            user: leavingUser,
+          });
         },
         onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
-          callback(enums.GROUP_MEMBER_JOINED, joinedGroup, message, { user: joinedUser });
+          callback(enums.GROUP_MEMBER_JOINED, joinedGroup, message, {
+            user: joinedUser,
+          });
         },
-      })
+      }),
     );
 
     CometChat.addMessageListener(
@@ -95,7 +121,7 @@ export class ConversationListManager {
         onMessageEdited: (editedMessage) => {
           callback(enums.MESSAGE_EDITED, null, editedMessage);
         },
-      })
+      }),
     );
 
     CometChat.addCallListener(
@@ -107,7 +133,7 @@ export class ConversationListManager {
         onIncomingCallCancelled: (call) => {
           callback(enums.INCOMING_CALL_CANCELLED, null, call);
         },
-      })
+      }),
     );
   }
 

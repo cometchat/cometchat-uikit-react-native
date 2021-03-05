@@ -4,7 +4,7 @@ import style from './styles';
 import Actions from './actions';
 import BottomSheet from 'reanimated-bottom-sheet';
 
-export default class MessageActionsView extends React.Component {
+export default class CometChatMessageActions extends React.Component {
   sheetRef = React.createRef(null);
 
   componentDidUpdate(prevProps) {
@@ -13,7 +13,9 @@ export default class MessageActionsView extends React.Component {
     }
   }
 
-  renderContent = () => <Actions {...this.props} message={this.props.message} />;
+  renderContent = () => (
+    <Actions {...this.props} message={this.props.message} />
+  );
 
   renderHeader = () => <View style={style.header} />;
 
@@ -21,13 +23,13 @@ export default class MessageActionsView extends React.Component {
     const { open, close } = this.props;
     return (
       <Modal transparent animated animationType="fade" visible={open}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <View style={style.bottomSheetContainer}>
           <TouchableWithoutFeedback
             onPress={() => {
               this.sheetRef.current.snapTo(1);
               this.props.close();
             }}>
-            <View style={{ flex: 1 }}>
+            <View style={style.fullFlex}>
               <BottomSheet
                 ref={this.sheetRef}
                 snapPoints={[250, 0]}

@@ -1,13 +1,20 @@
 import { StyleSheet, Dimensions } from 'react-native';
 
-import { calc } from '../../../utils/consts';
+import { calc, deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   reactionDetailsContainer: {
     backgroundColor: 'white',
     paddingVertical: 20,
     borderRadius: 20,
-    minHeight: Dimensions.get('window').height,
+    minHeight: deviceHeight,
+  },
+  contentContainerStyle: {
+    paddingBottom: 0.09 * deviceHeight,
+  },
+  listStyle: {
+    height: deviceHeight - 0.25 * deviceHeight,
   },
   contactWrapperStyle: {
     height: '100%',
@@ -81,7 +88,7 @@ export default StyleSheet.create({
     fontSize: 18,
     opacity: 0.4,
   },
-  itemSeperatorStyle: {
+  itemSeparatorStyle: {
     borderBottomWidth: 1,
     width: '85%',
     alignSelf: 'flex-end',

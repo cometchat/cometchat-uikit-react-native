@@ -6,18 +6,21 @@ import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReply
 import CometChatReadReceipt from '../CometChatReadReceipt';
 import { CometChatMessageReactions } from '../../Messages/Extensions';
 import style from './styles';
+import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 
-const messageFrom = 'sender';
-
-export default (props) => {
+const CometChatSenderVideoMessageBubble = (props) => {
   const player = createRef();
-  const [message] = useState({ ...props.message, messageFrom });
+  const [message] = useState({
+    ...props.message,
+    messageFrom: enums.MESSAGE_FROM_SENDER,
+  });
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={style.container}>
       <View style={style.messageWrapperStyle}>
         <TouchableWithoutFeedback
           onLongPress={() =>
-            props.actionGenerated('openMessageActions', message)
+            props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
           }>
           <View style={style.messageVideoWrapperStyle}>
             <VideoPlayer
@@ -48,3 +51,4 @@ export default (props) => {
     </View>
   );
 };
+export default CometChatSenderVideoMessageBubble;

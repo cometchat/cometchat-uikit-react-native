@@ -5,9 +5,6 @@
 /* eslint-disable react/static-property-placement */
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
-import { CometChatManager } from '../../../utils/controller';
-import { AddMembersManager } from './controller';
-
 import {
   View,
   Text,
@@ -17,18 +14,17 @@ import {
   Modal,
   Dimensions,
   TouchableOpacity,
-  KeyboardAvoidingView,
 } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
-
-import { CometChatAddGroupMemberListItem } from '../index';
 import Icon from 'react-native-vector-icons/Ionicons';
 
+import { CometChatManager } from '../../../utils/controller';
+import { AddMembersManager } from './controller';
+import { CometChatAddGroupMemberListItem } from '../index';
 import GroupDetailContext from '../CometChatGroupDetails/context';
-
-import style from './styles';
-
 import theme from '../../../resources/theme';
+import style from './styles';
+import { logger } from '../../../utils/common';
 
 class CometChatAddGroupMemberList extends React.Component {
   static contextType = GroupDetailContext;
@@ -38,10 +34,10 @@ class CometChatAddGroupMemberList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      userlist: [],
+      userList: [],
       textInputFocused: false,
       membersToAdd: [],
-      filteredlist: [],
+      filteredList: [],
       textInputValue: '',
     };
     this.sheetRef = React.createRef(null);
@@ -65,7 +61,7 @@ class CometChatAddGroupMemberList extends React.Component {
         this.textInputRef.current.focus();
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
@@ -74,29 +70,36 @@ class CometChatAddGroupMemberList extends React.Component {
       this.AddMembersManager.removeListeners();
       this.AddMembersManager = null;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
+  /**
+   * updates the userList via user object updation.
+   * @param user : Userobject
+   */
+
   userUpdated = (user) => {
     try {
-      const userlist = [...this.state.userlist];
-
+      const userList = [...this.state.userList];
       // search for user
-      const userKey = userlist.findIndex((u) => u.uid === user.uid);
-
+      const userKey = userList.findIndex((u) => u.uid === user.uid);
       // if found in the list, update user object
       if (userKey > -1) {
-        const userObj = userlist[userKey]; // {...userlist[userKey]};
+        const userObj = userList[userKey];
         const newUserObj = { ...userObj, ...user };
-        userlist.splice(userKey, 1, newUserObj);
-
-        this.setState({ userlist });
+        userList.splice(userKey, 1, newUserObj);
+        this.setState({ userList });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handles how the heading should be shown when the scroll(event) is done.
+   * @param nativeEvent: event object
+   */
 
   handleScroll = ({ nativeEvent }) => {
     try {
@@ -111,9 +114,14 @@ class CometChatAddGroupMemberList extends React.Component {
         });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * searches and fetches the user that can be added based on textInputValue.
+   * @param val: TextInput's value
+   */
 
   searchUsers = (val) => {
     try {
@@ -132,10 +140,10 @@ class CometChatAddGroupMemberList extends React.Component {
             );
             this.setState(
               {
-                userlist: [],
+                userList: [],
                 membersToAdd: [],
                 membersToRemove: [],
-                filteredlist: [],
+                filteredList: [],
               },
               () => this.getUsers(),
             );
@@ -143,9 +151,14 @@ class CometChatAddGroupMemberList extends React.Component {
         },
       );
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * fetches the users and updates the userList and filteredList
+   * @param
+   */
 
   getUsers = () => {
     new CometChatManager()
@@ -154,11 +167,13 @@ class CometChatAddGroupMemberList extends React.Component {
         this.AddMembersManager.fetchNextUsers()
           .then((userList) => {
             const filteredUserList = userList.filter((user) => {
-              const found = this.context.memberlist.find((member) => user.uid === member.uid);
-              const foundbanned = this.context.bannedmemberlist.find(
-                (member) => user.uid === member.uid
+              const found = this.context.memberList.find(
+                (member) => user.uid === member.uid,
               );
-              if (found || foundbanned) {
+              const foundBanned = this.context.bannedMemberList.find(
+                (member) => user.uid === member.uid,
+              );
+              if (found || foundBanned) {
                 return false;
               }
               return true;
@@ -167,22 +182,33 @@ class CometChatAddGroupMemberList extends React.Component {
             if (filteredUserList.length === 0) {
               this.decoratorMessage = 'No users found';
             }
-
             this.setState({
-              userlist: [...this.state.userlist, ...userList],
-              filteredlist: [...this.state.filteredlist, ...filteredUserList],
+              userList: [...this.state.userList, ...userList],
+              filteredList: [...this.state.filteredList, ...filteredUserList],
             });
           })
-          .catch(() => {
+          .catch((error) => {
             this.decoratorMessage = 'Error';
-            // console.error("[CometChatAddGroupMemberList] getUsers fetchNext error", error);
+            logger(
+              '[CometChatAddGroupMemberList] getUsers fetchNext error',
+              error,
+            );
           });
       })
-      .catch(() => {
+      .catch((error) => {
         this.decoratorMessage = 'Error';
-        // console.log("[CometChatAddGroupMemberList] getUsers getLoggedInUser error", error);
+        logger(
+          '[CometChatAddGroupMemberList] getUsers getLoggedInUser error',
+          error,
+        );
       });
   };
+
+  /**
+   * updates the memberToAdd by change observed via user object is passed to and managed by CometChatAddGroupMemberListItem.
+   * @param user: Userobject
+   * @param userState
+   */
 
   membersUpdated = (user, userState) => {
     if (userState) {
@@ -191,13 +217,20 @@ class CometChatAddGroupMemberList extends React.Component {
       this.setState({ membersToAdd: [...members] });
     } else {
       const membersToAdd = [...this.state.membersToAdd];
-      const IndexFound = membersToAdd.findIndex((member) => member.uid === user.uid);
-      if (IndexFound > -1) {
-        membersToAdd.splice(IndexFound, 1);
+      const indexFound = membersToAdd.findIndex(
+        (member) => member.uid === user.uid,
+      );
+      if (indexFound > -1) {
+        membersToAdd.splice(indexFound, 1);
         this.setState({ membersToAdd: [...membersToAdd] });
       }
     }
   };
+
+  /**
+   * updates / add members to the group.
+   * @param
+   */
 
   updateMembers = () => {
     try {
@@ -206,19 +239,20 @@ class CometChatAddGroupMemberList extends React.Component {
       const { guid } = this.props.item;
       const membersList = [];
 
-      this.state.membersToAdd.forEach((newmember) => {
+      this.state.membersToAdd.forEach((newMember) => {
         // if a selected member is already part of the member list, don't add
-        const IndexFound = group.memberlist.findIndex(
-          (member) => member.uid === newmember.uid,
+        const indexFound = group.memberList.findIndex(
+          (member) => member.uid === newMember.uid,
         );
-        if (IndexFound === -1) {
-          const newMember = new CometChat.GroupMember(
-            newmember.uid,
+
+        if (indexFound === -1) {
+          const newMemberAdded = new CometChat.GroupMember(
+            newMember.uid,
             CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT,
           );
-          membersList.push(newMember);
+          membersList.push(newMemberAdded);
 
-          newmember.type = 'add';
+          newMemberAdded.type = 'add';
         }
       });
 
@@ -230,7 +264,7 @@ class CometChatAddGroupMemberList extends React.Component {
             if (Object.keys(response).length) {
               for (const member in response) {
                 if (response[member] === 'success') {
-                  const found = this.state.userlist.find(
+                  const found = this.state.userList.find(
                     (user) => user.uid === member,
                   );
                   found.scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
@@ -241,22 +275,31 @@ class CometChatAddGroupMemberList extends React.Component {
             }
           })
           .catch(() => {
-            // console.log('addMembersToGroup failed with exception:', error);
+            logger('addMembersToGroup failed with exception:', error);
           });
       }
     } catch (error) {
-      console.log(error);
+      logger('121', error);
     }
   };
+
+  /**
+   * Header component for flatlist.
+   * @param
+   */
 
   listHeaderComponent = () => {
     return (
       <View style={[style.contactHeaderStyle]}>
         <Text style={style.contactHeaderTitleStyle}>Add Members</Text>
-        
       </View>
     );
   };
+
+  /**
+   * component to display when the flatlist seems empty i.e show the decorator message.
+   * @param
+   */
 
   listEmptyContainer = () => {
     return (
@@ -274,6 +317,11 @@ class CometChatAddGroupMemberList extends React.Component {
     );
   };
 
+  /**
+   * to be displayed as a seperator within 2 components
+   * @param
+   */
+
   itemSeparatorComponent = ({ leadingItem }) => {
     if (leadingItem.header) {
       return null;
@@ -281,7 +329,7 @@ class CometChatAddGroupMemberList extends React.Component {
     return (
       <View
         style={[
-          style.itemSeperatorStyle,
+          style.itemSeparatorStyle,
           {
             borderBottomColor: this.theme.borderColor.primary,
           },
@@ -298,7 +346,7 @@ class CometChatAddGroupMemberList extends React.Component {
     const group = this.context;
 
     let currentLetter = '';
-    const filteredUserList = [...this.state.filteredlist];
+    const filteredUserList = [...this.state.filteredList];
 
     return (
       <React.Fragment>
@@ -307,7 +355,7 @@ class CometChatAddGroupMemberList extends React.Component {
           animated
           animationType="fade"
           visible={this.props.open}>
-            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <View style={style.containerStyle}>
             <BottomSheet
               ref={this.sheetRef}
               snapPoints={[Dimensions.get('window').height - 90, 0]}
@@ -393,14 +441,12 @@ class CometChatAddGroupMemberList extends React.Component {
                               firstLetter={firstLetter}
                               loggedinuser={group.loggedinuser}
                               user={item}
-                              members={group.memberlist}
+                              members={group.memberList}
                               changed={this.membersUpdated}
-                              widgetsettings={this.props.widgetsettings}
                             />
                           </React.Fragment>
                         );
                       }}
-                      // ListHeaderComponent={this.listHeaderComponent}
                       ListEmptyComponent={this.listEmptyContainer}
                       ItemSeparatorComponent={this.itemSeparatorComponent}
                       onScroll={this.handleScroll}
@@ -413,7 +459,6 @@ class CometChatAddGroupMemberList extends React.Component {
                         style.addBtnStyle,
                         {
                           backgroundColor: this.theme.backgroundColor.blue,
-                          alignSelf: 'center',
                         },
                       ]}
                       onPress={this.updateMembers}>
@@ -434,7 +479,7 @@ class CometChatAddGroupMemberList extends React.Component {
                 this.props.close();
               }}
             />
-            </View>
+          </View>
         </Modal>
       </React.Fragment>
     );

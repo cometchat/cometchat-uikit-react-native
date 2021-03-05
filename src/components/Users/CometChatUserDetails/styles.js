@@ -1,7 +1,8 @@
-import { Dimensions, StyleSheet } from 'react-native';
-import { heightRatio, widthRatio } from '../../../utils/consts';
+import { StyleSheet } from 'react-native';
+import { heightRatio, widthRatio, deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   itemLinkStyle: {
     fontSize: 15,
     lineHeight: 20,
@@ -15,6 +16,9 @@ export default StyleSheet.create({
     lineHeight: 20,
     textTransform: 'uppercase',
   },
+  optionsContainer: { padding: 16, flex: 1, flexGrow: 1 },
+  blockContainer: { width: '100%' },
+  blockText: { width: '100%', marginVertical: 6 },
   headerStyle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -32,6 +36,6 @@ export default StyleSheet.create({
     paddingVertical: 20,
     borderRadius: 20,
     flex: 1,
-    minHeight: Dimensions.get('window').height,
+    minHeight: deviceHeight,
   },
 });

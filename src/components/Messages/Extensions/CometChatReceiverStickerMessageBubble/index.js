@@ -3,14 +3,22 @@ import { View, Text } from 'react-native';
 import FastImage from 'react-native-fast-image';
 
 import theme from '../../../../resources/theme';
-import { CometChatThreadedMessageReplyCount, CometChatReadReceipt } from '../../';
+import {
+  CometChatThreadedMessageReplyCount,
+  CometChatReadReceipt,
+} from '../../';
 import style from './styles';
 import { CometChatAvatar } from '../../../Shared';
 import { CometChatMessageReactions } from '../index';
+import * as enums from '../../../../utils/enums';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
-export default (props) => {
-  const message = { ...props.message, messageFrom: 'receiver' };
-  const ViewTheme = { ...theme, ...props.theme };
+const CometChatReceiverStickerMessageBubble = (props) => {
+  const message = {
+    ...props.message,
+    messageFrom: enums.MESSAGE_FROM_RECEIVER,
+  };
+  const viewTheme = { ...theme, ...props.theme };
   let stickerData = null;
   let stickerImg = null;
   if (
@@ -21,23 +29,26 @@ export default (props) => {
 
     if (Object.prototype.hasOwnProperty.call(stickerData, 'sticker_url')) {
       stickerImg = (
-        <FastImage source={{ uri: stickerData.sticker_url }} style={style.messageImgWrapper} />
+        <FastImage
+          source={{ uri: stickerData.sticker_url }}
+          style={style.messageImgWrapper}
+        />
       );
     }
   }
 
   let senderAvatar = null;
-  if (message.receiverType === 'group') {
+  if (message.receiverType === CometChat.RECEIVER_TYPE.GROUP) {
     senderAvatar = { uri: message.sender.avatar };
   }
   return (
-    <View style={{ marginBottom: 16 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        {props.message.receiverType === 'group' ? (
+    <View style={style.container}>
+      <View style={style.innerContainer}>
+        {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
           <View style={style.avatarStyle}>
             <CometChatAvatar
               cornerRadius={18}
-              borderColor={ViewTheme.color.secondary}
+              borderColor={viewTheme.color.secondary}
               borderWidth={0}
               image={senderAvatar}
               name={message.sender.name}
@@ -45,8 +56,8 @@ export default (props) => {
           </View>
         ) : null}
         <View>
-          {props.message.receiverType === 'group' ? (
-            <View style={{ marginBottom: 5 }}>
+          {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
+            <View style={style.senderNameContainer}>
               <Text>{message.sender.name}</Text>
             </View>
           ) : null}
@@ -62,10 +73,15 @@ export default (props) => {
                 message={message}
               />
             </View>
-            <CometChatMessageReactions theme={props.theme} {...props} message={message} />
+            <CometChatMessageReactions
+              theme={props.theme}
+              {...props}
+              message={message}
+            />
           </View>
         </View>
       </View>
     </View>
   );
 };
+export default CometChatReceiverStickerMessageBubble;

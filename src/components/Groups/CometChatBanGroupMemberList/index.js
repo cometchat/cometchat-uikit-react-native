@@ -2,7 +2,7 @@
 /* eslint-disable react/jsx-fragments */
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
-import { View, Text, FlatList, Modal, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 
 import { CometChatBanGroupMemberListItem } from '../index';
@@ -11,6 +11,9 @@ import GroupDetailContext from '../CometChatGroupDetails/context';
 import style from './styles';
 
 import theme from '../../../resources/theme';
+import * as actions from '../../../utils/actions';
+import { deviceHeight } from '../../../utils/consts';
+import { logger } from '../../../utils/common';
 
 export default class CometChatBanGroupMemberList extends React.Component {
   static contextType = GroupDetailContext;
@@ -25,6 +28,11 @@ export default class CometChatBanGroupMemberList extends React.Component {
     this.sheetRef = React.createRef(null);
   }
 
+  /**
+   *handles the unbanning of a member from the group
+   * @param memberToUnBan: memberToUnBan object
+   */
+
   unbanMember = (memberToUnBan) => {
     const group = this.context;
 
@@ -32,21 +40,34 @@ export default class CometChatBanGroupMemberList extends React.Component {
     CometChat.unbanGroupMember(guid, memberToUnBan.uid)
       .then((response) => {
         if (response) {
-          this.props.actionGenerated('unbanGroupMembers', [memberToUnBan]);
+          this.props.actionGenerated(actions.UNBAN_GROUP_MEMBERS, [
+            memberToUnBan,
+          ]);
         }
       })
       .catch(() => {});
   };
 
+  /**
+   * handles the unbanning of member if the arg. action matches the required case via unbanMember()
+   * @param action: actions object
+   * @param member: member object
+   */
+
   updateMembers = (action, member) => {
     switch (action) {
-      case 'unban':
+      case actions.UNBAN:
         this.unbanMember(member);
         break;
       default:
         break;
     }
   };
+
+  /**
+   * handles how the header should be shown when scroll(event) is performed.
+   * @param nativeEvent
+   */
 
   handleScroll = ({ nativeEvent }) => {
     try {
@@ -61,9 +82,14 @@ export default class CometChatBanGroupMemberList extends React.Component {
         });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * The header component for flatlist(for memberList).
+   * @param
+   */
 
   listHeaderComponent = () => {
     return (
@@ -72,6 +98,11 @@ export default class CometChatBanGroupMemberList extends React.Component {
       </View>
     );
   };
+
+  /**
+   * handles what needs to be displayed when the list is empty i.e decorator message.
+   * @param
+   */
 
   listEmptyContainer = () => {
     return (
@@ -89,6 +120,11 @@ export default class CometChatBanGroupMemberList extends React.Component {
     );
   };
 
+  /**
+   * provides the component to be displayed between each membersList item.
+   * @param leadingItem
+   */
+
   itemSeparatorComponent = ({ leadingItem }) => {
     if (leadingItem.header) {
       return null;
@@ -96,7 +132,7 @@ export default class CometChatBanGroupMemberList extends React.Component {
     return (
       <View
         style={[
-          style.itemSeperatorStyle,
+          style.itemSeparatorStyle,
           {
             borderBottomColor: this.theme.borderColor.primary,
           },
@@ -106,22 +142,26 @@ export default class CometChatBanGroupMemberList extends React.Component {
   };
 
   endReached = () => {
-    this.props.actionGenerated('fetchGroupMembers');
+    this.props.actionGenerated(actions.FETCH_GROUP_MEMBERS);
   };
 
   render() {
     const group = this.context;
-    const membersList = [...group.bannedmemberlist];
+    const membersList = [...group.bannedMemberList];
     if (!membersList.length) {
       this.decoratorMessage = 'No banned members';
     }
     return (
       <React.Fragment>
-        <Modal transparent animated animationType="fade" visible={this.props.open}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <Modal
+          transparent
+          animated
+          animationType="fade"
+          visible={this.props.open}>
+          <View style={style.container}>
             <BottomSheet
               ref={this.sheetRef}
-              snapPoints={[Dimensions.get('window').height - 80, 0]}
+              snapPoints={[deviceHeight - 80, 0]}
               borderRadius={30}
               initialSnap={0}
               enabledInnerScrolling={false}
@@ -131,8 +171,7 @@ export default class CometChatBanGroupMemberList extends React.Component {
                 return (
                   <View style={style.reactionDetailsContainer}>
                     <View style={style.headerContainer}>
-                      <View
-                        style={{}}>
+                      <View style={{}}>
                         <Text style={style.contactHeaderTitleStyle}>
                           Banned Members
                         </Text>
@@ -142,7 +181,7 @@ export default class CometChatBanGroupMemberList extends React.Component {
                           this.sheetRef.current.snapTo(1);
                           this.props.close();
                         }}
-                        style={{ }}>
+                        style={{}}>
                         <Text style={{ color: this.theme.color.blue }}>
                           Close
                         </Text>
@@ -159,25 +198,17 @@ export default class CometChatBanGroupMemberList extends React.Component {
                             item={this.props.item}
                             loggedInUser={this.props.loggedInUser}
                             lang={this.props.lang}
-                            widgetsettings={this.props.widgetsettings}
                             actionGenerated={this.updateMembers}
                           />
                         );
                       }}
-                      // ListHeaderComponent={this.listHeaderComponent}
                       ListEmptyComponent={this.listEmptyContainer}
                       ItemSeparatorComponent={this.itemSeparatorComponent}
                       onScroll={this.handleScroll}
                       onEndReached={this.endReached}
                       onEndReachedThreshold={0.3}
-                      contentContainerStyle={{
-                        paddingBottom: 0.09 * Dimensions.get('window').height,
-                      }}
-                      style={{
-                        height:
-                          Dimensions.get('window').height -
-                          0.25 * Dimensions.get('window').height,
-                      }}
+                      contentContainerStyle={style.contentContainerStyle}
+                      style={style.listStyle}
                       showsVerticalScrollIndicator={false}
                     />
                   </View>

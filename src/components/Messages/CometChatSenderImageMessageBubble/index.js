@@ -6,8 +6,8 @@ import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReply
 import { CometChatMessageReactions } from '../../Messages/Extensions';
 import CometChatReadReceipt from '../CometChatReadReceipt';
 import style from './styles';
-
-const messageFrom = 'sender';
+import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 
 function usePrevious(value) {
   const ref = useRef();
@@ -17,12 +17,15 @@ function usePrevious(value) {
   return ref.current;
 }
 
-export default (props) => {
-  const [message, setMessage] = useState({ ...props.message, messageFrom });
+const CometChatSenderImageMessageBubble = (props) => {
+  const [message, setMessage] = useState({
+    ...props.message,
+    messageFrom: enums.MESSAGE_FROM_SENDER,
+  });
   const prevMessage = usePrevious(message);
 
   const open = () => {
-    props.actionGenerated('viewActualImage', message);
+    props.actionGenerated(actions.VIEW_ACTUAL_IMAGE, message);
   };
 
   useEffect(() => {
@@ -30,7 +33,10 @@ export default (props) => {
     const currentMessageStr = JSON.stringify(props.message);
 
     if (previousMessageStr !== currentMessageStr) {
-      const newMessage = { ...props.message, messageFrom };
+      const newMessage = {
+        ...props.message,
+        messageFrom: enums.MESSAGE_FROM_SENDER,
+      };
       setMessage(newMessage);
     }
   }, [props]);
@@ -38,11 +44,17 @@ export default (props) => {
   if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
     const { metadata } = message;
     const injectedObject = metadata['@injected'];
-    if (injectedObject && Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')) {
+    if (
+      injectedObject &&
+      Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')
+    ) {
       const extensionsObject = injectedObject.extensions;
       if (
         extensionsObject &&
-        Object.prototype.hasOwnProperty.call(extensionsObject, 'thumbnail-generation')
+        Object.prototype.hasOwnProperty.call(
+          extensionsObject,
+          'thumbnail-generation',
+        )
       ) {
         thumbnailGenerationObject = extensionsObject['thumbnail-generation'];
       }
@@ -50,7 +62,7 @@ export default (props) => {
   }
 
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={style.container}>
       <View
         style={[
           style.messageWrapperStyle,
@@ -61,7 +73,9 @@ export default (props) => {
         <TouchableOpacity
           onPress={() => open()}
           style={style.messageImgWrapperStyle}
-          onLongPress={() => props.actionGenerated('openMessageActions', message)}>
+          onLongPress={() =>
+            props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
+          }>
           <FastImage
             style={style.messageImg}
             source={{
@@ -75,7 +89,12 @@ export default (props) => {
         <CometChatThreadedMessageReplyCount {...props} message={message} />
         <CometChatReadReceipt {...props} />
       </View>
-      <CometChatMessageReactions theme={props.theme} {...props} message={message} />
+      <CometChatMessageReactions
+        theme={props.theme}
+        {...props}
+        message={message}
+      />
     </View>
   );
 };
+export default CometChatSenderImageMessageBubble;

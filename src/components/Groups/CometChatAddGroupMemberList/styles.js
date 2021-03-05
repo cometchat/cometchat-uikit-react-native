@@ -3,12 +3,13 @@ import { StyleSheet, Dimensions, Platform } from 'react-native';
 import { calc } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  containerStyle: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   reactionDetailsContainer: {
     backgroundColor: 'white',
     paddingVertical: 20,
-    paddingBottom:Platform.OS==="ios"?30:20,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
     borderRadius: 20,
-    height: Dimensions.get('window').height- 90,
+    height: Dimensions.get('window').height - 90,
   },
   contactWrapperStyle: {
     height: '100%',
@@ -16,7 +17,6 @@ export default StyleSheet.create({
   },
   contactHeaderStyle: {
     paddingBottom: 14,
-    // paddingHorizontal: 10,
     position: 'relative',
     paddingHorizontal: 25,
   },
@@ -32,12 +32,11 @@ export default StyleSheet.create({
   },
   contactSearchStyle: {
     padding: 4,
-    marginHorizontal:15,
+    marginHorizontal: 15,
     marginBottom: 10,
     flexDirection: 'row',
     position: 'relative',
     alignItems: 'center',
-    // width: '100%',
     borderWidth: 0,
     borderRadius: 8,
     shadowColor: '#000',
@@ -47,8 +46,6 @@ export default StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
-
-    // elevation: 2,
   },
   contactSearchInputStyle: {
     flex: 1,
@@ -84,7 +81,7 @@ export default StyleSheet.create({
     fontSize: 18,
     opacity: 0.4,
   },
-  itemSeperatorStyle: {
+  itemSeparatorStyle: {
     borderBottomWidth: 1,
     width: '85%',
     alignSelf: 'flex-end',
@@ -102,6 +99,7 @@ export default StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     paddingHorizontal: 15,
+    alignSelf: 'center',
   },
   addBtnTxtStyle: {
     fontSize: 14,

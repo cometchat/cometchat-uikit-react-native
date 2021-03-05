@@ -5,30 +5,44 @@ import style from './styles';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/SimpleLineIcons';
 import FoundationIcon from 'react-native-vector-icons/Foundation';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
-export default (props) => {
-  const ViewTheme = { ...theme, ...props.theme };
+const CometChatGroupListItem = (props) => {
+  const viewTheme = { ...theme, ...props.theme };
   let groupTypeIcon = null;
-  if (props.group.type === 'private') {
-    groupTypeIcon = <Icon name="lock" size={20} color={ViewTheme.color.helpText} />;
-  } else if (props.group.type === 'password') {
-    groupTypeIcon = <FoundationIcon name="shield" size={22} color={ViewTheme.color.helpText} />;
+  if (props.group.type === CometChat.GROUP_TYPE.PRIVATE) {
+    groupTypeIcon = (
+      <Icon name="lock" size={20} color={viewTheme.color.helpText} />
+    );
+  } else if (props.group.type === CometChat.GROUP_TYPE.PASSWORD) {
+    groupTypeIcon = (
+      <FoundationIcon
+        name="shield"
+        size={22}
+        color={viewTheme.color.helpText}
+      />
+    );
   }
 
   return (
-    <TouchableOpacity style={style.listItem} onPress={() => props.clickHandler(props.group)}>
+    <TouchableOpacity
+      style={style.listItem}
+      onPress={() => props.clickHandler(props.group)}>
       <View style={style.avatarStyle}>
         <CometChatAvatar
           image={{ uri: props.group.icon }}
           cornerRadius={25}
-          borderColor={ViewTheme.color.secondary}
+          borderColor={viewTheme.color.secondary}
           borderWidth={0}
           name={props.group.name}
         />
       </View>
       <View
-        style={[{ borderBottomColor: ViewTheme.borderColor.primary }, style.groupDetailsContainer]}>
-        <View style={{ flex: 1 }}>
+        style={[
+          { borderBottomColor: viewTheme.borderColor.primary },
+          style.groupDetailsContainer,
+        ]}>
+        <View style={style.fullFlex}>
           <Text numberOfLines={1} style={style.groupNameStyle}>
             {props.group.name}
           </Text>
@@ -41,3 +55,4 @@ export default (props) => {
     </TouchableOpacity>
   );
 };
+export default CometChatGroupListItem;

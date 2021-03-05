@@ -8,14 +8,25 @@ import style from './styles';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RNFetchBlob from 'rn-fetch-blob';
 import { CometChatAvatar } from '../../Shared';
+import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
-export default (props) => {
-  const message = { ...props.message, messageFrom: 'receiver' };
+const CometChatReceiverFileMessageBubble = (props) => {
+  const message = {
+    ...props.message,
+    messageFrom: enums.MESSAGE_FROM_RECEIVER,
+  };
   let avatarImg = '';
 
-  if (message.receiverType === 'group') {
+  if (message.receiverType === CometChat.RECEIVER_TYPE.GROUP) {
     avatarImg = { uri: message.sender.avatar };
   }
+
+  /**
+   * Handler for downloading file attachment in local storage.
+   * @param
+   */
 
   const download = () => {
     let PictureDir = RNFetchBlob.fs.dirs.PictureDir;
@@ -45,9 +56,9 @@ export default (props) => {
   };
 
   return (
-    <View style={{ marginBottom: 16 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        {props.message.receiverType === 'group' ? (
+    <View style={style.mainContainerStyle}>
+      <View style={style.messageContainer}>
+        {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
           <View style={style.avatarStyle}>
             <CometChatAvatar
               cornerRadius={18}
@@ -59,22 +70,24 @@ export default (props) => {
           </View>
         ) : null}
         <View>
-          {props.message.receiverType === 'group' ? (
-            <View style={{ marginBottom: 5 }}>
+          {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
+            <View style={style.senderNameContainer}>
               <Text>{message.sender.name}</Text>
             </View>
           ) : null}
 
-          <View style={{ minWidth: '65%' }}>
+          <View style={style.messageContainerStyle}>
             <TouchableWithoutFeedback
               onPress={download}
-              onLongPress={() => props.actionGenerated('openMessageActions', message)}>
+              onLongPress={() =>
+                props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
+              }>
               <View
                 style={[
                   style.messageWrapperStyle,
                   { backgroundColor: props.theme.backgroundColor.grey },
                 ]}>
-                <View style={{ flex: 1, marginRight: 4 }}>
+                <View style={style.attachmentNameStyle}>
                   <Text style={[style.attachmentName]}>
                     {props.message.data.attachments[0].name}
                   </Text>
@@ -86,12 +99,20 @@ export default (props) => {
           <View style={style.containerStyle}>
             <View style={style.messageInfoWrapperStyle}>
               <CometChatReadReceipt {...props} message={message} />
-              <CometChatThreadedMessageReplyCount {...props} message={message} />
+              <CometChatThreadedMessageReplyCount
+                {...props}
+                message={message}
+              />
             </View>
           </View>
-          <CometChatMessageReactions theme={props.theme} {...props} message={message} />
+          <CometChatMessageReactions
+            theme={props.theme}
+            {...props}
+            message={message}
+          />
         </View>
       </View>
     </View>
   );
 };
+export default CometChatReceiverFileMessageBubble;

@@ -2,6 +2,17 @@ import { StyleSheet } from 'react-native';
 import { widthRatio, heightRatio } from '../../../../utils/consts';
 
 export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  innerContainer: {
+    backgroundColor: 'white',
+    height: '90%',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
   ModalWrapperStyle: {
     marginTop: heightRatio * 40,
     alignItems: 'flex-start',
@@ -96,7 +107,7 @@ export default StyleSheet.create({
     height: 28,
     width: 28,
   },
-  Inputbox: {
+  InputBox: {
     width: '70%',
     borderColor: 'green',
     fontSize: 16,

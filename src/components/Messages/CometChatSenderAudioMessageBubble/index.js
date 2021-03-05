@@ -5,20 +5,24 @@ import { CometChatMessageReactions } from '../../Messages/Extensions';
 import CometChatReadReceipt from '../CometChatReadReceipt';
 import style from './styles';
 import theme from '../../../resources/theme';
+import * as actions from '../../../utils/actions';
+import * as enums from '../../../utils/enums';
 import AudioControls from './audioControls';
 
-export default (props) => {
-  const message = { ...props.message, messageFrom: 'sender' };
-  const ViewTheme = { ...theme, ...props.theme };
+const CometChatSenderAudioMessageBubble = (props) => {
+  const message = { ...props.message, messageFrom: enums.MESSAGE_FROM_SENDER };
+  const viewTheme = { ...theme, ...props.theme };
   return (
-    <View style={{ marginBottom: 16, alignItems: 'flex-end' }}>
-      <View style={{ width: '70%' }}>
+    <View style={style.container}>
+      <View style={style.innerContainer}>
         <TouchableWithoutFeedback
-          onLongPress={() => props.actionGenerated('openMessageActions', message)}>
+          onLongPress={() =>
+            props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
+          }>
           <View
             style={[
               style.messageWrapperStyle,
-              { backgroundColor: ViewTheme.backgroundColor.grey },
+              { backgroundColor: viewTheme.backgroundColor.grey },
             ]}>
             <AudioControls source={props.message.data.url} />
           </View>
@@ -28,7 +32,12 @@ export default (props) => {
         <CometChatThreadedMessageReplyCount {...props} message={message} />
         <CometChatReadReceipt {...props} />
       </View>
-      <CometChatMessageReactions theme={props.theme} {...props} message={message} />
+      <CometChatMessageReactions
+        theme={props.theme}
+        {...props}
+        message={message}
+      />
     </View>
   );
 };
+export default CometChatSenderAudioMessageBubble;

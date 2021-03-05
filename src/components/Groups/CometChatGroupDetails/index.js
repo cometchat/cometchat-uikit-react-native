@@ -12,22 +12,28 @@ import GroupDetailContext from './context';
 import { GroupDetailManager } from './controller';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 import {
   CometChatAddGroupMemberList,
   CometChatViewGroupMemberList,
   CometChatBanGroupMemberList,
 } from '../index';
-import { validateWidgetSettings } from '../../../utils/common';
+import { deviceHeight } from '../../../utils/consts';
+import { logger } from '../../../utils/common';
+
+const ADD_MEMBER = 'addMember';
+const VIEW_MEMBER = 'viewMember';
+const BAN_MEMBER = 'banMember';
 
 export default class CometChatGroupDetails extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       user: {},
-      memberlist: [],
-      bannedmemberlist: [],
-      administratorslist: [],
-      moderatorslist: [],
+      memberList: [],
+      bannedMemberList: [],
+      administratorsList: [],
+      moderatorsList: [],
       viewMember: false,
       addMember: false,
       banMember: false,
@@ -35,16 +41,16 @@ export default class CometChatGroupDetails extends React.Component {
       addModerator: false,
     };
 
-    this.ViewTheme = { ...theme, ...this.props.theme };
+    this.viewTheme = { ...theme, ...this.props.theme };
     this.sheetRef = React.createRef(null);
   }
 
   componentDidMount() {
     this.setState({
-      memberlist: [],
-      administratorslist: [],
-      moderatorslist: [],
-      bannedmemberlist: [],
+      memberList: [],
+      administratorsList: [],
+      moderatorsList: [],
+      bannedMemberList: [],
     });
 
     const { guid } = this.props.item;
@@ -59,16 +65,16 @@ export default class CometChatGroupDetails extends React.Component {
       this.sheetRef.current.snapTo(0);
 
       const { guid } = this.props.item;
-      if(this.GroupDetailManager){
+      if (this.GroupDetailManager) {
         this.GroupDetailManager.removeListeners();
       }
       this.GroupDetailManager = new GroupDetailManager(guid);
 
       this.setState({
-        memberlist: [],
-        administratorslist: [],
-        moderatorslist: [],
-        bannedmemberlist: [],
+        memberList: [],
+        administratorsList: [],
+        moderatorsList: [],
+        bannedMemberList: [],
       });
       this.getGroupMembers();
       this.getBannedGroupMembers();
@@ -80,6 +86,14 @@ export default class CometChatGroupDetails extends React.Component {
     this.GroupDetailManager.removeListeners();
     this.GroupDetailManager = null;
   }
+
+  /**
+   * updates the group based on the key.
+   * @param key: type enums
+   * @param message: message object
+   * @param options: options for user.
+   * @param actionBy: object, defines the action taken by which user.
+   */
 
   groupUpdated = (key, message, group, options, actionBy) => {
     try {
@@ -143,45 +157,55 @@ export default class CometChatGroupDetails extends React.Component {
           break;
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * updates the memberList and bannedMemberList based on updation of userObject.
+   * @param member
+   */
+
   groupMemberUpdated = (member) => {
     try {
-      const memberlist = [...this.state.memberlist];
+      const memberList = [...this.state.memberList];
       // search for user
-      const memberKey = memberlist.findIndex((m) => m.uid === member.uid);
+      const memberKey = memberList.findIndex((m) => m.uid === member.uid);
       // if found in the list, update user object
       if (memberKey > -1) {
-        const memberObj = memberlist[memberKey];
+        const memberObj = memberList[memberKey];
         const newMemberObj = { ...memberObj, ...member };
-        memberlist.splice(memberKey, 1, newMemberObj);
+        memberList.splice(memberKey, 1, newMemberObj);
 
-        this.setState({ memberlist });
+        this.setState({ memberList });
       }
 
-      const bannedmemberlist = [...this.state.bannedmemberlist];
+      const bannedMemberList = [...this.state.bannedMemberList];
       // search for user
-      const bannedMemberKey = bannedmemberlist.findIndex(
+      const bannedMemberKey = bannedMemberList.findIndex(
         (m) => m.uid === member.uid,
       );
       // if found in the list, update user object
       if (bannedMemberKey > -1) {
-        const bannedMemberObj = bannedmemberlist[bannedMemberKey];
+        const bannedMemberObj = bannedMemberList[bannedMemberKey];
         const newBannedMemberObj = { ...bannedMemberObj, ...member };
-        bannedmemberlist.splice(bannedMemberKey, 1, newBannedMemberObj);
+        bannedMemberList.splice(bannedMemberKey, 1, newBannedMemberObj);
 
-        this.setState({ bannedmemberlist });
+        this.setState({ bannedMemberList });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * fetches the group members and provides with their scopes
+   * @param
+   */
+
   getGroupMembers = () => {
-    const administratorslist = [];
-    const moderatorslist = [];
+    const administratorsList = [];
+    const moderatorsList = [];
     new CometChatManager()
       .getLoggedInUser()
       .then((user) => {
@@ -189,36 +213,42 @@ export default class CometChatGroupDetails extends React.Component {
         this.GroupDetailManager.fetchNextGroupMembers()
           .then((groupMembers) => {
             groupMembers.forEach((member) => {
-              // this.setAvatar(member);
-
-              if (member.scope === 'admin') {
-                administratorslist.push(member);
+              if (member.scope === CometChat.GROUP_MEMBER_SCOPE.ADMIN) {
+                administratorsList.push(member);
               }
 
-              if (member.scope === 'moderator') {
-                moderatorslist.push(member);
+              if (member.scope === CometChat.GROUP_MEMBER_SCOPE.MODERATOR) {
+                moderatorsList.push(member);
               }
             });
             this.setState({
-              memberlist: [...this.state.memberlist, ...groupMembers],
-              administratorslist: [
-                ...this.state.administratorslist,
-                ...administratorslist,
+              memberList: [...this.state.memberList, ...groupMembers],
+              administratorsList: [
+                ...this.state.administratorsList,
+                ...administratorsList,
               ],
-              moderatorslist: [...this.state.moderatorslist, ...moderatorslist],
+              moderatorsList: [...this.state.moderatorsList, ...moderatorsList],
             });
           })
-          .catch(() => {
-            // console.error(
-            //   '[CometChatGroupDetails] getGroupMembers fetchNextGroupMembers error',
-            //   error
-            // );
+          .catch((error) => {
+            logger(
+              '[CometChatGroupDetails] getGroupMembers fetchNextGroupMembers error',
+              error,
+            );
           });
       })
-      .catch(() => {
-        // console.log('[CometChatGroupDetails] getGroupMembers getLoggedInUser error', error);
+      .catch((error) => {
+        logger(
+          '[CometChatGroupDetails] getGroupMembers getLoggedInUser error',
+          error,
+        );
       });
   };
+
+  /**
+   * fetches the members who are banned.
+   * @param
+   */
 
   getBannedGroupMembers = () => {
     if (this.props.item.scope === CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT) {
@@ -230,39 +260,49 @@ export default class CometChatGroupDetails extends React.Component {
       .then(() => {
         this.GroupDetailManager.fetchNextBannedGroupMembers()
           .then((bannedMembers) => {
-            // bannedMembers.forEach(member => this.setAvatar(member));
-
             this.setState({
-              bannedmemberlist: [
-                ...this.state.bannedmemberlist,
+              bannedMemberList: [
+                ...this.state.bannedMemberList,
                 ...bannedMembers,
               ],
             });
           })
-          .catch(() => {
-            // console.error(
-            //   '[CometChatGroupDetails] getGroupMembers fetchNextGroupMembers error',
-            //   error
-            // );
+          .catch((error) => {
+            logger(
+              '[CometChatGroupDetails] getGroupMembers fetchNextGroupMembers error',
+              error,
+            );
           });
       })
-      .catch(() => {
-        // console.log('[CometChatGroupDetails] getGroupMembers getLoggedInUser error', error);
+      .catch((error) => {
+        logger(
+          '[CometChatGroupDetails] getGroupMembers getLoggedInUser error',
+          error,
+        );
       });
   };
+
+  /**
+   * handles the deletion of the group.
+   * @param
+   */
 
   deleteGroup = () => {
     const item = { ...this.props.item };
     const { guid } = item;
     CometChat.deleteGroup(guid)
       .then(() => {
-        // console.log('Groups deleted successfully:', response);
-        this.props.actionGenerated('groupDeleted', item);
+        this.props.actionGenerated(actions.GROUP_DELETED, item);
       })
-      .catch(() => {
-        // console.log('Group delete failed with exception:', error);
+      .catch((error) => {
+        logger('Group delete failed with exception:', error);
       });
   };
+
+  /**
+   * allows the logged in user to leave the group
+   * @param
+   */
 
   leaveGroup = () => {
     try {
@@ -270,26 +310,31 @@ export default class CometChatGroupDetails extends React.Component {
       const { guid } = item;
       CometChat.leaveGroup(guid)
         .then(() => {
-          // console.log('Group left successfully:', hasLeft);
-          this.props.actionGenerated('leftGroup', item);
+          this.props.actionGenerated(actions.LEFT_GROUP, item);
         })
-        .catch(() => {
-          // console.log('Group leaving failed with exception:', error);
+        .catch((error) => {
+          logger('Group leaving failed with exception:', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handles the action to be taken and provide required screen.
+   * @param action
+   * @param flag
+   */
+
   clickHandler = (action, flag) => {
     switch (action) {
-      case 'viewmember':
+      case VIEW_MEMBER:
         this.setState({ viewMember: flag });
         break;
-      case 'addmember':
+      case ADD_MEMBER:
         this.setState({ addMember: flag });
         break;
-      case 'banmember':
+      case BAN_MEMBER:
         this.setState({ banMember: flag });
         break;
       default:
@@ -297,27 +342,33 @@ export default class CometChatGroupDetails extends React.Component {
     }
   };
 
+  /**
+   * handles the various actions for the members of the group
+   * @param action
+   * @param member
+   */
+
   membersActionHandler = (action, members) => {
     switch (action) {
-      case 'banGroupMembers':
+      case actions.BAN_GROUP_MEMBERS:
         this.banMembers([members]);
         break;
-      case 'unbanGroupMembers':
+      case actions.UNBAN_GROUP_MEMBERS:
         this.unbanMembers(members);
         break;
-      case 'addGroupParticipants':
+      case actions.ADD_GROUP_PARTICIPANTS:
         this.addParticipants(members);
         break;
-      case 'removeGroupParticipants':
+      case actions.REMOVE_GROUP_PARTICIPANTS:
         this.removeParticipants(members);
         break;
-      case 'updateGroupParticipants':
+      case actions.UPDATE_GROUP_PARTICIPANTS:
         this.updateParticipants(members);
         break;
-      case 'fetchGroupMembers':
+      case actions.FETCH_GROUP_MEMBERS:
         this.getGroupMembers();
         break;
-      case 'fetchBannedMembers':
+      case actions.FETCH_BANNED_MEMBERS:
         this.getBannedGroupMembers();
         break;
       default:
@@ -325,9 +376,15 @@ export default class CometChatGroupDetails extends React.Component {
     }
   };
 
+  /**
+   * handles the banning of members
+   * @param members
+   * @param triggerUpdate
+   */
+
   banMembers = (members, triggerUpdate = true) => {
     try {
-      const newMembersList = this.state.memberlist.filter((bannedmember) => {
+      const newMembersList = this.state.memberList.filter((bannedmember) => {
         const found = members.find((member) => bannedmember.uid === member.uid);
         if (found) {
           return false;
@@ -336,26 +393,32 @@ export default class CometChatGroupDetails extends React.Component {
       });
 
       this.setState({
-        bannedmemberlist: [...this.state.bannedmemberlist, ...members],
-        memberlist: newMembersList,
+        bannedMemberList: [...this.state.bannedMemberList, ...members],
+        memberList: newMembersList,
       });
 
       if (triggerUpdate) {
-        this.props.actionGenerated('memberBanned', members);
+        this.props.actionGenerated(actions.MEMBER_BANNED, members);
         this.props.actionGenerated(
-          'membersUpdated',
+          actions.MEMBERS_UPDATED,
           this.props.item,
           newMembersList.length,
         );
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handles the unbanning of members from the group.
+   * @param members
+   * @param triggerUpdate
+   */
+
   unbanMembers = (members, triggerUpdate = true) => {
     try {
-      const bannedMembers = [...this.state.bannedmemberlist];
+      const bannedMembers = [...this.state.bannedMemberList];
       const unbannedMembers = [];
 
       const filteredBannedMembers = bannedMembers.filter((bannedmember) => {
@@ -368,40 +431,52 @@ export default class CometChatGroupDetails extends React.Component {
       });
 
       this.setState({
-        bannedmemberlist: [...filteredBannedMembers],
+        bannedMemberList: [...filteredBannedMembers],
       });
 
       if (triggerUpdate) {
-        this.props.actionGenerated('memberUnbanned', unbannedMembers);
+        this.props.actionGenerated(actions.MEMBER_UNBANNED, unbannedMembers);
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handles the addition of participants
+   * @param members
+   * @param triggerUpdate
+   */
 
   addParticipants = (members, triggerUpdate = true) => {
     try {
-      const memberlist = [...this.state.memberlist, ...members];
+      const memberList = [...this.state.memberList, ...members];
 
       this.setState({
-        memberlist,
+        memberList,
       });
       if (triggerUpdate) {
-        this.props.actionGenerated('membersAdded', members);
+        this.props.actionGenerated(actions.MEMBERS_ADDED, members);
         this.props.actionGenerated(
-          'membersUpdated',
+          actions.MEMBERS_UPDATED,
           this.props.item,
-          memberlist.length,
+          memberList.length,
         );
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handles the removing of participants from the group.
+   * @param member
+   * @param triggerUpdate
+   */
+
   removeParticipants = (member, triggerUpdate = true) => {
     try {
-      const groupmembers = [...this.state.memberlist];
+      const groupmembers = [...this.state.memberList];
       const filteredMembers = groupmembers.filter((groupmember) => {
         if (groupmember.uid === member.uid) {
           return false;
@@ -409,44 +484,52 @@ export default class CometChatGroupDetails extends React.Component {
         return true;
       });
 
-      this.setState({ memberlist: filteredMembers });
+      this.setState({ memberList: filteredMembers });
       if (triggerUpdate) {
-        this.props.actionGenerated('membersRemoved', [member]);
+        this.props.actionGenerated(actions.MEMBERS_REMOVED, [member]);
         this.props.actionGenerated(
-          'membersUpdated',
+          actions.MEMBERS_UPDATED,
           this.props.item,
           filteredMembers.length,
         );
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
-  updateParticipants = (updatedMember, triggerUpdate) => {
-    try {
-      const memberlist = [...this.state.memberlist];
+  /**
+   * handles the updation of members when their scope is changed.
+   * @param updatedMember: member object
+   * @param triggerUpdate
+   */
 
-      const memberKey = memberlist.findIndex(
+  updateParticipants = (updatedMember, triggerUpdate = true) => {
+    try {
+      const memberList = [...this.state.memberList];
+
+      const memberKey = memberList.findIndex(
         (member) => member.uid === updatedMember.uid,
       );
       if (memberKey > -1) {
-        const memberObj = memberlist[memberKey];
+        const memberObj = memberList[memberKey];
         const newMemberObj = {
           ...memberObj,
           ...updatedMember,
           scope: updatedMember.scope,
         };
 
-        memberlist.splice(memberKey, 1, newMemberObj);
+        memberList.splice(memberKey, 1, newMemberObj);
 
         if (triggerUpdate) {
-          this.props.actionGenerated('memberScopeChanged', [newMemberObj]);
+          this.props.actionGenerated(actions.MEMBER_SCOPE_CHANGED, [
+            newMemberObj,
+          ]);
         }
-        this.setState({ memberlist });
+        this.setState({ memberList });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -454,12 +537,12 @@ export default class CometChatGroupDetails extends React.Component {
     let viewMembersBtn = (
       <TouchableOpacity
         onPress={() => {
-          this.clickHandler('viewmember', true);
+          this.clickHandler(VIEW_MEMBER, true);
         }}>
         <Text
           style={[
             style.itemLinkStyle,
-            { color: this.ViewTheme.color.primary },
+            { color: this.viewTheme.color.primary },
           ]}>
           View members
         </Text>
@@ -472,12 +555,12 @@ export default class CometChatGroupDetails extends React.Component {
       addMembersBtn = (
         <TouchableOpacity
           onPress={() => {
-            this.clickHandler('addmember', true);
+            this.clickHandler(ADD_MEMBER, true);
           }}>
           <Text
             style={[
               style.itemLinkStyle,
-              { color: this.ViewTheme.color.primary },
+              { color: this.viewTheme.color.primary },
             ]}>
             Add members
           </Text>
@@ -490,7 +573,7 @@ export default class CometChatGroupDetails extends React.Component {
             this.deleteGroup();
           }}>
           <Text
-            style={[style.itemLinkStyle, { color: this.ViewTheme.color.red }]}>
+            style={[style.itemLinkStyle, { color: this.viewTheme.color.red }]}>
             Delete and exit
           </Text>
         </TouchableOpacity>
@@ -501,12 +584,12 @@ export default class CometChatGroupDetails extends React.Component {
       bannedMembersBtn = (
         <TouchableOpacity
           onPress={() => {
-            this.clickHandler('banmember', true);
+            this.clickHandler(BAN_MEMBER, true);
           }}>
           <Text
             style={[
               style.itemLinkStyle,
-              { color: this.ViewTheme.color.primary },
+              { color: this.viewTheme.color.primary },
             ]}>
             Banned members
           </Text>
@@ -522,98 +605,33 @@ export default class CometChatGroupDetails extends React.Component {
         <Text
           style={[
             style.itemLinkStyle,
-            { color: this.ViewTheme.color.primary },
+            { color: this.viewTheme.color.primary },
           ]}>
           Leave group
         </Text>
       </TouchableOpacity>
     );
 
-    let sharedmediaView = (
+    let sharedMediaView = (
       <CometChatSharedMedia
         theme={this.props.theme}
         item={this.props.item}
         type={this.props.type}
         lang={this.props.lang}
         containerHeight="225px"
-        widgetsettings={this.props.widgetsettings}
       />
     );
 
-    // if viewing, kicking/banning, promoting/demoting group membersare disabled in chatwidget
-    if (
-      validateWidgetSettings(
-        this.props.widgetsettings,
-        'view_group_members',
-      ) === false &&
-      validateWidgetSettings(
-        this.props.widgetsettings,
-        'allow_kick_ban_members',
-      ) === false &&
-      validateWidgetSettings(
-        this.props.widgetsettings,
-        'allow_promote_demote_members',
-      ) === false
-    ) {
-      viewMembersBtn = null;
-    }
-
-    // if adding group members is disabled in chatwidget
-    if (
-      validateWidgetSettings(this.props.widgetsettings, 'allow_add_members') ===
-      false
-    ) {
-      addMembersBtn = null;
-    }
-
-    // if kicking/banning/unbanning group members is disabled in chatwidget
-    if (
-      validateWidgetSettings(
-        this.props.widgetsettings,
-        'allow_kick_ban_members',
-      ) === false
-    ) {
-      bannedMembersBtn = null;
-    }
-
-    // if deleting group is disabled in chatwidget
-    if (
-      validateWidgetSettings(
-        this.props.widgetsettings,
-        'allow_delete_groups',
-      ) === false
-    ) {
-      deleteGroupBtn = null;
-    }
-
-    // if leaving group is disabled in chatwidget
-    if (
-      validateWidgetSettings(
-        this.props.widgetsettings,
-        'join_or_leave_groups',
-      ) === false
-    ) {
-      leaveGroupBtn = null;
-    }
-
-    // if viewing shared media group is disabled in chatwidget
-    if (
-      validateWidgetSettings(this.props.widgetsettings, 'view_shared_media') ===
-      false
-    ) {
-      sharedmediaView = null;
-    }
-
     let members = (
-      <View style={{ width: '100%' }}>
+      <View style={style.fullWidth}>
         <Text
           style={[
             style.sectionHeaderStyle,
-            { color: this.ViewTheme.color.secondary },
+            { color: this.viewTheme.color.secondary },
           ]}>
           Members
         </Text>
-        <View style={{ width: '100%', marginVertical: 6 }}>
+        <View style={style.listItemContainer}>
           {viewMembersBtn}
           {addMembersBtn}
           {bannedMembersBtn}
@@ -622,15 +640,15 @@ export default class CometChatGroupDetails extends React.Component {
     );
 
     let options = (
-      <View style={{ width: '100%' }}>
+      <View style={style.fullWidth}>
         <Text
           style={[
             style.sectionHeaderStyle,
-            { color: this.ViewTheme.color.secondary },
+            { color: this.viewTheme.color.secondary },
           ]}>
           Options
         </Text>
-        <View style={{ width: '100%', marginVertical: 6 }}>
+        <View style={style.listItemContainer}>
           {leaveGroupBtn}
           {deleteGroupBtn}
         </View>
@@ -656,8 +674,7 @@ export default class CometChatGroupDetails extends React.Component {
           theme={this.props.theme}
           item={this.props.item}
           open={this.state.viewMember}
-          close={() => this.clickHandler('viewmember', false)}
-          widgetsettings={this.props.widgetsettings}
+          close={() => this.clickHandler(VIEW_MEMBER, false)}
           actionGenerated={this.membersActionHandler}
           loggedInUser={this.loggedInUser}
         />
@@ -671,8 +688,7 @@ export default class CometChatGroupDetails extends React.Component {
           theme={this.props.theme}
           item={this.props.item}
           open={this.state.addMember}
-          close={() => this.clickHandler('addmember', false)}
-          widgetsettings={this.props.widgetsettings}
+          close={() => this.clickHandler(ADD_MEMBER, false)}
           actionGenerated={this.membersActionHandler}
         />
       );
@@ -685,8 +701,7 @@ export default class CometChatGroupDetails extends React.Component {
           theme={this.props.theme}
           item={this.props.item}
           open={this.state.banMember}
-          close={() => this.clickHandler('banmember', false)}
-          widgetsettings={this.props.widgetsettings}
+          close={() => this.clickHandler(BAN_MEMBER, false)}
           actionGenerated={this.membersActionHandler}
           loggedInUser={this.loggedInUser}
         />
@@ -699,10 +714,10 @@ export default class CometChatGroupDetails extends React.Component {
         animated
         animationType="fade"
         visible={this.props.open}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <View style={style.container}>
           <BottomSheet
             ref={this.sheetRef}
-            snapPoints={[Dimensions.get('window').height - 80, 0]}
+            snapPoints={[deviceHeight - 80, 0]}
             borderRadius={30}
             initialSnap={0}
             enabledInnerScrolling={false}
@@ -713,36 +728,36 @@ export default class CometChatGroupDetails extends React.Component {
                 <View style={style.reactionDetailsContainer}>
                   <GroupDetailContext.Provider
                     value={{
-                      memberlist: this.state.memberlist,
-                      bannedmemberlist: this.state.bannedmemberlist,
-                      administratorslist: this.state.administratorslist,
-                      moderatorslist: this.state.moderatorslist,
+                      memberList: this.state.memberList,
+                      bannedMemberList: this.state.bannedMemberList,
+                      administratorsList: this.state.administratorsList,
+                      moderatorsList: this.state.moderatorsList,
                       loggedinuser: this.loggedInUser,
                       item: this.props.item,
                     }}>
                     <View
                       style={[
                         style.headerStyle,
-                        { borderColor: this.ViewTheme.borderColor.primary },
+                        { borderColor: this.viewTheme.borderColor.primary },
                       ]}>
                       <TouchableOpacity
                         style={style.headerCloseStyle}
                         onPress={() =>
-                          this.props.actionGenerated('closeDetail')
+                          this.props.actionGenerated(actions.CLOSE_DETAIL)
                         }>
                         <Icon
                           name="keyboard-arrow-left"
                           size={24}
                           color="#000000"
-                          style={{ marginRight: 5 }}
+                          style={style.closeIcon}
                         />
                       </TouchableOpacity>
                       <Text style={style.headerTitleStyle}>Details</Text>
                     </View>
-                    <View style={{ padding: 16 }}>
+                    <View style={style.detailContainer}>
                       {members}
                       {options}
-                      {sharedmediaView}
+                      {sharedMediaView}
                     </View>
                     {viewMembers}
                     {addMembers}
@@ -752,7 +767,7 @@ export default class CometChatGroupDetails extends React.Component {
               );
             }}
             onCloseEnd={() => {
-              this.props.actionGenerated('closeDetail');
+              this.props.actionGenerated(actions.CLOSE_DETAIL);
             }}
           />
         </View>

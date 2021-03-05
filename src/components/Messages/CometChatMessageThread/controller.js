@@ -12,7 +12,7 @@ export class MessageThreadManager {
         onMessageEdited: (editedMessage) => {
           callback(enums.MESSAGE_EDITED, editedMessage);
         },
-      })
+      }),
     );
   }
 

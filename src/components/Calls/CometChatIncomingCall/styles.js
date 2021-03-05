@@ -7,12 +7,15 @@ export default StyleSheet.create({
     marginHorizontal: 40 * widthRatio,
     borderRadius: 15,
     padding: 20 * widthRatio,
+    backgroundColor: '#444444',
   },
   senderDetailsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  callMessageContainerStyle: { marginLeft: 5 },
+  callMessageTextStyle: { color: '#8A8A8A' },
   nameStyle: {
     marginBottom: 4 * heightRatio,
     color: 'white',
@@ -20,6 +23,7 @@ export default StyleSheet.create({
     width: 150 * widthRatio,
     fontWeight: '900',
   },
+  btnTextStyle: { color: 'white', textAlign: 'center' },
   avatarStyle: {
     flexWrap: 'wrap',
     width: 34,

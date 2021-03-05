@@ -17,4 +17,9 @@ export default StyleSheet.create({
     backgroundColor: 'rgba(51,153,255,0.25)',
     marginRight: 15 * widthRatio,
   },
+  userNameStyle: {
+    width: '100%',
+    justifyContent: 'center',
+  },
+  userNameText: { fontSize: 16, fontWeight: '600', maxWidth: '80%' },
 });

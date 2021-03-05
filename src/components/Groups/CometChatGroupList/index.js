@@ -5,6 +5,7 @@ import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 import { GroupListManager } from './controller';
 
 import { CometChatCreateGroup, CometChatGroupListItem } from '../index';
@@ -21,7 +22,6 @@ import {
   Platform,
   Keyboard,
   Modal,
-  Dimensions,
   Alert,
   FlatList,
   TextInput,
@@ -30,8 +30,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Icon2 from 'react-native-vector-icons/FontAwesome5';
-import { heightRatio, widthRatio } from '../../../utils/consts';
+import { deviceHeight, heightRatio } from '../../../utils/consts';
 import BottomSheet from 'reanimated-bottom-sheet';
+import { logger } from '../../../utils/common';
 
 class CometChatGroupList extends React.Component {
   timeout;
@@ -44,7 +45,7 @@ class CometChatGroupList extends React.Component {
 
   addIcon = (<Icon2 name="edit" size={24} color={theme.color.blue} />);
 
-  creategroup = this.addIcon;
+  createGroup = this.addIcon;
 
   constructor(props) {
     super(props);
@@ -60,7 +61,7 @@ class CometChatGroupList extends React.Component {
       groupType: null,
       passwordFeedback: null,
     };
-    this.groupListRef = React.createRef(null); /// //group list
+    this.groupListRef = React.createRef(null); //group list
     this.theme = { ...theme, ...this.props.theme };
 
     this.textInputRef = React.createRef(null);
@@ -75,11 +76,11 @@ class CometChatGroupList extends React.Component {
         }
         this.setState({ grouplist: [] });
         this.GroupListManager = new GroupListManager();
-        this.getGroups(); /// /you are getting groups here.
+        this.getGroups(); //you are getting groups here.
         this.GroupListManager.attachListeners(this.groupUpdated);
       });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
@@ -124,9 +125,9 @@ class CometChatGroupList extends React.Component {
           const groupObj = { ...groups[groupKey] };
           const membersCount = parseInt(groupToLeave.membersCount) - 1;
 
-          const newgroupObj = { ...groupObj, membersCount, hasJoined: false };
+          const newGroupObj = { ...groupObj, membersCount, hasJoined: false };
 
-          groups.splice(groupKey, 1, newgroupObj);
+          groups.splice(groupKey, 1, newGroupObj);
           this.setState({ grouplist: groups });
         }
       }
@@ -177,7 +178,7 @@ class CometChatGroupList extends React.Component {
         }
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
@@ -185,6 +186,13 @@ class CometChatGroupList extends React.Component {
     this.GroupListManager = null;
   }
 
+  /**
+   * handles the updation of groups based on key
+   * @param key: type enums
+   * @param message: message object
+   * @param group: specifies the group to be updated.
+   * @param options:options for the group.
+   */
   groupUpdated = (key, message, group, options) => {
     switch (key) {
       case enums.GROUP_MEMBER_SCOPE_CHANGED:
@@ -205,6 +213,12 @@ class CometChatGroupList extends React.Component {
         break;
     }
   };
+
+  /**
+   * checks for the group and updates the fields when a member is added in the group and updates the groupList.
+   * @param group: group object
+   * @param options
+   */
 
   updateMemberAdded = (group, options) => {
     try {
@@ -230,14 +244,14 @@ class CometChatGroupList extends React.Component {
           hasJoined = true;
         }
 
-        const newgroupObj = {
+        const newGroupObj = {
           ...groupObj,
           membersCount,
           scope,
           hasJoined,
         };
 
-        grouplist.splice(groupKey, 1, newgroupObj);
+        grouplist.splice(groupKey, 1, newGroupObj);
         this.setState({ grouplist });
       } else {
         const groupObj = { ...group };
@@ -257,20 +271,26 @@ class CometChatGroupList extends React.Component {
           hasJoined = true;
         }
 
-        const newgroupObj = {
+        const newGroupObj = {
           ...groupObj,
           membersCount,
           scope,
           hasJoined,
         };
 
-        const groupList = [newgroupObj, ...this.state.grouplist];
+        const groupList = [newGroupObj, ...this.state.grouplist];
         this.setState({ grouplist: groupList });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handles the updation of group when a member joins the group.Scope is set to participant by default.
+   * @param group: group object
+   * @param options
+   */
 
   updateMemberJoined = (group, options) => {
     try {
@@ -289,15 +309,21 @@ class CometChatGroupList extends React.Component {
           scope = CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT;
         }
 
-        const newgroupObj = { ...groupObj, membersCount, scope };
+        const newGroupObj = { ...groupObj, membersCount, scope };
 
-        grouplist.splice(groupKey, 1, newgroupObj);
+        grouplist.splice(groupKey, 1, newGroupObj);
         this.setState({ grouplist });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handles the updation of group when the scope of member is changed.
+   * @param group
+   * @param options
+   */
 
   updateMemberChanged = (group, options) => {
     try {
@@ -309,20 +335,24 @@ class CometChatGroupList extends React.Component {
       if (groupKey > -1) {
         const groupObj = { ...grouplist[groupKey] };
         if (options && this.loggedInUser.uid === options.user.uid) {
-          const newgroupObj = { ...groupObj, scope: options.scope };
+          const newGroupObj = { ...groupObj, scope: options.scope };
 
-          grouplist.splice(groupKey, 1, newgroupObj);
+          grouplist.splice(groupKey, 1, newGroupObj);
           this.setState({ grouplist });
         }
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handles the joining of a group by the participant if the requirements are met i.e if the passcode entered matches the protected group's set passcode.
+   * @param passcode
+   */
+
   joinGroup = (passcode) => {
     if (passcode !== null) {
-      // coded here   ************
       CometChat.joinGroup(this.state.guid, this.state.groupType, passcode)
         .then((response) => {
           const groups = [...this.state.grouplist];
@@ -336,7 +366,7 @@ class CometChatGroupList extends React.Component {
             };
             groups.splice(groupKey, 1, newGroupObj);
             this.setState({ grouplist: groups, selectedGroup: newGroupObj });
-            this.props.onItemClick(newGroupObj, 'group');
+            this.props.onItemClick(newGroupObj, CometChat.RECEIVER_TYPE.GROUP);
             this.setState({ showPasswordScreen: false });
           }
         })
@@ -346,57 +376,59 @@ class CometChatGroupList extends React.Component {
     }
   };
 
+  /**
+   * handles what to display when a specific group item from groupList is clicked
+   * @param group: group object
+   */
+
   handleClick = (group) => {
     //handle click here
     if (!this.props.onItemClick) return;
     if (group.hasJoined === false) {
-      if (
-        Object.prototype.hasOwnProperty.call(this.props, 'widgetsettings') &&
-        this.props.widgetsettings &&
-        Object.prototype.hasOwnProperty.call(this.props.widgetsettings, 'main') &&
-        Object.prototype.hasOwnProperty.call(
-          this.props.widgetsettings.main,
-          'join_or_leave_groups'
-        ) &&
-        this.props.widgetsettings.main.join_or_leave_groups === false
-      ) {
-        // console.log("Group joining disabled in widget settings");
-        return false;
-      }
-
       if (group.type === CometChat.GROUP_TYPE.PASSWORD) {
-        this.setState({ showPasswordScreen: true, guid: group.guid, groupType: group.type });
+        this.setState({
+          showPasswordScreen: true,
+          guid: group.guid,
+          groupType: group.type,
+        });
       }
       if (group.type === CometChat.GROUP_TYPE.PUBLIC) {
-        CometChat.joinGroup(group.guid, group.type, "")
-        .then((response) => {
-          const groups = [...this.state.grouplist];
+        CometChat.joinGroup(group.guid, group.type, '')
+          .then((response) => {
+            const groups = [...this.state.grouplist];
 
-          const groupKey = groups.findIndex((g) => g.guid === group.guid);
-          if (groupKey > -1) {
-            const groupObj = groups[groupKey];
-            const newGroupObj = {
-              ...groupObj,
-              ...response,
-              scope: CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT,
-            };
+            const groupKey = groups.findIndex((g) => g.guid === group.guid);
+            if (groupKey > -1) {
+              const groupObj = groups[groupKey];
+              const newGroupObj = {
+                ...groupObj,
+                ...response,
+                scope: CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT,
+              };
 
-            groups.splice(groupKey, 1, newGroupObj);
-            this.setState({ grouplist: groups, selectedGroup: newGroupObj });
+              groups.splice(groupKey, 1, newGroupObj);
+              this.setState({ grouplist: groups, selectedGroup: newGroupObj });
 
-            this.props.onItemClick(newGroupObj, 'group');
-          }
-        })
-        .catch(() => {
-          // console.log('Group joining failed with exception:', error);
-        });
+              this.props.onItemClick(
+                newGroupObj,
+                CometChat.RECEIVER_TYPE.GROUP,
+              );
+            }
+          })
+          .catch((error) => {
+            logger('Group joining failed with exception:', error);
+          });
       }
     } else {
       this.setState({ selectedGroup: group });
-      this.props.onItemClick(group, 'group');
+      this.props.onItemClick(group, CometChat.RECEIVER_TYPE.GROUP);
     }
   };
-  
+
+  /**
+   * handles the searching of groups and fetching based on the updation in TextInput(Search box).
+   * @param e: textInput's value
+   */
   searchGroup = (e) => {
     //search group here
     this.setState(
@@ -413,7 +445,7 @@ class CometChatGroupList extends React.Component {
           this.GroupListManager = new GroupListManager(e);
           this.setState({ grouplist: [] }, () => this.getGroups());
         }, 500);
-      }
+      },
     );
   };
 
@@ -421,23 +453,33 @@ class CometChatGroupList extends React.Component {
     this.getGroups();
   };
 
+  /**
+   * handles the updation in group when messages are seen by the members.
+   * @param
+   */
+
   markMessagesRead = (message) => {
     if (!(message.getReadAt() || message.getReadByMeAt())) {
-      if (message.getReceiverType() === 'user') {
+      if (message.getReceiverType() === CometChat.RECEIVER_TYPE.USER) {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getSender().getUid(),
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       } else {
         CometChat.markAsRead(
           message.getId().toString(),
           message.getReceiverId(),
-          message.getReceiverType()
+          message.getReceiverType(),
         );
       }
     }
   };
+
+  /**
+   * fetches the groups and updates the groupList.
+   * @param
+   */
 
   getGroups = () => {
     new CometChatManager()
@@ -453,20 +495,34 @@ class CometChatGroupList extends React.Component {
               grouplist: [...this.state.grouplist, ...groupList],
             });
           })
-          .catch(() => {
+          .catch((error) => {
             this.decoratorMessage = 'Error';
-            // console.error('[CometChatGroupList] getGroups fetchNextGroups error', error);
+            logger(
+              '[CometChatGroupList] getGroups fetchNextGroups error',
+              error,
+            );
           });
       })
-      .catch(() => {
+      .catch((error) => {
         this.decoratorMessage = 'Error';
-        // console.log('[CometChatGroupList] getUsers getLoggedInUser error', error);
+        logger('[CometChatGroupList] getUsers getLoggedInUser error', error);
       });
   };
+
+  /**
+   * sets the createGroup state in order to display the modal for groupCreation.
+   * @param
+   */
 
   createGroupHandler = (flag) => {
     this.setState({ createGroup: flag });
   };
+
+  /**
+   * updates the fields when the member is removed from the group based on updation of groupObj and setting newGroupObj.
+   * @param group: group object
+   * @param options
+   */
 
   updateMemberRemoved = (group, options) => {
     try {
@@ -479,27 +535,33 @@ class CometChatGroupList extends React.Component {
         if (options && this.loggedInUser.uid === options.user.uid) {
           const groupObj = { ...grouplist[groupKey] };
 
-          const newgroupObj = { ...groupObj, ...group };
+          const newGroupObj = { ...groupObj, ...group };
 
-          grouplist.splice(groupKey, 1, newgroupObj);
+          grouplist.splice(groupKey, 1, newGroupObj);
           this.setState({ grouplist });
         } else {
           const groupObj = { ...grouplist[groupKey] };
           const membersCount = parseInt(group.membersCount);
 
-          const newgroupObj = { ...groupObj, membersCount };
+          const newGroupObj = { ...groupObj, membersCount };
 
-          grouplist.splice(groupKey, 1, newgroupObj);
+          grouplist.splice(groupKey, 1, newGroupObj);
           this.setState({ grouplist });
         }
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * updates the groupList if new group is created and closes the modal for creating Group.
+   * @param action
+   * @param group
+   */
+
   createGroupActionHandler = (action, group) => {
-    if (action === 'groupCreated') {
+    if (action === actions.GROUP_CREATED) {
       const groupList = [group, ...this.state.grouplist];
 
       this.handleClick(group);
@@ -510,7 +572,7 @@ class CometChatGroupList extends React.Component {
   listEmptyContainer = () => {
     // for loading purposes....
     return (
-      <View style={styles.contactMsgStyle}> 
+      <View style={styles.contactMsgStyle}>
         <Text
           style={[
             styles.contactMsgTxtStyle,
@@ -531,7 +593,7 @@ class CometChatGroupList extends React.Component {
     return (
       <View
         style={[
-          styles.itemSeperatorStyle,
+          styles.itemSeparatorStyle,
           {
             borderBottomColor: this.theme.borderColor.primary,
           },
@@ -539,6 +601,11 @@ class CometChatGroupList extends React.Component {
       />
     );
   };
+
+  /**
+   * handles how the header is to be shown when scroll(event) is performed.
+   * @param nativeEvent
+   */
 
   handleScroll = ({ nativeEvent }) => {
     try {
@@ -553,7 +620,7 @@ class CometChatGroupList extends React.Component {
         });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -565,10 +632,11 @@ class CometChatGroupList extends React.Component {
           <TouchableOpacity
             onPress={() => this.createGroupHandler(true)}
             style={{ borderRadius: 20 }}>
-            {this.creategroup}
+            {this.createGroup}
           </TouchableOpacity>
         </View>
-        <TouchableWithoutFeedback onPress={() => this.textInputRef.current.focus()}>
+        <TouchableWithoutFeedback
+          onPress={() => this.textInputRef.current.focus()}>
           <View
             style={[
               styles.groupSearchStyle,
@@ -576,7 +644,11 @@ class CometChatGroupList extends React.Component {
                 backgroundColor: `${this.theme.backgroundColor.grey}`,
               },
             ]}>
-            <Icon name="search" size={15} color={this.theme.color.textInputPlaceholder} />
+            <Icon
+              name="search"
+              size={15}
+              color={this.theme.color.textInputPlaceholder}
+            />
             <TextInput
               ref={this.textInputRef}
               value={this.state.textInputValue}
@@ -603,10 +675,14 @@ class CometChatGroupList extends React.Component {
     let passwordScreen = null;
     if (this.state.showPasswordScreen) {
       passwordScreen = (
-        <Modal transparent animated animationType="fade" visible={this.state.showPasswordScreen}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <Modal
+          transparent
+          animated
+          animationType="fade"
+          visible={this.state.showPasswordScreen}>
+          <View style={styles.passwordScreenContainer}>
             <BottomSheet
-              snapPoints={[Dimensions.get('window').height - 350 * heightRatio, 0]}
+              snapPoints={[deviceHeight - 350 * heightRatio, 0]}
               borderRadius={30}
               initialSnap={0}
               enabledInnerScrolling={false}
@@ -618,59 +694,43 @@ class CometChatGroupList extends React.Component {
                     onPress={() => {
                       Keyboard.dismiss();
                     }}>
-                    <View
-                      style={{
-                        backgroundColor: 'white',
-                        height: Dimensions.get('window').height + 200,
-                        borderRadius: 40,
-                      }}>
-                      <View
-                        style={{ marginTop: 20 * heightRatio, paddingHorizontal: 15 * widthRatio }}>
-                        <View style={{ alignSelf: 'flex-start' }}>
+                    <View style={styles.passwordScreenMainContainer}>
+                      <View style={styles.passwordScreenInnerContainer}>
+                        <View style={styles.closeContainer}>
                           <TouchableOpacity
-                            style={{ alignItems: 'center', justifyContent: 'center' }}
+                            style={styles.closeBtn}
                             onPress={() => {
                               this.setState({ showPasswordScreen: false });
                             }}>
                             <Text
-                              style={{
-                                color: this.theme.backgroundColor.blue,
-                                fontSize: 15 * heightRatio,
-                              }}>
+                              style={[
+                                styles.closeText,
+                                {
+                                  color: this.theme.backgroundColor.blue,
+                                },
+                              ]}>
                               Close
                             </Text>
                           </TouchableOpacity>
                         </View>
-                        <Text
-                          style={{
-                            alignSelf: 'center',
-                            paddingTop: 50 * heightRatio,
-                            fontSize: 18 * heightRatio,
-                            fontWeight: '600',
-                          }}>
+                        <Text style={styles.passwordScreenHeader}>
                           Password Required!
                         </Text>
                         <View
-                          style={{
-                            flexDirection: 'row',
-                            borderWidth: 1,
-                            borderColor: this.theme.backgroundColor.primary,
-                            marginTop: 50 * heightRatio,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            width: 300 * widthRatio,
-                            alignSelf: 'center',
-                          }}>
+                          style={[
+                            styles.detailsContainer,
+                            {
+                              borderColor: this.theme.backgroundColor.primary,
+                            },
+                          ]}>
                           <TextInput
                             placeholder="Enter password!"
                             secureTextEntry
-                            style={{
-                              width: 260 * widthRatio,
-                              // height: 30 * heightRatio,
-                              fontSize: 16 * heightRatio,
-                            }}
+                            style={styles.passwordInput}
                             autoCompleteType="off"
-                            placeholderTextColor={this.theme.color.textInputPlaceholder}
+                            placeholderTextColor={
+                              this.theme.color.textInputPlaceholder
+                            }
                             onSubmitEditing={(e) => {
                               this.joinGroup(e.nativeEvent.text);
                             }}
@@ -683,12 +743,7 @@ class CometChatGroupList extends React.Component {
                             onPress={() => {
                               this.joinGroup(this.state.passwordFeedback);
                             }}
-                            style={{
-                              width: 30 * widthRatio,
-                              height: 30 * heightRatio,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}>
+                            style={styles.enterBtn}>
                             <Icon
                               name="enter-outline"
                               style={{ fontSize: 22 * heightRatio }}
@@ -696,20 +751,20 @@ class CometChatGroupList extends React.Component {
                             />
                           </TouchableOpacity>
                         </View>
-                        <View style={{ marginTop: 35 * heightRatio, alignSelf: 'center' }}>
+                        <View style={styles.nextBtnContainer}>
                           <TouchableOpacity
                             onPress={() => {
                               this.joinGroup(this.state.passwordFeedback);
                             }}
-                            style={{
-                              backgroundColor: this.theme.backgroundColor.blue,
-                              borderWidth: 1,
-                              paddingVertical: 8 * heightRatio,
-                              paddingHorizontal: 15,
-                              borderRadius: 5,
-                              borderColor: this.theme.backgroundColor.primary,
-                            }}>
-                            <Text style={{ fontSize: 18 * heightRatio, color: 'white' }}>Next</Text>
+                            style={[
+                              styles.nextBtn,
+                              {
+                                backgroundColor: this.theme.backgroundColor
+                                  .blue,
+                                borderColor: this.theme.backgroundColor.primary,
+                              },
+                            ]}>
+                            <Text style={styles.nextText}>Next</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -731,17 +786,7 @@ class CometChatGroupList extends React.Component {
       Object.prototype.hasOwnProperty.call(this.props, 'group-create') &&
       this.props.config['group-create'] === false
     ) {
-      this.creategroup = null;
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(this.props, 'widgetsettings') &&
-      this.props.widgetsettings &&
-      Object.prototype.hasOwnProperty.call(this.props.widgetsettings, 'main') &&
-      Object.prototype.hasOwnProperty.call(this.props.widgetsettings.main, 'create_groups') &&
-      this.props.widgetsettings.main.create_groups === false
-    ) {
-      this.creategroup = null;
+      this.createGroup = null;
     }
 
     return (
@@ -749,7 +794,7 @@ class CometChatGroupList extends React.Component {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.groupWrapperStyle}>
-          <SafeAreaView style={{flex:1}}>
+          <SafeAreaView style={{ flex: 1 }}>
             <View style={styles.headerContainer}>
               <Text
                 style={{

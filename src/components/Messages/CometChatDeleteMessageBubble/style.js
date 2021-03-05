@@ -2,6 +2,8 @@ import { StyleSheet } from 'react-native';
 import { widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  messageContainerStyle: { marginBottom: 16 },
+  messageSenderNameContainerStyle: { marginBottom: 5 },
   messageContainerForReceiver: {
     flexDirection: 'row',
     alignItems: 'flex-start',

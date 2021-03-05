@@ -19,7 +19,9 @@ import { UserListManager } from './controller';
 import { CometChatUserListItem } from '../index';
 import style from './styles';
 import theme from '../../../resources/theme';
-
+import { logger } from '../../../utils/common';
+import * as enums from '../../../utils/enums';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 class CometChatUserList extends React.PureComponent {
   timeout;
 
@@ -60,7 +62,7 @@ class CometChatUserList extends React.PureComponent {
         this.UserListManager.attachListeners(this.userUpdated);
       });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
@@ -115,7 +117,7 @@ class CometChatUserList extends React.PureComponent {
         }
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
@@ -124,10 +126,14 @@ class CometChatUserList extends React.PureComponent {
       this.UserListManager.removeListeners();
       this.UserListManager = null;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
+  /**
+   * Handle user updated from listener
+   * @param user: user object
+   */
   userUpdated = (user) => {
     try {
       const userList = [...this.state.userList];
@@ -144,21 +150,31 @@ class CometChatUserList extends React.PureComponent {
         this.setState({ userList });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Handle on end reached of the list
+   * @param
+   */
   endReached = () => {
     this.getUsers();
   };
 
+  /**
+   * Handle click on the list item
+   * @param
+   */
   handleClick = (user) => {
     if (!this.props.onItemClick) return;
-
-    // this.setState({selectedUser: {...user}});
-    this.props.onItemClick(user, 'user');
+    this.props.onItemClick(user, CometChat.RECEIVER_TYPE.USER);
   };
 
+  /**
+   * Retrieve user from user list while searching
+   * @param
+   */
   searchUsers = (val) => {
     this.setState(
       { textInputValue: val },
@@ -176,6 +192,10 @@ class CometChatUserList extends React.PureComponent {
     );
   };
 
+  /**
+   * Retrieve user list from sdk acc to logged in user
+   * @param
+   */
   getUsers = () => {
     new CometChatManager()
       .getLoggedInUser()
@@ -187,17 +207,25 @@ class CometChatUserList extends React.PureComponent {
             }
             this.setState({ userList: [...this.state.userList, ...userList] });
           })
-          .catch(() => {
+          .catch((error) => {
             this.decoratorMessage = 'Error';
-            // console.error('[CometChatUserList] getUsers fetchNext error', error);
+            logger('[CometChatUserList] getUsers fetchNext error', error);
           });
       })
-      .catch(() => {
+      .catch((error) => {
         this.decoratorMessage = 'Error';
-        // console.log('[CometChatUserList] getUsers getLoggedInUser error', error);
+        logger('[CometChatUserList] getUsers getLoggedInUser error', error);
       });
   };
 
+  /**
+   * Component for flatList item
+   * @param
+   * if item - sticky header
+   * @returns Component with ContactAlphabet
+   * if item - user
+   * @returns UserListComponent
+   */
   renderUserView = ({ item, index }) => {
     if (item.header) {
       const headerLetter = item.value;
@@ -214,12 +242,15 @@ class CometChatUserList extends React.PureComponent {
         theme={this.theme}
         user={user}
         selectedUser={this.state.selectedUser}
-        widgetsettings={this.props.widgetsettings}
         clickHandler={this.handleClick}
       />
     );
   };
 
+  /**
+   * Return component for empty user list
+   * @param
+   */
   listEmptyContainer = () => {
     return (
       <View style={style.contactMsgStyle}>
@@ -236,6 +267,10 @@ class CometChatUserList extends React.PureComponent {
     );
   };
 
+  /**
+   * Return separator component
+   * @param
+   */
   itemSeparatorComponent = ({ leadingItem }) => {
     if (leadingItem.header) {
       return null;
@@ -243,7 +278,7 @@ class CometChatUserList extends React.PureComponent {
     return (
       <View
         style={[
-          style.itemSeperatorStyle,
+          style.itemSeparatorStyle,
           {
             borderBottomColor: this.theme.borderColor.primary,
           },
@@ -252,6 +287,10 @@ class CometChatUserList extends React.PureComponent {
     );
   };
 
+  /**
+   * Return header component with text input for search
+   * @param
+   */
   listHeaderComponent = () => {
     return (
       <View style={[style.contactHeaderStyle]}>
@@ -298,6 +337,10 @@ class CometChatUserList extends React.PureComponent {
     );
   };
 
+  /**
+   * Check scroll value to enable small headers
+   * @param
+   */
   handleScroll = ({ nativeEvent }) => {
     if (nativeEvent.contentOffset.y > 35 && !this.state.showSmallHeader) {
       this.setState({
@@ -343,8 +386,7 @@ class CometChatUserList extends React.PureComponent {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={style.contactWrapperStyle}>
-          <View style={style.headerContainer}>
-          </View>
+          <View style={style.headerContainer}></View>
           {this.listHeaderComponent()}
           <FlatList
             data={userListWithHeaders}

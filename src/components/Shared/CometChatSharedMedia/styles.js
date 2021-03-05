@@ -49,8 +49,6 @@ export default StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-
-    // elevation: 5,
   },
   buttonStyle: {
     width: '33.33%',
@@ -60,7 +58,6 @@ export default StyleSheet.create({
   },
   mediaItemStyle: {
     justifyContent: 'center',
-    // minHeight: screenHeight / 3,
   },
   mediaItemColumnStyle: {
     justifyContent: 'space-between',
@@ -68,7 +65,6 @@ export default StyleSheet.create({
     marginTop: 10,
   },
   itemStyle: {
-    // margin: 10,
     borderRadius: 8,
     overflow: 'hidden',
     textAlign: 'center',
@@ -77,11 +73,14 @@ export default StyleSheet.create({
     width: (screenWidth - 40) / 2,
     height: 128,
   },
+  videoPlayerStyle: {
+    height: '100%',
+    width: '100%',
+    borderRadius: 12,
+  },
   videoStyle: {
     backgroundColor: '#f2f2f2',
     borderRadius: 8,
-    // width: 400,
-    // height: 400,
     width: (screenWidth - 40) / 2,
     height: 128,
   },
@@ -100,7 +99,7 @@ export default StyleSheet.create({
     fontSize: 13,
     textAlign: 'left',
   },
-  seperator: {
+  separator: {
     width: 1,
     height: 18,
     backgroundColor: 'rgba(0,0,0,0.4)',

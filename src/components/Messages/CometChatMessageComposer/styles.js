@@ -3,6 +3,15 @@ import { heightRatio } from '../../../utils/consts';
 import theme from '../../../resources/theme';
 
 export default StyleSheet.create({
+  bottomSheetContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  mainContainer: { flexDirection: 'row', padding: 10, alignItems: 'center' },
+  plusCircleContainer: { marginRight: 10 },
+  textInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  fullFlex: { flex: 1 },
   chatComposerStyle: {
     padding: 14,
     backgroundColor: theme.backgroundColor.white,
@@ -86,6 +95,10 @@ export default StyleSheet.create({
     paddingHorizontal: 12,
     borderTopWidth: 1,
     borderColor: 'black',
+  },
+  previewHeadingContainer: {
+    borderLeftWidth: 3,
+    paddingLeft: 8,
   },
   previewHeadingStyle: {
     flexDirection: 'row',

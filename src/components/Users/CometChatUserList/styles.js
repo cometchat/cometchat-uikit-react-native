@@ -9,8 +9,6 @@ export default StyleSheet.create({
   },
   contactHeaderStyle: {
     paddingBottom: 14,
-    // paddingHorizontal: 10,
-    // position: 'relative',
     paddingHorizontal: 25,
   },
   contactHeaderCloseStyle: {
@@ -39,7 +37,6 @@ export default StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
-    // elevation: 2,
   },
   contactSearchInputStyle: {
     flex: 1,
@@ -55,7 +52,6 @@ export default StyleSheet.create({
   },
   contactMsgTxtStyle: {
     margin: 0,
-    // height: 30,
     fontSize: 24,
     fontWeight: '600',
   },
@@ -75,7 +71,7 @@ export default StyleSheet.create({
     fontSize: 18,
     opacity: 0.4,
   },
-  itemSeperatorStyle: {
+  itemSeparatorStyle: {
     borderBottomWidth: 1,
     width: '85%',
     alignSelf: 'flex-end',
