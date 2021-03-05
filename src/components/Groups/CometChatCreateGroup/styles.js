@@ -1,7 +1,30 @@
 import { StyleSheet } from 'react-native';
-import { widthRatio, heightRatio } from '../../../utils/consts';
+import { widthRatio, heightRatio, deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  innerContainer: {
+    height: '90%',
+    backgroundColor: 'white',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
+  contentContainerStyle: {
+    paddingBottom: 0.09 * deviceHeight,
+  },
+  listStyle: {
+    height: deviceHeight - 0.25 * deviceHeight,
+  },
+  closeBtn: { borderRadius: 15, marginTop: 2 },
+  groupButtonContainer: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
   groupWrapperStyle: {
     height: '100%',
     backgroundColor: 'white',
@@ -72,7 +95,7 @@ export default StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop:50*heightRatio,
+    marginTop: 50 * heightRatio,
   },
   btnText: {
     fontSize: 14 * heightRatio,

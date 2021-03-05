@@ -3,6 +3,7 @@
 import React, { Component } from 'react';
 import { Dimensions, View, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { logger } from '../../../utils/common';
 import styles from './styles';
 
 const { height: deviceHeight } = Dimensions.get('window');
@@ -10,6 +11,12 @@ const { height: deviceHeight } = Dimensions.get('window');
 const ANIMATION_END_Y = Math.ceil(deviceHeight * 0.5);
 const NEGATIVE_END_Y = ANIMATION_END_Y * -1;
 let startCount = 1;
+
+/**
+ * generate random number for hearts.
+ * @param min: number
+ * @param max: number
+ */
 
 function getRandomNumber(min, max) {
   return Math.random() * (max - min) + min;
@@ -69,6 +76,11 @@ class AnimatedHeart extends Component {
     }).start(this.props.onComplete);
   }
 
+  /**
+   * Animation for heart
+   * @param
+   */
+
   getHeartAnimationStyle = () => {
     return {
       transform: [
@@ -83,8 +95,17 @@ class AnimatedHeart extends Component {
 
   render() {
     return (
-      <Animated.View style={[styles.heartWrap, this.getHeartAnimationStyle(), this.props.style]}>
-        <Icon name={`${this.props.reactionName || 'heart'}`} size={30} color="#de3a39" />
+      <Animated.View
+        style={[
+          styles.heartWrap,
+          this.getHeartAnimationStyle(),
+          this.props.style,
+        ]}>
+        <Icon
+          name={`${this.props.reactionName || 'heart'}`}
+          size={30}
+          color="#de3a39"
+        />
       </Animated.View>
     );
   }
@@ -126,12 +147,21 @@ export default class CometChatLiveReactions extends Component {
     ],
   };
 
+  /**
+   * remove heart
+   * @param v: heart id
+   */
+
   removeHeart = (v) => {
-    const index = this.state.hearts.findIndex((heart) => {
-      return heart.id === v;
-    });
-    this.state.hearts.splice(index, 1);
-    this.setState(this.state);
+    try {
+      const index = this.state.hearts.findIndex((heart) => {
+        return heart.id === v;
+      });
+      this.state.hearts.splice(index, 1);
+      this.setState(this.state);
+    } catch (error) {
+      logger(error);
+    }
   };
 
   render() {

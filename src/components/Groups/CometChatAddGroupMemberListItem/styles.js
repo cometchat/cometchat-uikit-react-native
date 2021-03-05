@@ -8,6 +8,7 @@ export default StyleSheet.create({
     width: '50%',
     marginRight: 15,
   },
+  userName: { fontSize: 14 },
   rowStyle: {
     flexDirection: 'row',
     alignItems: 'center',

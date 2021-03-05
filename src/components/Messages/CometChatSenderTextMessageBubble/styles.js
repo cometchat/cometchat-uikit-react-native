@@ -2,6 +2,16 @@ import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { marginBottom: 16 },
+  linkTitle: { fontWeight: '700' },
+  linkDescription: {
+    fontStyle: 'italic',
+    fontSize: 13,
+  },
+  autoLinkStyle: { color: 'white', fontSize: 15 },
+  previewAutoLinkStyle: { textAlign: 'center' },
+  linkStyle: { textDecorationLine: 'underline', fontSize: 15 },
+  linkTextStyle: { fontWeight: '700' },
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',

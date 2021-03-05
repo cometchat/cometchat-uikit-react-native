@@ -1,6 +1,5 @@
 import * as enums from '../../../utils/enums';
-import { validateWidgetSettings } from '../../../utils/common';
-
+import { CometChat } from '@cometchat-pro/react-native-chat';
 export default class MessageFilter {
   categories = {};
 
@@ -8,48 +7,31 @@ export default class MessageFilter {
 
   constructor() {
     this.categories = {
-      [enums.CATEGORY_MESSAGE]: enums.CATEGORY_MESSAGE,
-      [enums.CATEGORY_CUSTOM]: enums.CATEGORY_CUSTOM,
-      [enums.CATEGORY_ACTION]: enums.CATEGORY_ACTION,
-      [enums.CATEGORY_CALL]: enums.CATEGORY_CALL,
+      [CometChat.CATEGORY_MESSAGE]: CometChat.CATEGORY_MESSAGE,
+      [CometChat.CATEGORY_CUSTOM]: CometChat.CATEGORY_CUSTOM,
+      [CometChat.CATEGORY_ACTION]: CometChat.CATEGORY_ACTION,
+      [CometChat.CATEGORY_CALL]: CometChat.CATEGORY_CALL,
     };
 
     this.types = {
-      [enums.MESSAGE_TYPE_TEXT]: enums.MESSAGE_TYPE_TEXT,
-      [enums.MESSAGE_TYPE_IMAGE]: enums.MESSAGE_TYPE_IMAGE,
-      [enums.MESSAGE_TYPE_VIDEO]: enums.MESSAGE_TYPE_VIDEO,
-      [enums.MESSAGE_TYPE_AUDIO]: enums.MESSAGE_TYPE_AUDIO,
-      [enums.MESSAGE_TYPE_FILE]: enums.MESSAGE_TYPE_FILE,
+      [CometChat.MESSAGE_TYPE.TEXT]: CometChat.MESSAGE_TYPE.TEXT,
+      [CometChat.MESSAGE_TYPE.IMAGE]: CometChat.MESSAGE_TYPE.IMAGE,
+      [CometChat.MESSAGE_TYPE.VIDEO]: CometChat.MESSAGE_TYPE.VIDEO,
+      [CometChat.MESSAGE_TYPE.AUDIO]: CometChat.MESSAGE_TYPE.AUDIO,
+      [CometChat.MESSAGE_TYPE.FILE]: CometChat.MESSAGE_TYPE.FILE,
       [enums.CUSTOM_TYPE_POLL]: enums.CUSTOM_TYPE_POLL,
       [enums.CUSTOM_TYPE_STICKER]: enums.CUSTOM_TYPE_STICKER,
       [enums.ACTION_TYPE_GROUPMEMBER]: enums.ACTION_TYPE_GROUPMEMBER,
-      [enums.CALL_TYPE_AUDIO]: enums.CALL_TYPE_AUDIO,
-      [enums.CALL_TYPE_VIDEO]: enums.CALL_TYPE_VIDEO,
+      [CometChat.CALL_TYPE.AUDIO]: CometChat.CALL_TYPE.AUDIO,
+      [CometChat.CALL_TYPE.VIDEO]: CometChat.CALL_TYPE.VIDEO,
     };
   }
 
-  getCategories = (widgetSettings) => {
-    if (validateWidgetSettings(widgetSettings, 'hide_join_leave_notifications') === true) {
-      delete this.categories[enums.CATEGORY_ACTION];
-    }
-
-    if (validateWidgetSettings(widgetSettings, 'show_call_notifications') === false) {
-      delete this.categories[enums.CATEGORY_CALL];
-    }
-
+  getCategories = () => {
     return Object.keys(this.categories);
   };
 
-  getTypes = (widgetSettings) => {
-    if (validateWidgetSettings(widgetSettings, 'hide_join_leave_notifications') === true) {
-      delete this.types[enums.ACTION_TYPE_GROUPMEMBER];
-    }
-
-    if (validateWidgetSettings(widgetSettings, 'show_call_notifications') === false) {
-      delete this.types[enums.CALL_TYPE_AUDIO];
-      delete this.types[enums.CALL_TYPE_VIDEO];
-    }
-
+  getTypes = () => {
     return Object.keys(this.types);
   };
 }

@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 import { widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  fullFlex: { flex: 1 },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',

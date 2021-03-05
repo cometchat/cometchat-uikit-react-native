@@ -1,10 +1,10 @@
 import { Dimensions } from 'react-native';
 
-const dheight = Dimensions.get('window').height;
-const dwidth = Dimensions.get('window').width;
+export const deviceHeight = Dimensions.get('window').height;
+export const deviceWidth = Dimensions.get('window').width;
 
-export const heightRatio = dheight / 667;
-export const widthRatio = dwidth / 375;
+export const heightRatio = deviceHeight / 667;
+export const widthRatio = deviceWidth / 375;
 export const calc = (x = 100) => {
-  return dheight - x * heightRatio;
+  return deviceHeight - x * heightRatio;
 };

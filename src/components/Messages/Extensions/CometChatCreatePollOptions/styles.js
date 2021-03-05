@@ -31,7 +31,7 @@ export default StyleSheet.create({
   Inputbox: {
     width: '85%',
     borderColor: 'green',
-    fontSize: 16, 
+    fontSize: 16,
     alignSelf: 'center',
   },
   ContainerForDelete: {

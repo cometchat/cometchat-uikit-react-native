@@ -6,8 +6,8 @@ export default StyleSheet.create({
     width: '100%',
     flex: 1,
     position: 'relative',
-    alignItems:"center",
-    justifyContent:"center"
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listWrapperStyle: {
     flexDirection: 'column',
@@ -44,8 +44,6 @@ export default StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 100,
-
-    //   borderRadius: 10
   },
   decoratorMessageStyle: {
     overflow: 'hidden',

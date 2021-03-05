@@ -1,10 +1,10 @@
 import React from 'react';
 
 const GroupDetailContext = React.createContext({
-  memberlist: [],
-  bannedmemberlist: [],
-  administratorslist: [],
-  moderatorslist: [],
+  memberList: [],
+  bannedMemberList: [],
+  administratorsList: [],
+  moderatorsList: [],
 });
 
 export default GroupDetailContext;

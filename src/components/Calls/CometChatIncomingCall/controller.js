@@ -15,7 +15,7 @@ export class CallAlertManager {
         onIncomingCallCancelled: (call) => {
           callback(enums.INCOMING_CALL_CANCELLED, call);
         },
-      })
+      }),
     );
   }
 

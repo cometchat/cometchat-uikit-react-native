@@ -3,6 +3,7 @@
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 import { MessageThreadManager } from './controller';
 import {
   CometChatMessageActions,
@@ -32,6 +33,7 @@ import {
 import _ from 'lodash';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { heightRatio, widthRatio } from '../../../utils/consts';
+import { logger } from '../../../utils/common';
 
 class CometChatMessageThread extends React.PureComponent {
   constructor(props) {
@@ -82,21 +84,30 @@ class CometChatMessageThread extends React.PureComponent {
   };
 
   componentDidUpdate(prevProps) {
-    if (prevProps.parentMessage !== this.props.parentMessage) {
-      if (prevProps.parentMessage.id !== this.props.parentMessage.id) {
-        this.setState({
-          messageList: [],
-          scrollToBottom: true,
-          parentMessage: this.props.parentMessage,
-        });
-      } else if (
-        prevProps.parentMessage.data !== this.props.parentMessage.data
-      ) {
-        this.setState({ parentMessage: this.props.parentMessage });
+    try {
+      if (prevProps.parentMessage !== this.props.parentMessage) {
+        if (prevProps.parentMessage.id !== this.props.parentMessage.id) {
+          this.setState({
+            messageList: [],
+            scrollToBottom: true,
+            parentMessage: this.props.parentMessage,
+          });
+        } else if (
+          prevProps.parentMessage.data !== this.props.parentMessage.data
+        ) {
+          this.setState({ parentMessage: this.props.parentMessage });
+        }
       }
+    } catch (error) {
+      logger(error);
     }
   }
 
+  /**
+   * initiated if parent message is edited
+   * @param key:enums type
+   * @param message: message object
+   */
   listenerCallback = (key, message) => {
     switch (key) {
       case enums.MESSAGE_EDITED:
@@ -107,24 +118,59 @@ class CometChatMessageThread extends React.PureComponent {
     }
   };
 
+  /**
+   * handler implememted if the parent message of thread is edited and updates it.
+   * @param
+   */
   parentMessageEdited = (message) => {
-    const parentMessage = { ...this.props.parentMessage };
+    try {
+      const parentMessage = { ...this.props.parentMessage };
 
-    if (parentMessage.id === message.id) {
-      const newMessageObj = { ...message };
-      this.setState({ parentMessage: newMessageObj });
+      if (parentMessage.id === message.id) {
+        const newMessageObj = { ...message };
+        this.setState({ parentMessage: newMessageObj });
+      }
+    } catch (error) {
+      logger(error);
     }
   };
 
   actionHandler = (action, messages) => {
-    switch (action) {
-      case 'messageReceived':
-        {
-          const message = messages[0];
-          if (
-            Object.prototype.hasOwnProperty.call(message, 'parentMessageId') &&
-            message.parentMessageId === this.state.parentMessage.id
-          ) {
+    try {
+      switch (action) {
+        case actions.MESSAGE_RECEIVED:
+          {
+            const message = messages[0];
+            if (
+              Object.prototype.hasOwnProperty.call(
+                message,
+                'parentMessageId',
+              ) &&
+              message.parentMessageId === this.state.parentMessage.id
+            ) {
+              const replyCount = Object.prototype.hasOwnProperty.call(
+                this.state.parentMessage,
+                'replyCount',
+              )
+                ? this.state.parentMessage.replyCount
+                : 0;
+              const newReplyCount = replyCount + 1;
+
+              const messageObj = { ...this.state.parentMessage };
+              const newMessageObj = {
+                ...messageObj,
+                replyCount: newReplyCount,
+              };
+              this.setState({ parentMessage: newMessageObj });
+
+              this.smartReplyPreview(messages);
+              this.appendMessage(messages);
+            }
+          }
+          break;
+
+        case actions.MESSAGE_COMPOSED:
+          {
             const replyCount = Object.prototype.hasOwnProperty.call(
               this.state.parentMessage,
               'replyCount',
@@ -137,143 +183,167 @@ class CometChatMessageThread extends React.PureComponent {
             const newMessageObj = { ...messageObj, replyCount: newReplyCount };
             this.setState({ parentMessage: newMessageObj });
 
-            this.smartReplyPreview(messages);
             this.appendMessage(messages);
+            this.props.actionGenerated(
+              actions.THREAD_MESSAGE_COMPOSED,
+              messages,
+            );
           }
-        }
-        break;
-
-      case 'messageComposed':
-        {
-          const replyCount = Object.prototype.hasOwnProperty.call(
-            this.state.parentMessage,
-            'replyCount',
-          )
-            ? this.state.parentMessage.replyCount
-            : 0;
-          const newReplyCount = replyCount + 1;
-
-          const messageObj = { ...this.state.parentMessage };
-          const newMessageObj = { ...messageObj, replyCount: newReplyCount };
-          this.setState({ parentMessage: newMessageObj });
-
-          this.appendMessage(messages);
-          this.props.actionGenerated('threadMessageComposed', messages);
-        }
-        break;
-      case 'messageUpdated':
-        this.updateMessages(messages);
-        break;
-      case 'messageFetched':
-        this.prependMessages(messages);
-        break;
-      case 'messageDeleted':
-        this.removeMessages(messages);
-        break;
-      case 'editMessage':
-        this.setState({ messageToReact: null });
-        this.editMessage(messages);
-        break;
-      case 'messageEdited':
-        this.messageEdited(messages);
-        break;
-      case 'clearEditPreview':
-        this.clearEditPreview();
-        break;
-      case 'deleteMessage':
-        this.setState({ messageToReact: null });
-        this.deleteMessage(messages);
-        break;
-      case 'closeMessageActions':
-        this.setState({ messageToReact: null });
-        break;
-      case 'viewActualImage':
-        this.props.actionGenerated('viewActualImage', messages);
-        break;
-      case 'reactToMessage':
-        this.reactToMessage(messages);
-        break;
-      case 'openMessageActions':
-        this.setState({ messageToReact: messages });
-        // this.props.actionGenerated('openMessageActions',messages);
-        break;
-      default:
-        break;
+          break;
+        case actions.MESSAGE_UPDATED:
+          this.updateMessages(messages);
+          break;
+        case actions.MESSAGE_FETCHED:
+          this.prependMessages(messages);
+          break;
+        case actions.MESSAGE_DELETED:
+          this.removeMessages(messages);
+          break;
+        case actions.EDIT_MESSAGE:
+          this.setState({ messageToReact: null });
+          this.editMessage(messages);
+          break;
+        case actions.MESSAGE_EDITED:
+          this.messageEdited(messages);
+          break;
+        case actions.CLEAR_EDIT_PREVIEW:
+          this.clearEditPreview();
+          break;
+        case actions.DELETE_MESSAGE:
+          this.setState({ messageToReact: null });
+          this.deleteMessage(messages);
+          break;
+        case actions.CLOSE_MESSAGE_ACTIONS:
+          this.setState({ messageToReact: null });
+          break;
+        case actions.VIEW_ACTUAL_IMAGE:
+          this.props.actionGenerated(actions.VIEW_ACTUAL_IMAGE, messages);
+          break;
+        case actions.REACT_TO_MESSAGE:
+          this.reactToMessage(messages);
+          break;
+        case actions.OPEN_MESSAGE_ACTIONS:
+          this.setState({ messageToReact: messages });
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      logger(error);
     }
   };
 
+  /**
+   * Updates messageToBeEdited with received message.
+   * @param message: message object.
+   */
   editMessage = (message) => {
     this.setState({ messageToBeEdited: message });
   };
 
+  /**
+   * Updates the messageList via newMessageObject if received message's id exists in messageList.
+   *  Generates action -> UPDATE_THREAD_MESSAGE.
+   * @param message: message object
+   */
+
   messageEdited = (message) => {
-    const messageList = [...this.state.messageList];
-    const messageKey = messageList.findIndex((m) => m.id === message.id);
-    if (messageKey > -1) {
-      const messageObj = messageList[messageKey];
+    try {
+      const messageList = [...this.state.messageList];
+      const messageKey = messageList.findIndex((m) => m.id === message.id);
+      if (messageKey > -1) {
+        const messageObj = messageList[messageKey];
 
-      const newMessageObj = { ...messageObj, ...message };
+        const newMessageObj = { ...messageObj, ...message };
 
-      messageList.splice(messageKey, 1, newMessageObj);
-      this.updateMessages(messageList);
+        messageList.splice(messageKey, 1, newMessageObj);
+        this.updateMessages(messageList);
 
-      if (messageList.length - messageKey === 1) {
-        this.props.actionGenerated('messageEdited', [newMessageObj]);
+        if (messageList.length - messageKey === 1) {
+          this.props.actionGenerated(actions.MESSAGE_EDITED, [newMessageObj]);
+        }
       }
+    } catch (error) {
+      logger(error);
     }
   };
+
+  /**
+   * sets messageToBeEdited to an empty string
+   * @param
+   */
 
   clearEditPreview = () => {
     this.setState({ messageToBeEdited: '' });
   };
 
+  /**
+   * handler implemented to delete message .
+   * @param message: message object
+   */
+
   deleteMessage = (message) => {
-    const messageId = message.id;
-    CometChat.deleteMessage(messageId)
-      .then((deletedMessage) => {
-        this.removeMessages([deletedMessage]);
+    try {
+      const messageId = message.id;
+      CometChat.deleteMessage(messageId)
+        .then((deletedMessage) => {
+          this.removeMessages([deletedMessage]);
 
-        const messageList = [...this.state.messageList];
-        const messageKey = messageList.findIndex((m) => m.id === message.id);
+          const messageList = [...this.state.messageList];
+          const messageKey = messageList.findIndex((m) => m.id === message.id);
 
-        if (messageList.length - messageKey === 1 && !message.replyCount) {
-          this.props.actionGenerated('threadMessageDeleted', [deletedMessage]);
-        }
-      })
-      .catch(() => {
-        // console.log('Message delete failed with error:', error);
-      });
+          if (messageList.length - messageKey === 1 && !message.replyCount) {
+            this.props.actionGenerated(actions.THREAD_MESSAGE_DELETED, [
+              deletedMessage,
+            ]);
+          }
+        })
+        .catch((error) => {
+          logger('Message delete failed with error:', error);
+        });
+    } catch (error) {
+      logger(error);
+    }
   };
 
-  smartReplyPreview = (messages) => {
-    const message = messages[0];
+  /**
+   * handler for smart reply via checkMessageForExtensionsData()
+   * @param messages: messages object
+   */
 
-    if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
-      const { metadata } = message;
-      if (Object.prototype.hasOwnProperty.call(metadata, '@injected')) {
-        const injectedObject = metadata['@injected'];
-        if (
-          Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')
-        ) {
-          const extensionsObject = injectedObject.extensions;
+  smartReplyPreview = (messages) => {
+    try {
+      const message = messages[0];
+
+      if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
+        const { metadata } = message;
+        if (Object.prototype.hasOwnProperty.call(metadata, '@injected')) {
+          const injectedObject = metadata['@injected'];
           if (
-            Object.prototype.hasOwnProperty.call(
-              extensionsObject,
-              'smart-reply',
-            )
+            Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')
           ) {
-            const smartReply = extensionsObject['smart-reply'];
+            const extensionsObject = injectedObject.extensions;
             if (
-              Object.prototype.hasOwnProperty.call(smartReply, 'error') ===
-              false
+              Object.prototype.hasOwnProperty.call(
+                extensionsObject,
+                'smart-reply',
+              )
             ) {
-              this.setState({ replyPreview: message });
-            } else {
-              this.setState({ replyPreview: null });
+              const smartReply = extensionsObject['smart-reply'];
+              if (
+                Object.prototype.hasOwnProperty.call(smartReply, 'error') ===
+                false
+              ) {
+                this.setState({ replyPreview: message });
+              } else {
+                this.setState({ replyPreview: null });
+              }
             }
           }
         }
       }
+    } catch (error) {
+      logger(error);
     }
   };
 
@@ -298,189 +368,210 @@ class CometChatMessageThread extends React.PureComponent {
 
   // messages are deleted
   removeMessages = (messages) => {
-    const deletedMessage = messages[0];
-    const messageList = [...this.state.messageList];
+    try {
+      const deletedMessage = messages[0];
+      const messageList = [...this.state.messageList];
 
-    const messageKey = messageList.findIndex(
-      (message) => message.id === deletedMessage.id,
-    );
-    if (messageKey > -1) {
-      const messageObj = { ...messageList[messageKey] };
-      const newMessageObj = { ...messageObj, ...deletedMessage };
+      const messageKey = messageList.findIndex(
+        (message) => message.id === deletedMessage.id,
+      );
+      if (messageKey > -1) {
+        const messageObj = { ...messageList[messageKey] };
+        const newMessageObj = { ...messageObj, ...deletedMessage };
 
-      messageList.splice(messageKey, 1, newMessageObj);
-      this.setState({ messageList: messageList, scrollToBottom: false });
+        messageList.splice(messageKey, 1, newMessageObj);
+        this.setState({ messageList: messageList, scrollToBottom: false });
+      }
+    } catch (error) {
+      logger(error);
     }
   };
+
+  /**
+   * handler for fetching sender message component of different types
+   * @param message:message object
+   * @param key
+   */
 
   getSenderMessageComponent = (message, key) => {
     let component;
-
-    switch (message.type) {
-      case CometChat.MESSAGE_TYPE.TEXT:
-        component = (
-          <CometChatSenderTextMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.IMAGE:
-        component = (
-          <CometChatSenderImageMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.FILE:
-        component = (
-          <CometChatSenderFileMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.VIDEO:
-        component = (
-          <CometChatSenderVideoMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.AUDIO:
-        component = (
-          <CometChatSenderAudioMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      default:
-        break;
+    try {
+      switch (message.type) {
+        case CometChat.MESSAGE_TYPE.TEXT:
+          component = (
+            <CometChatSenderTextMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.IMAGE:
+          component = (
+            <CometChatSenderImageMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.FILE:
+          component = (
+            <CometChatSenderFileMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.VIDEO:
+          component = (
+            <CometChatSenderVideoMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.AUDIO:
+          component = (
+            <CometChatSenderAudioMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      logger(error);
     }
-
     return component;
   };
+
+  /**
+   * handler for fetching receiver message component of different types
+   * @param message: message object
+   * @param key: key object
+   */
 
   getReceiverMessageComponent = (message, key) => {
     let component;
-    switch (message.type) {
-      case 'message':
-      case CometChat.MESSAGE_TYPE.TEXT:
-        component = (
-          <CometChatReceiverTextMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            // widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.IMAGE:
-        component = (
-          <CometChatReceiverImageMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            // widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.FILE:
-        component = (
-          <CometChatReceiverFileMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.AUDIO:
-        component = (
-          <CometChatReceiverAudioMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      case CometChat.MESSAGE_TYPE.VIDEO:
-        component = (
-          <CometChatReceiverVideoMessageBubble
-            loggedInUser={this.loggedInUser}
-            theme={this.props.theme}
-            key={key}
-            item={this.props.item}
-            type={this.props.type}
-            message={message}
-            widgetsettings={this.props.widgetsettings}
-            actionGenerated={this.actionHandler}
-          />
-        );
-        break;
-      default:
-        break;
+    try {
+      switch (message.type) {
+        case 'message':
+        case CometChat.MESSAGE_TYPE.TEXT:
+          component = (
+            <CometChatReceiverTextMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.IMAGE:
+          component = (
+            <CometChatReceiverImageMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.FILE:
+          component = (
+            <CometChatReceiverFileMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.AUDIO:
+          component = (
+            <CometChatReceiverAudioMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        case CometChat.MESSAGE_TYPE.VIDEO:
+          component = (
+            <CometChatReceiverVideoMessageBubble
+              loggedInUser={this.loggedInUser}
+              theme={this.props.theme}
+              key={key}
+              item={this.props.item}
+              type={this.props.type}
+              message={message}
+              actionGenerated={this.actionHandler}
+            />
+          );
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      logger(error);
     }
     return component;
   };
+
+  /**
+   * handler for fetching receiver/sender message component of different types
+   * @param message: message object
+   */
 
   getMessageComponent = (message) => {
     let component = null;
     const key = 1;
-    if (this.props.loggedInUser.uid === message.sender.uid) {
-      component = this.getSenderMessageComponent(message, key);
-    } else {
-      component = this.getReceiverMessageComponent(message, key);
+    try {
+      if (this.props.loggedInUser.uid === message.sender.uid) {
+        component = this.getSenderMessageComponent(message, key);
+      } else {
+        component = this.getReceiverMessageComponent(message, key);
+      }
+    } catch (error) {
+      logger(error);
     }
     return component;
   };
@@ -515,12 +606,12 @@ class CometChatMessageThread extends React.PureComponent {
         <View style={styles.messageSeparatorStyle}>
           <Text style={[styles.messageReplyStyle]}>{replyText}</Text>
           <View
-            style={{
-              borderWidth: 0.5,
-              borderColor: this.props.theme.backgroundColor.primary,
-              flex: 1,
-              alignSelf: 'center',
-            }}
+            style={[
+              styles.separatorLine,
+              {
+                borderColor: this.props.theme.backgroundColor.primary,
+              },
+            ]}
           />
         </View>
       );
@@ -532,13 +623,13 @@ class CometChatMessageThread extends React.PureComponent {
           message={this.state.messageToReact}
           actionGenerated={this.actionHandler}
           close={() => {
-            this.actionHandler('closeMessageActions');
+            this.actionHandler(actions.CLOSE_MESSAGE_ACTIONS);
           }}
         />
         <View
           style={[
-            { flex: 1 },
-            this.state.keyboardActivity && Platform.OS==="ios"
+            styles.fullFlex,
+            this.state.keyboardActivity && Platform.OS === 'ios'
               ? { marginBottom: this.state.keyboardHeight }
               : {},
           ]}>
@@ -547,7 +638,6 @@ class CometChatMessageThread extends React.PureComponent {
               styles.headerStyle,
               {
                 backgroundColor: this.props.theme.backgroundColor.grey,
-                borderWidth: 1,
                 borderColor: this.props.theme.backgroundColor.primary,
               },
             ]}>
@@ -555,7 +645,7 @@ class CometChatMessageThread extends React.PureComponent {
               <TouchableOpacity
                 style={[styles.headerCloseStyle]}
                 onPress={() =>
-                  this.props.actionGenerated('closeThreadClicked')
+                  this.props.actionGenerated(actions.CLOSE_THREAD_CLICKED)
                 }>
                 {backIcon}
                 <Text
@@ -576,16 +666,9 @@ class CometChatMessageThread extends React.PureComponent {
             </View>
           </View>
 
-          <View
-            style={[
-              styles.messageContainerStyle,
-              {
-                paddingHorizontal: 5 * widthRatio,
-                flex: 1,
-              },
-            ]}>
-            <View style={{ flex: 1 }}>
-              <View style={{ flex: 1 }}>
+          <View style={[styles.messageContainerStyle]}>
+            <View style={styles.fullFlex}>
+              <View style={styles.fullFlex}>
                 <CometChatMessageList
                   theme={this.props.theme}
                   messages={this.state.messageList}
@@ -593,21 +676,18 @@ class CometChatMessageThread extends React.PureComponent {
                   type={this.props.type}
                   scrollToBottom={this.state.scrollToBottom}
                   config={this.props.config}
-                  widgetsettings={this.props.widgetsettings}
                   parentMessageId={this.props.parentMessage.id}
                   loggedInUser={this.props.loggedInUser}
                   actionGenerated={this.actionHandler}
                   parentMessageComponent={() => (
                     <>
-                      <View style={{ paddingTop: 5 * heightRatio }}>
+                      <View style={styles.parentMessageStyle}>
                         {parentMessage}
                       </View>
                       <View
                         style={[
+                          styles.separatorContainer,
                           {
-                            paddingTop: 5 * heightRatio,
-                            paddingBottom: 5 * heightRatio,
-                            justifyContent: 'center',
                             borderColor: this.props.theme.backgroundColor
                               .primary,
                           },
@@ -627,7 +707,6 @@ class CometChatMessageThread extends React.PureComponent {
                   theme={this.props.theme}
                   item={this.props.item}
                   type={this.props.type}
-                  widgetsettings={this.props.widgetsettings}
                   parentMessageId={this.props.parentMessage.id}
                   messageToBeEdited={this.state.messageToBeEdited}
                   replyPreview={this.state.replyPreview}

@@ -25,7 +25,7 @@ export class CometChatManager {
           },
           (error) => {
             reject(error);
-          }
+          },
         );
 
         timer += 100;
@@ -37,7 +37,7 @@ export class CometChatManager {
     const promise = new Promise((resolve, reject) => {
       CometChat.blockUsers(userList).then(
         (list) => resolve(list),
-        (error) => reject(error)
+        (error) => reject(error),
       );
     });
 
@@ -48,7 +48,7 @@ export class CometChatManager {
     const promise = new Promise((resolve, reject) => {
       CometChat.unblockUsers(userList).then(
         (list) => resolve(list),
-        (error) => reject(error)
+        (error) => reject(error),
       );
     });
 
@@ -60,7 +60,7 @@ export class CometChatManager {
       const call = new CometChat.Call(receiverID, callType, receiverType);
       CometChat.initiateCall(call).then(
         (initiatedCall) => resolve(initiatedCall),
-        (error) => reject(error)
+        (error) => reject(error),
       );
     });
 
@@ -71,7 +71,7 @@ export class CometChatManager {
     const promise = new Promise((resolve, reject) => {
       CometChat.acceptCall(sessionId).then(
         (call) => resolve(call),
-        (error) => reject(error)
+        (error) => reject(error),
       );
     });
 
@@ -82,7 +82,7 @@ export class CometChatManager {
     const promise = new Promise((resolve, reject) => {
       CometChat.rejectCall(sessionId, rejectStatus).then(
         (call) => resolve(call),
-        (error) => reject(error)
+        (error) => reject(error),
       );
     });
 

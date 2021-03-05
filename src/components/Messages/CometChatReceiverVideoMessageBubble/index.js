@@ -7,23 +7,29 @@ import { CometChatMessageReactions } from '../../Messages/Extensions';
 import CometChatReadReceipt from '../CometChatReadReceipt';
 import style from './styles';
 import { CometChatAvatar } from '../../Shared';
+import * as actions from '../../../utils/actions';
+import * as enums from '../../../utils/enums';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
-export default (props) => {
-  const message = { ...props.message, messageFrom: 'receiver' };
-  const ViewTheme = { ...theme, ...props.theme };
+const CometChatReceiverVideoMessageBubble = (props) => {
+  const message = {
+    ...props.message,
+    messageFrom: enums.MESSAGE_FROM_RECEIVER,
+  };
+  const viewTheme = { ...theme, ...props.theme };
   const player = createRef();
   let senderAvatar = null;
-  if (message.receiverType === 'group') {
+  if (message.receiverType === CometChat.RECEIVER_TYPE.GROUP) {
     senderAvatar = { uri: message.sender.avatar };
   }
   return (
-    <View style={{ marginBottom: 16 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        {props.message.receiverType === 'group' ? (
+    <View style={style.container}>
+      <View style={style.innerContainer}>
+        {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
           <View style={style.avatarStyle}>
             <CometChatAvatar
               cornerRadius={18}
-              borderColor={ViewTheme.color.secondary}
+              borderColor={viewTheme.color.secondary}
               borderWidth={0}
               image={senderAvatar}
               name={message.sender.name}
@@ -31,15 +37,15 @@ export default (props) => {
           </View>
         ) : null}
         <View>
-          {props.message.receiverType === 'group' ? (
-            <View style={{ marginBottom: 5 }}>
+          {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
+            <View style={style.senderNameContainer}>
               <Text>{message.sender.name}</Text>
             </View>
           ) : null}
           <View style={style.messageWrapperStyle}>
             <TouchableWithoutFeedback
               onLongPress={() =>
-                props.actionGenerated('openMessageActions', message)
+                props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
               }>
               <View style={style.messageVideoWrapperStyle}>
                 <VideoPlayer
@@ -78,3 +84,4 @@ export default (props) => {
     </View>
   );
 };
+export default CometChatReceiverVideoMessageBubble;

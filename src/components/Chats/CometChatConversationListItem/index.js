@@ -11,6 +11,12 @@ import {
 import styles from './styles';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { Platform } from 'react-native';
+import { logger } from '../../../utils/common';
+
+const conversation = 'conversation';
+const lastMessage = 'lastMessage';
+const deletedAt = 'deletedAt';
+const sentAt = 'sentAt';
 
 class CometChatConversationListItem extends React.Component {
   constructor(props) {
@@ -44,15 +50,18 @@ class CometChatConversationListItem extends React.Component {
         });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
+  /**
+   * Retrieve last message from conversation object
+   * @param
+   */
   getLastMessage = () => {
     try {
       if (
-        Object.prototype.hasOwnProperty.call(this.props, 'conversation') ===
-        false
+        Object.prototype.hasOwnProperty.call(this.props, conversation) === false
       ) {
         return false;
       }
@@ -60,33 +69,33 @@ class CometChatConversationListItem extends React.Component {
       if (
         Object.prototype.hasOwnProperty.call(
           this.props.conversation,
-          'lastMessage',
+          lastMessage,
         ) === false
       ) {
         return false;
       }
 
       let message = null;
-      const { lastMessage } = this.props.conversation;
+      const { lastMessage: lastMessageObject } = this.props.conversation;
 
-      if (Object.prototype.hasOwnProperty.call(lastMessage, 'deletedAt')) {
+      if (Object.prototype.hasOwnProperty.call(lastMessageObject, deletedAt)) {
         message =
-          this.props.loggedInUser.uid === lastMessage.sender.uid
+          this.props.loggedInUser.uid === lastMessageObject.sender.uid
             ? '⚠ You deleted this message.'
             : '⚠ This message was deleted.';
       } else {
-        switch (lastMessage.category) {
+        switch (lastMessageObject.category) {
           case 'message':
-            message = this.getMessage(lastMessage);
+            message = this.getMessage(lastMessageObject);
             break;
           case 'call':
-            message = this.getCallMessage(lastMessage);
+            message = this.getCallMessage(lastMessageObject);
             break;
           case 'action':
-            message = lastMessage.message;
+            message = lastMessageObject.message;
             break;
           case 'custom':
-            message = this.getCustomMessage(lastMessage);
+            message = this.getCustomMessage(lastMessageObject);
             break;
           default:
             break;
@@ -95,15 +104,18 @@ class CometChatConversationListItem extends React.Component {
 
       return message;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Retrieve last message timestamp from conversation object
+   * @param
+   */
   getLastMessageTimestamp = () => {
     try {
       if (
-        Object.prototype.hasOwnProperty.call(this.props, 'conversation') ===
-        false
+        Object.prototype.hasOwnProperty.call(this.props, conversation) === false
       ) {
         return false;
       }
@@ -111,7 +123,7 @@ class CometChatConversationListItem extends React.Component {
       if (
         Object.prototype.hasOwnProperty.call(
           this.props.conversation,
-          'lastMessage',
+          lastMessage,
         ) === false
       ) {
         return false;
@@ -120,7 +132,7 @@ class CometChatConversationListItem extends React.Component {
       if (
         Object.prototype.hasOwnProperty.call(
           this.props.conversation.lastMessage,
-          'sentAt',
+          sentAt,
         ) === false
       ) {
         return false;
@@ -144,11 +156,8 @@ class CometChatConversationListItem extends React.Component {
         if (Platform.OS === 'android' && timestamp !== 'Yesterday') {
           let time = timestamp.split(':'); // convert to array
 
-          // fetch
           var hours = Number(time[0]);
           var minutes = Number(time[1]);
-
-          // calculate
           var timeValue;
 
           if (hours > 0 && hours <= 12) {
@@ -179,10 +188,14 @@ class CometChatConversationListItem extends React.Component {
 
       return timestamp;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Retrieve last message for messageType - custom
+   * @param lastMessage - message object
+   */
   getCustomMessage = (lastMessage) => {
     try {
       let message = null;
@@ -199,10 +212,14 @@ class CometChatConversationListItem extends React.Component {
 
       return message;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Retrieve last message for messageType - message
+   * @param lastMessage - message object
+   */
   getMessage = (lastMessage) => {
     try {
       let message = null;
@@ -234,10 +251,14 @@ class CometChatConversationListItem extends React.Component {
 
       return message;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Retrieve last message for messageType - call
+   * @param lastMessage - message object
+   */
   getCallMessage = (lastMessage) => {
     try {
       let message = null;
@@ -254,10 +275,14 @@ class CometChatConversationListItem extends React.Component {
 
       return message;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Retrieve avatar from conversation object
+   * @param
+   */
   getAvatar = () => {
     try {
       let avatar;
@@ -268,7 +293,7 @@ class CometChatConversationListItem extends React.Component {
       }
       return avatar;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -305,7 +330,7 @@ class CometChatConversationListItem extends React.Component {
               this.props.conversationKey,
             )
           }>
-          <View style={[styles.itemThumbnailStyle]}>
+          <View style={styles.itemThumbnailStyle}>
             <CometChatAvatar
               image={this.getAvatar()}
               cornerRadius={25}

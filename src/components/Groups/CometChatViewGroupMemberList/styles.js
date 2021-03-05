@@ -1,13 +1,18 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { calc } from '../../../utils/consts';
+import { calc, deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   reactionDetailsContainer: {
     backgroundColor: 'white',
     paddingVertical: 20,
     borderRadius: 20,
-    minHeight: Dimensions.get('window').height,
+    minHeight: deviceHeight,
+  },
+  headerContainerStyle: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contactWrapperStyle: {
     height: '100%',
@@ -15,7 +20,6 @@ export default StyleSheet.create({
   },
   contactHeaderStyle: {
     paddingBottom: 14,
-    // paddingHorizontal: 10,
     position: 'relative',
     paddingHorizontal: 25,
   },
@@ -45,8 +49,6 @@ export default StyleSheet.create({
     },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
-
-    // elevation: 2,
   },
   contactSearchInputStyle: {
     flex: 1,
@@ -93,8 +95,8 @@ export default StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal:15,
-    paddingVertical:15,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
   },
   addBtnStyle: {
     borderRadius: 10,

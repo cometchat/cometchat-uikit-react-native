@@ -3,6 +3,8 @@ import theme from '../../../resources/theme';
 import { widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  fullFlex: { flex: 1 },
+  bottomSheetContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',

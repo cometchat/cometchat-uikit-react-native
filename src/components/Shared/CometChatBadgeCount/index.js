@@ -3,7 +3,7 @@ import { Animated } from 'react-native';
 import theme from '../../../resources/theme';
 import styles from './styles';
 
-export default (props) => {
+const CometChatBadgeCount = (props) => {
   const badgeTheme = { ...theme, ...props.theme };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -34,3 +34,4 @@ export default (props) => {
 
   return null;
 };
+export default CometChatBadgeCount;

@@ -3,7 +3,14 @@
 /* eslint-disable import/no-dynamic-require */
 /* eslint-disable react/no-did-update-set-state */
 import React from 'react';
-import { View, TouchableOpacity, TextInput, Text,Keyboard, Platform } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  TextInput,
+  Text,
+  Keyboard,
+  Platform,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDIcon from 'react-native-vector-icons/AntDesign';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -11,14 +18,18 @@ import Sound from 'react-native-sound';
 
 import style from './styles';
 
-import { CometChatCreatePoll, CometChatSmartReplyPreview } from '../../Messages/Extensions';
+import {
+  CometChatCreatePoll,
+  CometChatSmartReplyPreview,
+} from '../../Messages/Extensions';
 import CometChatStickerKeyboard from '../CometChatStickerKeyboard';
 import ComposerActions from './composerActions';
 
 import { outgoingMessageAlert } from '../../../resources/audio';
-import { validateWidgetSettings } from '../../../utils/common';
 import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 import { heightRatio } from '../../../utils/consts';
+import { logger } from '../../../utils/common';
 
 export default class CometChatMessageComposer extends React.PureComponent {
   constructor(props) {
@@ -51,23 +62,29 @@ export default class CometChatMessageComposer extends React.PureComponent {
     this.audio = new Sound(outgoingMessageAlert);
   }
 
-  componentDidMount(){
-    this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this._keyboardDidShow);
-    this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', this._keyboardDidHide);
+  componentDidMount() {
+    this.keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      this._keyboardDidShow,
+    );
+    this.keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      this._keyboardDidHide,
+    );
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     this.keyboardDidShowListener.remove();
     this.keyboardDidHideListener.remove();
   }
 
-  _keyboardDidShow =()=> {
-    this.setState({ keyboardActivity :true})
-  }
+  _keyboardDidShow = () => {
+    this.setState({ keyboardActivity: true });
+  };
 
-  _keyboardDidHide =() =>{
+  _keyboardDidHide = () => {
     this.setState({ keyboardActivity: false });
-  }
+  };
 
   componentDidUpdate(prevProps) {
     try {
@@ -96,39 +113,54 @@ export default class CometChatMessageComposer extends React.PureComponent {
         this.setState({ stickerViewer: false });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
+  /**
+   * Handler for audio when message is sent
+   * @param
+   */
   playAudio = () => {
-    // if message sound is disabled for chat wigdet in dashboard
-    if (validateWidgetSettings(this.props.widgetsettings, 'enable_sound_for_messages') === false) {
-      return false;
-    }
-
     this.audio.setCurrentTime(0);
     this.audio.play();
   };
+
+  /**
+   * Handler for change in TextInput(messageComposer)
+   * @param text: TextInput's value
+   */
 
   changeHandler = (text) => {
     this.startTyping();
     this.setState({ messageInput: text, messageType: 'text' });
   };
 
+  /**
+   * Fetches the receiver's details.
+   * @param
+   */
+
   getReceiverDetails = () => {
     let receiverId;
     let receiverType;
 
-    if (this.props.type === 'user') {
+    if (this.props.type === CometChat.RECEIVER_TYPE.USER) {
       receiverId = this.props.item.uid;
       receiverType = CometChat.RECEIVER_TYPE.USER;
-    } else if (this.props.type === 'group') {
+    } else if (this.props.type === CometChat.RECEIVER_TYPE.GROUP) {
       receiverId = this.props.item.guid;
       receiverType = CometChat.RECEIVER_TYPE.GROUP;
     }
 
     return { receiverId, receiverType };
   };
+
+  /**
+   * handler for sending and generating media message
+   * @param messageInput: object messageInput
+   * @param messageType: object messageType
+   */
 
   sendMediaMessage = (messageInput, messageType) => {
     try {
@@ -155,16 +187,21 @@ export default class CometChatMessageComposer extends React.PureComponent {
         .then((response) => {
           this.messageSending = false;
           this.playAudio();
-          this.props.actionGenerated('messageComposed', [response]);
+          this.props.actionGenerated(actions.MESSAGE_COMPOSED, [response]);
         })
-        .catch(() => {
+        .catch((error) => {
           this.messageSending = false;
-          // console.log('Message sending failed with error:', error);
+          logger('Message sending failed with error:', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handler for sending Text Message
+   * @param
+   */
 
   sendTextMessage = () => {
     try {
@@ -206,16 +243,21 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.messageSending = false;
           this.messageInputRef.current.textContent = '';
           this.playAudio();
-          this.props.actionGenerated('messageComposed', [message]);
+          this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
         })
-        .catch(() => {
-          // console.log('Message sending failed with error:', error);
+        .catch((error) => {
+          logger('Message sending failed with error:', error);
           this.messageSending = false;
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * Handler for edit message
+   * @param
+   */
 
   editMessage = () => {
     try {
@@ -241,35 +283,34 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.playAudio();
 
           this.closeEditPreview();
-          this.props.actionGenerated('messageEdited', message);
+          this.props.actionGenerated(actions.MESSAGE_EDITED, message);
         })
-        .catch(() => {
+        .catch((error) => {
           this.messageSending = false;
-          // console.log('Message editing failed with error:', error);
+          logger('Message editing failed with error:', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handler for action -> CLEAR_EDIT_PREVIEW
+   * @param
+   */
   closeEditPreview = () => {
-    this.props.actionGenerated('clearEditPreview');
+    this.props.actionGenerated(actions.CLEAR_EDIT_PREVIEW);
   };
+
+  /**
+   * Handler For Generating typing Notification
+   * @param timer: typingInterval
+   * @param metadata: metadata object
+   */
 
   startTyping = (timer, metadata) => {
     try {
       const typingInterval = timer || 5000;
-
-      // if typing indicator is disabled for chat wigdet in dashboard
-      if (
-        validateWidgetSettings(
-          this.props.widgetsettings,
-          'show_typing_indicators',
-        ) === false
-      ) {
-        return false;
-      }
-
       if (this.isTyping) {
         return false;
       }
@@ -288,22 +329,17 @@ export default class CometChatMessageComposer extends React.PureComponent {
         this.endTyping();
       }, typingInterval);
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * Handler to end typing Notification
+   * @param metadata: metadata object
+   */
+
   endTyping = (metadata) => {
     try {
-      // if typing indicator is disabled for chat wigdet in dashboard
-      if (
-        validateWidgetSettings(
-          this.props.widgetsettings,
-          'show_typing_indicators',
-        ) === false
-      ) {
-        return false;
-      }
-
       const { receiverId, receiverType } = this.getReceiverDetails();
 
       const typingMetadata = metadata || undefined;
@@ -318,9 +354,14 @@ export default class CometChatMessageComposer extends React.PureComponent {
       clearTimeout(this.isTyping);
       this.isTyping = null;
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * Handler to toggle Sticker Picker screen
+   * @param
+   */
 
   toggleStickerPicker = () => {
     const { stickerViewer } = this.state;
@@ -330,31 +371,43 @@ export default class CometChatMessageComposer extends React.PureComponent {
     });
   };
 
+  /**
+   * handler to toggle create poll screen
+   * @param
+   */
   toggleCreatePoll = () => {
     const { createPoll } = this.state;
     this.setState({ composerActionsVisible: false, createPoll: !createPoll });
   };
 
+  /**
+   * handler to close create poll screen
+   * @param
+   */
   closeCreatePoll = () => {
     this.toggleCreatePoll();
-    // this.toggleFilePicker();
   };
 
+  /**
+   * handler for various action
+   * @param action: action name
+   * @param message: message object
+   */
   actionHandler = (action, message) => {
     switch (action) {
-      case 'pollCreated':
+      case actions.POLL_CREATED:
         this.toggleCreatePoll();
 
         // temporary check; custom data listener working for sender too
-        if (this.props.type === 'user') {
-          this.props.actionGenerated('pollCreated', [message]);
+        if (this.props.type === CometChat.RECEIVER_TYPE.USER) {
+          this.props.actionGenerated(actions.POLL_CREATED, [message]);
         }
 
         break;
-      case 'sendSticker':
+      case actions.SEND_STICKER:
         this.sendSticker(message);
         break;
-      case 'closeSticker':
+      case actions.CLOSE_STICKER:
         this.toggleStickerPicker();
         break;
       default:
@@ -362,6 +415,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
     }
   };
 
+  /**
+   * handler for sending sticker message
+   * @param stickerMessage: object stickerMessage
+   */
   sendSticker = (stickerMessage) => {
     this.messageSending = true;
 
@@ -377,7 +434,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       receiverId,
       receiverType,
       customType,
-      customData
+      customData,
     );
     if (this.props.parentMessageId) {
       customMessage.setParentMessageId(this.props.parentMessageId);
@@ -386,13 +443,18 @@ export default class CometChatMessageComposer extends React.PureComponent {
       .then((message) => {
         this.messageSending = false;
         this.playAudio();
-        this.props.actionGenerated('messageComposed', [message]);
+        this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
       })
-      .catch(() => {
+      .catch((error) => {
         this.messageSending = false;
-        // console.log('custom message sending failed with error', error);
+        logger('custom message sending failed with error', error);
       });
   };
+
+  /**
+   * handler for sending reply message
+   * @param messageInput: object messageInput
+   */
 
   sendReplyMessage = (messageInput) => {
     try {
@@ -410,13 +472,13 @@ export default class CometChatMessageComposer extends React.PureComponent {
         .then((message) => {
           this.playAudio();
           this.setState({ replyPreview: null });
-          this.props.actionGenerated('messageComposed', [message]);
+          this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
         })
-        .catch(() => {
-          // console.log('Message sending failed with error:', error);
+        .catch((error) => {
+          logger('Message sending failed with error:', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -424,6 +486,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
     this.setState({ replyPreview: null });
   };
 
+  /**
+   * handler for sending reactions
+   * @param
+   */
   sendReaction = (event) => {
     const typingInterval = 1000;
 
@@ -433,11 +499,11 @@ export default class CometChatMessageComposer extends React.PureComponent {
     };
 
     this.startTyping(typingInterval, typingMetadata);
-    this.props.actionGenerated('sendReaction');
+    this.props.actionGenerated(actions.SEND_REACTION);
     event.persist();
     setTimeout(() => {
       this.endTyping(typingMetadata);
-      this.props.actionGenerated('stopReaction');
+      this.props.actionGenerated(actions.STOP_REACTION);
     }, typingInterval);
   };
 
@@ -448,9 +514,13 @@ export default class CometChatMessageComposer extends React.PureComponent {
     }
 
     let liveReactionBtn = null;
-    if (Object.prototype.hasOwnProperty.call(enums.LIVE_REACTIONS, this.props.reaction)) {
+    if (
+      Object.prototype.hasOwnProperty.call(
+        enums.LIVE_REACTIONS,
+        this.props.reaction,
+      )
+    ) {
       const reactionName = this.props.reaction;
-      // const imgSrc = enums.LIVE_REACTIONS[reactionName];
       liveReactionBtn = (
         <TouchableOpacity
           style={style.reactionBtnStyle}
@@ -462,20 +532,16 @@ export default class CometChatMessageComposer extends React.PureComponent {
     }
 
     let sendBtn = (
-      <TouchableOpacity style={style.sendButtonStyle} onPress={() => this.sendTextMessage()}>
+      <TouchableOpacity
+        style={style.sendButtonStyle}
+        onPress={() => this.sendTextMessage()}>
         <Icon name="send" size={20} color="#3299ff" />
       </TouchableOpacity>
     );
 
     if (!this.state.messageInput.length) {
       sendBtn = null;
-    }
-
-    // //if live reactions is disabled for chat wigdet in dashboard
-    if (
-      validateWidgetSettings(this.props.widgetsettings, 'share_live_reactions') === false ||
-      this.state.messageInput.length
-    ) {
+    } else {
       liveReactionBtn = null;
     }
 
@@ -491,11 +557,12 @@ export default class CometChatMessageComposer extends React.PureComponent {
             },
           ]}>
           <View
-            style={{
-              borderLeftColor: this.props.theme.color.secondary,
-              borderLeftWidth: 3,
-              paddingLeft: 8,
-            }}>
+            style={[
+              style.previewHeadingContainer,
+              {
+                borderLeftColor: this.props.theme.color.secondary,
+              },
+            ]}>
             <View style={style.previewHeadingStyle}>
               <Text
                 style={[
@@ -506,8 +573,14 @@ export default class CometChatMessageComposer extends React.PureComponent {
                 ]}>
                 Edit message
               </Text>
-              <TouchableOpacity style={style.previewCloseStyle} onPress={this.closeEditPreview}>
-                <Icon name="close" size={23} color={this.props.theme.color.secondary} />
+              <TouchableOpacity
+                style={style.previewCloseStyle}
+                onPress={this.closeEditPreview}>
+                <Icon
+                  name="close"
+                  size={23}
+                  color={this.props.theme.color.secondary}
+                />
               </TouchableOpacity>
             </View>
             <View>
@@ -561,9 +634,16 @@ export default class CometChatMessageComposer extends React.PureComponent {
         const { metadata } = message;
         if (Object.prototype.hasOwnProperty.call(metadata, '@injected')) {
           const injectedObject = metadata['@injected'];
-          if (Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')) {
+          if (
+            Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')
+          ) {
             const extensionsObject = injectedObject.extensions;
-            if (Object.prototype.hasOwnProperty.call(extensionsObject, 'smart-reply')) {
+            if (
+              Object.prototype.hasOwnProperty.call(
+                extensionsObject,
+                'smart-reply',
+              )
+            ) {
               const smartReplyObject = extensionsObject['smart-reply'];
 
               const options = [
@@ -593,7 +673,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           theme={this.props.theme}
           item={this.props.item}
           type={this.props.type}
-          widgetsettings={this.props.widgetsettings}
           actionGenerated={this.actionHandler}
         />
       );
@@ -606,12 +685,16 @@ export default class CometChatMessageComposer extends React.PureComponent {
         type={this.props.type}
         open={this.state.createPoll}
         close={this.closeCreatePoll}
-        widgetsettings={this.props.widgetsettings}
         actionGenerated={this.actionHandler}
       />
     );
     return (
-      <View style={Platform.OS==="android"&&this.state.keyboardActivity?{ marginBottom: 21*heightRatio }:{}}>
+      <View
+        style={
+          Platform.OS === 'android' && this.state.keyboardActivity
+            ? { marginBottom: 21 * heightRatio }
+            : {}
+        }>
         {blockedPreview}
         {editPreview}
         {createPoll}
@@ -626,22 +709,16 @@ export default class CometChatMessageComposer extends React.PureComponent {
           toggleCreatePoll={this.toggleCreatePoll}
           sendMediaMessage={this.sendMediaMessage}
         />
-        <View
-          style={{ flexDirection: 'row', padding: 10, alignItems: 'center' }}>
+        <View style={style.mainContainer}>
           <TouchableOpacity
-            style={{ marginRight: 10 }}
+            style={style.plusCircleContainer}
             disabled={disabled}
             onPress={() => {
               this.setState({ composerActionsVisible: true });
             }}>
             <AntDIcon size={26} name="pluscircle" color="rgba(0,0,0,0.35)" />
           </TouchableOpacity>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-            }}>
+          <View style={style.textInputContainer}>
             <TextInput
               style={style.messageInputStyle}
               editable={!disabled}

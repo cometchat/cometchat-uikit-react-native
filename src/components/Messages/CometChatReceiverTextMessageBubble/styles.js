@@ -2,6 +2,23 @@ import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  messageLinkStyle: {
+    textDecorationLine: 'underline',
+    color: 'blue',
+    fontSize: 15,
+  },
+  container: { marginBottom: 16 },
+  innerContainer: { flexDirection: 'row', alignItems: 'flex-start' },
+  senderNameStyle: { marginBottom: 5 },
+  autolinkStyle: { color: 'black', fontSize: 15 },
+  messageContainer: { maxWidth: '81%', minWidth: '81%' },
+  linkObjectDescription: {
+    fontStyle: 'italic',
+    fontSize: 13,
+  },
+  linkObjectTitle: {
+    fontWeight: '700',
+  },
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',

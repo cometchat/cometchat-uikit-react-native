@@ -58,7 +58,7 @@ To install React-Native UI Kit, you need to first register on CometChat Dashboar
 ### ii. Add the CometChat Dependency
 
 ```javascript
- npm install @cometchat-pro/react-native-chat@2.2.0 --save
+ npm install @cometchat-pro/react-native-chat@2.2.1 --save
 ```
 
 ### iii. Other required DEPENDENCIES
@@ -82,7 +82,12 @@ These packages help make the ui-kit smooth and functioning
 [@react-native-picker/picker](https://github.com/react-native-picker/picker)</br>
 [react-native-async-storage/async-storage](https://github.com/react-native-async-storage/async-storage)</br>
 [@cometchat-pro/react-native-calls](https://www.npmjs.com/package/@cometchat-pro/react-native-calls)</br>
+[rn-fetch-blob](https://www.npmjs.com/package/rn-fetch-blob)</br>
+[react-native-autolink](https://www.npmjs.com/package/react-native-autolink)</br>
+[react-native-screens](https://www.npmjs.com/package/react-native-screens)</br>
+[emoji-mart-native](https://www.npmjs.com/package/emoji-mart-native)</br>
 <br/>
+
 
 ## 2. Configure CometChat inside your app
 
@@ -158,27 +163,19 @@ CometChat.login(uid, authKey).then(
 
 Usage of application in project
 
-```html
-import {CometChatUI} from './react-native-chat-ui-kit';
+```javascript
+import React from 'react';
+import {View} from 'react-native';
+import {CometChatUI} from '../cometchat-pro-react-native-ui-kit';
 
-function StackNavigator(props) {
-  const Stack = createStackNavigator();
-
+export default function CometChatUIView() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        headerMode="none"
-        initialRouteName={props.isLoggedIn ? 'HomePage' : null}>
-        <Stack.Screen name="LoginPage" component={LoginPage} />
-        <Stack.Screen name="HomePage" component={HomePage} />
-        <Stack.Screen
-          name="CometChatUI"
-          component={CometChatUI}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={{flex: 1}}>
+      <CometChatUI />
+    </View>
   );
 }
+
 
 ```
 

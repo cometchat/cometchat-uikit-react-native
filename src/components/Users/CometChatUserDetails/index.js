@@ -5,15 +5,20 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { CometChatSharedMedia } from '../../Shared';
 import style from './styles';
 import BottomSheet from 'reanimated-bottom-sheet';
+import * as actions from '../../../utils/actions';
+import { deviceHeight } from '../../../utils/consts';
 
 export default class CometChatUserDetails extends React.Component {
   constructor(props) {
     super(props);
 
-    this.ViewTheme = { ...theme, ...this.props.theme };
+    this.viewTheme = { ...theme, ...this.props.theme };
     this.sheetRef = React.createRef(null);
   }
 
+  /**
+   * Update bottom sheet to 0th snap point if prop received as open
+   */
   componentDidUpdate(prevProps) {
     if (!prevProps.open && this.props.open) {
       this.sheetRef.current.snapTo(0);
@@ -27,9 +32,10 @@ export default class CometChatUserDetails extends React.Component {
       blockUserText = (
         <TouchableOpacity
           onPress={() => {
-            this.props.actionGenerated('unblockUser');
+            this.props.actionGenerated(actions.UNBLOCK_USER);
           }}>
-          <Text style={[style.itemLinkStyle, { color: this.ViewTheme.color.red }]}>
+          <Text
+            style={[style.itemLinkStyle, { color: this.viewTheme.color.red }]}>
             Unblock User
           </Text>
         </TouchableOpacity>
@@ -38,19 +44,26 @@ export default class CometChatUserDetails extends React.Component {
       blockUserText = (
         <TouchableOpacity
           onPress={() => {
-            this.props.actionGenerated('blockUser');
+            this.props.actionGenerated(actions.BLOCK_USER);
           }}>
-          <Text style={[style.itemLinkStyle, { color: this.ViewTheme.color.red }]}>Block User</Text>
+          <Text
+            style={[style.itemLinkStyle, { color: this.viewTheme.color.red }]}>
+            Block User
+          </Text>
         </TouchableOpacity>
       );
     }
 
     let blockUserView = (
-      <View style={{ width: '100%' }}>
-        <Text style={[style.sectionHeaderStyle, { color: this.ViewTheme.color.secondary }]}>
+      <View style={style.blockContainer}>
+        <Text
+          style={[
+            style.sectionHeaderStyle,
+            { color: this.viewTheme.color.secondary },
+          ]}>
           Options
         </Text>
-        <View style={{ width: '100%', marginVertical: 6 }}>{blockUserText}</View>
+        <View style={style.blockText}>{blockUserText}</View>
       </View>
     );
 
@@ -60,38 +73,19 @@ export default class CometChatUserDetails extends React.Component {
         containerHeight={50}
         item={this.props.item}
         type={this.props.type}
-        widgetsettings={this.props.widgetsettings}
       />
     );
 
-    if (
-      Object.prototype.hasOwnProperty.call(this.props, 'widgetsettings') &&
-      this.props.widgetsettings &&
-      Object.prototype.hasOwnProperty.call(this.props.widgetsettings, 'main')
-    ) {
-      // if block_user is disabled in chatwidget
-      if (
-        Object.prototype.hasOwnProperty.call(this.props.widgetsettings.main, 'block_user') &&
-        this.props.widgetsettings.main.block_user === false
-      ) {
-        blockUserView = null;
-      }
-
-      // if view_shared_media is disabled in chatwidget
-      if (
-        Object.prototype.hasOwnProperty.call(this.props.widgetsettings.main, 'view_shared_media') &&
-        this.props.widgetsettings.main.view_shared_media === false
-      ) {
-        sharedMediaView = null;
-      }
-    }
-
     return (
-      <Modal transparent animated animationType="fade" visible={this.props.open}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+      <Modal
+        transparent
+        animated
+        animationType="fade"
+        visible={this.props.open}>
+        <View style={style.container}>
           <BottomSheet
             ref={this.sheetRef}
-            snapPoints={[Dimensions.get('window').height - 80, 0]}
+            snapPoints={[deviceHeight - 80, 0]}
             borderRadius={30}
             initialSnap={0}
             enabledInnerScrolling={false}
@@ -103,11 +97,13 @@ export default class CometChatUserDetails extends React.Component {
                   <View
                     style={[
                       style.headerStyle,
-                      { borderColor: this.ViewTheme.borderColor.primary },
+                      { borderColor: this.viewTheme.borderColor.primary },
                     ]}>
                     <TouchableOpacity
                       style={style.headerCloseStyle}
-                      onPress={() => this.props.actionGenerated('closeDetail')}>
+                      onPress={() =>
+                        this.props.actionGenerated(actions.CLOSE_DETAIL)
+                      }>
                       <Icon
                         name="keyboard-arrow-left"
                         size={24}
@@ -117,7 +113,7 @@ export default class CometChatUserDetails extends React.Component {
                     </TouchableOpacity>
                     <Text style={style.headerTitleStyle}>Details</Text>
                   </View>
-                  <View style={{ padding: 16, flex: 1, flexGrow: 1 }}>
+                  <View style={style.optionsContainer}>
                     {blockUserView}
                     {sharedMediaView}
                   </View>
@@ -125,7 +121,7 @@ export default class CometChatUserDetails extends React.Component {
               );
             }}
             onCloseEnd={() => {
-              this.props.actionGenerated('closeDetail');
+              this.props.actionGenerated(actions.CLOSE_DETAIL);
             }}
           />
         </View>

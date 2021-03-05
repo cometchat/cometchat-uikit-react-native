@@ -1,12 +1,19 @@
 import React from 'react';
-import { Text, View, Modal, Dimensions, TouchableOpacity, SectionList } from 'react-native';
+import {
+  Text,
+  View,
+  Modal,
+  Dimensions,
+  TouchableOpacity,
+  SectionList,
+} from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 import style from './styles';
 import { checkMessageForExtensionsData } from '../../../../utils/common';
 import { map, toArray } from 'lodash';
 import FastImage from 'react-native-fast-image';
 import { Emoji } from 'emoji-mart-native';
-import _ from 'lodash'
+import _ from 'lodash';
 export default class ReactionDetails extends React.Component {
   sheetRef = React.createRef(null);
 
@@ -18,15 +25,18 @@ export default class ReactionDetails extends React.Component {
 
   renderSectionItem = ({ item }) => (
     <View style={style.sectionItemContainer}>
-      <FastImage source={{ uri: item.avatar }} style={style.sectionItemAvatar} />
+      <FastImage
+        source={{ uri: item.avatar }}
+        style={style.sectionItemAvatar}
+      />
       <View style={style.sectionItemName}>
-        <Text style={{ fontSize: 18 }}>{item.name}</Text>
+        <Text style={style.sectionItemNameText}>{item.name}</Text>
       </View>
     </View>
   );
 
   renderSectionHeader = ({ section: { title } }) => {
-      const reactionName = _.trim(title, ':');
+    const reactionName = _.trim(title, ':');
 
     return (
       <View style={style.sectionHeaderContainer}>
@@ -36,7 +46,10 @@ export default class ReactionDetails extends React.Component {
   };
 
   renderContent = () => {
-    let reactionData = checkMessageForExtensionsData(this.props.message, 'reactions');
+    let reactionData = checkMessageForExtensionsData(
+      this.props.message,
+      'reactions',
+    );
     reactionData = map(reactionData, (key, value) => {
       return { title: value, data: toArray(key) };
     });
@@ -68,7 +81,7 @@ export default class ReactionDetails extends React.Component {
 
     return (
       <Modal transparent animated animationType="fade" visible={visible}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <View style={style.reactionDetailBottomSheet}>
           <BottomSheet
             ref={this.sheetRef}
             snapPoints={[Dimensions.get('window').height - 80, 0]}

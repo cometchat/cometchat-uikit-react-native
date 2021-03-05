@@ -36,7 +36,7 @@ export class UserListManager {
           /* when someuser/friend went offline, user will be received here */
           callback(offlineUser);
         },
-      })
+      }),
     );
   }
 

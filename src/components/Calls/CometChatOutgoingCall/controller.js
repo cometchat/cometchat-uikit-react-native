@@ -18,7 +18,7 @@ export class CallScreenManager {
         onIncomingCallCancelled: (call) => {
           callback(enums.INCOMING_CALL_CANCELLED, call);
         },
-      })
+      }),
     );
   }
 

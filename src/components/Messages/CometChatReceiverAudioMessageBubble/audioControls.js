@@ -1,44 +1,66 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { Slider } from 'react-native-elements';
 import Sound from 'react-native-sound';
 import RNFetchBlob from 'rn-fetch-blob';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import style from './styles';
+import { logger } from '../../../utils/common';
+
+const PLAY_STATE_PAUSED = 'paused';
+const PLAY_STATE_PLAYING = 'playing';
+const PLAY_STATE_LOADING = 'loading';
+const VOLUME_STATE_UNMUTE = 'unmute';
+const VOLUME_STATE_MUTE = 'mute';
 
 export default class AudioControls extends React.Component {
   constructor() {
     super();
     this.state = {
-      playState: 'paused', // playing, paused
+      playState: PLAY_STATE_PAUSED, // playing, paused
       playSeconds: 0,
       duration: 0,
-      volumeState: 'unmute',
+      volumeState: VOLUME_STATE_UNMUTE,
     };
     this.sliderEditing = false;
   }
 
   componentDidMount() {
-    this.timeout = setInterval(() => {
-      if (
-        this.sound &&
-        this.sound.isLoaded() &&
-        this.state.playState === 'playing' &&
-        !this.sliderEditing
-      ) {
-        this.sound.getCurrentTime((seconds) => {
-          this.setState({ playSeconds: seconds });
-        });
-      }
-    }, 100);
+    try {
+      this.timeout = setInterval(() => {
+        if (
+          this.sound &&
+          this.sound.isLoaded() &&
+          this.state.playState === PLAY_STATE_PLAYING &&
+          !this.sliderEditing
+        ) {
+          this.sound.getCurrentTime((seconds) => {
+            this.setState({ playSeconds: seconds });
+          });
+        }
+      }, 100);
+    } catch (error) {
+      logger(error);
+    }
   }
 
   componentWillUnmount() {
-    if (this.sound) {
-      this.sound.release();
-      this.sound = null;
-    }
-    if (this.timeout) {
-      clearInterval(this.timeout);
+    try {
+      if (this.sound) {
+        this.sound.release();
+        this.sound = null;
+      }
+      if (this.timeout) {
+        clearInterval(this.timeout);
+      }
+    } catch (error) {
+      logger(error);
     }
   }
 
@@ -69,7 +91,7 @@ export default class AudioControls extends React.Component {
       if (!success) {
         Alert.alert('Notice', 'audio file error. (Error code : 2)');
       }
-      this.setState({ playState: 'paused', playSeconds: 0 });
+      this.setState({ playState: PLAY_STATE_PAUSED, playSeconds: 0 });
       this.sound.setCurrentTime(0);
     }
   };
@@ -79,7 +101,7 @@ export default class AudioControls extends React.Component {
       this.sound.pause();
     }
 
-    this.setState({ playState: 'paused' });
+    this.setState({ playState: PLAY_STATE_PAUSED });
   };
 
   mute = () => {
@@ -87,7 +109,7 @@ export default class AudioControls extends React.Component {
       this.sound.setVolume(0.0);
     }
 
-    this.setState({ volumeState: 'mute' });
+    this.setState({ volumeState: VOLUME_STATE_MUTE });
   };
 
   unmute = () => {
@@ -95,16 +117,8 @@ export default class AudioControls extends React.Component {
       this.sound.setVolume(1.0);
     }
 
-    this.setState({ volumeState: 'unmute' });
+    this.setState({ volumeState: VOLUME_STATE_UNMUTE });
   };
-
-  //   jumpPrev15Seconds = () => {
-  //     this.jumpSeconds(-15);
-  //   };
-  
-  //   jumpNext15Seconds = () => {
-  //     this.jumpSeconds(15);
-  //   };
 
   jumpSeconds = (secsDelta) => {
     if (this.sound) {
@@ -119,30 +133,34 @@ export default class AudioControls extends React.Component {
   };
 
   play = async () => {
-    if (this.sound) {
-      this.setState({ playState: 'playing' }, () => {
-        this.sound.play(this.playComplete);
-      });
-    } else {
-      const filepath = this.props.source;
-      this.setState({ playState: 'loading' }, () => {
-        this.sound = new Sound(filepath, '', (error) => {
-          if (error) {
-            Alert.alert('Notice', 'audio file error. (Error code : 1)');
-            this.setState({ playState: 'paused' });
-          } else {
-            this.setState(
-              {
-                playState: 'playing',
-                duration: this.sound.getDuration(),
-              },
-              () => {
-                this.sound.play(this.playComplete);
-              }
-            );
-          }
+    try {
+      if (this.sound) {
+        this.setState({ playState: PLAY_STATE_PLAYING }, () => {
+          this.sound.play(this.playComplete);
         });
-      });
+      } else {
+        const filepath = this.props.source;
+        this.setState({ playState: PLAY_STATE_LOADING }, () => {
+          this.sound = new Sound(filepath, '', (error) => {
+            if (error) {
+              Alert.alert('Notice', 'audio file error. (Error code : 1)');
+              this.setState({ playState: PLAY_STATE_PAUSED });
+            } else {
+              this.setState(
+                {
+                  playState: PLAY_STATE_PLAYING,
+                  duration: this.sound.getDuration(),
+                },
+                () => {
+                  this.sound.play(this.playComplete);
+                },
+              );
+            }
+          });
+        });
+      }
+    } catch (error) {
+      logger(error);
     }
   };
 
@@ -166,31 +184,23 @@ export default class AudioControls extends React.Component {
     const durationString = this.getAudioTimeString(this.state.duration);
 
     return (
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-        }}>
-        {this.state.playState === 'playing' && (
+      <View style={style.audioControlContainer}>
+        {this.state.playState === PLAY_STATE_PLAYING && (
           <TouchableOpacity onPress={this.pause}>
             <Icon name="pause" size={20} color="#000000" />
           </TouchableOpacity>
         )}
-        {this.state.playState === 'paused' && (
+        {this.state.playState === PLAY_STATE_PAUSED && (
           <TouchableOpacity onPress={this.play}>
             <Icon name="play-arrow" size={20} color="#000000" />
           </TouchableOpacity>
         )}
-        {this.state.playState === 'loading' && (
+        {this.state.playState === PLAY_STATE_LOADING && (
           <ActivityIndicator color="#000000" size="small" />
         )}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ color: 'black', alignSelf: 'center', fontSize: 15 }}>
-            {currentTimeString}
-          </Text>
-          <Text style={{ color: 'black', alignSelf: 'center', fontSize: 15 }}>
+        <View style={style.timeStampContainer}>
+          <Text style={style.timeStampText}>{currentTimeString}</Text>
+          <Text style={style.timeStampText}>
             {'/'}
             {durationString}
           </Text>
@@ -206,22 +216,15 @@ export default class AudioControls extends React.Component {
           step={1}
           allowTouchTrack
           thumbTouchSize={{ height: 15, width: 15 }}
-          thumbStyle={{
-            height: 15,
-            width: 15,
-            backgroundColor: 'black',
-          }}
-          style={{
-            width: 60,
-            alignSelf: 'center',
-          }}
+          thumbStyle={style.audioThumbStyle}
+          style={style.audioSliderStyle}
         />
-        {this.state.volumeState === 'mute' && (
+        {this.state.volumeState === VOLUME_STATE_MUTE && (
           <TouchableOpacity onPress={this.unmute}>
             <Icon name="volume-up" size={20} color="#000000" />
           </TouchableOpacity>
         )}
-        {this.state.volumeState === 'unmute' && (
+        {this.state.volumeState === VOLUME_STATE_UNMUTE && (
           <TouchableOpacity onPress={this.mute}>
             <Icon name="volume-off" size={20} color="#000000" />
           </TouchableOpacity>

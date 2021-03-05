@@ -4,10 +4,10 @@ import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
 import { Text, View, Image, TouchableOpacity } from 'react-native';
 import style from './styles';
 import checkboxActive from './resources/checkbox-blue-active.png';
-import checkboxInctive from './resources/checkbox-inactive.png';
+import checkboxInactive from './resources/checkbox-inactive.png';
 
-export default (props) => {
-  const ViewTheme = { ...theme, ...props.theme };
+const CometChatAddGroupMemberListItem = (props) => {
+  const viewTheme = { ...theme, ...props.theme };
 
   const [checked, setChecked] = useState(() => {
     const found = props.members.find((member) => member.uid === props.user.uid);
@@ -16,6 +16,11 @@ export default (props) => {
     return value;
   });
 
+  /**
+   * handles if the participant has to be added or not in the group.
+   * @param
+   */
+
   const handleCheck = () => {
     const value = checked !== true;
     setChecked(value);
@@ -23,31 +28,31 @@ export default (props) => {
   };
 
   return (
-    <View style={[style.rowStyle, { borderColor: ViewTheme.borderColor.primary }]}>
+    <View
+      style={[style.rowStyle, { borderColor: viewTheme.borderColor.primary }]}>
       <View style={[style.nameStyle]}>
         <View style={style.avatarStyle}>
           <CometChatAvatar
             image={{ uri: props.user.avatar }}
             cornerRadius={22}
-            borderColor={ViewTheme.color.secondary}
+            borderColor={viewTheme.color.secondary}
             borderWidth={0}
             name={props.user.name}
           />
           <CometChatUserPresence
-            widgetsettings={props.widgetsettings}
             status={props.user.status}
             cornerRadius={18}
-            borderColor={ViewTheme.color.darkSecondary}
+            borderColor={viewTheme.color.darkSecondary}
             borderWidth={1}
           />
         </View>
-        <Text numberOfLines={1} style={{ fontSize: 14 }}>
+        <Text numberOfLines={1} style={style.userName}>
           {props.user.name}
         </Text>
       </View>
       <TouchableOpacity onPress={handleCheck}>
         <Image
-          source={checked ? checkboxActive : checkboxInctive}
+          source={checked ? checkboxActive : checkboxInactive}
           alt="checkBox"
           style={style.imageStyle}
         />
@@ -55,3 +60,4 @@ export default (props) => {
     </View>
   );
 };
+export default CometChatAddGroupMemberListItem;

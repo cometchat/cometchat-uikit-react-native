@@ -13,8 +13,8 @@ import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReply
 import CometChatReadReceipt from '../CometChatReadReceipt';
 import style from './styles';
 import { CometChatMessageReactions } from '../../Messages/Extensions';
-
-const messageFrom = 'sender';
+import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 
 function usePrevious(value) {
   const ref = useRef();
@@ -23,19 +23,28 @@ function usePrevious(value) {
   });
   return ref.current;
 }
-export default (props) => {
-  const [message, setMessage] = useState({ ...props.message, messageFrom });
+
+const CometChatSenderTextMessageBubble = (props) => {
+  const [message, setMessage] = useState({
+    ...props.message,
+    messageFrom: enums.MESSAGE_FROM_SENDER,
+  });
   const prevMessage = usePrevious(message);
-  const ViewTheme = { ...theme, ...props.theme };
+  const viewTheme = { ...theme, ...props.theme };
+
+  /**
+   * Handler that parses text and wraps URLs, phone numbers, emails, social handles, hashtags, and more with Text nodes and onPress handlers.
+   * @param
+   */
 
   const getMessageText = () => {
     return (
       <Autolink
         text={message.text}
-        style={{ color: 'white', fontSize: 15 }}
+        style={style.autoLinkStyle}
         textProps={{ selectable: true }}
         linkProps={{ suppressHighlighting: true }}
-        linkStyle={{ textDecorationLine: 'underline', fontSize: 15 }}
+        linkStyle={style.linkStyle}
       />
     );
   };
@@ -44,7 +53,10 @@ export default (props) => {
     const currentMessageStr = JSON.stringify(props.message);
 
     if (previousMessageStr !== currentMessageStr) {
-      const newMessage = { ...props.message, messageFrom };
+      const newMessage = {
+        ...props.message,
+        messageFrom: enums.MESSAGE_FROM_SENDER,
+      };
       setMessage(newMessage);
     }
   }, [props]);
@@ -52,7 +64,10 @@ export default (props) => {
   if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
     const { metadata } = message;
     const injectedObject = metadata['@injected'];
-    if (injectedObject && Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')) {
+    if (
+      injectedObject &&
+      Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')
+    ) {
       const extensionsObject = injectedObject.extensions;
       if (
         extensionsObject &&
@@ -67,28 +82,43 @@ export default (props) => {
           const linkObject = linkPreviewObject.links[0];
 
           const pattern = /(http:|https:)?\/\/(www\.)?(youtube.com|youtu.be)(\S+)?/;
-          const linkText = linkObject.url.match(pattern) ? 'View on Youtube' : 'Visit';
+          const linkText = linkObject.url.match(pattern)
+            ? 'View on Youtube'
+            : 'Visit';
           messageText = (
             <View
               style={[
                 style.messagePreviewContainerStyle,
-                { backgroundColor: ViewTheme.backgroundColor.white },
+                { backgroundColor: viewTheme.backgroundColor.white },
               ]}>
               <View style={style.messagePreviewWrapperStyle}>
                 <Image
-                  style={linkObject.image ? style.previewImageStyle : style.previewImageIconStyle}
-                  source={{ uri: linkObject.image ? linkObject.image : linkObject.favicon }}
+                  style={
+                    linkObject.image
+                      ? style.previewImageStyle
+                      : style.previewImageIconStyle
+                  }
+                  source={{
+                    uri: linkObject.image
+                      ? linkObject.image
+                      : linkObject.favicon,
+                  }}
                   resizeMode="contain"
                 />
                 <View
-                  style={[style.previewDataStyle, { borderColor: ViewTheme.borderColor.primary }]}>
+                  style={[
+                    style.previewDataStyle,
+                    { borderColor: viewTheme.borderColor.primary },
+                  ]}>
                   {linkObject.title ? (
                     <View style={style.previewTitleStyle}>
                       <Text
-                        style={{
-                          fontWeight: '700',
-                          color: ViewTheme.color.helpText,
-                        }}>
+                        style={[
+                          style.linkTitle,
+                          {
+                            color: viewTheme.color.helpText,
+                          },
+                        ]}>
                         {linkObject.title}
                       </Text>
                     </View>
@@ -96,11 +126,12 @@ export default (props) => {
                   {linkObject.description ? (
                     <View style={style.previewDescStyle}>
                       <Text
-                        style={{
-                          fontStyle: 'italic',
-                          fontSize: 13,
-                          color: ViewTheme.color.helpText,
-                        }}>
+                        style={[
+                          style.linkDescription,
+                          {
+                            color: viewTheme.color.helpText,
+                          },
+                        ]}>
                         {linkObject.description}
                       </Text>
                     </View>
@@ -108,7 +139,12 @@ export default (props) => {
                   <View style={style.previewTextStyle}>
                     <Autolink
                       text={message.text}
-                      style={{ color: ViewTheme.color.helpText, textAlign: 'center' }}
+                      style={[
+                        style.previewAutoLinkStyle,
+                        {
+                          color: viewTheme.color.helpText,
+                        },
+                      ]}
                       textProps={{ selectable: true }}
                       linkProps={{ suppressHighlighting: true }}
                     />
@@ -117,7 +153,13 @@ export default (props) => {
                 <TouchableOpacity
                   style={style.previewLinkStyle}
                   onPress={() => Linking.openURL(linkObject.url)}>
-                  <Text style={{ color: ViewTheme.color.blue, fontWeight: '700' }}>{linkText}</Text>
+                  <Text
+                    style={[
+                      style.linkTextStyle,
+                      { color: viewTheme.color.blue },
+                    ]}>
+                    {linkText}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -128,18 +170,31 @@ export default (props) => {
   }
 
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={style.container}>
       <TouchableWithoutFeedback
         onLongPress={() => {
-          props.actionGenerated('openMessageActions', message);
+          props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message);
         }}>
         <View style={style.messageWrapperStyle}>{messageText}</View>
       </TouchableWithoutFeedback>
       <View style={style.messageInfoWrapperStyle}>
-        <CometChatThreadedMessageReplyCount theme={props.theme} {...props} message={message} />
-        <CometChatReadReceipt theme={props.theme} {...props} message={message} />
+        <CometChatThreadedMessageReplyCount
+          theme={props.theme}
+          {...props}
+          message={message}
+        />
+        <CometChatReadReceipt
+          theme={props.theme}
+          {...props}
+          message={message}
+        />
       </View>
-      <CometChatMessageReactions theme={props.theme} {...props} message={message} />
+      <CometChatMessageReactions
+        theme={props.theme}
+        {...props}
+        message={message}
+      />
     </View>
   );
 };
+export default CometChatSenderTextMessageBubble;

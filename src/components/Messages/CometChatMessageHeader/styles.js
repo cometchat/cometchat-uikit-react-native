@@ -47,7 +47,6 @@ export default StyleSheet.create({
   },
   itemDetailContainer: {
     flex: 1,
-    // marginLeft: 80 * widthRatio,
   },
   itemNameText: {
     fontSize: 18,
@@ -56,7 +55,6 @@ export default StyleSheet.create({
   statusText: {
     fontSize: 14,
     color: theme.color.blue,
-    // marginLeft: 10,
   },
   avatarContainer: {
     height: 32 * heightRatio,

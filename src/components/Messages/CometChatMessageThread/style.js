@@ -1,14 +1,27 @@
-import { Dimensions, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { heightRatio, widthRatio } from '../../../utils/consts';
+import { heightRatio, widthRatio, deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
   wrapperStyle: {
     height: 585 * heightRatio,
   },
+  fullFlex: { flex: 1 },
+  separatorLine: {
+    borderWidth: 0.5,
+    flex: 1,
+    alignSelf: 'center',
+  },
+  separatorContainer: {
+    paddingTop: 5 * heightRatio,
+    paddingBottom: 5 * heightRatio,
+    justifyContent: 'center',
+  },
+  messageContainerStyle: { paddingHorizontal: 5 * widthRatio, flex: 1 },
   headerStyle: {
     height: 55 * heightRatio,
     justifyContent: 'center',
+    borderWidth: 1,
   },
   headerWrapperStyle: {
     flexDirection: 'row',
@@ -36,13 +49,12 @@ export default StyleSheet.create({
     fontSize: 17,
   },
   parentMessageStyle: {
-    height: 120 * heightRatio,
-    justifyContent: 'center',
+    paddingTop: 5 * heightRatio,
   },
   messageSeparatorStyle: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
-    maxHeight: 0.2 * Dimensions.get('window').height,
+    maxHeight: 0.2 * deviceHeight,
   },
   messageReplyStyle: {
     paddingHorizontal: 10 * widthRatio,

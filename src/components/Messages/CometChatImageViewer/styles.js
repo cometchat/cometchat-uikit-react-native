@@ -1,11 +1,13 @@
 import { StyleSheet, Platform } from 'react-native';
-import { heightRatio, widthRatio } from '../../../utils/consts';
+import {
+  heightRatio,
+  widthRatio,
+  deviceHeight,
+  deviceWidth,
+} from '../../../utils/consts';
 
 export default StyleSheet.create({
-  outerContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
+  outerContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   mainContainer: {
     marginVertical: Platform.OS === 'ios' ? 50 : 65,
     backgroundColor: 'white',
@@ -13,19 +15,34 @@ export default StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  bottomSheetContainer: {
+    backgroundColor: 'white',
+    height: deviceHeight + 200 * heightRatio,
+    paddingBottom: 40 * heightRatio,
   },
   crossImgContainer: {
-    right: 15 * widthRatio,
-    top: 40 * heightRatio,
-    position: 'absolute',
-    height: 25 * heightRatio,
-    width: 25 * heightRatio,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12.5 * heightRatio,
+    alignSelf: 'flex-end',
+    marginRight: 20,
+    marginTop: 20,
   },
   crossImg: {
-    height: 20,
-    resizeMode: 'contain',
+    height: 30 * heightRatio,
+    width: 30 * widthRatio,
+  },
+  outerImageContainer: {
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 450 * heightRatio,
+  },
+  imageStyles: {
+    height: '100%',
+    width: deviceWidth,
+    maxHeight: deviceHeight * 0.4,
   },
 });

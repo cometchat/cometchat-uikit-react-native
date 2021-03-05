@@ -2,6 +2,8 @@ import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { marginBottom: 16 },
+  innerContainer: { flexDirection: 'row', alignItems: 'flex-start' },
   messageWrapperStyle: {
     backgroundColor: '#f8f8f8',
     marginBottom: 8,
@@ -11,6 +13,8 @@ export default StyleSheet.create({
     maxWidth: '81%',
     borderRadius: 12,
   },
+  answerWrapperWidthText: { fontWeight: 'bold', fontSize: 13 },
+  answerWrapperItemText: { fontSize: 14, width: '70%', textAlign: 'right' },
   messageInfoWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',

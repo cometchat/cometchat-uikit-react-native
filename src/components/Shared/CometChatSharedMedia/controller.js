@@ -3,23 +3,23 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as enums from '../../../utils/enums';
 
 export class SharedMediaManager {
-  mediaMessageListenerId = new Date().getTime();
+  mediaMessageListenerId = `shared_media_${new Date().getTime()}`;
 
   mediaMessageRequest = null;
 
   constructor(item, type, messageType) {
-    if (type === 'user') {
+    if (type === CometChat.RECEIVER_TYPE.USER) {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
         .setUID(item.uid)
         .setLimit(10)
-        .setCategory('message')
+        .setCategory(CometChat.CATEGORY_MESSAGE)
         .setType(messageType)
         .build();
     } else {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
         .setGUID(item.guid)
         .setLimit(10)
-        .setCategory('message')
+        .setCategory(CometChat.CATEGORY_MESSAGE)
         .setType(messageType)
         .build();
     }
@@ -39,7 +39,7 @@ export class SharedMediaManager {
         onMessageDeleted: (deletedMessage) => {
           callback(enums.MESSAGE_DELETED, deletedMessage);
         },
-      })
+      }),
     );
   }
 

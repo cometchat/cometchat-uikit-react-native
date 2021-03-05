@@ -5,11 +5,14 @@ import { SafeAreaView } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 import { CometChatIncomingCall, CometChatOutgoingCall } from '../../Calls';
 import { CometChatGroupList } from '../index';
 import { CometChatImageViewer } from '../../Messages';
 
 import theme from '../../../resources/theme';
+import style from './styles';
+import { logger } from '../../../utils/common';
 
 class CometChatGroupListWithMessages extends React.Component {
   loggedInUser = null;
@@ -21,7 +24,7 @@ class CometChatGroupListWithMessages extends React.Component {
       darkTheme: false,
       viewDetailScreen: false,
       item: {},
-      type: 'group',
+      type: CometChat.RECEIVER_TYPE.GROUP,
       tab: 'groups',
       groupToDelete: {},
       groupToLeave: {},
@@ -48,10 +51,16 @@ class CometChatGroupListWithMessages extends React.Component {
       .then((user) => {
         this.loggedInUser = user;
       })
-      .catch(() => {
-        // console.log('[CometChatGroupListWithMessages] getLoggedInUser error', error);
+      .catch((error) => {
+        logger('[CometChatGroupListWithMessages] getLoggedInUser error', error);
       });
   }
+
+  /**
+   * Update item, viewDetailScreen when a group from groupList is clicked.
+   * @param item: item object
+   * @param type: group type
+   */
 
   itemClicked = (item, type) => {
     this.setState({ item: { ...item }, type, viewDetailScreen: false }, () => {
@@ -59,22 +68,41 @@ class CometChatGroupListWithMessages extends React.Component {
     });
   };
 
+  /**
+   * Navigate to CometChatMessages on clicking of the group item and checking of validations.
+   * @param item:item object
+   * @param type:group type
+   */
+
   navigateToMessageListScreen = (item, type) => {
-    this.props.navigation.navigate('CometChatMessages', {
-      type,
-      item: { ...item },
-      theme: this.theme,
-      tab: this.state.tab,
-      loggedInUser: this.loggedInUser,
-      callMessage: this.state.callMessage,
-      actionGenerated: this.actionHandler,
-      composedThreadMessage: this.state.composedThreadMessage,
-    });
+    this.props.navigation.navigate(
+      enums.NAVIGATION_CONSTANTS.COMET_CHAT_MESSAGES,
+      {
+        type,
+        item: { ...item },
+        theme: this.theme,
+        tab: this.state.tab,
+        loggedInUser: this.loggedInUser,
+        callMessage: this.state.callMessage,
+        actionGenerated: this.actionHandler,
+        composedThreadMessage: this.state.composedThreadMessage,
+      },
+    );
   };
+
+  /**
+   * On call initiated by a member
+   * @param
+   */
 
   callInitiated = (message) => {
     this.appendCallMessage(message);
   };
+
+  /**
+   * On outgoing call end
+   * @param
+   */
 
   outgoingCallEnded = (message) => {
     this.setState({ outgoingCall: null, incomingCall: null }, () => {
@@ -82,88 +110,102 @@ class CometChatGroupListWithMessages extends React.Component {
     });
   };
 
+  /**
+   * handles various actions related to the updation in groups.
+   * @param action: action name
+   * @param item: item object
+   * @param count: members count
+   * @param ...otherProps: props received
+   */
+
   actionHandler = (action, item, count, ...otherProps) => {
     switch (action) {
-      case 'blockUser':
+      case actions.BLOCK_USER:
         this.blockUser();
         break;
-      case 'unblockUser':
+      case actions.UNBLOCK_USER:
         this.unblockUser();
         break;
-      case 'audioCall':
+      case actions.AUDIO_CALL:
         this.audioCall();
         break;
-      case 'videoCall':
+      case actions.VIDEO_CALL:
         this.videoCall();
         break;
       // eslint-disable-next-line no-lone-blocks
-      case 'menuClicked': {
+      case actions.MENU_CLICKED: {
         this.toggleSideBar();
         this.setState({ item: {} });
         break;
       }
-      case 'viewDetail':
-      case 'closeDetailClicked':
+      case actions.VIEW_DETAIL:
+      case actions.CLOSE_DETAIL_CLICKED:
         this.toggleDetailView();
         break;
-      case 'groupUpdated':
+      case actions.GROUP_UPDATED:
         this.groupUpdated(item, count, ...otherProps);
         break;
-      case 'groupDeleted':
+      case actions.GROUP_DELETED:
         this.deleteGroup(item);
         break;
-      case 'leftGroup':
+      case actions.LEFT_GROUP:
         this.leaveGroup(item, ...otherProps);
         break;
-      case 'membersUpdated':
+      case actions.MEMBERS_UPDATED:
         this.updateMembersCount(item, count);
         break;
-      case 'viewMessageThread':
+      case actions.VIEW_MESSAGE_THREAD:
         this.viewMessageThread(item);
         break;
-      case 'closeThreadClicked':
+      case actions.CLOSE_THREAD_CLICKED:
         this.closeThreadMessages();
         break;
-      case 'threadMessageComposed':
+      case actions.THREAD_MESSAGE_COMPOSED:
         this.onThreadMessageComposed(item);
         break;
-      case 'acceptIncomingCall':
+      case actions.ACCEPT_INCOMING_CALL:
         this.acceptIncomingCall(item);
         break;
-      case 'acceptedIncomingCall':
+      case actions.ACCEPTED_INCOMING_CALL:
         this.callInitiated(item);
         break;
-      case 'rejectedIncomingCall':
+      case actions.REJECTED_INCOMING_CALL:
         this.rejectedIncomingCall(item, count);
         break;
-      case 'outgoingCallRejected':
-      case 'outgoingCallCancelled':
-      case 'callEnded':
+      case actions.OUTGOING_CALL_REJECTED:
+      case actions.OUTGOING_CALL_CANCELLED:
+      case actions.CALL_ENDED:
         this.outgoingCallEnded(item);
         break;
-      case 'userJoinedCall':
-      case 'userLeftCall':
+      case actions.USER_JOINED_CALL:
+      case actions.USER_LEFT_CALL:
         this.appendCallMessage(item);
         break;
-      case 'viewActualImage':
+      case actions.VIEW_ACTUAL_IMAGE:
         this.toggleImageView(item);
         break;
-      case 'membersAdded':
+      case actions.MEMBERS_ADDED:
         this.membersAdded(item);
         break;
-      case 'memberUnbanned':
+      case actions.MEMBER_UNBANNED:
         this.memberUnbanned(item);
         break;
-      case 'memberScopeChanged':
+      case actions.MEMBER_SCOPE_CHANGED:
         this.memberScopeChanged(item);
         break;
-      case 'updateThreadMessage':
+      case actions.UPDATE_THREAD_MESSAGE:
         this.updateThreadMessage(item[0], count);
         break;
       default:
         break;
     }
   };
+
+  /**
+   * updation of thread messages on message fetch.
+   * @param message: message object
+   * @param action: action name
+   */
 
   updateThreadMessage = (message, action) => {
     if (
@@ -174,11 +216,19 @@ class CometChatGroupListWithMessages extends React.Component {
     }
 
     if (action === 'delete') {
-      this.setState({ threadMessageParent: { ...message }, threadMessageView: false });
+      this.setState({
+        threadMessageParent: { ...message },
+        threadMessageView: false,
+      });
     } else {
       this.setState({ threadMessageParent: { ...message } });
     }
   };
+
+  /**
+   * block users by logged in user.
+   * @param
+   */
 
   blockUser = () => {
     try {
@@ -187,13 +237,18 @@ class CometChatGroupListWithMessages extends React.Component {
         .then(() => {
           this.setState({ item: { ...this.state.item, blockedByMe: true } });
         })
-        .catch(() => {
-          // console.log('Blocking user fails with error', error);
+        .catch((error) => {
+          logger('Blocking user fails with error', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * unblock users by logged in user.
+   * @param
+   */
 
   unblockUser = () => {
     try {
@@ -202,22 +257,27 @@ class CometChatGroupListWithMessages extends React.Component {
         .then(() => {
           this.setState({ item: { ...this.state.item, blockedByMe: false } });
         })
-        .catch(() => {
-          // console.log('unblocking user fails with error', error);
+        .catch((error) => {
+          logger('unblocking user fails with error', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handles audio call to a user/group.
+   * @param
+   */
 
   audioCall = () => {
     try {
       let receiverId;
       let receiverType;
-      if (this.state.type === 'user') {
+      if (this.state.type === CometChat.RECEIVER_TYPE.USER) {
         receiverId = this.state.item.uid;
         receiverType = CometChat.RECEIVER_TYPE.USER;
-      } else if (this.state.type === 'group') {
+      } else if (this.state.type === CometChat.RECEIVER_TYPE.GROUP) {
         receiverId = this.state.item.guid;
         receiverType = CometChat.RECEIVER_TYPE.GROUP;
       }
@@ -227,22 +287,27 @@ class CometChatGroupListWithMessages extends React.Component {
           this.appendCallMessage(call);
           this.setState({ outgoingCall: call });
         })
-        .catch(() => {
-          // console.log('Call initialization failed with exception:', error);
+        .catch((error) => {
+          logger('Call initialization failed with exception:', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handles video call to a user/group.
+   * @param
+   */
 
   videoCall = () => {
     try {
       let receiverId;
       let receiverType;
-      if (this.state.type === 'user') {
+      if (this.state.type === CometChat.RECEIVER_TYPE.USER) {
         receiverId = this.state.item.uid;
         receiverType = CometChat.RECEIVER_TYPE.USER;
-      } else if (this.state.type === 'group') {
+      } else if (this.state.type === CometChat.RECEIVER_TYPE.GROUP) {
         receiverId = this.state.item.guid;
         receiverType = CometChat.RECEIVER_TYPE.GROUP;
       }
@@ -252,11 +317,11 @@ class CometChatGroupListWithMessages extends React.Component {
           this.appendCallMessage(call);
           this.setState({ outgoingCall: call });
         })
-        .catch(() => {
-          // console.log('Call initialization failed with exception:', error);
+        .catch((error) => {
+          logger('Call initialization failed with exception:', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -265,23 +330,62 @@ class CometChatGroupListWithMessages extends React.Component {
     this.setState({ sidebarView: !sidebarView });
   };
 
+  /**
+   * toggle viewDetailScreen
+   * @param
+   */
+
   toggleDetailView = () => {
     const viewDetail = !this.state.viewDetailScreen;
     this.setState({ viewDetailScreen: viewDetail, threadMessageView: false });
   };
 
+  /**
+   * handles deletion of group
+   * @param group: group object
+   */
+
   deleteGroup = (group) => {
-    this.setState({ groupToDelete: group, item: {}, type: 'group', viewDetailScreen: false });
+    this.setState({
+      groupToDelete: group,
+      item: {},
+      type: CometChat.RECEIVER_TYPE.GROUP,
+      viewDetailScreen: false,
+    });
   };
 
+  /**
+   * handles the updation when logged in user leaves the group
+   * @param group: group object
+   */
+
   leaveGroup = (group) => {
-    this.setState({ groupToLeave: group, item: {}, type: 'group', viewDetailScreen: false });
+    this.setState({
+      groupToLeave: group,
+      item: {},
+      type: CometChat.RECEIVER_TYPE.GROUP,
+      viewDetailScreen: false,
+    });
   };
+
+  /**
+   * updation of member count of group.
+   * @param item:item object
+   * @param count: member count
+   */
 
   updateMembersCount = (item, count) => {
     const group = { ...this.state.item, membersCount: count };
     this.setState({ item: group, groupToUpdate: group });
   };
+
+  /**
+   * handles the updation of group based on key
+   * @param key: action name
+   * @param message: message object
+   * @param group: group object
+   * @param options: options object for member
+   */
 
   groupUpdated = (message, key, group, options) => {
     try {
@@ -289,7 +393,11 @@ class CometChatGroupListWithMessages extends React.Component {
         case enums.GROUP_MEMBER_BANNED:
         case enums.GROUP_MEMBER_KICKED: {
           if (options.user.uid === this.loggedInUser.uid) {
-            this.setState({ item: {}, type: 'group', viewDetailScreen: false });
+            this.setState({
+              item: {},
+              type: CometChat.RECEIVER_TYPE.GROUP,
+              viewDetailScreen: false,
+            });
           }
           break;
         }
@@ -298,7 +406,7 @@ class CometChatGroupListWithMessages extends React.Component {
             const newObj = { ...this.state.item, scope: options.scope };
             this.setState({
               item: newObj,
-              type: 'group',
+              type: CometChat.RECEIVER_TYPE.GROUP,
               viewDetailScreen: false,
             });
           }
@@ -308,14 +416,23 @@ class CometChatGroupListWithMessages extends React.Component {
           break;
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * Close thread messages, updation of viewDetailScreen
+   * @param
+   */
 
   closeThreadMessages = () => {
     this.setState({ viewDetailScreen: false, threadMessageView: false });
   };
 
+  /**
+   * View message thread via parentMessage
+   * @param parentMessage: message object
+   */
   viewMessageThread = (parentMessage) => {
     const message = { ...parentMessage };
     const threadItem = { ...this.state.item };
@@ -328,6 +445,11 @@ class CometChatGroupListWithMessages extends React.Component {
     });
   };
 
+  /**
+   * Sets composedThreadMessage via composed message param.
+   * @param composedMessage: message object
+   */
+
   onThreadMessageComposed = (composedMessage) => {
     try {
       if (this.state.type !== this.state.threadMessageType) {
@@ -335,9 +457,9 @@ class CometChatGroupListWithMessages extends React.Component {
       }
 
       if (
-        (this.state.threadMessageType === 'group' &&
+        (this.state.threadMessageType === CometChat.RECEIVER_TYPE.GROUP &&
           this.state.item.guid !== this.state.threadMessageItem.guid) ||
-        (this.state.threadMessageType === 'user' &&
+        (this.state.threadMessageType === CometChat.RECEIVER_TYPE.USER &&
           this.state.item.uid !== this.state.threadMessageItem.uid)
       ) {
         return false;
@@ -346,30 +468,42 @@ class CometChatGroupListWithMessages extends React.Component {
       const message = { ...composedMessage };
       this.setState({ composedThreadMessage: message });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * Handles the incoming call when user hits accept
+   * @param call
+   */
 
   acceptIncomingCall = (call) => {
     this.setState({ incomingCall: call });
 
     const type = call.receiverType;
-    const id = type === 'user' ? call.sender.uid : call.receiverId;
+    const id =
+      type === CometChat.RECEIVER_TYPE.USER ? call.sender.uid : call.receiverId;
 
     CometChat.getConversation(id, type)
       .then((conversation) => {
         this.itemClicked(conversation.conversationWith, type);
       })
-      .catch(() => {
-        // console.log('error while fetching a conversation', error);
+      .catch((error) => {
+        logger('error while fetching a conversation', error);
       });
   };
+
+  /**
+   * handles the imcoming call when user hits reject
+   * @param incomingCallMessage: incomingCallMessage object
+   * @param rejectedCallMessage: rejectedCallMessage object
+   */
 
   rejectedIncomingCall = (incomingCallMessage, rejectedCallMessage) => {
     try {
       let { receiverType } = incomingCallMessage;
       let receiverId =
-        receiverType === 'user'
+        receiverType === CometChat.RECEIVER_TYPE.USER
           ? incomingCallMessage.sender.uid
           : incomingCallMessage.receiverId;
 
@@ -386,26 +520,41 @@ class CometChatGroupListWithMessages extends React.Component {
       receiverId = rejectedCallMessage.receiverId;
 
       if (
-        (type === 'group' &&
-          receiverType === 'group' &&
+        (type === CometChat.RECEIVER_TYPE.GROUP &&
+          receiverType === CometChat.RECEIVER_TYPE.GROUP &&
           receiverId === item.guid) ||
-        (type === 'user' && receiverType === 'user' && receiverId === item.uid)
+        (type === CometChat.RECEIVER_TYPE.USER &&
+          receiverType === CometChat.RECEIVER_TYPE.USER &&
+          receiverId === item.uid)
       ) {
         this.appendCallMessage(rejectedCallMessage);
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * on outgoing call end
+   * @param message: message object
+   */
   outgoingCallEnded = (message) => {
     this.setState({ outgoingCall: null, incomingCall: null });
     this.appendCallMessage(message);
   };
 
+  /**
+   * image view when clicked on image
+   * @param message: message object
+   */
   toggleImageView = (message) => {
     this.setState({ imageView: message });
   };
+
+  /**
+   * handler for member added to the group by a user and updation of groupMessage.
+   * @param members: members object
+   */
 
   membersAdded = (members) => {
     try {
@@ -424,9 +573,14 @@ class CometChatGroupListWithMessages extends React.Component {
 
       this.setState({ groupMessage: messageList });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handler for member unbanned from the group by a user and updation of groupMessage.
+   * @param members: members object
+   */
 
   memberUnbanned = (members) => {
     try {
@@ -445,10 +599,14 @@ class CometChatGroupListWithMessages extends React.Component {
 
       this.setState({ groupMessage: messageList });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handler for member scope changed in the group by a user and updation of groupMessage.
+   * @param members: members object
+   */
   memberScopeChanged = (members) => {
     try {
       const messageList = [];
@@ -467,10 +625,14 @@ class CometChatGroupListWithMessages extends React.Component {
 
       this.setState({ groupMessage: messageList });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * update callMessage and navigate to cometChatMessages
+   * @param call: call object
+   */
   appendCallMessage = (call) => {
     const { item, type } = this.state;
     this.setState({ callMessage: call }, () => {
@@ -490,7 +652,7 @@ class CometChatGroupListWithMessages extends React.Component {
       );
     }
     return (
-      <SafeAreaView style={{ backgroundColor: 'white',flex:1 }}>
+      <SafeAreaView style={style.container}>
         <CometChatGroupList
           theme={this.theme}
           item={this.state.item}

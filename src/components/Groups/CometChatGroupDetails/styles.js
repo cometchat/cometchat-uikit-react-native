@@ -2,11 +2,14 @@ import { Dimensions, StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   itemLinkStyle: {
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '600',
   },
+  fullWidth: { width: '100%' },
+  listItemContainer: { width: '100%', marginVertical: 6 },
   sectionHeaderStyle: {
     margin: 0,
     width: '100%',
@@ -23,6 +26,8 @@ export default StyleSheet.create({
     paddingHorizontal: 16 * widthRatio,
     borderBottomWidth: 1,
   },
+  closeIcon: { marginRight: 5 },
+  detailContainer: { padding: 16 },
   headerTitleStyle: {
     fontWeight: '700',
     fontSize: 20,

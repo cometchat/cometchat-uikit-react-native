@@ -1,12 +1,12 @@
 import { StyleSheet } from 'react-native';
 import theme from '../../../resources/theme';
+import { deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  fullFlex: { flex: 1 },
+  bottomSheetOuterContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   chatWrapperStyle: {
-    // height: '100%',
-    // width: '100%',
-    flex:1,
-    // position: 'relative',
+    flex: 1,
     fontFamily: `${theme.fontFamily}`,
     backgroundColor: 'white',
   },
@@ -18,11 +18,9 @@ export default StyleSheet.create({
     right: 0,
     zIndex: 2,
     justifyContent: 'flex-end',
-    // alignItems: "flex-end",
+  },
+  bottomSheetInnerContainer: {
+    backgroundColor: 'white',
+    height: deviceHeight - 80,
   },
 });
-
-// '*': {
-//   boxSizing: 'border-box',
-//   fontFamily: `${theme.fontFamily}`,
-// },

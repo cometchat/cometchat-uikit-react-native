@@ -22,10 +22,18 @@ export default () => {
           let iconName;
 
           if (route.name === 'Chats') {
-            return <MCIIcons name="chat" size={24 * heightRatio} color={color} />;
+            return (
+              <MCIIcons name="chat" size={24 * heightRatio} color={color} />
+            );
           }
           if (route.name === 'More') {
-            return <MaterialIcons name="more-horiz" size={24 * heightRatio} color={color} />;
+            return (
+              <MaterialIcons
+                name="more-horiz"
+                size={24 * heightRatio}
+                color={color}
+              />
+            );
           }
           if (route.name === 'Users') {
             iconName = 'ios-person-circle-sharp';
@@ -34,7 +42,9 @@ export default () => {
           }
 
           // You can return any component that you like here!
-          return <Ionicons name={iconName} size={24 * heightRatio} color={color} />;
+          return (
+            <Ionicons name={iconName} size={24 * heightRatio} color={color} />
+          );
         },
       })}
       tabBarOptions={{
@@ -44,7 +54,10 @@ export default () => {
         inactiveBackgroundColor: theme.color.white,
         labelStyle: { fontSize: 8 * heightRatio },
       }}>
-      <Tab.Screen name="Chats" component={CometChatConversationListWithMessages} />
+      <Tab.Screen
+        name="Chats"
+        component={CometChatConversationListWithMessages}
+      />
       <Tab.Screen name="Users" component={CometChatUserListWithMessages} />
       <Tab.Screen name="Groups" component={CometChatGroupListWithMessages} />
       <Tab.Screen name="More" component={CometChatUserProfile} />

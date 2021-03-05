@@ -7,7 +7,7 @@ import theme from '../../../resources/theme';
 import unban from './resources/block.png';
 
 export default (props) => {
-  const ViewTheme = { ...theme, ...props.theme };
+  const viewTheme = { ...theme, ...props.theme };
 
   const roles = {};
   roles[CometChat.GROUP_MEMBER_SCOPE.ADMIN] = 'Administrator';
@@ -36,7 +36,8 @@ export default (props) => {
     }
   }
   return (
-    <View style={[style.rowStyle, { borderColor: ViewTheme.borderColor.primary }]}>
+    <View
+      style={[style.rowStyle, { borderColor: viewTheme.borderColor.primary }]}>
       <View style={[style.nameStyle]}>
         <View style={style.avatarStyle}>
           <CometChatAvatar
@@ -47,10 +48,9 @@ export default (props) => {
             borderWidth={0}
           />
           <CometChatUserPresence
-            widgetsettings={props.widgetsettings}
             status={props.member.status}
             cornerRadius={18}
-            borderColor={ViewTheme.borderColor.primary}
+            borderColor={viewTheme.borderColor.primary}
             borderWidth={1}
           />
         </View>
@@ -65,9 +65,9 @@ export default (props) => {
         {showUnBan ? (
           <TouchableOpacity
             onPress={() => props.actionGenerated('unban', props.member)}
-            style={{ alignItems: 'center', justifyContent: 'center' }}>
+            style={style.imageContainer}>
             <Image source={unban} alt="Unban" style={style.imageStyle} />
-            <Text style={{ fontSize: 10, textAlign: 'center' }}>Unban</Text>
+            <Text style={style.unbanText}>Unban</Text>
           </TouchableOpacity>
         ) : null}
       </View>

@@ -2,6 +2,16 @@ import { StyleSheet } from 'react-native';
 import { widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
+  container: { marginBottom: 16 },
+  messageContainer: { flexDirection: 'row', alignItems: 'flex-start' },
+  senderNameContainer: { marginBottom: 5 },
+  audioContainer: { width: '81%' },
+  audioControlContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -31,5 +41,16 @@ export default StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     textTransform: 'uppercase',
+  },
+  timeStampContainer: { flexDirection: 'row', alignItems: 'center' },
+  timeStampText: { color: 'black', alignSelf: 'center', fontSize: 15 },
+  audioThumbStyle: {
+    height: 15,
+    width: 15,
+    backgroundColor: 'black',
+  },
+  audioSliderStyle: {
+    width: 60,
+    alignSelf: 'center',
   },
 });

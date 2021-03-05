@@ -4,13 +4,14 @@ import { MessageHeaderManager } from './controller';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
 import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
 
 import styles from './styles';
-// import theme from '../../resources/theme';
 import audioCallIcon from './resources/audioCall.png';
 import videoCallIcon from './resources/videoCall.png';
 import Icon from 'react-native-vector-icons/Ionicons';
-
+import { logger } from '../../../utils/common';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 class CometChatMessageHeader extends React.Component {
   constructor(props) {
     super(props);
@@ -25,7 +26,7 @@ class CometChatMessageHeader extends React.Component {
     this.MessageHeaderManager = new MessageHeaderManager();
     this.MessageHeaderManager.attachListeners(this.updateHeader);
 
-    if (this.props.type === 'user') {
+    if (this.props.type === CometChat.RECEIVER_TYPE.USER) {
       this.setStatusForUser();
     } else {
       this.setStatusForGroup();
@@ -39,12 +40,12 @@ class CometChatMessageHeader extends React.Component {
       this.MessageHeaderManager.attachListeners(this.updateHeader);
 
       if (
-        this.props.type === 'user' &&
+        this.props.type === CometChat.RECEIVER_TYPE.USER &&
         prevProps.item.uid !== this.props.item.uid
       ) {
         this.setStatusForUser();
       } else if (
-        this.props.type === 'group' &&
+        this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
         (prevProps.item.guid !== this.props.item.guid ||
           (prevProps.item.guid === this.props.item.guid &&
             prevProps.item.membersCount !== this.props.item.membersCount))
@@ -52,7 +53,7 @@ class CometChatMessageHeader extends React.Component {
         this.setStatusForGroup();
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   }
 
@@ -61,14 +62,21 @@ class CometChatMessageHeader extends React.Component {
     this.MessageHeaderManager = null;
   }
 
+  /**
+   * handler for set status for user i.e online/offline
+   * @param
+   */
+
   setStatusForUser = () => {
     try {
       let { status } = this.props.item;
       const presence =
-        this.props.item.status === 'online' ? 'online' : 'offline';
+        this.props.item.status === CometChat.USER_STATUS.ONLINE
+          ? CometChat.USER_STATUS.ONLINE
+          : CometChat.USER_STATUS.OFFLINE;
 
       if (
-        this.props.item.status === 'offline' &&
+        this.props.item.status === CometChat.USER_STATUS.OFFLINE &&
         this.props.item.lastActiveAt
       ) {
         status = `Last active at: ${new Date(
@@ -81,45 +89,44 @@ class CometChatMessageHeader extends React.Component {
           minute: 'numeric',
           hour12: true,
         })}`;
-      } else if (this.props.item.status === 'offline') {
+      } else if (this.props.item.status === CometChat.USER_STATUS.OFFLINE) {
         status = 'offline';
       }
 
       this.setState({ status, presence });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handler for set status for group i.e memberCount
+   * @param
+   */
   setStatusForGroup = () => {
     try {
       const status = `${this.props.item.membersCount} Members`;
       this.setState({ status });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handler for updation of header based on key.
+   * @param key: action name
+   * @param item: item object
+   * @param groupUser: groupUser object
+   */
   updateHeader = (key, item, groupUser) => {
     try {
       switch (key) {
         case enums.USER_ONLINE:
         case enums.USER_OFFLINE: {
-          if (this.props.type === 'user' && this.props.item.uid === item.uid) {
-            if (
-              this.props.widgetsettings &&
-              Object.prototype.hasOwnProperty.call(
-                this.props.widgetsettings,
-                'main',
-              ) &&
-              Object.prototype.hasOwnProperty.call(
-                this.props.widgetsettings.main,
-                'show_user_presence',
-              ) &&
-              this.props.widgetsettings.main.show_user_presence === false
-            ) {
-              return false;
-            }
+          if (
+            this.props.type === CometChat.RECEIVER_TYPE.USER &&
+            this.props.item.uid === item.uid
+          ) {
             this.setState({ status: item.status, presence: item.status });
           }
           break;
@@ -128,7 +135,7 @@ class CometChatMessageHeader extends React.Component {
         case enums.GROUP_MEMBER_BANNED:
         case enums.GROUP_MEMBER_LEFT:
           if (
-            this.props.type === 'group' &&
+            this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
             this.props.item.guid === item.guid &&
             this.props.loggedInUser.uid !== groupUser.uid
           ) {
@@ -139,7 +146,7 @@ class CometChatMessageHeader extends React.Component {
           break;
         case enums.GROUP_MEMBER_JOINED:
           if (
-            this.props.type === 'group' &&
+            this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
             this.props.item.guid === item.guid
           ) {
             const membersCount = parseInt(item.membersCount);
@@ -149,7 +156,7 @@ class CometChatMessageHeader extends React.Component {
           break;
         case enums.GROUP_MEMBER_ADDED:
           if (
-            this.props.type === 'group' &&
+            this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
             this.props.item.guid === item.guid
           ) {
             const membersCount = parseInt(item.membersCount);
@@ -159,36 +166,36 @@ class CometChatMessageHeader extends React.Component {
           break;
         case enums.TYPING_STARTED: {
           if (
-            this.props.type === 'group' &&
+            this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
             this.props.type === item.receiverType &&
             this.props.item.guid === item.receiverId
           ) {
             this.setState({ status: `${item.sender.name} is typing...` });
-            this.props.actionGenerated('showReaction', item);
+            this.props.actionGenerated(actions.SHOW_REACTION, item);
           } else if (
-            this.props.type === 'user' &&
+            this.props.type === CometChat.RECEIVER_TYPE.USER &&
             this.props.type === item.receiverType &&
             this.props.item.uid === item.sender.uid
           ) {
             this.setState({ status: 'typing...' });
-            this.props.actionGenerated('showReaction', item);
+            this.props.actionGenerated(actions.SHOW_REACTION, item);
           }
           break;
         }
         case enums.TYPING_ENDED: {
           if (
-            this.props.type === 'group' &&
+            this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
             this.props.type === item.receiverType &&
             this.props.item.guid === item.receiverId
           ) {
             this.setStatusForGroup();
-            this.props.actionGenerated('stopReaction', item);
+            this.props.actionGenerated(actions.STOP_REACTION, item);
           } else if (
-            this.props.type === 'user' &&
+            this.props.type === CometChat.RECEIVER_TYPE.USER &&
             this.props.type === item.receiverType &&
             this.props.item.uid === item.sender.uid
           ) {
-            this.props.actionGenerated('stopReaction', item);
+            this.props.actionGenerated(actions.STOP_REACTION, item);
 
             if (this.state.presence === 'online') {
               this.setState({ status: 'online', presence: 'online' });
@@ -202,7 +209,7 @@ class CometChatMessageHeader extends React.Component {
           break;
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -210,7 +217,7 @@ class CometChatMessageHeader extends React.Component {
     let image;
     let userName;
     let presence;
-    if (this.props.type === 'user') {
+    if (this.props.type === CometChat.RECEIVER_TYPE.USER) {
       image = this.props.item.avatar;
       userName = this.props.item.name;
       presence = (
@@ -236,71 +243,46 @@ class CometChatMessageHeader extends React.Component {
 
     let audioCallBtn = (
       <TouchableOpacity
-        onPress={() => this.props.actionGenerated('audioCall')}
+        onPress={() => this.props.actionGenerated(actions.AUDIO_CALL)}
         style={styles.audioCallContainer}>
         <Image source={audioCallIcon} style={styles.callIcon} />
       </TouchableOpacity>
     );
     let videoCallBtn = (
       <TouchableOpacity
-        onPress={() => this.props.actionGenerated('videoCall')}
+        onPress={() => this.props.actionGenerated(actions.VIDEO_CALL)}
         style={styles.videoCallContainer}>
         <Image source={videoCallIcon} style={styles.callIcon} />
       </TouchableOpacity>
     );
 
-    if (this.props.item.blockedByMe === true || this.props.audioCall === false) {
+    if (
+      this.props.item.blockedByMe === true ||
+      this.props.audioCall === false
+    ) {
       audioCallBtn = null;
     }
 
-    if (this.props.item.blockedByMe === true || this.props.videoCall === false) {
+    if (
+      this.props.item.blockedByMe === true ||
+      this.props.videoCall === false
+    ) {
       videoCallBtn = null;
     }
 
-    if (
-      this.props.widgetsettings &&
-      Object.prototype.hasOwnProperty.call(this.props.widgetsettings, 'main')
-    ) {
-      if (
-        Object.prototype.hasOwnProperty.call(
-          this.props.widgetsettings.main,
-          'enable_voice_calling'
-        ) &&
-        this.props.widgetsettings.main.enable_voice_calling === false
-      ) {
-        audioCallBtn = null;
-      }
-
-      if (
-        Object.prototype.hasOwnProperty.call(
-          this.props.widgetsettings.main,
-          'enable_video_calling'
-        ) &&
-        this.props.widgetsettings.main.enable_video_calling === false
-      ) {
-        videoCallBtn = null;
-      }
-
-      if (
-        Object.prototype.hasOwnProperty.call(
-          this.props.widgetsettings.main,
-          'show_user_presence'
-        ) &&
-        this.props.widgetsettings.main.show_user_presence === false &&
-        this.props.type === 'user'
-      ) {
-        status = null;
-      }
-    }
     return (
       <View style={styles.headerContainer}>
         <TouchableOpacity
           style={styles.backButtonContainer}
-          onPress={() => this.props.actionGenerated('goBack')}>
-          <Icon name="chevron-back-sharp" size={34} color={this.props.theme.color.blue} />
+          onPress={() => this.props.actionGenerated(actions.GO_BACK)}>
+          <Icon
+            name="chevron-back-sharp"
+            size={34}
+            color={this.props.theme.color.blue}
+          />
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => this.props.actionGenerated('viewDetail')}
+          onPress={() => this.props.actionGenerated(actions.VIEW_DETAIL)}
           style={styles.headerDetailContainer}>
           <View
             style={[

@@ -14,6 +14,9 @@ export default StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
   },
+  stickerImageStyle: { width: 60, height: 60 },
+  stickerHeaderImageStyle: { width: 35, height: 35 },
+  closeIcon: { alignSelf: 'flex-end' },
   sectionListItemStyle: {
     height: 35,
     width: 35,
@@ -46,8 +49,8 @@ export default StyleSheet.create({
   stickerWrapperStyle: {
     borderWidth: 1,
     borderRadius: 10,
-    flexDirection:"column",
+    flexDirection: 'column',
     height: 230 * heightRatio,
-    alignItems:"flex-end"
+    alignItems: 'flex-end',
   },
 });

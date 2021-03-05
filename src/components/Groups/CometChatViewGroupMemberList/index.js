@@ -3,7 +3,7 @@
 /* eslint-disable react/static-property-placement */
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
-import { View, Text, FlatList, Modal, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 
 import { CometChatViewGroupMemberListItem } from '../index';
@@ -12,6 +12,9 @@ import _ from 'lodash';
 import style from './styles';
 
 import theme from '../../../resources/theme';
+import { deviceHeight } from '../../../utils/consts';
+import * as actions from '../../../utils/actions';
+import { logger } from '../../../utils/common';
 
 export default class CometChatViewGroupMemberList extends React.Component {
   static contextType = GroupDetailContext;
@@ -29,15 +32,22 @@ export default class CometChatViewGroupMemberList extends React.Component {
     this.sheetRef = React.createRef(null);
   }
 
+  /**
+   * update members of the group based on action.
+   * @param action: action name
+   * @param member: member object
+   * @param scope: scope object
+   */
+
   updateMembers = (action, member, scope) => {
     switch (action) {
-      case 'ban':
+      case actions.BAN:
         this.banMember(member);
         break;
-      case 'kick':
+      case actions.KICK:
         this.kickMember(member);
         break;
-      case 'changescope':
+      case actions.CHANGE_SCOPE:
         this.changeScope(member, scope);
         break;
       default:
@@ -45,41 +55,57 @@ export default class CometChatViewGroupMemberList extends React.Component {
     }
   };
 
+  /**
+   * handler for banning of members in group
+   * @param memberToBan: memberToBan object
+   */
+
   banMember = (memberToBan) => {
     try {
       const { guid } = this.props.item;
       CometChat.banGroupMember(guid, memberToBan.uid)
         .then((response) => {
           if (response) {
-            // console.log('banGroupMember success with response: ', response);
-            this.props.actionGenerated('banGroupMembers', memberToBan);
+            this.props.actionGenerated(actions.BAN_GROUP_MEMBERS, memberToBan);
           }
         })
-        .catch(() => {
-          // console.log('banGroupMember failed with error: ', error);
+        .catch((error) => {
+          logger('banGroupMember failed with error: ', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
+  /**
+   * handler for kicking of member from group
+   * @param memberToKick: memberToKick object
+   */
   kickMember = (memberToKick) => {
     try {
       const { guid } = this.props.item;
       CometChat.kickGroupMember(guid, memberToKick.uid)
         .then((response) => {
           if (response) {
-            // console.log('kickGroupMember success with response: ', response);
-            this.props.actionGenerated('removeGroupParticipants', memberToKick);
+            this.props.actionGenerated(
+              actions.REMOVE_GROUP_PARTICIPANTS,
+              memberToKick,
+            );
           }
         })
-        .catch(() => {
-          // console.log('kickGroupMember failed with error: ', error);
+        .catch((error) => {
+          logger('kickGroupMember failed with error: ', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handler for changing of scope of members in the group.
+   * @param member: member object
+   * @param scope: scope object
+   */
 
   changeScope = (member, scope) => {
     try {
@@ -88,21 +114,25 @@ export default class CometChatViewGroupMemberList extends React.Component {
       CometChat.updateGroupMemberScope(guid, member.uid, scope)
         .then((response) => {
           if (response) {
-            // console.log('updateGroupMemberScope success with response: ', response);
             const updatedMember = { ...member, scope };
             this.props.actionGenerated(
-              'updateGroupParticipants',
+              actions.UPDATE_GROUP_PARTICIPANTS,
               updatedMember,
             );
           }
         })
-        .catch(() => {
-          // console.log('updateGroupMemberScope failed with error: ', error);
+        .catch((error) => {
+          logger('updateGroupMemberScope failed with error: ', error);
         });
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
+
+  /**
+   * handler for the heading when scroll(event) is implemeted
+   * @param
+   */
 
   handleScroll = ({ nativeEvent }) => {
     try {
@@ -117,7 +147,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
         });
       }
     } catch (error) {
-      console.log(error);
+      logger(error);
     }
   };
 
@@ -162,20 +192,24 @@ export default class CometChatViewGroupMemberList extends React.Component {
   };
 
   endReached = () => {
-    this.props.actionGenerated('fetchGroupMembers');
+    this.props.actionGenerated(actions.FETCH_GROUP_MEMBERS);
   };
 
   render() {
     const group = this.context;
-    const membersList = _.uniqBy([...group.memberlist],'uid');
+    const membersList = _.uniqBy([...group.memberList], 'uid');
 
     return (
       <React.Fragment>
-        <Modal transparent animated animationType="fade" visible={this.props.open}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+        <Modal
+          transparent
+          animated
+          animationType="fade"
+          visible={this.props.open}>
+          <View style={style.container}>
             <BottomSheet
               ref={this.sheetRef}
-              snapPoints={[Dimensions.get('window').height - 80, 0]}
+              snapPoints={[deviceHeight - 80, 0]}
               borderRadius={30}
               initialSnap={0}
               enabledInnerScrolling={false}
@@ -185,11 +219,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
                 return (
                   <View style={style.reactionDetailsContainer}>
                     <View style={style.headerContainer}>
-                      <View
-                        style={{
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                        }}>
+                      <View style={style.headerContainerStyle}>
                         <Text style={style.contactHeaderTitleStyle}>
                           Group Members
                         </Text>
@@ -199,7 +229,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
                           this.sheetRef.current.snapTo(1);
                           this.props.close();
                         }}
-                        style={{  }}>
+                        style={{}}>
                         <Text style={{ color: this.theme.color.blue }}>
                           Close
                         </Text>
@@ -215,26 +245,18 @@ export default class CometChatViewGroupMemberList extends React.Component {
                             member={item}
                             item={this.props.item}
                             lang={this.props.lang}
-                            widgetsettings={this.props.widgetsettings}
                             actionGenerated={this.updateMembers}
                             loggedInUser={this.props.loggedInUser}
                           />
                         );
                       }}
-                      // ListHeaderComponent={this.listHeaderComponent}
                       ListEmptyComponent={this.listEmptyContainer}
                       ItemSeparatorComponent={this.itemSeparatorComponent}
                       onScroll={this.handleScroll}
                       onEndReached={this.endReached}
                       onEndReachedThreshold={0.3}
-                      contentContainerStyle={{
-                        paddingBottom: 0.09 * Dimensions.get('window').height,
-                      }}
-                      style={{
-                        height:
-                          Dimensions.get('window').height -
-                          0.25 * Dimensions.get('window').height,
-                      }}
+                      contentContainerStyle={style.contentContainerStyle}
+                      style={style.listStyle}
                       showsVerticalScrollIndicator={false}
                     />
                   </View>

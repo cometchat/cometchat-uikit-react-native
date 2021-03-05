@@ -6,43 +6,57 @@ import { CometChatMessageReactions } from '../../Messages/Extensions';
 import style from './styles';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import RNFetchBlob from 'rn-fetch-blob';
+import * as enums from '../../../utils/enums';
+import * as actions from '../../../utils/actions';
+import { logger } from '../../../utils/common';
 
-export default (props) => {
-  const message = { ...props.message, messageFrom: 'sender' };
+const CometChatSenderFileMessageBubble = (props) => {
+  const message = { ...props.message, messageFrom: enums.MESSAGE_FROM_SENDER };
+
+  /**
+   * Handler to download the file attachment in local storage
+   * @param
+   */
   const download = () => {
-    let PictureDir = RNFetchBlob.fs.dirs.PictureDir;
-    let date = new Date();
-    let ext = '.' + props.message.data.attachments[0].extension;
-    RNFetchBlob.config({
-      // add this option that makes response data to be stored as a file,
-      // this is much more performant.
-      fileCache: true,
-      appendExt: props.message.data.attachments[0].extension,
-      addAndroidDownloads: {
-        useDownloadManager: true,
-        notification: true,
-        path:
-          PictureDir +
-          '/' +
-          Math.floor(date.getTime() + date.getSeconds() / 2) +
-          ext,
-      },
-    })
-      .fetch('GET', props.message.data.attachments[0].url, {
-        // some headers ..
+    try {
+      let PictureDir = RNFetchBlob.fs.dirs.PictureDir;
+      let date = new Date();
+      let ext = '.' + props.message.data.attachments[0].extension;
+      RNFetchBlob.config({
+        // add this option that makes response data to be stored as a file,
+        // this is much more performant.
+        fileCache: true,
+        appendExt: props.message.data.attachments[0].extension,
+        addAndroidDownloads: {
+          useDownloadManager: true,
+          notification: true,
+          path:
+            PictureDir +
+            '/' +
+            Math.floor(date.getTime() + date.getSeconds() / 2) +
+            ext,
+        },
       })
-      .then(() => {
-        Alert.alert('File Downloaded');
-      });
+        .fetch('GET', props.message.data.attachments[0].url, {
+          // some headers ..
+        })
+        .then(() => {
+          Alert.alert('File Downloaded');
+        });
+    } catch (error) {
+      logger(error);
+    }
   };
   return (
-    <View style={{ marginBottom: 16 }}>
+    <View style={style.container}>
       <TouchableWithoutFeedback
         onPress={download}
-        onLongPress={() => props.actionGenerated('openMessageActions', message)}>
+        onLongPress={() =>
+          props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
+        }>
         <View style={style.messageWrapperStyle}>
-          <View style={{ flex: 1, marginRight: 4 }}>
-            <Text style={{ color: 'white', fontSize: 15, textAlign: 'justify' }}>
+          <View style={style.messageDetailContainer}>
+            <Text style={style.messageTextStyle}>
               {props.message.data.attachments[0].name}
             </Text>
           </View>
@@ -53,7 +67,12 @@ export default (props) => {
         <CometChatThreadedMessageReplyCount {...props} message={message} />
         <CometChatReadReceipt {...props} />
       </View>
-      <CometChatMessageReactions theme={props.theme} {...props} message={message} />
+      <CometChatMessageReactions
+        theme={props.theme}
+        {...props}
+        message={message}
+      />
     </View>
   );
 };
+export default CometChatSenderFileMessageBubble;

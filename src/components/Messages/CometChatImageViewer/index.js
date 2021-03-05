@@ -3,38 +3,22 @@ import { View, Modal, Image, TouchableOpacity, Dimensions } from 'react-native';
 import style from './styles';
 import { get as _get } from 'lodash';
 import BottomSheet from 'reanimated-bottom-sheet';
-
-import { heightRatio, widthRatio } from '../../../utils/consts';
-
 const cross = require('./resources/clear.png');
 
-class imageView extends React.Component {
+class CometChatImageViewer extends React.Component {
   constructor(props) {
     super(props);
     this.sheetRef = React.createRef(null);
   }
 
-  render() { 
-    // let thumbnailGenerationObject = null;
-    // if (Object.prototype.hasOwnProperty.call(this.props, 'message')) {
-    //   const { message } = this.props;
-    //   if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
-    //     const { metadata } = message;
-    //     const injectedObject = metadata['@injected'];
-    //     if (injectedObject && Object.prototype.hasOwnProperty.call(injectedObject, 'extensions')) {
-    //       const extensionsObject = injectedObject.extensions;
-    //       if (
-    //         extensionsObject &&
-    //         Object.prototype.hasOwnProperty.call(extensionsObject, 'thumbnail-generation')
-    //       ) {
-    //         thumbnailGenerationObject = extensionsObject['thumbnail-generation'];
-    //       }
-    //     }
-    //   }
-    // }
+  render() {
     return (
-      <Modal transparent animated animationType="fade" visible={this.props.open}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' }}>
+      <Modal
+        transparent
+        animated
+        animationType="fade"
+        visible={this.props.open}>
+        <View style={style.outerContainer}>
           <BottomSheet
             ref={this.sheetRef}
             snapPoints={[Dimensions.get('window').height - 80, 0]}
@@ -45,55 +29,24 @@ class imageView extends React.Component {
             overdragResistanceFactor={10}
             renderContent={() => {
               return (
-                <View
-                  style={{
-                    backgroundColor: 'white',
-                    height: Dimensions.get('window').height + 200 * heightRatio,
-                    paddingBottom: 40 * heightRatio,
-                  }}>
+                <View style={style.bottomSheetContainer}>
                   <TouchableOpacity
-                    style={{
-                      alignSelf: 'flex-end',
-                      marginRight: 20,
-                      marginTop: 20,
-                    }}
+                    style={style.crossImgContainer}
                     onPress={this.props.close}>
                     <Image
                       source={cross}
-                      style={{
-                        height: 30 * heightRatio,
-                        width: 30 * widthRatio,
-                      }}
+                      style={style.crossImg}
                       resizeMode="contain"
                     />
                   </TouchableOpacity>
-                  <View
-                    style={{
-                      backgroundColor: 'white',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: 450 * heightRatio,
-                    }}>
-                    <View
-                      style={[
-                        style.mainContainer,
-                        {
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          width: '100%',
-                          height: '100%',
-                        },
-                      ]}>
+                  <View style={style.outerImageContainer}>
+                    <View style={[style.mainContainer]}>
                       <Image
                         source={{
                           uri: _get(this.props, 'message.data.url', ''),
                         }}
                         resizeMode="contain"
-                        style={{
-                          height: '100%',
-                          width: Dimensions.get('window').width,
-                          maxHeight: Dimensions.get('window').height * 0.4,
-                        }}
+                        style={style.imageStyles}
                       />
                     </View>
                   </View>
@@ -109,4 +62,4 @@ class imageView extends React.Component {
     );
   }
 }
-export default imageView;
+export default CometChatImageViewer;
