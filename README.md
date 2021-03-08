@@ -152,7 +152,7 @@ CometChat.login(uid, authKey).then(
 ## 3. Add UI Kit to your project
 
 - Clone this repository.
-- Copy the `react-native-chat-ui-kit` folder to your source folder.
+- Copy the `cometchat-pro-react-native-ui-kit` folder to your source folder.
 - Copy all the peer dependencies from package.json into your project's package.json and install them using `npm install`.
 
 <br/>
