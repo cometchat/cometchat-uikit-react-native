@@ -290,7 +290,7 @@ class CometChatOutgoingCall extends React.PureComponent {
       const id = type === 'user' ? message.sender.uid : message.receiverId;
 
       if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
-        CometChat.markAsRead(message.id, id, type);
+        CometChat.markAsRead(message);
       }
     } catch (error) {
       logger(error);

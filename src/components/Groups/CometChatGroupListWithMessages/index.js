@@ -511,7 +511,7 @@ class CometChatGroupListWithMessages extends React.Component {
         Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') ===
         false
       ) {
-        CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
+        CometChat.markAsRead(incomingCallMessage);
       }
 
       const { item, type } = this.state;
