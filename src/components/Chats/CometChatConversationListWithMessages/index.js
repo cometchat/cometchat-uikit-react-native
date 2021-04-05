@@ -409,7 +409,7 @@ class CometChatConversationListWithMessages extends React.Component {
         Object.prototype.hasOwnProperty.call(incomingCallMessage, readAt) ===
         false
       ) {
-        CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
+        CometChat.markAsRead(incomingCallMessage);
       }
 
       // updating unread count in chats list

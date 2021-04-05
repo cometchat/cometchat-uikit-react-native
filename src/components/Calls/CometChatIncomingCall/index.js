@@ -68,7 +68,7 @@ export default (props) => {
         receiverType === 'user' ? message.sender.uid : message.receiverId;
 
       if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
-        CometChat.markAsRead(message.id, receiverId, receiverType);
+        CometChat.markAsRead(message);
       }
     } catch (error) {
       logger(error);
