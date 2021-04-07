@@ -190,6 +190,8 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.props.actionGenerated(actions.MESSAGE_COMPOSED, [response]);
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.props?.showMessage('error', errorCode);
           this.messageSending = false;
           logger('Message sending failed with error:', error);
         });
@@ -247,6 +249,8 @@ export default class CometChatMessageComposer extends React.PureComponent {
         })
         .catch((error) => {
           logger('Message sending failed with error:', error);
+          const errorCode = error?.message || 'ERROR';
+          this.props?.showMessage('error', errorCode);
           this.messageSending = false;
         });
     } catch (error) {
@@ -287,6 +291,8 @@ export default class CometChatMessageComposer extends React.PureComponent {
         })
         .catch((error) => {
           this.messageSending = false;
+          const errorCode = error?.message || 'ERROR';
+          this.props?.showMessage('error', errorCode);
           logger('Message editing failed with error:', error);
         });
     } catch (error) {
@@ -446,6 +452,8 @@ export default class CometChatMessageComposer extends React.PureComponent {
         this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.props?.showMessage('error', errorCode);
         this.messageSending = false;
         logger('custom message sending failed with error', error);
       });
@@ -475,6 +483,8 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.props?.showMessage('error', errorCode);
           logger('Message sending failed with error:', error);
         });
     } catch (error) {

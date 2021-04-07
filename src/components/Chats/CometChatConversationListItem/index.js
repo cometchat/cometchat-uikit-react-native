@@ -206,6 +206,9 @@ class CometChatConversationListItem extends React.Component {
         case enums.CUSTOM_TYPE_STICKER:
           message = 'Sticker';
           break;
+        case 'meeting':
+          message = 'Video Call';
+          break;
         default:
           break;
       }

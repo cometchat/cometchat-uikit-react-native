@@ -1,6 +1,7 @@
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import DropDownAlert from '../../../Shared/DropDownAlert';
 import theme from '../../../../resources/theme';
 import {
   CometChatReadReceipt,
@@ -41,6 +42,8 @@ const CometChatReceiverPollMessageBubble = (props) => {
         props.actionGenerated(actions.POLL_ANSWERED, response);
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger(error);
       });
   };
@@ -181,6 +184,7 @@ const CometChatReceiverPollMessageBubble = (props) => {
         {...props}
         message={message}
       />
+      <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
     </View>
   );
 };

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import * as actions from '../../../utils/actions';
 import _ from 'lodash';
 import { CometChatUserDetails } from '../../Users';
 import {
@@ -25,7 +26,7 @@ import theme from '../../../resources/theme';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import { checkMessageForExtensionsData } from '../../../utils/common';
-
+import DropDownAlert from '../../Shared/DropDownAlert';
 import BottomSheet from 'reanimated-bottom-sheet';
 import style from './styles';
 
@@ -157,7 +158,6 @@ class CometChatMessages extends React.PureComponent {
   actionHandler = (action, messages, key, group, options) => {
     const { route } = this.props;
     const params = route?.params || this.props;
-
     switch (action) {
       case 'customMessageReceived':
       case 'messageReceived':
@@ -245,6 +245,7 @@ class CometChatMessages extends React.PureComponent {
       case 'audioCall':
       case 'videoCall':
       case 'menuClicked':
+      case actions.JOIN_DIRECT_CALL:
         params.actionGenerated(action);
         break;
       case 'sendReaction':
@@ -307,6 +308,7 @@ class CometChatMessages extends React.PureComponent {
       case 'memberUnbanned':
         this.memberUnbanned(messages);
         break;
+
       default:
         break;
     }
@@ -754,6 +756,9 @@ class CometChatMessages extends React.PureComponent {
         reaction={this.reactionName}
         messageToReact={this.state.messageToReact}
         actionGenerated={this.actionHandler}
+        showMessage={(type, message) => {
+          this.DropDownAlertRef?.showMessage(type, message);
+        }}
       />
     );
 
@@ -826,14 +831,16 @@ class CometChatMessages extends React.PureComponent {
             />
           ) : null}
           {threadMessageView}
-          <CometChatGroupDetails
-            theme={this.theme}
-            open={this.state.groupDetailVisible}
-            item={this.state.item}
-            type={params.type}
-            actionGenerated={this.actionHandler}
-            loggedInUser={this.loggedInUser}
-          />
+          {this.state.groupDetailVisible ? (
+            <CometChatGroupDetails
+              theme={this.theme}
+              open={this.state.groupDetailVisible}
+              item={this.state.item}
+              type={params.type}
+              actionGenerated={this.actionHandler}
+              loggedInUser={this.loggedInUser}
+            />
+          ) : null}
           <CometChatMessageActions
             open={!!this.state.messageToReact}
             message={this.state.messageToReact}
@@ -861,6 +868,9 @@ class CometChatMessages extends React.PureComponent {
             type={params.type}
             scrollToBottom={this.state.scrollToBottom}
             messageConfig={params.messageconfig}
+            showMessage={(type, message) => {
+              this.DropDownAlertRef?.showMessage(type, message);
+            }}
             // widgetsettings={route.params.widgetsettings}
             // widgetconfig={route.params.widgetconfig}
             loggedInUser={params.loggedInUser}
@@ -869,6 +879,7 @@ class CometChatMessages extends React.PureComponent {
           {liveReactionView}
           {messageComposer}
         </SafeAreaView>
+        <DropDownAlert ref={(ref) => (this.DropDownAlertRef = ref)} />
       </KeyboardAvoidingView>
     );
   }

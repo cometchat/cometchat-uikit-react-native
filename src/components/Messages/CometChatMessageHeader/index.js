@@ -258,7 +258,8 @@ class CometChatMessageHeader extends React.Component {
 
     if (
       this.props.item.blockedByMe === true ||
-      this.props.audioCall === false
+      this.props.audioCall === false ||
+      this.props.type === CometChat.ACTION_TYPE.TYPE_GROUP
     ) {
       audioCallBtn = null;
     }

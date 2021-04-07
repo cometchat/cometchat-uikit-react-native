@@ -20,6 +20,7 @@ import {
 } from '../index';
 import { deviceHeight } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
+import DropDownAlert from '../../Shared/DropDownAlert';
 
 const ADD_MEMBER = 'addMember';
 const VIEW_MEMBER = 'viewMember';
@@ -235,6 +236,8 @@ export default class CometChatGroupDetails extends React.Component {
               '[CometChatGroupDetails] getGroupMembers fetchNextGroupMembers error',
               error,
             );
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
           });
       })
       .catch((error) => {
@@ -242,6 +245,8 @@ export default class CometChatGroupDetails extends React.Component {
           '[CometChatGroupDetails] getGroupMembers getLoggedInUser error',
           error,
         );
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
       });
   };
 
@@ -272,6 +277,8 @@ export default class CometChatGroupDetails extends React.Component {
               '[CometChatGroupDetails] getGroupMembers fetchNextGroupMembers error',
               error,
             );
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
           });
       })
       .catch((error) => {
@@ -279,6 +286,8 @@ export default class CometChatGroupDetails extends React.Component {
           '[CometChatGroupDetails] getGroupMembers getLoggedInUser error',
           error,
         );
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
       });
   };
 
@@ -291,10 +300,20 @@ export default class CometChatGroupDetails extends React.Component {
     const item = { ...this.props.item };
     const { guid } = item;
     CometChat.deleteGroup(guid)
-      .then(() => {
-        this.props.actionGenerated(actions.GROUP_DELETED, item);
+      .then((response) => {
+        if (response) {
+          this.dropDownAlertRef?.showMessage(
+            'success',
+            'Group deleted Successfully',
+          );
+          this.props.actionGenerated(actions.GROUP_DELETED, item);
+        } else {
+          this.dropDownAlertRef?.showMessage('error', 'Failed to delete group');
+        }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('Group delete failed with exception:', error);
       });
   };
@@ -309,13 +328,29 @@ export default class CometChatGroupDetails extends React.Component {
       const item = { ...this.props.item };
       const { guid } = item;
       CometChat.leaveGroup(guid)
-        .then(() => {
-          this.props.actionGenerated(actions.LEFT_GROUP, item);
+        .then((response) => {
+          if (response) {
+            this.dropDownAlertRef?.showMessage(
+              'success',
+              'Group left successfully',
+            );
+            this.props.actionGenerated(actions.LEFT_GROUP, item);
+          } else {
+            this.dropDownAlertRef?.showMessage(
+              'error',
+              'Failed to leave group',
+            );
+          }
         })
         .catch((error) => {
           logger('Group leaving failed with exception:', error);
+
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
         });
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -619,6 +654,9 @@ export default class CometChatGroupDetails extends React.Component {
         type={this.props.type}
         lang={this.props.lang}
         containerHeight="225px"
+        showMessage={(type, message) => {
+          this.dropDownAlertRef?.showMessage(type, message);
+        }}
       />
     );
 
@@ -771,6 +809,7 @@ export default class CometChatGroupDetails extends React.Component {
             }}
           />
         </View>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </Modal>
     );
   }

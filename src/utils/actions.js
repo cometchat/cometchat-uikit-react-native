@@ -10,6 +10,9 @@ export const AUDIO_CALL = 'audioCall';
 export const VIDEO_CALL = 'videoCall';
 export const CALL_ERROR = 'callError';
 export const CALL_ENDED = 'callEnded';
+export const JOIN_DIRECT_CALL = 'joinDirectVideoCall';
+export const DIRECT_CALL_ENDED = 'directCallEnded';
+export const ACCEPT_DIRECT_CALL = 'acceptDirectCall';
 
 export const BLOCK_USER = 'blockUser';
 export const UNBLOCK_USER = 'unblockUser';

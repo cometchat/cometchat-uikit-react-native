@@ -48,7 +48,8 @@ const CometChatSenderStickerMessageBubble = (props) => {
       <CometChatMessageReactions
         theme={props.theme}
         {...props}
-        message={message}></CometChatMessageReactions>
+        message={message}
+        showMessage={props?.showMessage}></CometChatMessageReactions>
     </View>
   );
 };

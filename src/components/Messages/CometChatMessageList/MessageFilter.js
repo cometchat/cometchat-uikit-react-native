@@ -24,6 +24,7 @@ export default class MessageFilter {
       [enums.ACTION_TYPE_GROUPMEMBER]: enums.ACTION_TYPE_GROUPMEMBER,
       [CometChat.CALL_TYPE.AUDIO]: CometChat.CALL_TYPE.AUDIO,
       [CometChat.CALL_TYPE.VIDEO]: CometChat.CALL_TYPE.VIDEO,
+      [enums.CUSTOM_TYPE_MEETING]: enums.CUSTOM_TYPE_MEETING,
     };
   }
 

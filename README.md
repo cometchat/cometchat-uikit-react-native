@@ -60,7 +60,7 @@ To install React-Native UI Kit, you need to first register on CometChat Dashboar
 ### ii. Add the CometChat Dependency
 
 ```javascript
- npm install @cometchat-pro/react-native-chat@3.0.0-beta1 --save
+ npm install @cometchat-pro/react-native-chat@2.3.0 --save
 ```
 
 ### iii. Other required DEPENDENCIES
