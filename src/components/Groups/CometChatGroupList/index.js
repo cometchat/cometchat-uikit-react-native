@@ -6,6 +6,7 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
+import DropDownAlert from '../../Shared/DropDownAlert';
 import { GroupListManager } from './controller';
 
 import { CometChatCreateGroup, CometChatGroupListItem } from '../index';
@@ -355,6 +356,15 @@ class CometChatGroupList extends React.Component {
     if (passcode !== null) {
       CometChat.joinGroup(this.state.guid, this.state.groupType, passcode)
         .then((response) => {
+          if (typeof response === 'object') {
+            this.dropDownAlertRef?.showMessage(
+              'success',
+              'Group joined Successfully',
+            );
+          } else {
+            this.dropDownAlertRef?.showMessage('error', 'Failed to join group');
+            return;
+          }
           const groups = [...this.state.grouplist];
           const groupKey = groups.findIndex((g) => g.guid === this.state.guid);
           if (groupKey > -1) {
@@ -371,6 +381,9 @@ class CometChatGroupList extends React.Component {
           }
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
+
           if (error.code === 'ERR_WRONG_GROUP_PASS') Alert.alert(error.message);
         });
     }
@@ -396,7 +409,17 @@ class CometChatGroupList extends React.Component {
         CometChat.joinGroup(group.guid, group.type, '')
           .then((response) => {
             const groups = [...this.state.grouplist];
-
+            if (typeof response === 'object') {
+              this.dropDownAlertRef?.showMessage(
+                'success',
+                'Group Joined Successfully',
+              );
+            } else {
+              this.dropDownAlertRef?.showMessage(
+                'error',
+                'Failed to join group',
+              );
+            }
             const groupKey = groups.findIndex((g) => g.guid === group.guid);
             if (groupKey > -1) {
               const groupObj = groups[groupKey];
@@ -416,6 +439,8 @@ class CometChatGroupList extends React.Component {
             }
           })
           .catch((error) => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             logger('Group joining failed with exception:', error);
           });
       }
@@ -496,6 +521,8 @@ class CometChatGroupList extends React.Component {
             });
           })
           .catch((error) => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             this.decoratorMessage = 'Error';
             logger(
               '[CometChatGroupList] getGroups fetchNextGroups error',
@@ -504,6 +531,8 @@ class CometChatGroupList extends React.Component {
           });
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         this.decoratorMessage = 'Error';
         logger('[CometChatGroupList] getUsers getLoggedInUser error', error);
       });
@@ -832,6 +861,7 @@ class CometChatGroupList extends React.Component {
             />
             {passwordScreen}
           </SafeAreaView>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     );

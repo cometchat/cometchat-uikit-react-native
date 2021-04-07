@@ -5,6 +5,7 @@
 /* eslint-disable react/static-property-placement */
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import DropDownAlert from '../../Shared/DropDownAlert';
 import {
   View,
   Text,
@@ -188,6 +189,8 @@ class CometChatAddGroupMemberList extends React.Component {
             });
           })
           .catch((error) => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             this.decoratorMessage = 'Error';
             logger(
               '[CometChatAddGroupMemberList] getUsers fetchNext error',
@@ -275,10 +278,14 @@ class CometChatAddGroupMemberList extends React.Component {
             }
           })
           .catch(() => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             logger('addMembersToGroup failed with exception:', error);
           });
       }
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger('121', error);
     }
   };
@@ -480,6 +487,7 @@ class CometChatAddGroupMemberList extends React.Component {
               }}
             />
           </View>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
         </Modal>
       </React.Fragment>
     );

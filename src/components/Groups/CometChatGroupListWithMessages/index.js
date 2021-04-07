@@ -6,10 +6,16 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
-import { CometChatIncomingCall, CometChatOutgoingCall } from '../../Calls';
+import {
+  CometChatIncomingCall,
+  CometChatOutgoingCall,
+  CometChatOutgoingDirectCall,
+  CometChatIncomingDirectCall,
+} from '../../Calls';
 import { CometChatGroupList } from '../index';
 import { CometChatImageViewer } from '../../Messages';
 
+import DropDownAlert from '../../Shared/DropDownAlert';
 import theme from '../../../resources/theme';
 import style from './styles';
 import { logger } from '../../../utils/common';
@@ -40,6 +46,7 @@ class CometChatGroupListWithMessages extends React.Component {
       sidebarView: false,
       imageView: null,
       groupMessage: {},
+      ongoingDirectCall: false,
     };
 
     this.theme = { ...theme, ...this.props.theme };
@@ -130,7 +137,9 @@ class CometChatGroupListWithMessages extends React.Component {
         this.audioCall();
         break;
       case actions.VIDEO_CALL:
-        this.videoCall();
+        this.setState({ joinDirectCall: false }, () => {
+          this.videoCall(true);
+        });
         break;
       // eslint-disable-next-line no-lone-blocks
       case actions.MENU_CLICKED: {
@@ -196,6 +205,39 @@ class CometChatGroupListWithMessages extends React.Component {
       case actions.UPDATE_THREAD_MESSAGE:
         this.updateThreadMessage(item[0], count);
         break;
+      case actions.MESSAGE_COMPOSED:
+        this.callInitiated(item);
+        break;
+      case actions.JOIN_DIRECT_CALL:
+        this.setState({ joinDirectCall: true }, () => {
+          this.videoCall(true);
+        });
+        break;
+      case actions.DIRECT_CALL_ENDED:
+        this.setState(
+          { joinDirectCall: false, ongoingDirectCall: null },
+          () => {
+            this.props.navigation.navigate(
+              enums.NAVIGATION_CONSTANTS.COMET_CHAT_MESSAGES,
+              {
+                theme: this.theme,
+                item: { ...this.state.item },
+                tab: this.state.tab,
+                type: this.state.type,
+                composedThreadMessage: this.state.composedThreadMessage,
+                callMessage: this.state.callMessage,
+                loggedInUser: this.loggedInUser,
+                actionGenerated: this.actionHandler,
+              },
+            );
+          },
+        );
+        break;
+      case actions.ACCEPT_DIRECT_CALL:
+        this.setState({ joinDirectCall: true }, () => {
+          this.videoCall(true);
+        });
+
       default:
         break;
     }
@@ -234,10 +276,17 @@ class CometChatGroupListWithMessages extends React.Component {
     try {
       const usersList = [this.state.item.uid];
       CometChatManager.blockUsers(usersList)
-        .then(() => {
-          this.setState({ item: { ...this.state.item, blockedByMe: true } });
+        .then((response) => {
+          if (response) {
+            this.dropDownAlertRef?.showMessage('success', 'Blocked User');
+            this.setState({ item: { ...this.state.item, blockedByMe: true } });
+          } else {
+            this.dropDownAlertRef?.showMessage('error', 'Failed to block user');
+          }
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           logger('Blocking user fails with error', error);
         });
     } catch (error) {
@@ -254,13 +303,25 @@ class CometChatGroupListWithMessages extends React.Component {
     try {
       const usersList = [this.state.item.uid];
       CometChatManager.unblockUsers(usersList)
-        .then(() => {
-          this.setState({ item: { ...this.state.item, blockedByMe: false } });
+        .then((response) => {
+          if (response) {
+            this.dropDownAlertRef?.showMessage('success', 'Unblocked user');
+            this.setState({ item: { ...this.state.item, blockedByMe: false } });
+          } else {
+            this.dropDownAlertRef?.showMessage(
+              'error',
+              'Failed to unblock user',
+            );
+          }
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           logger('unblocking user fails with error', error);
         });
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -300,17 +361,17 @@ class CometChatGroupListWithMessages extends React.Component {
    * @param
    */
 
-  videoCall = () => {
+  videoCall = (flag) => {
     try {
       let receiverId;
       let receiverType;
-      if (this.state.type === CometChat.RECEIVER_TYPE.USER) {
-        receiverId = this.state.item.uid;
-        receiverType = CometChat.RECEIVER_TYPE.USER;
-      } else if (this.state.type === CometChat.RECEIVER_TYPE.GROUP) {
-        receiverId = this.state.item.guid;
-        receiverType = CometChat.RECEIVER_TYPE.GROUP;
+      if (this.state.type === CometChat.RECEIVER_TYPE.GROUP) {
+        this.setState({ ongoingDirectCall: flag });
+
+        return;
       }
+      receiverId = this.state.item.uid;
+      receiverType = CometChat.RECEIVER_TYPE.USER;
 
       CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.VIDEO)
         .then((call) => {
@@ -664,12 +725,15 @@ class CometChatGroupListWithMessages extends React.Component {
         />
         {imageView}
         <CometChatIncomingCall
+          showMessage={(type, message) => {
+            this.dropDownAlertRef?.showMessage(type, message);
+          }}
           theme={this.props.theme}
           loggedInUser={this.loggedInUser}
           outgoingCall={this.state.outgoingCall}
           actionGenerated={this.actionHandler}
         />
-        <CometChatOutgoingCall
+        {/* <CometChatOutgoingCall
           theme={this.props.theme}
           item={this.state.item}
           type={this.state.type}
@@ -678,7 +742,27 @@ class CometChatGroupListWithMessages extends React.Component {
           loggedInUser={this.loggedInUser}
           lang={this.state.lang}
           actionGenerated={this.actionHandler}
+        /> */}
+        <CometChatIncomingDirectCall
+          theme={this.props.theme}
+          lang={this.state.lang}
+          actionGenerated={this.actionHandler}
         />
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+        {this.state.ongoingDirectCall ? (
+          <CometChatOutgoingDirectCall
+            open
+            close={() => this.actionHandler(actions.DIRECT_CALL_ENDED)}
+            theme={this.props.theme}
+            item={this.state.item}
+            type={this.state.type}
+            lang={this.state.lang}
+            callType={CometChat.CALL_TYPE.VIDEO}
+            joinDirectCall={this.state.joinDirectCall}
+            loggedInUser={this.loggedInUser}
+            actionGenerated={this.actionHandler}
+          />
+        ) : null}
       </SafeAreaView>
     );
   }

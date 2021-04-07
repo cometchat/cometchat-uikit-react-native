@@ -9,6 +9,7 @@ import _ from 'lodash';
 import * as enums from '../../../utils/enums';
 import styles from './styles';
 import VideoPlayer from 'react-native-video-controls';
+import DropDownAlert from '../../Shared/DropDownAlert';
 
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -131,6 +132,8 @@ export default class CometChatSharedMedia extends React.Component {
             this.setState({ messageList });
           })
           .catch((error) => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             logger(
               '[CometChatSharedMedia] getMessages fetchPrevious error',
               error,
@@ -138,6 +141,8 @@ export default class CometChatSharedMedia extends React.Component {
           });
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger(
           '[CometChatSharedMedia] getMessages getLoggedInUser error',
           error,
@@ -359,6 +364,7 @@ export default class CometChatSharedMedia extends React.Component {
             onEndReached={this.getMessages}
           />
         </View>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </View>
     );
   }

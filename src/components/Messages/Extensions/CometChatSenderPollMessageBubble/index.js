@@ -126,6 +126,7 @@ const CometChatSenderPollMessageBubble = (props) => {
         theme={props.theme}
         {...props}
         message={message}
+        showMessage={props?.showMessage}
       />
     </View>
   );

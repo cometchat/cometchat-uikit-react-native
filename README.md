@@ -7,6 +7,7 @@
 </div>
 
 <br/><br/>
+
 # CometChat React Native UI Kit
 
 </br></br>
@@ -21,9 +22,9 @@
 
 </br></br>
 
-CometChat React Native UI Kit is a collection of custom UI Components designed to build text chat and voice/video calling features in your application. 
+CometChat React Native UI Kit is a collection of custom UI Components designed to build text chat and voice/video calling features in your application.
 
-The UI Kit is developed to keep developers in mind and aims to reduce development efforts significantly. 
+The UI Kit is developed to keep developers in mind and aims to reduce development efforts significantly.
 
 ---
 
@@ -39,9 +40,10 @@ Before you begin, ensure you have met the following requirements:
 
 - [React-Native](https://reactnative.dev/docs/environment-setup)
 
-|<div align="left"><span>**Note:**<span style="font-weight:500"> Support for Expo CLI based apps.</span> </span></div>  |
-|-----------------------------------------|
-|If you are using Expo CLI to build a React Native app, the calling component will not work as our calling component needs native-level changes.However, you can create a React Native app using React Native CLI or use the 'expo eject' command to convert your app from an expo-managed workflow to a bare workflow.|
+| <div align="left"><span>**Note:**<span style="font-weight:500"> Support for Expo CLI based apps.</span> </span></div>                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| If you are using Expo CLI to build a React Native app, the calling component will not work as our calling component needs native-level changes.However, you can create a React Native app using React Native CLI or use the 'expo eject' command to convert your app from an expo-managed workflow to a bare workflow. |
+
 ---
 
 ## Installing CometChat React Native UI Kit
@@ -58,7 +60,7 @@ To install React-Native UI Kit, you need to first register on CometChat Dashboar
 ### ii. Add the CometChat Dependency
 
 ```javascript
- npm install @cometchat-pro/react-native-chat@2.2.1 --save
+ npm install @cometchat-pro/react-native-chat@2.3.0 --save
 ```
 
 ### iii. Other required DEPENDENCIES
@@ -88,7 +90,6 @@ These packages help make the ui-kit smooth and functioning
 [emoji-mart-native](https://www.npmjs.com/package/emoji-mart-native)</br>
 <br/>
 
-
 ## 2. Configure CometChat inside your app
 
 ### i. Initialize CometChat 🌟
@@ -97,7 +98,7 @@ The `init()` method initializes the settings required for CometChat.
 We suggest calling the `init()` method on app startup, preferably in the `created()` method of the Application class.
 
 ```javascript
-import {CometChat} from '@cometchat-pro/react-native-chat';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
 const appID = 'APP_ID';
 const region = 'REGION';
@@ -126,7 +127,7 @@ CometChat.init(appID, appSetting).then(
 This method takes `UID` and `Auth Key` as input parameters and returns the User object containing all the information of the logged-in user..
 
 ```javascript
-import {CometChat} from '@cometchat-pro/react-native-chat';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
 const authKey = 'AUTH_KEY';
 const uid = 'SUPERHERO1';
@@ -152,7 +153,7 @@ CometChat.login(uid, authKey).then(
 ## 3. Add UI Kit to your project
 
 - Clone this repository.
-- Copy the `cometchat-pro-react-native-ui-kit` folder to your source folder.
+- Copy the `react-native-chat-ui-kit` folder to your source folder.
 - Copy all the peer dependencies from package.json into your project's package.json and install them using `npm install`.
 
 <br/>
@@ -165,18 +166,16 @@ Usage of application in project
 
 ```javascript
 import React from 'react';
-import {View} from 'react-native';
-import {CometChatUI} from '../cometchat-pro-react-native-ui-kit';
+import { View } from 'react-native';
+import { CometChatUI } from '../cometchat-pro-react-native-ui-kit';
 
 export default function CometChatUIView() {
   return (
-    <View style={{flex: 1}}>
+    <View style={{ flex: 1 }}>
       <CometChatUI />
     </View>
   );
 }
-
-
 ```
 
 ---

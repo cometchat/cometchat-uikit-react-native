@@ -24,6 +24,8 @@ import audioCallIcon from './resources/incomingaudiocall.png';
 import videoCallIcon from './resources/incomingvideocall.png';
 import { incomingCallAlert } from '../../../resources/audio';
 import { logger } from '../../../utils/common';
+import DropDownAlert from '../../Shared/DropDownAlert';
+
 export default (props) => {
   let callAlertManager = null;
   const viewTheme = { ...theme, ...props.theme };
@@ -105,6 +107,8 @@ export default (props) => {
           })
           .catch((error) => {
             props.actionGenerated(actions.CALL_ERROR, error);
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
           });
       } else if (incomingCall === null) {
         playIncomingAlert();
@@ -170,10 +174,14 @@ export default (props) => {
           setIncomingCall(null);
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           props.actionGenerated(actions.CALL_ERROR, error);
           setIncomingCall(null);
         });
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -189,6 +197,8 @@ export default (props) => {
       props.actionGenerated(actions.ACCEPT_INCOMING_CALL, incomingCall);
       setIncomingCall(null);
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -209,69 +219,72 @@ export default (props) => {
 
   if (incomingCall) {
     return (
-      <Modal transparent animated animationType="fade">
-        <SafeAreaView>
-          <View style={[style.callContainerStyle]}>
-            <View style={style.senderDetailsContainer}>
-              <View>
-                <Text numberOfLines={1} style={style.nameStyle}>
-                  {incomingCall.sender.name}
-                </Text>
-                {incomingCall.type === 'video' ? (
-                  <View style={style.callTypeStyle}>
-                    <Image source={videoCallIcon} alt="Incoming video call" />
-                    <View style={style.callMessageContainerStyle}>
-                      <Text
-                        numberOfLines={1}
-                        style={style.callMessageTextStyle}>
-                        Incoming video call
-                      </Text>
+      <>
+        <Modal transparent animated animationType="fade">
+          <SafeAreaView>
+            <View style={[style.callContainerStyle]}>
+              <View style={style.senderDetailsContainer}>
+                <View>
+                  <Text numberOfLines={1} style={style.nameStyle}>
+                    {incomingCall.sender.name}
+                  </Text>
+                  {incomingCall.type === 'video' ? (
+                    <View style={style.callTypeStyle}>
+                      <Image source={videoCallIcon} alt="Incoming video call" />
+                      <View style={style.callMessageContainerStyle}>
+                        <Text
+                          numberOfLines={1}
+                          style={style.callMessageTextStyle}>
+                          Incoming video call
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ) : (
-                  <View style={style.callTypeStyle}>
-                    <Image source={audioCallIcon} alt="Incoming video call" />
-                    <View style={style.callMessageContainerStyle}>
-                      <Text
-                        numberOfLines={1}
-                        style={style.callMessageTextStyle}>
-                        Incoming audio call
-                      </Text>
+                  ) : (
+                    <View style={style.callTypeStyle}>
+                      <Image source={audioCallIcon} alt="Incoming video call" />
+                      <View style={style.callMessageContainerStyle}>
+                        <Text
+                          numberOfLines={1}
+                          style={style.callMessageTextStyle}>
+                          Incoming audio call
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
+                </View>
+                <View style={style.avatarStyle}>
+                  <CometChatAvatar
+                    cornerRadius={1000}
+                    borderWidth={0}
+                    textColor="white"
+                    image={{ uri: incomingCall.sender.avatar }}
+                    name={incomingCall.sender.name}
+                  />
+                </View>
               </View>
-              <View style={style.avatarStyle}>
-                <CometChatAvatar
-                  cornerRadius={1000}
-                  borderWidth={0}
-                  textColor="white"
-                  image={{ uri: incomingCall.sender.avatar }}
-                  name={incomingCall.sender.name}
-                />
+              <View style={style.headerButtonStyle}>
+                <TouchableOpacity
+                  style={[
+                    style.buttonStyle,
+                    { backgroundColor: viewTheme.backgroundColor.red },
+                  ]}
+                  onPress={rejectCall}>
+                  <Text style={style.btnTextStyle}>Decline</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    style.buttonStyle,
+                    { backgroundColor: viewTheme.backgroundColor.blue },
+                  ]}
+                  onPress={acceptCall}>
+                  <Text style={style.btnTextStyle}>Accept</Text>
+                </TouchableOpacity>
               </View>
             </View>
-            <View style={style.headerButtonStyle}>
-              <TouchableOpacity
-                style={[
-                  style.buttonStyle,
-                  { backgroundColor: viewTheme.backgroundColor.red },
-                ]}
-                onPress={rejectCall}>
-                <Text style={style.btnTextStyle}>Decline</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  style.buttonStyle,
-                  { backgroundColor: viewTheme.backgroundColor.blue },
-                ]}
-                onPress={acceptCall}>
-                <Text style={style.btnTextStyle}>Accept</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
+          </SafeAreaView>
+        </Modal>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+      </>
     );
   }
 
