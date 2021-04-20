@@ -223,9 +223,10 @@ class CometChatMessageHeader extends React.Component {
       presence = (
         <CometChatUserPresence
           status={this.state.presence}
+          style={{ top: 25 }}
           cornerRadius={9}
-          borderColor={this.props.theme.borderColor.primary}
-          borderWidth={1}
+          borderColor={this.props.theme.borderColor.white}
+          borderWidth={2}
         />
       );
     } else {
@@ -270,6 +271,10 @@ class CometChatMessageHeader extends React.Component {
     ) {
       videoCallBtn = null;
     }
+    if (this.props.item.blockedByMe) {
+      status = null;
+      presence = null;
+    }
 
     return (
       <View style={styles.headerContainer}>
@@ -278,7 +283,7 @@ class CometChatMessageHeader extends React.Component {
           onPress={() => this.props.actionGenerated(actions.GO_BACK)}>
           <Icon
             name="chevron-back-sharp"
-            size={34}
+            size={32}
             color={this.props.theme.color.blue}
           />
         </TouchableOpacity>

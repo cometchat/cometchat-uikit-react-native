@@ -309,11 +309,7 @@ class CometChatUserList extends React.PureComponent {
                 backgroundColor: `${this.theme.backgroundColor.grey}`,
               },
             ]}>
-            <Icon
-              name="search"
-              size={15}
-              color={this.theme.color.textInputPlaceholder}
-            />
+            <Icon name="search" size={18} color={this.theme.color.helpText} />
             <TextInput
               ref={this.textInputRef}
               autoCompleteType="off"
@@ -396,6 +392,7 @@ class CometChatUserList extends React.PureComponent {
           <FlatList
             data={userListWithHeaders}
             renderItem={this.renderUserView}
+            contentContainerStyle={{ flexGrow: 1 }}
             ListEmptyComponent={this.listEmptyContainer}
             ItemSeparatorComponent={this.itemSeparatorComponent}
             stickyHeaderIndices={

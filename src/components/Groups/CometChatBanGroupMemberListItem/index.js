@@ -50,11 +50,13 @@ export default (props) => {
           <CometChatUserPresence
             status={props.member.status}
             cornerRadius={18}
-            borderColor={viewTheme.borderColor.primary}
-            borderWidth={1}
+            borderColor={viewTheme.color.white}
+            borderWidth={2}
           />
         </View>
-        <Text numberOfLines={1} style={{ fontSize: 14 }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 16, color: props.theme.color.primary }}>
           {name}
         </Text>
       </View>

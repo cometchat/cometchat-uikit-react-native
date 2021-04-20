@@ -3,7 +3,7 @@ import theme from '../../../resources/theme';
 
 export default StyleSheet.create({
   mainContainer: {
-    bottom: Platform.OS == 'ios' ? '85%' : '90%',
+    bottom: Platform.OS == 'ios' ? '80%' : '85%',
     position: 'absolute',
     top: 0,
     left: 0,

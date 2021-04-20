@@ -23,14 +23,14 @@ export default () => {
 
           if (route.name === 'Chats') {
             return (
-              <MCIIcons name="chat" size={24 * heightRatio} color={color} />
+              <MCIIcons name="chat" size={25 * heightRatio} color={color} />
             );
           }
           if (route.name === 'More') {
             return (
               <MaterialIcons
                 name="more-horiz"
-                size={24 * heightRatio}
+                size={25 * heightRatio}
                 color={color}
               />
             );
@@ -52,7 +52,7 @@ export default () => {
         inactiveTintColor: 'rgba(0,0,0,0.5)',
         activeBackgroundColor: theme.color.white,
         inactiveBackgroundColor: theme.color.white,
-        labelStyle: { fontSize: 8 * heightRatio },
+        labelStyle: { fontSize: 12 },
       }}>
       <Tab.Screen
         name="Chats"

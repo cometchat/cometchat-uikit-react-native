@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-
+import theme from '../../../resources/theme';
 export default StyleSheet.create({
   chatListStyle: {
     zIndex: 1,
@@ -34,16 +34,21 @@ export default StyleSheet.create({
   },
   messageDateContainerStyle: {
     marginBottom: 16,
-    maxWidth: 280,
     alignItems: 'center',
     alignSelf: 'center',
     justifyContent: 'center',
-    borderRadius: 80,
+    borderTopWidth: 0.5,
+    borderBottomColor: theme.color.primary,
+
+    opacity: 0.4,
+    width: '95%',
   },
   messageDateStyle: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 100,
+    fontSize: 14,
+    color: theme.color.helpText,
   },
   decoratorMessageStyle: {
     overflow: 'hidden',

@@ -9,8 +9,11 @@ export default StyleSheet.create({
     backgroundColor: theme.color.blue,
     borderRadius: 8,
     padding: 10,
-    marginBottom: 16,
     alignSelf: 'flex-end',
+  },
+  container: {
+    marginBottom: 16,
+    marginRight: 8,
   },
   nameContainer: { width: '100%' },
 

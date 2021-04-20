@@ -2,16 +2,16 @@ import { StyleSheet } from 'react-native';
 import { widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginRight: 8 },
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3399FF',
-    marginBottom: 8,
+    marginBottom: 4,
     alignSelf: 'flex-end',
     justifyContent: 'space-between',
     paddingHorizontal: 12 * widthRatio,
-    paddingVertical: 5,
+    paddingVertical: 8,
     maxWidth: '65%',
     borderRadius: 10,
   },

@@ -10,7 +10,9 @@ export class messageAlertManager {
       this.msgListenerId,
       new CometChat.MessageListener({
         onCustomMessageReceived: (customMessage) => {
-          callback(enums.CUSTOM_MESSAGE_RECEIVED, customMessage);
+          if (customMessage.type == enums.CUSTOM_TYPE_MEETING) {
+            callback(enums.CUSTOM_MESSAGE_RECEIVED, customMessage);
+          }
         },
       }),
     );

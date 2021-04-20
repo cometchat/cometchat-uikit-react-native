@@ -12,7 +12,7 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   conversationHeaderStyle: {
-    paddingBottom: 12 * heightRatio,
+    paddingBottom: 32,
     position: 'relative',
     paddingHorizontal: 22 * widthRatio,
   },
@@ -34,7 +34,7 @@ export default StyleSheet.create({
   },
   contactMsgStyle: {
     overflow: 'hidden',
-    width: '100%',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -52,8 +52,9 @@ export default StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    height: 32 * heightRatio,
+    height: 48,
     width: '100%',
     justifyContent: 'center',
   },
+  flexGrow1: { flexGrow: 1 },
 });

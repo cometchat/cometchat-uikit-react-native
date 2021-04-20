@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../../utils/consts';
 
 export default StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginRight: 8 },
   pollQuestionText: { fontSize: 14, textAlign: 'left', color: 'white' },
   totalText: {
     fontSize: 14,

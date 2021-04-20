@@ -10,7 +10,9 @@ const CometChatAddGroupMemberListItem = (props) => {
   const viewTheme = { ...theme, ...props.theme };
 
   const [checked, setChecked] = useState(() => {
-    const found = props.members.find((member) => member.uid === props.user.uid);
+    const found = props.membersToAdd.find(
+      (member) => member.uid === props.user.uid,
+    );
     const value = !!found;
 
     return value;
@@ -43,7 +45,7 @@ const CometChatAddGroupMemberListItem = (props) => {
             status={props.user.status}
             cornerRadius={18}
             borderColor={viewTheme.color.darkSecondary}
-            borderWidth={1}
+            borderWidth={2}
           />
         </View>
         <Text numberOfLines={1} style={style.userName}>
