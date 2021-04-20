@@ -12,10 +12,10 @@ import * as enums from '../../../../utils/enums';
 import * as actions from '../../../../utils/actions';
 
 const CometChatSenderStickerMessageBubble = (props) => {
-  const [message] = useState({
+  const message = {
     ...props.message,
-    messageFrom: enums.MESSAGE_FROM_SENDER,
-  });
+    messageFrom: enums.MESSAGE_FROM_RECEIVER,
+  };
   let stickerData = null;
   let stickerImg = null;
   if (
@@ -45,10 +45,13 @@ const CometChatSenderStickerMessageBubble = (props) => {
         <CometChatThreadedMessageReplyCount {...props} message={message} />
         <CometChatReadReceipt {...props} message={message} />
       </View>
-      <CometChatMessageReactions
-        theme={props.theme}
-        {...props}
-        message={message}></CometChatMessageReactions>
+      <View style={{ height: 40 }}>
+        <CometChatMessageReactions
+          theme={props.theme}
+          {...props}
+          message={message}
+          showMessage={props?.showMessage}></CometChatMessageReactions>
+      </View>
     </View>
   );
 };

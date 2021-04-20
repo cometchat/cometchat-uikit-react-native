@@ -11,7 +11,7 @@ import MCIIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import styles from './styles';
 import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
-import CometChat from '@cometchat-pro/react-native-chat';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 
 const actionIconSize = 26;
 
@@ -29,7 +29,7 @@ export default (props) => {
 
   // if threaded messages need to be disabled
   if (
-    props.message.category === CometChat.MESSAGE_TYPE.CUSTOM ||
+    props.message.category === CometChat.CATEGORY_CUSTOM ||
     props.message.parentMessageId
   ) {
     threadedChats = null;

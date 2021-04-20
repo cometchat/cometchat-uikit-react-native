@@ -10,7 +10,7 @@ import { CometChatConversationListItem } from '../index';
 import theme from '../../../resources/theme';
 import styles from './styles';
 import Sound from 'react-native-sound';
-
+import DropDownAlert from '../../Shared/DropDownAlert';
 import { incomingOtherMessageAlert } from '../../../resources/audio';
 import {
   View,
@@ -75,7 +75,7 @@ class CometChatConversationList extends React.Component {
                 this.props.type === 'user' &&
                 c.conversationWith.uid === this.props.item.uid) ||
               (c.conversationType === this.props.type &&
-                this.props.type === 'group' &&
+                this.props.type === CometChat.ACTION_TYPE.TYPE_GROUP &&
                 c.conversationWith.guid === this.props.item.guid)
             ) {
               return c;
@@ -187,6 +187,8 @@ class CometChatConversationList extends React.Component {
             }
           })
           .catch((error) => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             logger(
               'This is an error in converting message to conversation',
               error,
@@ -460,6 +462,8 @@ class CometChatConversationList extends React.Component {
       })
       .catch((error) => {
         logger('This is an error in converting message to conversation', error);
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
       });
   };
 
@@ -488,6 +492,8 @@ class CometChatConversationList extends React.Component {
       })
       .catch((error) => {
         logger('This is an error in converting message to conversation', error);
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
       });
   };
 
@@ -551,6 +557,8 @@ class CometChatConversationList extends React.Component {
         }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('This is an error in converting message to conversation', error);
       });
   };
@@ -599,6 +607,8 @@ class CometChatConversationList extends React.Component {
         }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('This is an error in converting message to conversation', error);
       });
   };
@@ -645,6 +655,8 @@ class CometChatConversationList extends React.Component {
         }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('This is an error in converting message to conversation', error);
       });
   };
@@ -693,6 +705,8 @@ class CometChatConversationList extends React.Component {
         }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('This is an error in converting message to conversation', error);
       });
   };
@@ -737,6 +751,8 @@ class CometChatConversationList extends React.Component {
           })
           .catch((error) => {
             this.decoratorMessage = 'Error';
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             logger(
               '[CometChatConversationList] getConversations fetchNext error',
               error,
@@ -842,6 +858,7 @@ class CometChatConversationList extends React.Component {
           <View style={styles.headerContainer}></View>
           {this.listHeaderComponent()}
           <FlatList
+            contentContainerStyle={styles.flexGrow1}
             data={this.state.conversationList}
             renderItem={({ item }) => {
               return (
@@ -856,7 +873,6 @@ class CometChatConversationList extends React.Component {
               );
             }}
             ListEmptyComponent={this.listEmptyContainer}
-            ItemSeparatorComponent={this.itemSeparatorComponent}
             onScroll={this.handleScroll}
             onEndReached={this.endReached}
             onEndReachedThreshold={0.3}
@@ -864,6 +880,7 @@ class CometChatConversationList extends React.Component {
             scrollEnabled
           />
         </KeyboardAvoidingView>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </SafeAreaView>
     );
   }

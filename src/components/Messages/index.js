@@ -21,3 +21,5 @@ export { default as CometChatSenderTextMessageBubble } from './CometChatSenderTe
 export { default as CometChatSenderVideoMessageBubble } from './CometChatSenderVideoMessageBubble';
 export { default as CometChatStickerKeyboard } from './CometChatStickerKeyboard';
 export { default as CometChatThreadedMessageReplyCount } from './CometChatThreadedMessageReplyCount';
+export { default as CometChatReceiverDirectCallBubble } from './CometChatReceiverDirectCallBubble';
+export { default as CometChatSenderDirectCallBubble } from './CometChatSenderDirectCallBubble';

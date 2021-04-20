@@ -58,6 +58,7 @@ export default StyleSheet.create({
   },
   mediaItemStyle: {
     justifyContent: 'center',
+    flexGrow: 1,
   },
   mediaItemColumnStyle: {
     justifyContent: 'space-between',

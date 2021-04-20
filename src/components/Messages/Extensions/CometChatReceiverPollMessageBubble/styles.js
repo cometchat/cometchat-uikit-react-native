@@ -6,7 +6,6 @@ export default StyleSheet.create({
   innerContainer: { flexDirection: 'row', alignItems: 'flex-start' },
   messageWrapperStyle: {
     backgroundColor: '#f8f8f8',
-    marginBottom: 8,
     alignSelf: 'flex-start',
     paddingHorizontal: 12 * widthRatio,
     paddingVertical: 8 * heightRatio,

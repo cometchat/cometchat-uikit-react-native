@@ -8,14 +8,20 @@ import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { logger } from '../../../utils/common';
 
-const notificationIcon = <Icon name="notifications" size={28} />;
-const privacyIcon = <Icon name="security" size={28} />;
-const chatIcon = <Icon name="chat" size={28} />;
-const helpIcon = <Icon name="help" size={28} />;
-const problemIcon = <Icon name="report-problem" size={28} />;
+const notificationIcon = (
+  <Icon color={theme.color.helpText} name="notifications" size={28} />
+);
+const privacyIcon = (
+  <Icon color={theme.color.helpText} name="security" size={28} />
+);
+const chatIcon = <Icon color={theme.color.helpText} name="chat" size={28} />;
+const helpIcon = <Icon color={theme.color.helpText} name="help" size={28} />;
+const problemIcon = (
+  <Icon color={theme.color.helpText} name="report-problem" size={28} />
+);
 
 const CometChatUserProfile = (props) => {
-  const [user, setUser] = useState({ name: '', avatar: null });
+  const [user, setUser] = useState({});
   const viewTheme = { ...theme, ...props.theme };
 
   /**
@@ -39,18 +45,20 @@ const CometChatUserProfile = (props) => {
   useEffect(() => {
     getProfile();
   }, []);
-
-  const avatar = (
-    <View style={styles.avatarStyle}>
-      <CometChatAvatar
-        cornerRadius={18}
-        borderColor={viewTheme.color.secondary}
-        borderWidth={1}
-        image={{ uri: user.avatar }}
-        name={user.name}
-      />
-    </View>
-  );
+  let avatar = null;
+  if (user) {
+    avatar = (
+      <View style={styles.avatarStyle}>
+        <CometChatAvatar
+          cornerRadius={18}
+          borderColor={viewTheme.color.secondary}
+          borderWidth={1}
+          image={{ uri: user.avatar }}
+          name={user.name}
+        />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.userInfoScreenStyle}>
@@ -59,12 +67,14 @@ const CometChatUserProfile = (props) => {
       </View>
       <View style={styles.userContainer}>
         <View style={styles.avatarContainer}>{avatar}</View>
-        <View style={styles.userDetailsContainer}>
-          <View style={styles.userNameWrapper}>
-            <Text style={styles.userName}>{user.name}</Text>
+        {user?.name ? (
+          <View style={styles.userDetailsContainer}>
+            <View style={styles.userNameWrapper}>
+              <Text style={styles.userName}>{user?.name}</Text>
+            </View>
+            <Text style={styles.status}>Online</Text>
           </View>
-          <Text style={styles.status}>Online</Text>
-        </View>
+        ) : null}
       </View>
       <View style={styles.infoItemsWrapper}>
         <View style={styles.infoItemHeadingContainer}>

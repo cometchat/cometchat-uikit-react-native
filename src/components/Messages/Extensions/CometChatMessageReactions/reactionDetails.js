@@ -8,6 +8,7 @@ import {
   SectionList,
 } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
+
 import style from './styles';
 import { checkMessageForExtensionsData } from '../../../../utils/common';
 import { map, toArray } from 'lodash';

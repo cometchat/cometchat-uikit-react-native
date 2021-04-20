@@ -12,9 +12,9 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   groupHeaderStyle: {
-    paddingBottom: 12 * heightRatio,
+    paddingBottom: 16,
     position: 'relative',
-    paddingHorizontal: 22 * widthRatio,
+    paddingHorizontal: 16,
   },
   contactHeaderCloseStyle: {
     height: 24,
@@ -27,14 +27,14 @@ export default StyleSheet.create({
     fontSize: 28,
   },
   groupSearchStyle: {
-    padding: 4 * heightRatio,
-    marginTop: 10 * heightRatio,
+    padding: 8,
+    marginTop: 16,
     flexDirection: 'row',
     position: 'relative',
     alignItems: 'center',
     width: '100%',
     borderWidth: 0,
-    borderRadius: 8,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -45,13 +45,13 @@ export default StyleSheet.create({
   },
   contactSearchInputStyle: {
     flex: 1,
-    paddingVertical: 4 * heightRatio,
-    marginHorizontal: 8 * widthRatio,
-    fontSize: 15,
+    paddingVertical: 4,
+    marginHorizontal: 2,
+    fontSize: 17,
   },
   contactMsgStyle: {
     overflow: 'hidden',
-    width: '100%',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -69,7 +69,7 @@ export default StyleSheet.create({
   },
   headerContainer: {
     alignItems: 'center',
-    height: 32 * heightRatio,
+    height: 48,
     width: '100%',
     justifyContent: 'center',
   },

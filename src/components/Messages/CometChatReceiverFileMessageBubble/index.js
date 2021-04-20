@@ -72,7 +72,9 @@ const CometChatReceiverFileMessageBubble = (props) => {
         <View>
           {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={style.senderNameContainer}>
-              <Text>{message.sender.name}</Text>
+              <Text style={{ color: props.theme.color.helpText }}>
+                {message.sender.name}
+              </Text>
             </View>
           ) : null}
 
@@ -104,12 +106,13 @@ const CometChatReceiverFileMessageBubble = (props) => {
                 message={message}
               />
             </View>
+            <CometChatMessageReactions
+              theme={props.theme}
+              {...props}
+              message={message}
+              showMessage={props?.showMessage}
+            />
           </View>
-          <CometChatMessageReactions
-            theme={props.theme}
-            {...props}
-            message={message}
-          />
         </View>
       </View>
     </View>

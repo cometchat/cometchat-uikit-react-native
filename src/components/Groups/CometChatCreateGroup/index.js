@@ -17,6 +17,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { logger } from '../../../utils/common';
+import DropDownAlert from '../../Shared/DropDownAlert';
 
 const closeIcon = <Icon name="close" style={style.modalCloseStyle} />;
 class CometChatCreateGroup extends React.Component {
@@ -80,17 +81,23 @@ class CometChatCreateGroup extends React.Component {
    */
 
   validate = () => {
-    try {
-      const groupName = this.state.name.trim();
-      const groupType = this.state.type.trim();
+    const groupName = this.state.name?.trim();
+    const groupType = this.state.type?.trim();
 
+    try {
       if (!groupName) {
-        this.setState({ error: 'Group name cannot be blank.' });
+        this.dropDownAlertRef?.showMessage(
+          'error',
+          'Group name cannot be blank.',
+        );
         return false;
       }
 
-      if (!groupType) {
-        this.setState({ error: 'Group type cannot be blank.' });
+      if (!groupType || groupType === 'Select group type') {
+        this.dropDownAlertRef?.showMessage(
+          'error',
+          'Group type cannot be blank.',
+        );
         return false;
       }
 
@@ -99,7 +106,10 @@ class CometChatCreateGroup extends React.Component {
         password = this.state.password;
 
         if (!password.length) {
-          this.setState({ error: 'Group password cannot be blank.' });
+          this.dropDownAlertRef?.showMessage(
+            'error',
+            'Group password cannot be blank.',
+          );
           return false;
         }
       }
@@ -288,6 +298,7 @@ class CometChatCreateGroup extends React.Component {
             </View>
           </View>
         </View>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </Modal>
     );
   }

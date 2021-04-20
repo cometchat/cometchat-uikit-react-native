@@ -2,10 +2,12 @@ import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
   statueIndicatorStyle: {
-    width: 8,
-    height: 8,
-    top: 25,
-    right: -2,
+    width: 12,
+    height: 12,
+    top: 30,
+    right: 0,
+    borderColor: '#fff',
+    borderWidth: 1,
     position: 'absolute',
   },
 });

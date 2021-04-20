@@ -3,6 +3,7 @@
 /* eslint-disable react/static-property-placement */
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import DropDownAlert from '../../Shared/DropDownAlert';
 import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 
@@ -66,10 +67,21 @@ export default class CometChatViewGroupMemberList extends React.Component {
       CometChat.banGroupMember(guid, memberToBan.uid)
         .then((response) => {
           if (response) {
+            this.dropDownAlertRef?.showMessage(
+              'success',
+              'Group member banned',
+            );
             this.props.actionGenerated(actions.BAN_GROUP_MEMBERS, memberToBan);
+          } else {
+            this.dropDownAlertRef?.showMessage(
+              'error',
+              'Failed to ban group member',
+            );
           }
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           logger('banGroupMember failed with error: ', error);
         });
     } catch (error) {
@@ -87,16 +99,29 @@ export default class CometChatViewGroupMemberList extends React.Component {
       CometChat.kickGroupMember(guid, memberToKick.uid)
         .then((response) => {
           if (response) {
+            this.dropDownAlertRef?.showMessage(
+              'success',
+              'Group member kicked',
+            );
             this.props.actionGenerated(
               actions.REMOVE_GROUP_PARTICIPANTS,
               memberToKick,
             );
+          } else {
+            this.dropDownAlertRef?.showMessage(
+              'error',
+              'Failed to kick group member',
+            );
           }
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           logger('kickGroupMember failed with error: ', error);
         });
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -114,17 +139,30 @@ export default class CometChatViewGroupMemberList extends React.Component {
       CometChat.updateGroupMemberScope(guid, member.uid, scope)
         .then((response) => {
           if (response) {
+            this.dropDownAlertRef?.showMessage(
+              'success',
+              'Group member scope changed',
+            );
             const updatedMember = { ...member, scope };
             this.props.actionGenerated(
               actions.UPDATE_GROUP_PARTICIPANTS,
               updatedMember,
             );
+          } else {
+            this.dropDownAlertRef?.showMessage(
+              'error',
+              'Failed to change scope of group member',
+            );
           }
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           logger('updateGroupMemberScope failed with error: ', error);
         });
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -235,30 +273,31 @@ export default class CometChatViewGroupMemberList extends React.Component {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    <FlatList
-                      data={membersList}
-                      renderItem={({ item, index }) => {
-                        return (
-                          <CometChatViewGroupMemberListItem
-                            theme={this.props.theme}
-                            key={index}
-                            member={item}
-                            item={this.props.item}
-                            lang={this.props.lang}
-                            actionGenerated={this.updateMembers}
-                            loggedInUser={this.props.loggedInUser}
-                          />
-                        );
-                      }}
-                      ListEmptyComponent={this.listEmptyContainer}
-                      ItemSeparatorComponent={this.itemSeparatorComponent}
-                      onScroll={this.handleScroll}
-                      onEndReached={this.endReached}
-                      onEndReachedThreshold={0.3}
-                      contentContainerStyle={style.contentContainerStyle}
-                      style={style.listStyle}
-                      showsVerticalScrollIndicator={false}
-                    />
+                    <View style={style.listContainer}>
+                      <FlatList
+                        data={membersList}
+                        renderItem={({ item, index }) => {
+                          return (
+                            <CometChatViewGroupMemberListItem
+                              theme={this.props.theme}
+                              key={index}
+                              member={item}
+                              item={this.props.item}
+                              lang={this.props.lang}
+                              actionGenerated={this.updateMembers}
+                              loggedInUser={this.props.loggedInUser}
+                            />
+                          );
+                        }}
+                        ListEmptyComponent={this.listEmptyContainer}
+                        // ItemSeparatorComponent={this.itemSeparatorComponent}
+                        onScroll={this.handleScroll}
+                        onEndReached={this.endReached}
+                        contentContainerStyle={{ flexGrow: 1 }}
+                        onEndReachedThreshold={0.3}
+                        showsVerticalScrollIndicator={false}
+                      />
+                    </View>
                   </View>
                 );
               }}
@@ -268,6 +307,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
             />
           </View>
         </Modal>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </React.Fragment>
     );
   }

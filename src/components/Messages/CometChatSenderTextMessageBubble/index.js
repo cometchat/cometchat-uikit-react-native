@@ -190,6 +190,7 @@ const CometChatSenderTextMessageBubble = (props) => {
         />
       </View>
       <CometChatMessageReactions
+        showMessage={props.showMessage}
         theme={props.theme}
         {...props}
         message={message}
