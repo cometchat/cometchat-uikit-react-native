@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unused-state */
 import React from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView, View } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 
 import { CometChatOutgoingCall, CometChatIncomingCall } from '../../Calls';
@@ -11,6 +11,7 @@ import theme from '../../../resources/theme';
 import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { logger } from '../../../utils/common';
+import DropDownAlert from '../../Shared/DropDownAlert';
 
 class CometChatUserListWithMessages extends React.Component {
   loggedInUser = null;
@@ -111,10 +112,17 @@ class CometChatUserListWithMessages extends React.Component {
   blockUser = () => {
     const usersList = [this.state.item.uid];
     CometChatManager.blockUsers(usersList)
-      .then(() => {
-        this.setState({ item: { ...this.state.item, blockedByMe: true } });
+      .then((response) => {
+        if (response) {
+          this.dropDownAlertRef?.showMessage('success', 'Blocked user');
+          this.setState({ item: { ...this.state.item, blockedByMe: true } });
+        } else {
+          this.dropDownAlertRef?.showMessage('error', 'Failed to block user');
+        }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('Blocking user fails with error', error);
       });
   };
@@ -126,10 +134,17 @@ class CometChatUserListWithMessages extends React.Component {
   unblockUser = () => {
     const usersList = [this.state.item.uid];
     CometChatManager.unblockUsers(usersList)
-      .then(() => {
-        this.setState({ item: { ...this.state.item, blockedByMe: false } });
+      .then((response) => {
+        if (response) {
+          this.dropDownAlertRef?.showMessage('success', 'Unblocked user');
+          this.setState({ item: { ...this.state.item, blockedByMe: false } });
+        } else {
+          this.dropDownAlertRef?.showMessage('error', 'Failed to unblock user');
+        }
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         logger('unblocking user fails with error', error);
       });
   };
@@ -363,7 +378,7 @@ class CometChatUserListWithMessages extends React.Component {
       );
     }
     return (
-      <SafeAreaView style={{ backgroundColor: 'white' }}>
+      <View style={{ backgroundColor: 'white' }}>
         <CometChatUserList
           theme={this.theme}
           item={this.state.item}
@@ -374,6 +389,9 @@ class CometChatUserListWithMessages extends React.Component {
         />
         {imageView}
         <CometChatIncomingCall
+          showMessage={(type, message) => {
+            this.dropDownAlertRef?.showMessage(type, message);
+          }}
           theme={this.props.theme}
           loggedInUser={this.loggedInUser}
           outgoingCall={this.state.outgoingCall}
@@ -389,7 +407,8 @@ class CometChatUserListWithMessages extends React.Component {
           lang={this.state.lang}
           actionGenerated={this.actionHandler}
         />
-      </SafeAreaView>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+      </View>
     );
   }
 }

@@ -65,12 +65,13 @@ const CometChatSenderFileMessageBubble = (props) => {
       </TouchableWithoutFeedback>
       <View style={style.messageInfoWrapperStyle}>
         <CometChatThreadedMessageReplyCount {...props} message={message} />
-        <CometChatReadReceipt {...props} />
+        <CometChatReadReceipt {...props} message={message} />
       </View>
       <CometChatMessageReactions
         theme={props.theme}
         {...props}
         message={message}
+        showMessage={props?.showMessage}
       />
     </View>
   );

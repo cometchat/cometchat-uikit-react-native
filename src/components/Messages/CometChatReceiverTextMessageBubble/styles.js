@@ -1,16 +1,21 @@
 import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
-
+import theme from '../../../resources/theme';
 export default StyleSheet.create({
   messageLinkStyle: {
     textDecorationLine: 'underline',
     color: 'blue',
     fontSize: 15,
   },
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginLeft: 4 },
   innerContainer: { flexDirection: 'row', alignItems: 'flex-start' },
-  senderNameStyle: { marginBottom: 5 },
-  autolinkStyle: { color: 'black', fontSize: 15 },
+  senderNameStyle: {
+    marginBottom: 2,
+    color: theme.color.helpText,
+    fontSize: 12,
+    paddingLeft: 8,
+  },
+  autolinkStyle: { color: theme.color.primary, fontSize: 15 },
   messageContainer: { maxWidth: '81%', minWidth: '81%' },
   linkObjectDescription: {
     fontStyle: 'italic',
@@ -22,19 +27,18 @@ export default StyleSheet.create({
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f6f6f6',
-    marginBottom: 4,
+    marginBottom: 0,
     alignSelf: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: 12 * widthRatio,
-    paddingVertical: 8 * heightRatio,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     maxWidth: '100%',
     borderRadius: 12,
   },
   messageInfoWrapperStyle: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'flex-start',
+    marginLeft: 8,
   },
   messagePreviewContainerStyle: {
     borderRadius: 12,
@@ -87,9 +91,10 @@ export default StyleSheet.create({
     flexDirection: 'row',
     width: 36,
     height: 36,
-    marginRight: 10 * widthRatio,
+    marginRight: 8,
     backgroundColor: 'rgba(51,153,255,0.25)',
     borderRadius: 25,
+    alignSelf: 'center',
   },
   containerStyle: {
     flexDirection: 'row',

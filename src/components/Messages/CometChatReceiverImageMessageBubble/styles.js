@@ -4,14 +4,13 @@ import { widthRatio } from '../../../utils/consts';
 export default StyleSheet.create({
   messageWrapperStyle: {
     flexDirection: 'row',
-    backgroundColor: '#f2f3f4',
-    marginBottom: 8,
+    backgroundColor: '#F8F8F8',
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
     maxWidth: '81%',
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginLeft: 4 },
   mainContainer: { flexDirection: 'row', alignItems: 'flex-start' },
   senderNameContainer: { marginBottom: 5 },
   containerStyle: {
@@ -28,9 +27,10 @@ export default StyleSheet.create({
     flexDirection: 'row',
     width: 36,
     height: 36,
-    marginRight: 10 * widthRatio,
+    marginRight: 8,
     backgroundColor: 'rgba(51,153,255,0.25)',
     borderRadius: 25,
+    marginTop: 30,
   },
   messageImgWrapperStyle: {
     width: '100%',
@@ -44,7 +44,6 @@ export default StyleSheet.create({
   },
   messageInfoWrapperStyle: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'flex-start',
   },
 });

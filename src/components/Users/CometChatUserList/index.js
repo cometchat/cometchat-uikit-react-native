@@ -22,6 +22,7 @@ import theme from '../../../resources/theme';
 import { logger } from '../../../utils/common';
 import * as enums from '../../../utils/enums';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import DropDownAlert from '../../Shared/DropDownAlert';
 class CometChatUserList extends React.PureComponent {
   timeout;
 
@@ -208,11 +209,15 @@ class CometChatUserList extends React.PureComponent {
             this.setState({ userList: [...this.state.userList, ...userList] });
           })
           .catch((error) => {
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
             this.decoratorMessage = 'Error';
             logger('[CometChatUserList] getUsers fetchNext error', error);
           });
       })
       .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
         this.decoratorMessage = 'Error';
         logger('[CometChatUserList] getUsers getLoggedInUser error', error);
       });
@@ -304,11 +309,7 @@ class CometChatUserList extends React.PureComponent {
                 backgroundColor: `${this.theme.backgroundColor.grey}`,
               },
             ]}>
-            <Icon
-              name="search"
-              size={15}
-              color={this.theme.color.textInputPlaceholder}
-            />
+            <Icon name="search" size={18} color={this.theme.color.helpText} />
             <TextInput
               ref={this.textInputRef}
               autoCompleteType="off"
@@ -391,6 +392,7 @@ class CometChatUserList extends React.PureComponent {
           <FlatList
             data={userListWithHeaders}
             renderItem={this.renderUserView}
+            contentContainerStyle={{ flexGrow: 1 }}
             ListEmptyComponent={this.listEmptyContainer}
             ItemSeparatorComponent={this.itemSeparatorComponent}
             stickyHeaderIndices={
@@ -401,6 +403,7 @@ class CometChatUserList extends React.PureComponent {
             onEndReachedThreshold={0.3}
             showsVerticalScrollIndicator={false}
           />
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     );

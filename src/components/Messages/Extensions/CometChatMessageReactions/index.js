@@ -18,6 +18,7 @@ import {
 import * as enums from '../../../../utils/enums';
 import { ModalPicker, Emoji } from 'emoji-mart-native';
 import ReactionDetails from './reactionDetails';
+import DropDownAlert from '../../../Shared/DropDownAlert';
 
 class CometChatMessageReactions extends Component {
   constructor(props) {
@@ -30,7 +31,9 @@ class CometChatMessageReactions extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.message !== this.props.message) {
+    if (
+      JSON.stringify(prevProps.message) !== JSON.stringify(this.props.message)
+    ) {
       this.setState({ message: this.props.message });
     }
   }
@@ -46,7 +49,10 @@ class CometChatMessageReactions extends Component {
         .then(() => {
           // Reaction added successfully
         })
-        .catch(() => {
+        .catch((error) => {
+          const errorCode =
+            error?.details?.message || error?.message || 'ERROR';
+          this.props?.showMessage('error', errorCode);
           // Some error occured
         });
     } catch (error) {
@@ -74,6 +80,7 @@ class CometChatMessageReactions extends Component {
         Object.keys(reactionData).forEach((user) => {
           if (reactionData[user].name) userList.push(reactionData[user].name);
         });
+
         return (
           <TouchableOpacity
             onPress={() => this.reactToMessages({ colons: data })}
@@ -135,11 +142,19 @@ class CometChatMessageReactions extends Component {
         messageReactions.unshift(addReactionEmoji);
       }
     }
+    if (this.props.item.blockedByMe) {
+      return null;
+    }
     return (
       // eslint-disable-next-line react/jsx-fragments
       <>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+        </View>
+
         <ModalPicker
           isVisible={pickerVisible}
+          native={true}
           emojiSize={35}
           emojiMargin={18}
           style={styles.modalPickerStyle}

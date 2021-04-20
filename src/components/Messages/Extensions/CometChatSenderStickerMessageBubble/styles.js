@@ -10,6 +10,8 @@ export default StyleSheet.create({
     position: 'relative',
     flexDirection: 'column',
     flexShrink: 0,
+    marginRight: 8,
+    alignItems: 'flex-end',
   },
   messageWrapperStyle: {
     width: '100%',

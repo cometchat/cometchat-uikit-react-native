@@ -7,6 +7,7 @@ import style from './styles';
 import BottomSheet from 'reanimated-bottom-sheet';
 import * as actions from '../../../utils/actions';
 import { deviceHeight } from '../../../utils/consts';
+import DropDownAlert from '../../Shared/DropDownAlert';
 
 export default class CometChatUserDetails extends React.Component {
   constructor(props) {
@@ -71,6 +72,9 @@ export default class CometChatUserDetails extends React.Component {
       <CometChatSharedMedia
         theme={this.props.theme}
         containerHeight={50}
+        showMessage={(type, message) => {
+          this.dropDownAlertRef?.showMessage(type, message);
+        }}
         item={this.props.item}
         type={this.props.type}
       />
@@ -125,6 +129,7 @@ export default class CometChatUserDetails extends React.Component {
             }}
           />
         </View>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </Modal>
     );
   }

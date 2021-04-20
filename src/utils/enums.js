@@ -34,6 +34,7 @@ export const CUSTOM_TYPE_POLL = 'extension_poll';
 export const CUSTOM_TYPE_STICKER = 'extension_sticker';
 export const CUSTOM_TYPE_DOCUMENT = 'extension_document';
 export const CUSTOM_TYPE_WHITEBOARD = 'extension_whiteboard';
+export const CUSTOM_TYPE_MEETING = 'meeting';
 
 export const ACTION_TYPE_GROUPMEMBER = 'groupMember';
 export const ACTION_TYPE_MESSAGE = 'message';

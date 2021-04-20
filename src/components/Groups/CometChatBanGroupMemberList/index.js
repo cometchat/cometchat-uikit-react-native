@@ -4,6 +4,7 @@ import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
+import DropDownAlert from '../../Shared/DropDownAlert';
 
 import { CometChatBanGroupMemberListItem } from '../index';
 import GroupDetailContext from '../CometChatGroupDetails/context';
@@ -40,12 +41,24 @@ export default class CometChatBanGroupMemberList extends React.Component {
     CometChat.unbanGroupMember(guid, memberToUnBan.uid)
       .then((response) => {
         if (response) {
+          this.dropDownAlertRef?.showMessage(
+            'success',
+            'Group member unbanned',
+          );
           this.props.actionGenerated(actions.UNBAN_GROUP_MEMBERS, [
             memberToUnBan,
           ]);
+        } else {
+          this.dropDownAlertRef?.showMessage(
+            'error',
+            'Failed to unban group member ',
+          );
         }
       })
-      .catch(() => {});
+      .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.dropDownAlertRef?.showMessage('error', errorCode);
+      });
   };
 
   /**
@@ -219,6 +232,7 @@ export default class CometChatBanGroupMemberList extends React.Component {
               }}
             />
           </View>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
         </Modal>
       </React.Fragment>
     );

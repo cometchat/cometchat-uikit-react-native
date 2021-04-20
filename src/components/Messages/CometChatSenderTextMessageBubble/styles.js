@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
 
 export default StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginRight: 8 },
   linkTitle: { fontWeight: '700' },
   linkDescription: {
     fontStyle: 'italic',
@@ -16,13 +16,14 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3399FF',
-    marginBottom: 4,
+
     alignSelf: 'flex-end',
     justifyContent: 'space-between',
-    paddingHorizontal: 12 * widthRatio,
-    paddingVertical: 8 * heightRatio,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     maxWidth: '65%',
-    borderRadius: 12,
+    borderRadius: 10,
+    marginBottom: 4,
   },
   messageInfoWrapperStyle: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginRight: 8 },
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -10,7 +10,7 @@ export default StyleSheet.create({
     alignSelf: 'flex-end',
     justifyContent: 'space-between',
     maxWidth: '65%',
-    borderRadius: 8,
+    borderRadius: 10,
   },
   messageVideoWrapperStyle: {
     alignSelf: 'flex-end',

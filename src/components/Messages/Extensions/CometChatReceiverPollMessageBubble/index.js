@@ -1,6 +1,7 @@
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import DropDownAlert from '../../../Shared/DropDownAlert';
 import theme from '../../../../resources/theme';
 import {
   CometChatReadReceipt,
@@ -38,10 +39,12 @@ const CometChatReceiverPollMessageBubble = (props) => {
       id: pollId,
     })
       .then((response) => {
-        props.actionGenerated(actions.POLL_ANSWERED, response);
+        // props.actionGenerated(actions.POLL_ANSWERED, message);
       })
       .catch((error) => {
-        logger(error);
+        const errorCode = error?.details?.message || error?.message || 'ERROR';
+        props?.showMessage('error', errorCode);
+        logger('here', error);
       });
   };
   if (!Object.prototype.hasOwnProperty.call(props.message, 'metadata')) {
@@ -151,7 +154,9 @@ const CometChatReceiverPollMessageBubble = (props) => {
         <View>
           {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={{ marginBottom: 5 }}>
-              <Text>{message.sender.name}</Text>
+              <Text style={{ color: viewTheme.color.helpText }}>
+                {message.sender.name}
+              </Text>
             </View>
           ) : null}
 
@@ -169,18 +174,18 @@ const CometChatReceiverPollMessageBubble = (props) => {
               {totalText}
             </Text>
           </View>
+          <View style={style.messageInfoWrapperStyle}>
+            <CometChatReadReceipt {...props} message={message} />
+
+            <CometChatThreadedMessageReplyCount {...props} message={message} />
+            <CometChatMessageReactions
+              theme={props.theme}
+              {...props}
+              message={message}
+            />
+          </View>
         </View>
       </View>
-      <View style={style.messageInfoWrapperStyle}>
-        <CometChatReadReceipt {...props} message={message} />
-
-        <CometChatThreadedMessageReplyCount {...props} message={message} />
-      </View>
-      <CometChatMessageReactions
-        theme={props.theme}
-        {...props}
-        message={message}
-      />
     </View>
   );
 };

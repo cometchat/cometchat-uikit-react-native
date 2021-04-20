@@ -184,7 +184,9 @@ const CometChatReceiverTextMessageBubble = (props) => {
         <View>
           {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={style.senderNameStyle}>
-              <Text>{message.sender.name}</Text>
+              <Text style={{ color: props.theme.color.helpText }}>
+                {message.sender.name}
+              </Text>
             </View>
           ) : null}
           <View style={style.messageContainer}>
@@ -192,14 +194,16 @@ const CometChatReceiverTextMessageBubble = (props) => {
               onLongPress={() => {
                 props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message);
               }}>
-              <View
-                style={[
-                  style.messageWrapperStyle,
-                  {
-                    backgroundColor: viewTheme.backgroundColor.grey,
-                  },
-                ]}>
-                {messageText}
+              <View style={{ flexDirection: 'row' }}>
+                <View
+                  style={[
+                    style.messageWrapperStyle,
+                    {
+                      backgroundColor: '#F8F8F8',
+                    },
+                  ]}>
+                  {messageText}
+                </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -211,13 +215,14 @@ const CometChatReceiverTextMessageBubble = (props) => {
                 {...props}
                 message={message}
               />
+              <CometChatMessageReactions
+                theme={props.theme}
+                {...props}
+                message={message}
+                showMessage={props?.showMessage}
+              />
             </View>
           </View>
-          <CometChatMessageReactions
-            theme={props.theme}
-            {...props}
-            message={message}
-          />
         </View>
       </View>
     </View>

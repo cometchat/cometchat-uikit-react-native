@@ -185,8 +185,8 @@ export default (props) => {
     <CometChatUserPresence
       status={props.member.status}
       cornerRadius={50}
-      borderColor={props.theme.color.darkSecondary}
-      borderWidth={1}
+      borderColor={'#fff'}
+      borderWidth={2}
     />
   );
 

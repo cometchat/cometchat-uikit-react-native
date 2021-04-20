@@ -190,6 +190,10 @@ class CometChatMessageThread extends React.PureComponent {
             );
           }
           break;
+        case 'messageSent':
+        case 'errorSentInMessage':
+          this.messageSent(messages);
+          break;
         case actions.MESSAGE_UPDATED:
           this.updateMessages(messages);
           break;
@@ -358,6 +362,17 @@ class CometChatMessageThread extends React.PureComponent {
   // message status is updated
   updateMessages = (messages) => {
     this.setState({ messageList: messages });
+  };
+
+  messageSent = (message) => {
+    const messageList = [...this.state.messageList];
+    let messageKey = messageList.findIndex((m) => m._id === message._id);
+    if (messageKey > -1) {
+      const newMessageObj = { ...message };
+
+      messageList.splice(messageKey, 1, newMessageObj);
+      this.updateMessages(messageList);
+    }
   };
 
   // messages are fetched from backend
@@ -704,6 +719,7 @@ class CometChatMessageThread extends React.PureComponent {
                   ref={(el) => {
                     this.composerRef = el;
                   }}
+                  getConversationId={this.props.getConversationId}
                   theme={this.props.theme}
                   item={this.props.item}
                   type={this.props.type}
