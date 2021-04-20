@@ -69,25 +69,27 @@ class CometChatSenderDirectCallBubble extends React.Component {
             this.state?.message,
           );
         }}>
-        <View style={Styles.mainWrapper}>
-          <View style={Styles.imageContainer}>
-            <Image source={callIcon} style={Styles.imageStyle} />
-            <Text style={Styles.textStyle}>{`You have initiated a call`}</Text>
+        <View style={Styles.container}>
+          <View style={Styles.mainWrapper}>
+            <View style={Styles.imageContainer}>
+              <Image source={callIcon} style={Styles.imageStyle} />
+              <Text
+                style={Styles.textStyle}>{`You have initiated a call`}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                this.props.actionGenerated(
+                  actions.JOIN_DIRECT_CALL,
+                  this.state.message,
+                )
+              }
+              style={Styles.buttonStyle}>
+              <Text>Join</Text>
+            </TouchableOpacity>
+
+            {messageReactions}
           </View>
-          <TouchableOpacity
-            onPress={() =>
-              this.props.actionGenerated(
-                actions.JOIN_DIRECT_CALL,
-                this.state.message,
-              )
-            }
-            style={Styles.buttonStyle}>
-            <Text>Join</Text>
-          </TouchableOpacity>
-
-          {messageReactions}
-
-          <View>
+          <View style={{ alignSelf: 'flex-end' }}>
             <CometChatThreadedMessageReplyCount
               {...this.props}
               message={this.state.message}

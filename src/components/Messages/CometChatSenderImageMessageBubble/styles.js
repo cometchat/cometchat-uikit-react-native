@@ -1,15 +1,15 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-  container: { marginBottom: 16 },
+  container: { marginBottom: 16, marginRight: 8 },
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     alignSelf: 'flex-end',
     justifyContent: 'space-between',
     maxWidth: '65%',
     borderRadius: 10,
+    marginBottom: 4,
   },
   messageImgWrapperStyle: {
     alignSelf: 'flex-end',
@@ -25,5 +25,6 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    width: '100%',
   },
 });

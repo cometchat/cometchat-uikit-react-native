@@ -31,7 +31,9 @@ class CometChatMessageReactions extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.message !== this.props.message) {
+    if (
+      JSON.stringify(prevProps.message) !== JSON.stringify(this.props.message)
+    ) {
       this.setState({ message: this.props.message });
     }
   }
@@ -48,7 +50,8 @@ class CometChatMessageReactions extends Component {
           // Reaction added successfully
         })
         .catch((error) => {
-          const errorCode = error?.message || 'ERROR';
+          const errorCode =
+            error?.details?.message || error?.message || 'ERROR';
           this.props?.showMessage('error', errorCode);
           // Some error occured
         });
@@ -77,6 +80,7 @@ class CometChatMessageReactions extends Component {
         Object.keys(reactionData).forEach((user) => {
           if (reactionData[user].name) userList.push(reactionData[user].name);
         });
+
         return (
           <TouchableOpacity
             onPress={() => this.reactToMessages({ colons: data })}
@@ -138,6 +142,9 @@ class CometChatMessageReactions extends Component {
         messageReactions.unshift(addReactionEmoji);
       }
     }
+    if (this.props.item.blockedByMe) {
+      return null;
+    }
     return (
       // eslint-disable-next-line react/jsx-fragments
       <>
@@ -147,6 +154,7 @@ class CometChatMessageReactions extends Component {
 
         <ModalPicker
           isVisible={pickerVisible}
+          native={true}
           emojiSize={35}
           emojiMargin={18}
           style={styles.modalPickerStyle}

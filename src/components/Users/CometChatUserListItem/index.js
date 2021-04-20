@@ -24,8 +24,9 @@ const CometChatUserListItem = (props) => {
           <CometChatUserPresence
             status={props.user.status}
             cornerRadius={18}
-            borderColor={viewTheme.color.darkSecondary}
-            borderWidth={1}
+            style={{ top: 30 }}
+            borderColor={viewTheme.color.white}
+            borderWidth={2}
           />
         </View>
         <View style={style.userNameStyle}>

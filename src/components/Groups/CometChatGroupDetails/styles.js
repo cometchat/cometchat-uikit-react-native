@@ -1,12 +1,14 @@
 import { Dimensions, StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
-
+import theme from '../../../resources/theme';
 export default StyleSheet.create({
   container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   itemLinkStyle: {
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 20,
     fontWeight: '600',
+    marginVertical: 4,
+    color: theme.color.primary,
   },
   fullWidth: { width: '100%' },
   listItemContainer: { width: '100%', marginVertical: 6 },
@@ -17,6 +19,7 @@ export default StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
     textTransform: 'uppercase',
+    color: theme.color.helpText,
   },
   headerStyle: {
     flexDirection: 'row',

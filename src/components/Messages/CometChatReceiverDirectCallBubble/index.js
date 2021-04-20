@@ -84,7 +84,9 @@ class CometChatReceiverDirectCallBubble extends React.Component {
           {this.state?.message?.receiverType ===
           CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={{ marginBottom: 5 }}>
-              <Text>{this.state?.message?.sender.name}</Text>
+              <Text style={{ color: theme.color.helpText }}>
+                {this.state?.message?.sender.name}
+              </Text>
             </View>
           ) : null}
           <View style={Styles.messageContainer}>
@@ -104,19 +106,17 @@ class CometChatReceiverDirectCallBubble extends React.Component {
               style={Styles.buttonStyle}>
               <Text>Join</Text>
             </TouchableOpacity>
-
+          </View>
+          <View style={{ flexDirection: 'row', width: '100%' }}>
+            <CometChatReadReceipt
+              {...this.props}
+              message={this.state.message}
+            />
+            <CometChatThreadedMessageReplyCount
+              {...this.props}
+              message={this.state.message}
+            />
             {messageReactions}
-
-            <View>
-              <CometChatReadReceipt
-                {...this.props}
-                message={this.state.message}
-              />
-              <CometChatThreadedMessageReplyCount
-                {...this.props}
-                message={this.state.message}
-              />
-            </View>
           </View>
         </View>
       </View>

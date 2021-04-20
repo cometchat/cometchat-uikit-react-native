@@ -4,7 +4,7 @@ import { Text, View, Modal, TouchableOpacity } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Sound from 'react-native-sound';
-
+import KeepAwake from 'react-native-keep-awake';
 import { outgoingCallAlert } from '../../../resources/audio';
 import { CometChatManager } from '../../../utils/controller';
 import { CallScreenManager } from './controller';
@@ -361,6 +361,7 @@ class CometChatOutgoingCall extends React.PureComponent {
       return (
         <Modal animated animationType="fade">
           <View style={{ height: '100%', width: '100%', position: 'relative' }}>
+            <KeepAwake />
             <CometChat.CallingComponent
               callsettings={this.state.callSettings}
             />

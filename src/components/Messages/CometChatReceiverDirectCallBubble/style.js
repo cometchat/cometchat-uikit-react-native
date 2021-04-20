@@ -3,7 +3,8 @@ import { widthRatio } from '../../../utils/consts';
 import theme from '../../../resources/theme';
 
 export default StyleSheet.create({
-  mainContainer: { flexDirection: 'row', alignItems: 'center' },
+  marginBottom: 16,
+  mainContainer: { flexDirection: 'row' },
   mainWrapper: {
     flexWrap: 'wrap',
     flexDirection: 'row',
@@ -12,22 +13,23 @@ export default StyleSheet.create({
     marginRight: 10 * widthRatio,
     backgroundColor: 'rgba(51,153,255,0.25)',
     borderRadius: 25,
+    marginTop: 30,
   },
   nameContainer: { width: '100%' },
   messageContainer: {
     width: '70%',
     flexShrink: 1,
-    backgroundColor: theme.color.secondary,
+    backgroundColor: '#F8F8F8',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
+    padding: 15,
     alignSelf: 'flex-start',
   },
   imageContainer: { flexDirection: 'row', alignItems: 'center' },
   imageStyle: { marginRight: 10 },
   textStyle: {
-    fontSize: 15,
+    fontSize: 16,
     width: '80%',
+    color: theme.color.primary,
   },
   buttonStyle: {
     backgroundColor: '#fff',

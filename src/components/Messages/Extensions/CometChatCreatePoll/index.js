@@ -115,7 +115,7 @@ const CometChatCreatePoll = (props) => {
       })
       .catch((err) => {
         console.log('err', err);
-        const errorCode = err?.message || 'ERROR';
+        const errorCode = err?.details?.message || err?.message || 'ERROR';
         dropDownAlertRef?.current?.showMessage('error', errorCode);
         setError(err);
       });

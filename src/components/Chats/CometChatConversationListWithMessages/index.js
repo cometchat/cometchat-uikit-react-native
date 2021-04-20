@@ -175,9 +175,6 @@ class CometChatConversationListWithMessages extends React.Component {
       case actions.MESSAGE_DELETED:
         this.updateLastMessage(item[0]);
         break;
-      case actions.MESSAGE_COMPOSED:
-        this.callInitiated(item);
-        break;
       case actions.JOIN_DIRECT_CALL:
         this.setState({ joinDirectCall: true }, () => {
           this.videoCall(true);
@@ -230,20 +227,10 @@ class CometChatConversationListWithMessages extends React.Component {
       const usersList = [this.state.item.uid];
       CometChatManager.blockUsers(usersList)
         .then((response) => {
-          if (response) {
-            this.setState({ item: { ...this.state.item, blockedByMe: true } });
-            this.dropDownAlertRef?.showMessage('success', 'Blocked user');
-          } else {
-            this.dropDownAlertRef?.showMessage(
-              'error',
-              'Failed to blocked user',
-            );
-          }
+          this.setState({ item: { ...this.state.item, blockedByMe: true } });
         })
         .catch((error) => {
           logger('Blocking user fails with error', error);
-          const errorCode = error?.message || 'ERROR';
-          this.dropDownAlertRef?.showMessage('error', errorCode);
         });
     } catch (error) {
       logger(error);

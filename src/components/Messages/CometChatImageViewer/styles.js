@@ -22,8 +22,7 @@ export default StyleSheet.create({
   },
   bottomSheetContainer: {
     backgroundColor: 'white',
-    height: deviceHeight + 200 * heightRatio,
-    paddingBottom: 40 * heightRatio,
+    height: deviceHeight * 0.9,
   },
   crossImgContainer: {
     alignSelf: 'flex-end',
@@ -38,11 +37,10 @@ export default StyleSheet.create({
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    height: 450 * heightRatio,
+    flex: 1,
   },
   imageStyles: {
+    width: '90%',
     height: '100%',
-    width: deviceWidth,
-    maxHeight: deviceHeight * 0.4,
   },
 });

@@ -631,21 +631,23 @@ export default class CometChatGroupDetails extends React.Component {
         </TouchableOpacity>
       );
     }
-
-    let leaveGroupBtn = (
-      <TouchableOpacity
-        onPress={() => {
-          this.leaveGroup();
-        }}>
-        <Text
-          style={[
-            style.itemLinkStyle,
-            { color: this.viewTheme.color.primary },
-          ]}>
-          Leave group
-        </Text>
-      </TouchableOpacity>
-    );
+    let leaveGroupBtn = null;
+    if (this.props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN) {
+      leaveGroupBtn = (
+        <TouchableOpacity
+          onPress={() => {
+            this.leaveGroup();
+          }}>
+          <Text
+            style={[
+              style.itemLinkStyle,
+              { color: this.viewTheme.color.primary },
+            ]}>
+            Leave group
+          </Text>
+        </TouchableOpacity>
+      );
+    }
 
     let sharedMediaView = (
       <CometChatSharedMedia
@@ -662,13 +664,7 @@ export default class CometChatGroupDetails extends React.Component {
 
     let members = (
       <View style={style.fullWidth}>
-        <Text
-          style={[
-            style.sectionHeaderStyle,
-            { color: this.viewTheme.color.secondary },
-          ]}>
-          Members
-        </Text>
+        <Text style={[style.sectionHeaderStyle]}>Members</Text>
         <View style={style.listItemContainer}>
           {viewMembersBtn}
           {addMembersBtn}
@@ -680,10 +676,7 @@ export default class CometChatGroupDetails extends React.Component {
     let options = (
       <View style={style.fullWidth}>
         <Text
-          style={[
-            style.sectionHeaderStyle,
-            { color: this.viewTheme.color.secondary },
-          ]}>
+          style={[style.sectionHeaderStyle, { color: theme.color.helpText }]}>
           Options
         </Text>
         <View style={style.listItemContainer}>

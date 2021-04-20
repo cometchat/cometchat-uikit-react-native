@@ -60,6 +60,12 @@ export default class CometChatMessageComposer extends React.PureComponent {
     };
 
     this.audio = new Sound(outgoingMessageAlert);
+    CometChat.getLoggedinUser()
+      .then((user) => (this.loggedInUser = user))
+      .catch((error) => {
+        const errorCode = error?.message || 'ERROR';
+        this.props?.showMessage('error', errorCode);
+      });
   }
 
   componentDidMount() {
@@ -171,6 +177,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       this.messageSending = true;
 
       const { receiverId, receiverType } = this.getReceiverDetails();
+      const conversationId = this.props.getConversationId();
 
       const mediaMessage = new CometChat.MediaMessage(
         receiverId,
@@ -183,17 +190,36 @@ export default class CometChatMessageComposer extends React.PureComponent {
       }
 
       this.endTyping();
+      // mediaMessage.setSender(this.loggedInUser);
+      mediaMessage.setReceiver(receiverType);
+      mediaMessage.setConversationId(conversationId);
+      mediaMessage.setType(messageType);
+      mediaMessage._composedAt = Math.round(+new Date() / 1000);
+      mediaMessage._id = '_' + Math.random().toString(36).substr(2, 9);
+      mediaMessage.setData({
+        type: messageType,
+        category: CometChat.CATEGORY_MESSAGE,
+        name: messageInput['name'],
+        file: messageInput,
+        url: messageInput['uri'],
+        sender: this.loggedInUser,
+      });
+      this.props.actionGenerated(actions.MESSAGE_COMPOSED, [mediaMessage]);
       CometChat.sendMessage(mediaMessage)
         .then((response) => {
           this.messageSending = false;
           this.playAudio();
-          this.props.actionGenerated(actions.MESSAGE_COMPOSED, [response]);
+          const newMessageObj = { ...response, _id: mediaMessage._id };
+          this.props.actionGenerated('messageSent', newMessageObj);
         })
         .catch((error) => {
+          const newMessageObj = { ...mediaMessage, error: error };
           const errorCode = error?.message || 'ERROR';
+          this.props.actionGenerated('errorSentInMessage', newMessageObj);
+
           this.props?.showMessage('error', errorCode);
           this.messageSending = false;
-          logger('Message sending failed with error:', error);
+          logger('Message sending failed with error: ', error);
         });
     } catch (error) {
       logger(error);
@@ -225,9 +251,11 @@ export default class CometChatMessageComposer extends React.PureComponent {
         this.editMessage();
         return false;
       }
+      this.endTyping();
 
       const { receiverId, receiverType } = this.getReceiverDetails();
       const messageInput = this.state.messageInput.trim();
+      const conversationId = this.props.getConversationId();
       const textMessage = new CometChat.TextMessage(
         receiverId,
         messageInput,
@@ -237,17 +265,29 @@ export default class CometChatMessageComposer extends React.PureComponent {
         textMessage.setParentMessageId(this.props.parentMessageId);
       }
 
-      this.endTyping();
+      textMessage.setSender(this.loggedInUser);
+      textMessage.setReceiver(receiverType);
+      textMessage.setText(messageInput);
+      textMessage.setConversationId(conversationId);
+      textMessage._composedAt = Math.round(+new Date() / 1000);
+      textMessage._id = '_' + Math.random().toString(36).substr(2, 9);
+      this.props.actionGenerated(actions.MESSAGE_COMPOSED, [textMessage]);
+      this.setState({ messageInput: '', replyPreview: false });
 
+      this.messageInputRef.current.textContent = '';
+      this.playAudio();
       CometChat.sendMessage(textMessage)
         .then((message) => {
+          const newMessageObj = { ...message, _id: textMessage._id };
           this.setState({ messageInput: '' });
           this.messageSending = false;
           this.messageInputRef.current.textContent = '';
-          this.playAudio();
-          this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
+          // this.playAudio();
+          this.props.actionGenerated('messageSent', newMessageObj);
         })
         .catch((error) => {
+          const newMessageObj = { ...textMessage, error: error };
+          this.props.actionGenerated('errorSentInMessage', newMessageObj);
           logger('Message sending failed with error:', error);
           const errorCode = error?.message || 'ERROR';
           this.props?.showMessage('error', errorCode);
@@ -403,11 +443,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
     switch (action) {
       case actions.POLL_CREATED:
         this.toggleCreatePoll();
-
-        // temporary check; custom data listener working for sender too
-        if (this.props.type === CometChat.RECEIVER_TYPE.USER) {
+        if (this.props.type === enums.TYPE_USER) {
           this.props.actionGenerated(actions.POLL_CREATED, [message]);
         }
+        // temporary check; custom data listener working for sender too\
 
         break;
       case actions.SEND_STICKER:
@@ -435,7 +474,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       sticker_name: stickerMessage.stickerName,
     };
     const customType = enums.CUSTOM_TYPE_STICKER;
-
+    const conversationId = this.props.getConversationId();
     const customMessage = new CometChat.CustomMessage(
       receiverId,
       receiverType,
@@ -445,14 +484,26 @@ export default class CometChatMessageComposer extends React.PureComponent {
     if (this.props.parentMessageId) {
       customMessage.setParentMessageId(this.props.parentMessageId);
     }
+    customMessage.setConversationId(conversationId);
+    customMessage.setSender(this.loggedInUser);
+    customMessage.setReceiver(receiverType);
+    customMessage.setConversationId(conversationId);
+    customMessage._composedAt = Math.round(+new Date() / 1000);
+    customMessage._id = '_' + Math.random().toString(36).substr(2, 9);
+    this.props.actionGenerated(actions.MESSAGE_COMPOSED, [customMessage]);
     CometChat.sendCustomMessage(customMessage)
       .then((message) => {
         this.messageSending = false;
         this.playAudio();
-        this.props.actionGenerated(actions.MESSAGE_COMPOSED, [message]);
+        const newMessageObj = { ...message, _id: customMessage._id };
+
+        this.props.actionGenerated('messageSent', newMessageObj);
       })
       .catch((error) => {
+        const newMessageObj = { ...customMessage, error: error };
+        this.props.actionGenerated('errorSentInMessage', newMessageObj);
         const errorCode = error?.message || 'ERROR';
+
         this.props?.showMessage('error', errorCode);
         this.messageSending = false;
         logger('custom message sending failed with error', error);
@@ -702,8 +753,12 @@ export default class CometChatMessageComposer extends React.PureComponent {
       <View
         style={
           Platform.OS === 'android' && this.state.keyboardActivity
-            ? { marginBottom: 21 * heightRatio }
-            : {}
+            ? {
+                marginBottom: 21 * heightRatio,
+                elevation: 5,
+                backgroundColor: '#fff',
+              }
+            : { elevation: 5, backgroundColor: '#fff' }
         }>
         {blockedPreview}
         {editPreview}
