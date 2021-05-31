@@ -9,7 +9,7 @@ export default StyleSheet.create({
   },
   contactHeaderStyle: {
     paddingBottom: 14,
-    paddingHorizontal: 25,
+    paddingHorizontal: 16,
   },
   contactHeaderCloseStyle: {
     height: 24,
@@ -22,14 +22,14 @@ export default StyleSheet.create({
     fontSize: 28,
   },
   contactSearchStyle: {
-    padding: 4,
-    marginTop: 10,
+    padding: 8,
+    marginTop: 16,
     flexDirection: 'row',
     position: 'relative',
     alignItems: 'center',
     width: '100%',
     borderWidth: 0,
-    borderRadius: 8,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -41,17 +41,18 @@ export default StyleSheet.create({
   contactSearchInputStyle: {
     flex: 1,
     paddingVertical: 4,
-    marginHorizontal: 8,
-    fontSize: 15,
+    marginHorizontal: 2,
+    fontSize: 17,
   },
   contactMsgStyle: {
     overflow: 'hidden',
-    width: '100%',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   contactMsgTxtStyle: {
     margin: 0,
+
     fontSize: 24,
     fontWeight: '600',
   },
@@ -68,18 +69,18 @@ export default StyleSheet.create({
     paddingHorizontal: 15,
   },
   contactAlphabetTextStyle: {
-    fontSize: 18,
-    opacity: 0.4,
+    fontSize: 13,
+    opacity: 0.5,
   },
   itemSeparatorStyle: {
     borderBottomWidth: 1,
     width: '85%',
     alignSelf: 'flex-end',
-    paddingHorizontal: 15,
+    marginHorizontal: 16,
   },
   headerContainer: {
     alignItems: 'center',
-    height: 40,
+    height: 48,
     width: '100%',
     justifyContent: 'center',
   },

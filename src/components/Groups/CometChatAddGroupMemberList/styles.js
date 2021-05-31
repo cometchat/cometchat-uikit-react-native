@@ -50,8 +50,8 @@ export default StyleSheet.create({
   contactSearchInputStyle: {
     flex: 1,
     paddingVertical: 4,
-    marginHorizontal: 8,
-    fontSize: 15,
+    marginHorizontal: 10,
+    fontSize: 14,
   },
   contactMsgStyle: {
     overflow: 'hidden',
@@ -99,10 +99,12 @@ export default StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     paddingHorizontal: 15,
+    width: '40%',
+    alignItems: 'center',
     alignSelf: 'center',
   },
   addBtnTxtStyle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
 });

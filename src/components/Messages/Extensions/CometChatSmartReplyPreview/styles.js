@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../../utils/consts';
-
+import theme from '../../../../resources/theme';
 export default StyleSheet.create({
   previewWrapperStyle: {
     width: '100%',
@@ -12,7 +12,7 @@ export default StyleSheet.create({
     paddingVertical: 8 * heightRatio,
     borderRadius: 18,
     marginVertical: 8,
-    shadowColor: '#141414',
+    shadowColor: theme.color.primary,
     shadowOffset: {
       width: 0,
       height: 1,

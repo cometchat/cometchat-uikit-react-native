@@ -58,7 +58,9 @@ const CometChatReceiverStickerMessageBubble = (props) => {
         <View>
           {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={style.senderNameContainer}>
-              <Text>{message.sender.name}</Text>
+              <Text style={{ color: viewTheme.color.helpText }}>
+                {message.sender.name}
+              </Text>
             </View>
           ) : null}
           <View>
@@ -72,12 +74,12 @@ const CometChatReceiverStickerMessageBubble = (props) => {
                 {...props}
                 message={message}
               />
+              <CometChatMessageReactions
+                theme={props.theme}
+                {...props}
+                message={message}
+              />
             </View>
-            <CometChatMessageReactions
-              theme={props.theme}
-              {...props}
-              message={message}
-            />
           </View>
         </View>
       </View>

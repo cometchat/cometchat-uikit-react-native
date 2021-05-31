@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View, Modal, TouchableOpacity } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as actions from '../../../utils/actions';
-
+import KeepAwake from 'react-native-keep-awake';
 import * as enums from '../../../utils/enums';
 import { theme } from '../../../resources/theme';
 
@@ -117,6 +117,7 @@ class CometChatOutgoingDirectCall extends React.Component {
     return (
       <Modal animated animationType="fade">
         <View style={{ height: '100%', width: '100%', position: 'relative' }}>
+          <KeepAwake />
           {this.state.callSettings ? (
             <CometChat.CallingComponent
               callsettings={this.state.callSettings}

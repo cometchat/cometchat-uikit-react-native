@@ -133,7 +133,7 @@ export default class CometChatSharedMedia extends React.Component {
           })
           .catch((error) => {
             const errorCode = error?.message || 'ERROR';
-            this.dropDownAlertRef?.showMessage('error', errorCode);
+            this.props?.showMessage('error', errorCode);
             logger(
               '[CometChatSharedMedia] getMessages fetchPrevious error',
               error,
@@ -142,7 +142,7 @@ export default class CometChatSharedMedia extends React.Component {
       })
       .catch((error) => {
         const errorCode = error?.message || 'ERROR';
-        this.dropDownAlertRef?.showMessage('error', errorCode);
+        this.props?.showMessage('error', errorCode);
         logger(
           '[CometChatSharedMedia] getMessages getLoggedInUser error',
           error,
@@ -300,7 +300,7 @@ export default class CometChatSharedMedia extends React.Component {
           style={[
             styles.sectionHeaderStyle,
             {
-              color: `${currentTheme.color.secondary}`,
+              color: currentTheme.color.helpText,
             },
           ]}>
           Shared Media
@@ -357,7 +357,9 @@ export default class CometChatSharedMedia extends React.Component {
               height: deviceHeight - 280 * heightRatio,
             }}
             columnWrapperStyle={styles.mediaItemColumnStyle}
-            contentContainerStyle={styles.mediaItemStyle}
+            contentContainerStyle={
+              messages?.length ? null : styles.mediaItemStyle
+            }
             showsVerticalScrollIndicator={false}
             numColumns={2}
             ListEmptyComponent={this.emptyListComponent}

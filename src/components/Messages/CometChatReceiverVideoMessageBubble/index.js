@@ -1,5 +1,7 @@
 import React, { createRef } from 'react';
-import { View, Text, TouchableWithoutFeedback } from 'react-native';
+import { View, Text } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+
 import VideoPlayer from 'react-native-video-controls';
 import theme from '../../../resources/theme';
 import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReplyCount';
@@ -39,30 +41,34 @@ const CometChatReceiverVideoMessageBubble = (props) => {
         <View>
           {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={style.senderNameContainer}>
-              <Text>{message.sender.name}</Text>
+              <Text style={{ color: viewTheme.color.helpText }}>
+                {message.sender.name}
+              </Text>
             </View>
           ) : null}
           <View style={style.messageWrapperStyle}>
-            <TouchableWithoutFeedback
+            <TouchableOpacity
+              style={style.messageVideoWrapperStyle}
+              onPress={() => {
+                props.actionGenerated(actions.VIEW_ACTUAL_VIDEO, message);
+              }}
               onLongPress={() =>
                 props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
               }>
-              <View style={style.messageVideoWrapperStyle}>
-                <VideoPlayer
-                  source={{
-                    uri: message.data.url,
-                  }} // Can be a URL or a local file.
-                  ref={player} // Store reference
-                  style={style.messageVideo}
-                  navigator={props.navigator}
-                  disableBack
-                  disableFullscreen
-                  disableVolume
-                  paused
-                  resizeMode="contain"
-                />
-              </View>
-            </TouchableWithoutFeedback>
+              <VideoPlayer
+                source={{
+                  uri: message.data.url,
+                }} // Can be a URL or a local file.
+                ref={player} // Store reference
+                style={style.messageVideo}
+                navigator={props.navigator}
+                disableBack
+                disableFullscreen
+                disableVolume
+                muted
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
           </View>
 
           <View style={style.containerStyle}>
@@ -72,14 +78,14 @@ const CometChatReceiverVideoMessageBubble = (props) => {
                 {...props}
                 message={message}
               />
+              <CometChatMessageReactions
+                theme={props.theme}
+                {...props}
+                message={message}
+                showMessage={props?.showMessage}
+              />
             </View>
           </View>
-          <CometChatMessageReactions
-            theme={props.theme}
-            {...props}
-            message={message}
-            showMessage={props?.showMessage}
-          />
         </View>
       </View>
     </View>

@@ -1,22 +1,20 @@
 import { StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
-
+import theme from '../../../resources/theme';
 export default StyleSheet.create({
   messageWrapperStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    marginBottom: 8,
+    backgroundColor: '#F8F8F8',
     alignSelf: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: 12 * widthRatio,
-    paddingVertical: 8 * heightRatio,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
     paddingRight: 30,
   },
   messageInfoWrapperStyle: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'flex-start',
   },
   messagePreviewContainerStyle: {
@@ -65,14 +63,15 @@ export default StyleSheet.create({
     marginRight: 10 * widthRatio,
     backgroundColor: 'rgba(51,153,255,0.25)',
     borderRadius: 25,
+    marginTop: 30,
   },
   containerStyle: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  mainContainerStyle: { marginBottom: 16 },
+  mainContainerStyle: { marginBottom: 16, marginLeft: 4 },
   messageContainer: { flexDirection: 'row', alignItems: 'flex-start' },
   messageContainerStyle: { minWidth: '65%' },
-  attachmentNameStyle: { flex: 1, marginRight: 4 },
+  attachmentNameStyle: { flex: 1, marginRight: 4, color: theme.color.primary },
   senderNameContainer: { marginBottom: 5 },
 });

@@ -21,7 +21,8 @@ const CometChatSenderFileMessageBubble = (props) => {
     try {
       let PictureDir = RNFetchBlob.fs.dirs.PictureDir;
       let date = new Date();
-      let ext = '.' + props.message.data.attachments[0].extension;
+      let name = props.message.data.attachments[0].name;
+
       RNFetchBlob.config({
         // add this option that makes response data to be stored as a file,
         // this is much more performant.
@@ -30,18 +31,18 @@ const CometChatSenderFileMessageBubble = (props) => {
         addAndroidDownloads: {
           useDownloadManager: true,
           notification: true,
-          path:
-            PictureDir +
-            '/' +
-            Math.floor(date.getTime() + date.getSeconds() / 2) +
-            ext,
+          path: PictureDir + '/' + name,
         },
       })
         .fetch('GET', props.message.data.attachments[0].url, {
           // some headers ..
         })
-        .then(() => {
+        .then((res) => {
           Alert.alert('File Downloaded');
+          // RNFetchBlob.android.actionViewIntent(
+          //   res.path(),
+          //   props.message.data.attachments[0].mimeType,
+          // );
         });
     } catch (error) {
       logger(error);
@@ -65,7 +66,7 @@ const CometChatSenderFileMessageBubble = (props) => {
       </TouchableWithoutFeedback>
       <View style={style.messageInfoWrapperStyle}>
         <CometChatThreadedMessageReplyCount {...props} message={message} />
-        <CometChatReadReceipt {...props} />
+        <CometChatReadReceipt {...props} message={message} />
       </View>
       <CometChatMessageReactions
         theme={props.theme}

@@ -19,7 +19,7 @@ const CometChatUserPresence = (props) => {
     presenceStatus = {
       backgroundColor: 'rgb(0, 255, 0)',
     };
-    borderWidth = 0;
+    // borderWidth = 0;
   }
 
   const borderStyle = {
@@ -29,7 +29,15 @@ const CometChatUserPresence = (props) => {
     borderRadius: cornerRadius,
   };
   return (
-    <View style={[styles.statueIndicatorStyle, borderStyle, presenceStatus]} />
+    <View
+      style={[
+        styles.statueIndicatorStyle,
+        presenceStatus,
+        props.style,
+
+        borderStyle,
+      ]}
+    />
   );
 };
 export default CometChatUserPresence;

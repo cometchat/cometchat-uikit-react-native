@@ -86,7 +86,9 @@ const CometChatReceiverImageMessageBubble = (props) => {
         <View>
           {props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP ? (
             <View style={style.senderNameContainer}>
-              <Text>{message.sender.name}</Text>
+              <Text style={{ color: viewTheme.color.helpText }}>
+                {message.sender.name}
+              </Text>
             </View>
           ) : null}
           <View style={[style.messageWrapperStyle]}>
@@ -97,29 +99,32 @@ const CometChatReceiverImageMessageBubble = (props) => {
                 props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message);
               }}>
               <FastImage
+                defaultSource={{
+                  uri: message?.localFile?.url,
+                }}
                 style={style.messageImg}
                 source={{
                   uri: thumbnailGenerationObject
                     ? thumbnailGenerationObject.url_small
                     : message.data.url,
                 }}
-                resizeMode={FastImage.resizeMode.contain}
+                resizeMode={FastImage.resizeMode.stretch}
               />
             </TouchableOpacity>
           </View>
+          <View style={style.messageInfoWrapperStyle}>
+            <CometChatReadReceipt {...props} message={message} />
+
+            <CometChatThreadedMessageReplyCount {...props} message={message} />
+            <CometChatMessageReactions
+              theme={props.theme}
+              {...props}
+              message={message}
+              showMessage={props?.showMessage}
+            />
+          </View>
         </View>
       </View>
-      <View style={style.messageInfoWrapperStyle}>
-        <CometChatReadReceipt {...props} message={message} />
-
-        <CometChatThreadedMessageReplyCount {...props} message={message} />
-      </View>
-      <CometChatMessageReactions
-        theme={props.theme}
-        {...props}
-        message={message}
-        showMessage={props?.showMessage}
-      />
     </View>
   );
 };

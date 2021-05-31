@@ -357,12 +357,15 @@ class CometChatGroupList extends React.Component {
       CometChat.joinGroup(this.state.guid, this.state.groupType, passcode)
         .then((response) => {
           if (typeof response === 'object') {
-            this.dropDownAlertRef?.showMessage(
+            this.dropDownAlertModelRef?.showMessage(
               'success',
               'Group joined Successfully',
             );
           } else {
-            this.dropDownAlertRef?.showMessage('error', 'Failed to join group');
+            this.dropDownAlertModelRef?.showMessage(
+              'error',
+              'Failed to join group',
+            );
             return;
           }
           const groups = [...this.state.grouplist];
@@ -382,9 +385,7 @@ class CometChatGroupList extends React.Component {
         })
         .catch((error) => {
           const errorCode = error?.message || 'ERROR';
-          this.dropDownAlertRef?.showMessage('error', errorCode);
-
-          if (error.code === 'ERR_WRONG_GROUP_PASS') Alert.alert(error.message);
+          this.dropDownAlertModelRef?.showMessage('error', errorCode);
         });
     }
   };
@@ -673,11 +674,7 @@ class CometChatGroupList extends React.Component {
                 backgroundColor: `${this.theme.backgroundColor.grey}`,
               },
             ]}>
-            <Icon
-              name="search"
-              size={15}
-              color={this.theme.color.textInputPlaceholder}
-            />
+            <Icon name="search" size={18} color={this.theme.color.grey} />
             <TextInput
               ref={this.textInputRef}
               value={this.state.textInputValue}
@@ -806,6 +803,7 @@ class CometChatGroupList extends React.Component {
               }}
             />
           </View>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertModelRef = ref)} />
         </Modal>
       );
     }
@@ -835,6 +833,7 @@ class CometChatGroupList extends React.Component {
             {this.ListHeaderComponent()}
             <FlatList
               data={this.state.grouplist}
+              contentContainerStyle={{ flexGrow: 1 }}
               scrollEnabled
               renderItem={({ item }) => {
                 return (
@@ -847,7 +846,6 @@ class CometChatGroupList extends React.Component {
                 );
               }}
               ListEmptyComponent={this.listEmptyContainer}
-              ItemSeparatorComponent={this.itemSeparatorComponent}
               onScroll={this.handleScroll}
               onEndReached={this.endReached}
               onEndReachedThreshold={0.3}
