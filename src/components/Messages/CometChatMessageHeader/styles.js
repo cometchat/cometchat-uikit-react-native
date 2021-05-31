@@ -40,15 +40,18 @@ export default StyleSheet.create({
     justifyContent: 'flex-end',
   },
   audioCallContainer: {
-    paddingRight: 2,
+    paddingHorizontal: 8,
   },
   videoCallContainer: {
-    paddingRight: 5,
+    paddingHorizontal: 8,
   },
   callIcon: {
-    height: 20,
-    resizeMode: 'contain',
+
+    height: 24,
+    width: 24,
+
   },
+  videoIcon: { width: 34, height: 24, resizeMode: 'contain' },
   itemDetailContainer: {
     flex: 1,
   },

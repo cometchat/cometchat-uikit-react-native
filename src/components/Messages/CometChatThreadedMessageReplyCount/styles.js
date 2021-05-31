@@ -6,7 +6,7 @@ export default StyleSheet.create({
     fontWeight: '500',
     lineHeight: 12,
     textTransform: 'lowercase',
-    paddingVertical: 0,
+    paddingTop: 10,
     paddingHorizontal: 10,
   },
 });

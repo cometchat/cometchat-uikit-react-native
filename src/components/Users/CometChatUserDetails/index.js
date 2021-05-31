@@ -2,7 +2,13 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { CometChatSharedMedia } from '../../Shared';
+import {
+  CometChatSharedMedia,
+  CometChatAvatar,
+  CometChatUserPresence,
+} from '../../Shared';
+import { logger } from '../../../utils/common';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 import style from './styles';
 import BottomSheet from 'reanimated-bottom-sheet';
 import * as actions from '../../../utils/actions';
@@ -15,6 +21,13 @@ export default class CometChatUserDetails extends React.Component {
 
     this.viewTheme = { ...theme, ...this.props.theme };
     this.sheetRef = React.createRef(null);
+    this.state = {
+      status: this.props.item.status,
+    };
+  }
+
+  componentDidMount() {
+    this.setStatusForUser();
   }
 
   /**
@@ -26,9 +39,82 @@ export default class CometChatUserDetails extends React.Component {
     }
   }
 
+  setStatusForUser = () => {
+    try {
+      let { status } = this.props.item;
+      if (
+        this.props.item.status === CometChat.USER_STATUS.OFFLINE &&
+        this.props.item.lastActiveAt
+      ) {
+        let messageTimestamp = new Date(this.props.item.lastActiveAt * 1000);
+        const currentTimestamp = new Date();
+
+        if (
+          messageTimestamp.getUTCFullYear() ==
+            currentTimestamp.getUTCFullYear() &&
+          messageTimestamp.getUTCMonth() == currentTimestamp.getUTCMonth() &&
+          messageTimestamp.getUTCDate() == currentTimestamp.getUTCDate()
+        ) {
+          var hours = messageTimestamp.getHours();
+          var minutes = messageTimestamp.getMinutes();
+          var ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          minutes = minutes < 10 ? '0' + minutes : minutes;
+          status = hours + ':' + minutes + ' ' + ampm.toUpperCase();
+        } else if (
+          messageTimestamp.getUTCFullYear() ==
+            currentTimestamp.getUTCFullYear() &&
+          messageTimestamp.getUTCMonth() == currentTimestamp.getUTCMonth() &&
+          messageTimestamp.getUTCDate() == currentTimestamp.getUTCDate() - 1
+        ) {
+          var hours = messageTimestamp.getHours();
+          var minutes = messageTimestamp.getMinutes();
+          var ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          minutes = minutes < 10 ? '0' + minutes : minutes;
+          status =
+            'Yesterday, ' + hours + ':' + minutes + ' ' + ampm.toUpperCase();
+        } else {
+          const month = String(messageTimestamp.getMonth()).padStart(2, '0');
+          const day = String(messageTimestamp.getDate()).padStart(2, '0');
+          const year = messageTimestamp.getFullYear();
+          status = day + '/' + month + '/' + year;
+        }
+      } else if (this.props.item.status === CometChat.USER_STATUS.OFFLINE) {
+        status = 'offline';
+      }
+
+      this.setState({ status });
+    } catch (error) {
+      logger(error);
+    }
+  };
+
   render() {
     let blockUserText;
 
+    let avatar = (
+      <View style={style.avatarStyle}>
+        <CometChatAvatar
+          cornerRadius={32}
+          borderColor={theme.color.secondary}
+          borderWidth={1}
+          image={{ uri: this.props.item.avatar }}
+          name={this.props.item.name}
+        />
+        {this.props.item && this.props.item.blockedByMe ? null : (
+          <CometChatUserPresence
+            status={this.props.item.status}
+            style={{ top: 35 }}
+            cornerRadius={9}
+            borderColor={theme.borderColor.white}
+            borderWidth={2}
+          />
+        )}
+      </View>
+    );
     if (this.props.item && this.props.item.blockedByMe) {
       blockUserText = (
         <TouchableOpacity
@@ -55,6 +141,18 @@ export default class CometChatUserDetails extends React.Component {
       );
     }
 
+    let showProfile = (
+      <TouchableOpacity
+        onPress={() => {
+          this.props.actionGenerated(actions.SHOW_PROFILE);
+        }}>
+        <Text
+          style={[style.itemLinkStyle, { color: this.viewTheme.color.blue }]}>
+          View Profile
+        </Text>
+      </TouchableOpacity>
+    );
+
     let blockUserView = (
       <View style={style.blockContainer}>
         <Text
@@ -62,11 +160,25 @@ export default class CometChatUserDetails extends React.Component {
             style.sectionHeaderStyle,
             { color: this.viewTheme.color.secondary },
           ]}>
-          Options
+          PRIVACY & SUPPORT
         </Text>
         <View style={style.blockText}>{blockUserText}</View>
       </View>
     );
+
+    let action = this.props.item?.link ? (
+      <View style={style.blockContainer}>
+        <Text
+          style={[
+            style.sectionHeaderStyle,
+            { color: this.viewTheme.color.secondary },
+          ]}>
+          ACTIONS
+        </Text>
+
+        <View style={style.blockText}>{showProfile}</View>
+      </View>
+    ) : null;
 
     let sharedMediaView = (
       <CometChatSharedMedia
@@ -117,8 +229,25 @@ export default class CometChatUserDetails extends React.Component {
                     </TouchableOpacity>
                     <Text style={style.headerTitleStyle}>Details</Text>
                   </View>
+                  <View style={style.userDetailContainer}>
+                    {avatar}
+                    <View style={style.userDetail}>
+                      <View>
+                        <Text style={style.userName}>
+                          {this.props.item.name}
+                        </Text>
+                      </View>
+                      {this.props.item && this.props.item.blockedByMe ? null : (
+                        <Text style={style.statusText} numberOfLines={1}>
+                          {this.state.status}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
                   <View style={style.optionsContainer}>
+                    {action}
                     {blockUserView}
+
                     {sharedMediaView}
                   </View>
                 </View>

@@ -25,6 +25,7 @@ class CometChatConversationListItem extends React.Component {
     this.state = {
       lastMessage: '',
       lastMessageTimestamp: '',
+      isThreaded: false,
     };
   }
 
@@ -32,7 +33,10 @@ class CometChatConversationListItem extends React.Component {
     const message = this.getLastMessage();
     const timestamp = this.getLastMessageTimestamp();
 
-    this.setState({ lastMessage: message, lastMessageTimestamp: timestamp });
+    this.setState({
+      lastMessage: message || '',
+      lastMessageTimestamp: timestamp,
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -45,7 +49,7 @@ class CometChatConversationListItem extends React.Component {
         const timestamp = this.getLastMessageTimestamp();
 
         this.setState({
-          lastMessage: message,
+          lastMessage: message || '',
           lastMessageTimestamp: timestamp,
         });
       }
@@ -228,6 +232,7 @@ class CometChatConversationListItem extends React.Component {
   getMessage = (lastMessage) => {
     try {
       let message = null;
+      this.setState({ isThreaded: lastMessage.parentMessageId });
       switch (lastMessage.type) {
         case CometChat.MESSAGE_TYPE.TEXT:
           message = lastMessage.text;
@@ -374,7 +379,10 @@ class CometChatConversationListItem extends React.Component {
                 alignItems: 'center',
               }}>
               <Text numberOfLines={1} style={styles.itemLastMsgTimeStyle}>
-                {this.state.lastMessage}
+
+                {`${this.state.isThreaded ? 'In a thread : ' : ''}` +
+                  this.state.lastMessage}
+
               </Text>
               <CometChatBadgeCount
                 theme={this.props.theme}

@@ -4,6 +4,7 @@ import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
+import { HIDE_DELETED_MSG } from '../../../utils/settings';
 import { MessageThreadManager } from './controller';
 import {
   CometChatMessageActions,
@@ -190,8 +191,10 @@ class CometChatMessageThread extends React.PureComponent {
             );
           }
           break;
-        case 'messageSent':
-        case 'errorSentInMessage':
+
+        case actions.MESSAGE_SENT:
+        case actions.ERROR_IN_SEND_MESSAGE:
+
           this.messageSent(messages);
           break;
         case actions.MESSAGE_UPDATED:
@@ -393,8 +396,12 @@ class CometChatMessageThread extends React.PureComponent {
       if (messageKey > -1) {
         const messageObj = { ...messageList[messageKey] };
         const newMessageObj = { ...messageObj, ...deletedMessage };
+        if (HIDE_DELETED_MSG) {
+          messageList.splice(messageKey, 1);
+        } else {
+          messageList.splice(messageKey, 1, newMessageObj);
+        }
 
-        messageList.splice(messageKey, 1, newMessageObj);
         this.setState({ messageList: messageList, scrollToBottom: false });
       }
     } catch (error) {

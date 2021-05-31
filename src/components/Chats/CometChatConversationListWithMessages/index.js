@@ -181,24 +181,7 @@ class CometChatConversationListWithMessages extends React.Component {
         });
         break;
       case actions.DIRECT_CALL_ENDED:
-        this.setState(
-          { joinDirectCall: false, ongoingDirectCall: null },
-          () => {
-            this.props.navigation.navigate(
-              enums.NAVIGATION_CONSTANTS.COMET_CHAT_MESSAGES,
-              {
-                theme: this.theme,
-                item: { ...this.state.item },
-                tab: this.state.tab,
-                type: this.state.type,
-                composedThreadMessage: this.state.composedThreadMessage,
-                callMessage: this.state.callMessage,
-                loggedInUser: this.loggedInUser,
-                actionGenerated: this.actionHandler,
-              },
-            );
-          },
-        );
+        this.setState({ joinDirectCall: false, ongoingDirectCall: null });
 
         break;
       case actions.ACCEPT_DIRECT_CALL:
