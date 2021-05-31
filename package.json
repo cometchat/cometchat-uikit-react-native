@@ -1,6 +1,8 @@
 {
   "name": "cometchat-pro-react-native-ui-kit",
+
   "version": "2.3.3-1",
+
   "description": "Chat UI Kit for React Native App",
   "main": "./src/index.js",
   "scripts": {

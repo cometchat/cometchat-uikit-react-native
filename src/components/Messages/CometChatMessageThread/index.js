@@ -191,8 +191,10 @@ class CometChatMessageThread extends React.PureComponent {
             );
           }
           break;
+
         case actions.MESSAGE_SENT:
         case actions.ERROR_IN_SEND_MESSAGE:
+
           this.messageSent(messages);
           break;
         case actions.MESSAGE_UPDATED:

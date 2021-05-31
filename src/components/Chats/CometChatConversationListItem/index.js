@@ -379,8 +379,10 @@ class CometChatConversationListItem extends React.Component {
                 alignItems: 'center',
               }}>
               <Text numberOfLines={1} style={styles.itemLastMsgTimeStyle}>
+
                 {`${this.state.isThreaded ? 'In a thread : ' : ''}` +
                   this.state.lastMessage}
+
               </Text>
               <CometChatBadgeCount
                 theme={this.props.theme}

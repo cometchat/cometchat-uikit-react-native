@@ -248,7 +248,9 @@ class CometChatMessageHeader extends React.Component {
       presence = (
         <CometChatUserPresence
           status={this.state.presence}
+
           style={{ top: 28 }}
+
           cornerRadius={9}
           borderColor={this.props.theme.borderColor.white}
           borderWidth={2}
@@ -301,6 +303,7 @@ class CometChatMessageHeader extends React.Component {
       presence = null;
     }
 
+
     let info = (
       <TouchableOpacity
         onPress={() => this.props.actionGenerated(actions.VIEW_DETAIL)}
@@ -308,6 +311,7 @@ class CometChatMessageHeader extends React.Component {
         <Image style={styles.callIcon} source={detailPaneIcon} />
       </TouchableOpacity>
     );
+
 
     return (
       <View style={styles.headerContainer}>

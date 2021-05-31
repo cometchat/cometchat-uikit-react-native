@@ -187,10 +187,12 @@ class CometChatMessages extends React.PureComponent {
       case actions.MESSAGE_READ:
         params.actionGenerated(action, messages);
         break;
+
       case actions.MESSAGE_SENT:
       case actions.ERROR_IN_SEND_MESSAGE:
         this.messageSent(messages);
       case actions.MESSAGE_COMPOSED: {
+
         this.appendMessage(messages);
         break;
       }
@@ -328,6 +330,7 @@ class CometChatMessages extends React.PureComponent {
     }
   };
 
+
   sendMessage = (message) => {
     const { route } = this.props;
 
@@ -349,6 +352,7 @@ class CometChatMessages extends React.PureComponent {
       showProfile: true,
     });
   };
+
 
   messageSent = (message) => {
     const messageList = [...this.state.messageList];
