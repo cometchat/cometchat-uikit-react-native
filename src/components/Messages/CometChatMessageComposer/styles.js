@@ -36,11 +36,12 @@ export default StyleSheet.create({
   },
   messageInputStyle: {
     color: 'black',
-    fontSize: 16,
+    fontSize: 15,
     padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 20,
     flex: 1,
+    height: 36,
   },
   inputStickyStyle: {
     padding: 7,

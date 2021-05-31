@@ -4,6 +4,7 @@ import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
+import { HIDE_DELETED_MSG } from '../../../utils/settings';
 import { MessageThreadManager } from './controller';
 import {
   CometChatMessageActions,
@@ -190,6 +191,10 @@ class CometChatMessageThread extends React.PureComponent {
             );
           }
           break;
+        case actions.MESSAGE_SENT:
+        case actions.ERROR_IN_SEND_MESSAGE:
+          this.messageSent(messages);
+          break;
         case actions.MESSAGE_UPDATED:
           this.updateMessages(messages);
           break;
@@ -360,6 +365,17 @@ class CometChatMessageThread extends React.PureComponent {
     this.setState({ messageList: messages });
   };
 
+  messageSent = (message) => {
+    const messageList = [...this.state.messageList];
+    let messageKey = messageList.findIndex((m) => m._id === message._id);
+    if (messageKey > -1) {
+      const newMessageObj = { ...message };
+
+      messageList.splice(messageKey, 1, newMessageObj);
+      this.updateMessages(messageList);
+    }
+  };
+
   // messages are fetched from backend
   prependMessages = (messages) => {
     const messageList = [...messages, ...this.state.messageList];
@@ -378,8 +394,12 @@ class CometChatMessageThread extends React.PureComponent {
       if (messageKey > -1) {
         const messageObj = { ...messageList[messageKey] };
         const newMessageObj = { ...messageObj, ...deletedMessage };
+        if (HIDE_DELETED_MSG) {
+          messageList.splice(messageKey, 1);
+        } else {
+          messageList.splice(messageKey, 1, newMessageObj);
+        }
 
-        messageList.splice(messageKey, 1, newMessageObj);
         this.setState({ messageList: messageList, scrollToBottom: false });
       }
     } catch (error) {
@@ -704,6 +724,7 @@ class CometChatMessageThread extends React.PureComponent {
                   ref={(el) => {
                     this.composerRef = el;
                   }}
+                  getConversationId={this.props.getConversationId}
                   theme={this.props.theme}
                   item={this.props.item}
                   type={this.props.type}

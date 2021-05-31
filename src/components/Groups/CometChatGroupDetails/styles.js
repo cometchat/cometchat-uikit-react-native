@@ -1,12 +1,14 @@
 import { Dimensions, StyleSheet } from 'react-native';
 import { heightRatio, widthRatio } from '../../../utils/consts';
-
+import theme from '../../../resources/theme';
 export default StyleSheet.create({
   container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
   itemLinkStyle: {
-    fontSize: 15,
+    fontSize: 16,
     lineHeight: 20,
     fontWeight: '600',
+    marginVertical: 4,
+    color: theme.color.primary,
   },
   fullWidth: { width: '100%' },
   listItemContainer: { width: '100%', marginVertical: 6 },
@@ -17,6 +19,7 @@ export default StyleSheet.create({
     fontWeight: '500',
     lineHeight: 20,
     textTransform: 'uppercase',
+    color: theme.color.helpText,
   },
   headerStyle: {
     flexDirection: 'row',
@@ -39,5 +42,30 @@ export default StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
     minHeight: Dimensions.get('window').height - 80,
+  },
+  userName: {
+    fontSize: 18 * heightRatio,
+    color: theme.color.primary,
+    fontWeight: 'bold',
+  },
+  statusText: {
+    fontSize: 14,
+    color: theme.color.blue,
+  },
+  avatarStyle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(51,153,255,0.25)',
+  },
+  groupDetailContainer: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  groupDetail: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    height: 48,
   },
 });

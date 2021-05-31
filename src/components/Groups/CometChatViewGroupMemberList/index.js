@@ -273,30 +273,31 @@ export default class CometChatViewGroupMemberList extends React.Component {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    <FlatList
-                      data={membersList}
-                      renderItem={({ item, index }) => {
-                        return (
-                          <CometChatViewGroupMemberListItem
-                            theme={this.props.theme}
-                            key={index}
-                            member={item}
-                            item={this.props.item}
-                            lang={this.props.lang}
-                            actionGenerated={this.updateMembers}
-                            loggedInUser={this.props.loggedInUser}
-                          />
-                        );
-                      }}
-                      ListEmptyComponent={this.listEmptyContainer}
-                      ItemSeparatorComponent={this.itemSeparatorComponent}
-                      onScroll={this.handleScroll}
-                      onEndReached={this.endReached}
-                      onEndReachedThreshold={0.3}
-                      contentContainerStyle={style.contentContainerStyle}
-                      style={style.listStyle}
-                      showsVerticalScrollIndicator={false}
-                    />
+                    <View style={style.listContainer}>
+                      <FlatList
+                        data={membersList}
+                        renderItem={({ item, index }) => {
+                          return (
+                            <CometChatViewGroupMemberListItem
+                              theme={this.props.theme}
+                              key={index}
+                              member={item}
+                              item={this.props.item}
+                              lang={this.props.lang}
+                              actionGenerated={this.updateMembers}
+                              loggedInUser={this.props.loggedInUser}
+                            />
+                          );
+                        }}
+                        ListEmptyComponent={this.listEmptyContainer}
+                        // ItemSeparatorComponent={this.itemSeparatorComponent}
+                        onScroll={this.handleScroll}
+                        onEndReached={this.endReached}
+                        contentContainerStyle={{ flexGrow: 1 }}
+                        onEndReachedThreshold={0.3}
+                        showsVerticalScrollIndicator={false}
+                      />
+                    </View>
                   </View>
                 );
               }}

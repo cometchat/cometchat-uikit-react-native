@@ -33,6 +33,8 @@ import {
 } from '../index';
 import styles from './styles';
 import { logger } from '../../../utils/common';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 let cDate = null;
 
@@ -242,6 +244,7 @@ class CometChatMessageList extends React.PureComponent {
         break;
       case enums.TEXT_MESSAGE_RECEIVED:
       case enums.MEDIA_MESSAGE_RECEIVED:
+        this.newMsgComponent();
         this.messageReceived(message);
         break;
       case enums.CUSTOM_MESSAGE_RECEIVED:
@@ -300,7 +303,6 @@ class CometChatMessageList extends React.PureComponent {
       const messageList = [...this.props.messages];
       const updateEditedMessage = (message) => {
         const messageKey = messageList.findIndex((m) => m.id === message.id);
-
         if (messageKey > -1) {
           const messageObj = messageList[messageKey];
           const newMessageObj = { ...messageObj, ...message };
@@ -482,6 +484,11 @@ class CometChatMessageList extends React.PureComponent {
           this.props.actionGenerated(actions.CUSTOM_MESSAGE_RECEIVED, [
             newMessage,
           ]);
+        } else if (message.type === enums.CUSTOM_TYPE_MEETING) {
+          // custom data (poll extension) does not have metadata
+          this.props.actionGenerated(actions.CUSTOM_MESSAGE_RECEIVED, [
+            message,
+          ]);
         }
       } else if (
         this.props.type === CometChat.RECEIVER_TYPE.USER &&
@@ -509,6 +516,17 @@ class CometChatMessageList extends React.PureComponent {
           const newMessage = this.addMetadataToCustomData(message);
           this.props.actionGenerated(actions.CUSTOM_MESSAGE_RECEIVED, [
             newMessage,
+          ]);
+        }
+      } else if (
+        this.props.type === CometChat.RECEIVER_TYPE.USER &&
+        message.getReceiverType() === CometChat.RECEIVER_TYPE.USER &&
+        message.getSender().uid === this.loggedInUser.uid
+      ) {
+        if (message.type === enums.CUSTOM_TYPE_POLL) {
+          // custom data (poll extension) does not have metadata
+          this.props.actionGenerated(actions.CUSTOM_MESSAGE_RECEIVED, [
+            message,
           ]);
         }
       }
@@ -889,6 +907,7 @@ class CometChatMessageList extends React.PureComponent {
               showMessage={this.props?.showMessage}
             />
           );
+          break;
         case 'meeting':
           component = (
             <CometChatSenderDirectCallBubble
@@ -936,6 +955,7 @@ class CometChatMessageList extends React.PureComponent {
               type={this.props.type}
               message={message}
               actionGenerated={this.props.actionGenerated}
+              showMessage={this.props?.showMessage}
             />
           );
           break;
@@ -951,6 +971,7 @@ class CometChatMessageList extends React.PureComponent {
               actionGenerated={this.props.actionGenerated}
             />
           );
+          break;
         case 'meeting':
           component = (
             <CometChatReceiverDirectCallBubble
@@ -1033,7 +1054,10 @@ class CometChatMessageList extends React.PureComponent {
         component = this.getCallMessageComponent(message, key);
         break;
       case 'message':
-        if (this.loggedInUser.uid === message.sender.uid) {
+        if (
+          this.loggedInUser.uid === message?.sender?.uid ||
+          this.loggedInUser.uid === message?.data?.sender?.uid
+        ) {
           component = this.getSenderMessageComponent(message, key);
         } else {
           component = this.getReceiverMessageComponent(message, key);
@@ -1089,13 +1113,7 @@ class CometChatMessageList extends React.PureComponent {
       : null;
     if (cDate !== messageSentDate) {
       dateSeparator = (
-        <View
-          style={[
-            styles.messageDateContainerStyle,
-            {
-              backgroundColor: `${this.props.theme.backgroundColor.grey}`,
-            },
-          ]}>
+        <View style={[styles.messageDateContainerStyle]}>
           <Text
             style={[
               styles.messageDateStyle,
@@ -1119,29 +1137,68 @@ class CometChatMessageList extends React.PureComponent {
     );
   };
 
+  newMsgComponent = () => {
+    if (this.yOffset > 50) {
+      this.setState({ showNewMsg: true });
+    }
+  };
+
   render() {
     let messages = [...this.props.messages];
     if (messages.length) {
       messages = messages.reverse();
     }
 
+    let newMsgPopUp = (
+      <View style={styles.newMessagePopupContainer}>
+        <TouchableOpacity
+          onPress={() => {
+            this.setState({ showNewMsg: null }, () => {
+              this.flatListRef.current.scrollToOffset({
+                offset: 0,
+                animated: true,
+              });
+            });
+          }}
+          style={styles.newMessageTextContainer}>
+          <Text>New message</Text>
+          <Icon
+            name="arrow-down"
+            style={{ marginLeft: 5 }}
+            size={15}
+            color="#000"
+          />
+        </TouchableOpacity>
+      </View>
+    );
+
     return (
-      <FlatList
-        ref={this.flatListRef}
-        ListEmptyComponent={this.listEmptyComponent}
-        onEndReached={() => this.getMessages(true)}
-        onEndReachedThreshold={0.3}
-        inverted={-1}
-        style={{ flex: 1, paddingHorizontal: 5 }}
-        contentContainerStyle={!messages.length ? { flex: 1 } : {}}
-        ListFooterComponent={
-          messages.length && this.props.parentMessageComponent
-            ? this.props.parentMessageComponent
-            : null
-        }
-        data={messages}
-        renderItem={this.renderItem}
-      />
+      <>
+        <FlatList
+          ref={this.flatListRef}
+          ListEmptyComponent={this.listEmptyComponent}
+          onScroll={(event) => {
+            this.yOffset = event.nativeEvent.contentOffset.y;
+            if (this.yOffset > 50 && this.state.showNewMsg) {
+              this.setState({ showNewMsg: false });
+            }
+          }}
+          scrollEventThrottle={16}
+          onEndReached={() => this.getMessages(true)}
+          onEndReachedThreshold={0.3}
+          inverted={-1}
+          style={{ flex: 1, paddingHorizontal: 5 }}
+          contentContainerStyle={!messages.length ? { flex: 1 } : {}}
+          ListFooterComponent={
+            messages.length && this.props.parentMessageComponent
+              ? this.props.parentMessageComponent
+              : null
+          }
+          data={messages}
+          renderItem={this.renderItem}
+        />
+        {this.state.showNewMsg ? newMsgPopUp : null}
+      </>
     );
   }
 }

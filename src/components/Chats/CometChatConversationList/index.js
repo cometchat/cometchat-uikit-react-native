@@ -858,6 +858,7 @@ class CometChatConversationList extends React.Component {
           <View style={styles.headerContainer}></View>
           {this.listHeaderComponent()}
           <FlatList
+            contentContainerStyle={styles.flexGrow1}
             data={this.state.conversationList}
             renderItem={({ item }) => {
               return (
@@ -872,7 +873,6 @@ class CometChatConversationList extends React.Component {
               );
             }}
             ListEmptyComponent={this.listEmptyContainer}
-            ItemSeparatorComponent={this.itemSeparatorComponent}
             onScroll={this.handleScroll}
             onEndReached={this.endReached}
             onEndReachedThreshold={0.3}

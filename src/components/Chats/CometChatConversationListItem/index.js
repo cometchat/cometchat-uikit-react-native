@@ -25,6 +25,7 @@ class CometChatConversationListItem extends React.Component {
     this.state = {
       lastMessage: '',
       lastMessageTimestamp: '',
+      isThreaded: false,
     };
   }
 
@@ -32,7 +33,10 @@ class CometChatConversationListItem extends React.Component {
     const message = this.getLastMessage();
     const timestamp = this.getLastMessageTimestamp();
 
-    this.setState({ lastMessage: message, lastMessageTimestamp: timestamp });
+    this.setState({
+      lastMessage: message || '',
+      lastMessageTimestamp: timestamp,
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -45,7 +49,7 @@ class CometChatConversationListItem extends React.Component {
         const timestamp = this.getLastMessageTimestamp();
 
         this.setState({
-          lastMessage: message,
+          lastMessage: message || '',
           lastMessageTimestamp: timestamp,
         });
       }
@@ -157,7 +161,7 @@ class CometChatConversationListItem extends React.Component {
           let time = timestamp.split(':'); // convert to array
 
           var hours = Number(time[0]);
-          var minutes = Number(time[1]);
+          var minutes = Number(time[1]?.split(' ')[0]);
           var timeValue;
 
           if (hours > 0 && hours <= 12) {
@@ -175,8 +179,10 @@ class CometChatConversationListItem extends React.Component {
       } else if (diffTimestamp < 48 * 60 * 60 * 1000) {
         timestamp = 'Yesterday';
       } else if (diffTimestamp < 7 * 24 * 60 * 60 * 1000) {
-        timestamp = messageTimestamp.toLocaleString('en-US', {
-          weekday: 'long',
+        timestamp = messageTimestamp.toLocaleDateString('en-US', {
+          year: '2-digit',
+          month: '2-digit',
+          day: '2-digit',
         });
       } else {
         timestamp = messageTimestamp.toLocaleDateString('en-US', {
@@ -226,6 +232,7 @@ class CometChatConversationListItem extends React.Component {
   getMessage = (lastMessage) => {
     try {
       let message = null;
+      this.setState({ isThreaded: lastMessage.parentMessageId });
       switch (lastMessage.type) {
         case CometChat.MESSAGE_TYPE.TEXT:
           message = lastMessage.text;
@@ -311,19 +318,21 @@ class CometChatConversationListItem extends React.Component {
     }
 
     let presence;
+
     if (this.props.conversation.conversationType === 'user') {
       const { status } = this.props.conversation.conversationWith;
       presence = (
         <CometChatUserPresence
           status={status}
+          style={{ top: 30 }}
           cornerRadius={18}
-          borderColor={this.props.theme.color.darkSecondary}
-          borderWidth={1}
+          borderColor={this.props.theme.color.white}
+          borderWidth={2}
         />
       );
     }
     return (
-      <View>
+      <View key={this.props?.conversation?.conversationId}>
         <TouchableOpacity
           underlayColor={this.props.theme.backgroundColor.listUnderlayColor}
           style={styles.listItem}
@@ -348,18 +357,31 @@ class CometChatConversationListItem extends React.Component {
               styles.itemDetailsContainer,
               { borderBottomColor: this.props.theme.borderColor.primary },
             ]}>
-            <View style={styles.itemMsgStyle}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+                alignItems: 'center',
+              }}>
               <Text numberOfLines={1} style={styles.itemNameStyle}>
                 {this.props.conversation.conversationWith.name}
               </Text>
-              <Text numberOfLines={1} style={styles.itemLastMsgTimeStyle}>
-                {this.state.lastMessage}
-              </Text>
-            </View>
-            <View style={styles.itemRowStyle}>
               <View style={styles.itemLastMsgStyle}>
                 {lastMessageTimeStamp}
               </View>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '100%',
+                alignItems: 'center',
+              }}>
+              <Text numberOfLines={1} style={styles.itemLastMsgTimeStyle}>
+                {`${this.state.isThreaded ? 'In a thread : ' : ''}` +
+                  this.state.lastMessage}
+              </Text>
               <CometChatBadgeCount
                 theme={this.props.theme}
                 count={this.props.conversation.unreadMessageCount}

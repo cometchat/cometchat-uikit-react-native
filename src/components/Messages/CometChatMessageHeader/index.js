@@ -5,11 +5,11 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
-
+import Icon from 'react-native-vector-icons/Ionicons';
 import styles from './styles';
 import audioCallIcon from './resources/audioCall.png';
 import videoCallIcon from './resources/videoCall.png';
-import Icon from 'react-native-vector-icons/Ionicons';
+import detailPaneIcon from './resources/detailpane.png';
 import { logger } from '../../../utils/common';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 class CometChatMessageHeader extends React.Component {
@@ -74,21 +74,46 @@ class CometChatMessageHeader extends React.Component {
         this.props.item.status === CometChat.USER_STATUS.ONLINE
           ? CometChat.USER_STATUS.ONLINE
           : CometChat.USER_STATUS.OFFLINE;
-
       if (
         this.props.item.status === CometChat.USER_STATUS.OFFLINE &&
         this.props.item.lastActiveAt
       ) {
-        status = `Last active at: ${new Date(
-          this.props.item.lastActiveAt * 1000,
-        ).toLocaleTimeString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric',
-          hour12: true,
-        })}`;
+        let messageTimestamp = new Date(this.props.item.lastActiveAt * 1000);
+        const currentTimestamp = new Date();
+
+        if (
+          messageTimestamp.getUTCFullYear() ==
+            currentTimestamp.getUTCFullYear() &&
+          messageTimestamp.getUTCMonth() == currentTimestamp.getUTCMonth() &&
+          messageTimestamp.getUTCDate() == currentTimestamp.getUTCDate()
+        ) {
+          var hours = messageTimestamp.getHours();
+          var minutes = messageTimestamp.getMinutes();
+          var ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          minutes = minutes < 10 ? '0' + minutes : minutes;
+          status = hours + ':' + minutes + ' ' + ampm.toUpperCase();
+        } else if (
+          messageTimestamp.getUTCFullYear() ==
+            currentTimestamp.getUTCFullYear() &&
+          messageTimestamp.getUTCMonth() == currentTimestamp.getUTCMonth() &&
+          messageTimestamp.getUTCDate() == currentTimestamp.getUTCDate() - 1
+        ) {
+          var hours = messageTimestamp.getHours();
+          var minutes = messageTimestamp.getMinutes();
+          var ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          minutes = minutes < 10 ? '0' + minutes : minutes;
+          status =
+            'Yesterday, ' + hours + ':' + minutes + ' ' + ampm.toUpperCase();
+        } else {
+          const month = String(messageTimestamp.getMonth()).padStart(2, '0');
+          const day = String(messageTimestamp.getDate()).padStart(2, '0');
+          const year = messageTimestamp.getFullYear();
+          status = day + '/' + month + '/' + year;
+        }
       } else if (this.props.item.status === CometChat.USER_STATUS.OFFLINE) {
         status = 'offline';
       }
@@ -223,9 +248,10 @@ class CometChatMessageHeader extends React.Component {
       presence = (
         <CometChatUserPresence
           status={this.state.presence}
+          style={{ top: 28 }}
           cornerRadius={9}
-          borderColor={this.props.theme.borderColor.primary}
-          borderWidth={1}
+          borderColor={this.props.theme.borderColor.white}
+          borderWidth={2}
         />
       );
     } else {
@@ -245,14 +271,14 @@ class CometChatMessageHeader extends React.Component {
       <TouchableOpacity
         onPress={() => this.props.actionGenerated(actions.AUDIO_CALL)}
         style={styles.audioCallContainer}>
-        <Image source={audioCallIcon} style={styles.callIcon} />
+        <Image style={styles.callIcon} source={audioCallIcon} />
       </TouchableOpacity>
     );
     let videoCallBtn = (
       <TouchableOpacity
         onPress={() => this.props.actionGenerated(actions.VIDEO_CALL)}
         style={styles.videoCallContainer}>
-        <Image source={videoCallIcon} style={styles.callIcon} />
+        <Image source={videoCallIcon} style={styles.videoIcon} />
       </TouchableOpacity>
     );
 
@@ -270,21 +296,31 @@ class CometChatMessageHeader extends React.Component {
     ) {
       videoCallBtn = null;
     }
+    if (this.props.item.blockedByMe) {
+      status = null;
+      presence = null;
+    }
+
+    let info = (
+      <TouchableOpacity
+        onPress={() => this.props.actionGenerated(actions.VIEW_DETAIL)}
+        style={styles.videoCallContainer}>
+        <Image style={styles.callIcon} source={detailPaneIcon} />
+      </TouchableOpacity>
+    );
 
     return (
       <View style={styles.headerContainer}>
         <TouchableOpacity
-          style={styles.backButtonContainer}
-          onPress={() => this.props.actionGenerated(actions.GO_BACK)}>
+          onPress={() => this.props.actionGenerated(actions.GO_BACK)}
+          style={styles.backButtonContainer}>
           <Icon
             name="chevron-back-sharp"
-            size={34}
+            size={32}
             color={this.props.theme.color.blue}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => this.props.actionGenerated(actions.VIEW_DETAIL)}
-          style={styles.headerDetailContainer}>
+        <View style={styles.headerDetailContainer}>
           <View
             style={[
               styles.avatarContainer,
@@ -307,9 +343,10 @@ class CometChatMessageHeader extends React.Component {
             </Text>
             {status}
           </View>
-          {audioCallBtn}
           {videoCallBtn}
-        </TouchableOpacity>
+          {audioCallBtn}
+          {info}
+        </View>
       </View>
     );
   }

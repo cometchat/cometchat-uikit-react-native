@@ -11,7 +11,7 @@ export default StyleSheet.create({
   },
   callMessageTxtStyle: {
     alignSelf: 'center',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     margin: 0,
   },
@@ -19,6 +19,10 @@ export default StyleSheet.create({
     flexDirection: 'row',
     height: 60,
     paddingRight: 12,
+    elevation: 5,
+    backgroundColor: '#fff',
+    zIndex: 5,
+    alignItems: 'center',
   },
   backButtonContainer: {
     flexDirection: 'row',
@@ -36,15 +40,16 @@ export default StyleSheet.create({
     justifyContent: 'flex-end',
   },
   audioCallContainer: {
-    paddingRight: 2,
+    paddingHorizontal: 8,
   },
   videoCallContainer: {
-    paddingRight: 5,
+    paddingHorizontal: 8,
   },
   callIcon: {
     height: 24,
-    resizeMode: 'contain',
+    width: 24,
   },
+  videoIcon: { width: 34, height: 24, resizeMode: 'contain' },
   itemDetailContainer: {
     flex: 1,
   },
@@ -57,8 +62,8 @@ export default StyleSheet.create({
     color: theme.color.blue,
   },
   avatarContainer: {
-    height: 32 * heightRatio,
-    width: 38 * widthRatio,
+    height: 40,
+    width: 40,
     borderRadius: 25,
     marginRight: 12,
   },

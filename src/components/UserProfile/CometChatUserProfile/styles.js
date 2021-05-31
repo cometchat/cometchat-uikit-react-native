@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { widthRatio, heightRatio } from '../../../utils/consts';
-
+import theme from '../../../resources/theme';
 export default StyleSheet.create({
   userInfoScreenStyle: {
     flex: 1,
@@ -38,7 +38,8 @@ export default StyleSheet.create({
   },
   userName: {
     fontSize: 16 * heightRatio,
-    fontWeight: '700',
+    color: theme.color.primary,
+    fontWeight: '500',
   },
   status: {
     fontWeight: '500',
@@ -46,8 +47,8 @@ export default StyleSheet.create({
     color: '#349afe',
   },
   avatarStyle: {
-    width: 36 * widthRatio,
-    height: 36 * heightRatio,
+    width: 40,
+    height: 40,
     borderColor: 'green',
     marginTop: 10,
   },
@@ -56,18 +57,18 @@ export default StyleSheet.create({
     width: '100%',
   },
   infoItemHeadingContainer: {
-    marginLeft: 16 * widthRatio,
+    marginLeft: 16,
 
     marginTop: 8 * heightRatio,
   },
   infoItemHeadingText: {
-    color: '#cccccc',
+    color: theme.color.helpText,
     fontWeight: '500',
-    fontSize: 16 * heightRatio,
+    fontSize: 16,
   },
   infoItemsContainer: {
     borderColor: 'orange',
-    marginLeft: 32 * widthRatio,
+    marginLeft: 16,
     marginTop: 16 * heightRatio,
   },
   infoItem: {
@@ -77,9 +78,8 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   infoItemText: {
-    fontSize: 14 * heightRatio,
-    fontWeight: '700',
-
+    fontSize: 14,
+    color: theme.color.primary,
     marginLeft: 8,
   },
 });

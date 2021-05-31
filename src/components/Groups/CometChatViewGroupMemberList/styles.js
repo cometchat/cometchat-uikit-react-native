@@ -3,12 +3,14 @@ import { StyleSheet } from 'react-native';
 import { calc, deviceHeight } from '../../../utils/consts';
 
 export default StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  container: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
   reactionDetailsContainer: {
     backgroundColor: 'white',
     paddingVertical: 20,
     borderRadius: 20,
-    minHeight: deviceHeight,
   },
   headerContainerStyle: {
     justifyContent: 'center',
@@ -69,7 +71,7 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
   contactListStyle: {
-    height: calc(),
+    height: 400,
     margin: 0,
     padding: 0,
   },
@@ -106,5 +108,8 @@ export default StyleSheet.create({
   addBtnTxtStyle: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  listContainer: {
+    height: deviceHeight * 0.8,
   },
 });

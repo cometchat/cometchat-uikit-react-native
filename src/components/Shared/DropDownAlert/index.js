@@ -8,6 +8,7 @@ import CloseIcon from './resources/close.png';
 import styles from './styles';
 import { StatusBar } from 'react-native';
 import { TouchableOpacity } from 'react-native';
+
 export default class DropDownAlert extends Component {
   constructor(props) {
     super(props);
@@ -27,6 +28,9 @@ export default class DropDownAlert extends Component {
   };
 
   slideOut = () => {
+    if (this.props.onClose) {
+      this.props.onClose();
+    }
     const self = this;
     Animated.timing(this.animatedY, {
       duration: 1000,
@@ -38,6 +42,7 @@ export default class DropDownAlert extends Component {
   };
 
   showMessage = (type = 'error', text = 'Something went wrong') => {
+    return;
     this.setState({ errorText: text, type }, () => {
       this.slideIn();
     });
@@ -78,7 +83,7 @@ export default class DropDownAlert extends Component {
           <View style={styles.textContainer}>
             <Text
               ellipsizeMode="tail"
-              numberOfLines={2}
+              numberOfLines={3}
               style={styles.textStyle}>
               {errorText}
             </Text>
