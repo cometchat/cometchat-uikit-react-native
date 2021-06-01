@@ -1,7 +1,7 @@
 import { CometChat } from '@cometchat-pro/react-native-chat';
 
 import * as enums from '../../../utils/enums';
-
+import { HIDE_DELETED_MSG } from '../../../utils/settings';
 export class SharedMediaManager {
   mediaMessageListenerId = `shared_media_${new Date().getTime()}`;
 
@@ -14,6 +14,7 @@ export class SharedMediaManager {
         .setLimit(10)
         .setCategory(CometChat.CATEGORY_MESSAGE)
         .setType(messageType)
+        .hideDeletedMessages(HIDE_DELETED_MSG)
         .build();
     } else {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
@@ -21,6 +22,7 @@ export class SharedMediaManager {
         .setLimit(10)
         .setCategory(CometChat.CATEGORY_MESSAGE)
         .setType(messageType)
+        .hideDeletedMessages(HIDE_DELETED_MSG)
         .build();
     }
   }

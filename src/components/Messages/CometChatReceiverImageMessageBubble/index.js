@@ -99,13 +99,16 @@ const CometChatReceiverImageMessageBubble = (props) => {
                 props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message);
               }}>
               <FastImage
+                defaultSource={{
+                  uri: message?.localFile?.url,
+                }}
                 style={style.messageImg}
                 source={{
                   uri: thumbnailGenerationObject
                     ? thumbnailGenerationObject.url_small
                     : message.data.url,
                 }}
-                resizeMode={FastImage.resizeMode.contain}
+                resizeMode={FastImage.resizeMode.stretch}
               />
             </TouchableOpacity>
           </View>

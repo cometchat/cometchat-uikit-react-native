@@ -276,7 +276,7 @@ class CometChatAddGroupMemberList extends React.Component {
               this.props.actionGenerated('addGroupParticipants', membersToAdd);
             }
           })
-          .catch(() => {
+          .catch((error) => {
             const errorCode = error?.message || 'ERROR';
             this.dropDownAlertRef?.showMessage('error', errorCode);
             logger('addMembersToGroup failed with exception:', error);

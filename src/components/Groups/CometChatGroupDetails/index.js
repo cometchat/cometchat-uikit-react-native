@@ -4,7 +4,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { CometChatSharedMedia } from '../../Shared';
+import { CometChatSharedMedia, CometChatAvatar } from '../../Shared';
 import style from './styles';
 import BottomSheet from 'reanimated-bottom-sheet';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -21,6 +21,7 @@ import {
 import { deviceHeight } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
+import styles from '../../Shared/CometChatAvatar/styles';
 
 const ADD_MEMBER = 'addMember';
 const VIEW_MEMBER = 'viewMember';
@@ -739,6 +740,18 @@ export default class CometChatGroupDetails extends React.Component {
       );
     }
 
+    let avatar = (
+      <View style={style.avatarStyle}>
+        <CometChatAvatar
+          cornerRadius={32}
+          borderColor={theme.color.secondary}
+          borderWidth={1}
+          image={{ uri: this.props.item.avatar }}
+          name={this.props.item.name}
+        />
+      </View>
+    );
+
     return (
       <Modal
         transparent
@@ -785,6 +798,20 @@ export default class CometChatGroupDetails extends React.Component {
                       </TouchableOpacity>
                       <Text style={style.headerTitleStyle}>Details</Text>
                     </View>
+                    <View style={styles.groupDetailContainer}>
+                      {avatar}
+                      <View style={styles.groupDetail}>
+                        <View>
+                          <Text style={style.userName}>
+                            {this.props.item.name}
+                          </Text>
+                        </View>
+                        <Text style={style.statusText} numberOfLines={1}>
+                          {parseInt(this.props.item?.membersCount)} Members
+                        </Text>
+                      </View>
+                    </View>
+
                     <View style={style.detailContainer}>
                       {members}
                       {options}
