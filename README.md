@@ -60,7 +60,7 @@ To install React-Native UI Kit, you need to first register on CometChat Dashboar
 ### ii. Add the CometChat Dependency
 
 ```javascript
- npm install @cometchat-pro/react-native-chat@3.0.0-beta1 --save
+ npm install @cometchat-pro/react-native-chat@3.0.0-beta4 --save
 ```
 
 ### iii. Other required DEPENDENCIES
@@ -89,6 +89,7 @@ These packages help make the ui-kit smooth and functioning
 [react-native-screens](https://www.npmjs.com/package/react-native-screens)</br>
 [emoji-mart-native](https://www.npmjs.com/package/emoji-mart-native)</br>
 [react-native-keep-awake](https://www.npmjs.com/package/react-native-keep-awake)</br>
+[react-native-webview](https://www.npmjs.com/package/react-native-webview)</br>
 
 <br/>
 

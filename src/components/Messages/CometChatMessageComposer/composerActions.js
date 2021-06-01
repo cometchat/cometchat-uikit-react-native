@@ -28,7 +28,7 @@ export default class ComposerActions extends Component {
     }
   }
 
-  takePhoto = async () => {
+  takePhoto = async (mediaType = 'photo') => {
     try {
       let granted = null;
       if (Platform.OS === 'android') {
@@ -50,7 +50,9 @@ export default class ComposerActions extends Component {
       ) {
         launchCamera(
           {
+            mediaType,
             includeBase64: false,
+            cameraType: 'back',
           },
           (response) => {
             if (response.didCancel) {
@@ -64,15 +66,30 @@ export default class ComposerActions extends Component {
               type = response.type;
               name = 'Camera_001.jpeg';
             }
+            if (mediaType == 'video') {
+              type = 'video/quicktime';
+              name = 'Camera_002.mov';
+            }
             const file = {
-              name: Platform.OS === 'android' ? response.fileName : name,
-              type: Platform.OS === 'android' ? response.type : type,
+              name:
+                Platform.OS === 'android' && mediaType != 'video'
+                  ? response.fileName
+                  : name,
+              type:
+                Platform.OS === 'android' && mediaType != 'video'
+                  ? response.type
+                  : type,
               uri:
                 Platform.OS === 'android'
                   ? response.uri
                   : response.uri.replace('file://', ''),
             };
-            this.props.sendMediaMessage(file, CometChat.MESSAGE_TYPE.IMAGE);
+            this.props.sendMediaMessage(
+              file,
+              mediaType === 'photo'
+                ? CometChat.MESSAGE_TYPE.IMAGE
+                : CometChat.MESSAGE_TYPE.VIDEO,
+            );
           },
         );
       }
@@ -87,9 +104,7 @@ export default class ComposerActions extends Component {
       {
         mediaType: type,
         includeBase64: false,
-        maxHeight: 200,
-        maxWidth: 200,
-        videoQuality: 'medium',
+        cameraType: 'back',
       },
       (response) => {
         if (response.didCancel) {
@@ -148,9 +163,24 @@ export default class ComposerActions extends Component {
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={() => this.takePhoto()}>
-        <EvilIcon name="camera" size={28} />
+        <EvilIcon name="camera" size={24} />
         <Text style={{ fontSize: 18, marginLeft: 10, fontWeight: '500' }}>
           Take Photo
+        </Text>
+      </TouchableOpacity>
+    );
+    let takeVideoBtn = (
+      <TouchableOpacity
+        style={style.actionButtonContainer}
+        onPress={() => this.takePhoto('video')}>
+        <IonIcon name="videocam-outline" size={24} />
+        <Text
+          style={{
+            fontSize: 18,
+            marginLeft: 10,
+            fontWeight: '500',
+          }}>
+          Take Video
         </Text>
       </TouchableOpacity>
     );
@@ -160,7 +190,12 @@ export default class ComposerActions extends Component {
         onPress={() => this.launchLibrary('photo')}>
         <IonIcon name="image-outline" size={24} />
 
-        <Text style={{ fontSize: 18, marginLeft: 10, fontWeight: '500' }}>
+        <Text
+          style={{
+            fontSize: 18,
+            marginLeft: 10,
+            fontWeight: '500',
+          }}>
           Photo Library
         </Text>
       </TouchableOpacity>
@@ -217,6 +252,7 @@ export default class ComposerActions extends Component {
     return (
       <View style={style.reactionDetailsContainer}>
         {takePhotoBtn}
+        {takeVideoBtn}
         {avp}
         {vp}
         {docs}
@@ -241,7 +277,7 @@ export default class ComposerActions extends Component {
             <View style={style.fullFlex}>
               <BottomSheet
                 ref={this.sheetRef}
-                snapPoints={[356 * heightRatio, 0]}
+                snapPoints={[400 * heightRatio, 0]}
                 borderRadius={30}
                 initialSnap={1}
                 enabledInnerScrolling={false}

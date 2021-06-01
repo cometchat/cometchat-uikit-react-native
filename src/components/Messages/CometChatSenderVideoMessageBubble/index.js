@@ -1,7 +1,7 @@
 import React, { useState, createRef } from 'react';
-import { View, TouchableWithoutFeedback } from 'react-native';
+import { View } from 'react-native';
 import VideoPlayer from 'react-native-video-controls';
-
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReplyCount';
 import CometChatReadReceipt from '../CometChatReadReceipt';
 import { CometChatMessageReactions } from '../../Messages/Extensions';
@@ -18,26 +18,30 @@ const CometChatSenderVideoMessageBubble = (props) => {
   return (
     <View style={style.container}>
       <View style={style.messageWrapperStyle}>
-        <TouchableWithoutFeedback
+        <TouchableOpacity
+          style={{
+            ...style.messageVideoWrapperStyle,
+          }}
+          onPress={() => {
+            props.actionGenerated(actions.VIEW_ACTUAL_VIDEO, message);
+          }}
           onLongPress={() =>
             props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
           }>
-          <View style={style.messageVideoWrapperStyle}>
-            <VideoPlayer
-              source={{
-                uri: message.data.url,
-              }} // Can be a URL or a local file.
-              ref={player} // Store reference
-              style={style.messageVideo}
-              navigator={props.navigator}
-              disableBack
-              disableFullscreen
-              disableVolume
-              paused
-              resizeMode="contain"
-            />
-          </View>
-        </TouchableWithoutFeedback>
+          <VideoPlayer
+            source={{
+              uri: message.data.url,
+            }} // Can be a URL or a local file.
+            ref={player} // Store reference
+            style={style.messageVideo}
+            navigator={props.navigator}
+            disableBack
+            disableFullscreen
+            disableVolume
+            muted
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
       </View>
       <View style={style.messageInfoWrapperStyle}>
         <CometChatThreadedMessageReplyCount {...props} message={message} />

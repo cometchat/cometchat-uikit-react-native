@@ -11,6 +11,7 @@ import {
   Keyboard,
   Platform,
 } from 'react-native';
+
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDIcon from 'react-native-vector-icons/AntDesign';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -178,7 +179,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
 
       const { receiverId, receiverType } = this.getReceiverDetails();
       const conversationId = this.props.getConversationId();
-
       const mediaMessage = new CometChat.MediaMessage(
         receiverId,
         messageInput,
@@ -206,16 +206,24 @@ export default class CometChatMessageComposer extends React.PureComponent {
       });
       this.props.actionGenerated(actions.MESSAGE_COMPOSED, [mediaMessage]);
       CometChat.sendMessage(mediaMessage)
-        .then((response) => {
+        .then(async (response) => {
           this.messageSending = false;
           this.playAudio();
-          const newMessageObj = { ...response, _id: mediaMessage._id };
-          this.props.actionGenerated('messageSent', newMessageObj);
+
+          const newMessageObj = {
+            ...response,
+            _id: mediaMessage._id,
+            localFile: messageInput,
+          };
+          this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
         })
         .catch((error) => {
           const newMessageObj = { ...mediaMessage, error: error };
           const errorCode = error?.message || 'ERROR';
-          this.props.actionGenerated('errorSentInMessage', newMessageObj);
+          this.props.actionGenerated(
+            actions.ERROR_IN_SEND_MESSAGE,
+            newMessageObj,
+          );
 
           this.props?.showMessage('error', errorCode);
           this.messageSending = false;
@@ -269,7 +277,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       textMessage.setReceiver(receiverType);
       textMessage.setText(messageInput);
       textMessage.setConversationId(conversationId);
-      textMessage._composedAt = Math.round(+new Date() / 1000);
+      textMessage._composedAt = Date.now();
       textMessage._id = '_' + Math.random().toString(36).substr(2, 9);
       this.props.actionGenerated(actions.MESSAGE_COMPOSED, [textMessage]);
       this.setState({ messageInput: '', replyPreview: false });
@@ -283,11 +291,14 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.messageSending = false;
           this.messageInputRef.current.textContent = '';
           // this.playAudio();
-          this.props.actionGenerated('messageSent', newMessageObj);
+          this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
         })
         .catch((error) => {
           const newMessageObj = { ...textMessage, error: error };
-          this.props.actionGenerated('errorSentInMessage', newMessageObj);
+          this.props.actionGenerated(
+            actions.ERROR_IN_SEND_MESSAGE,
+            newMessageObj,
+          );
           logger('Message sending failed with error:', error);
           const errorCode = error?.message || 'ERROR';
           this.props?.showMessage('error', errorCode);
@@ -488,7 +499,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
     customMessage.setSender(this.loggedInUser);
     customMessage.setReceiver(receiverType);
     customMessage.setConversationId(conversationId);
-    customMessage._composedAt = Math.round(+new Date() / 1000);
+    customMessage._composedAt = Date.now();
     customMessage._id = '_' + Math.random().toString(36).substr(2, 9);
     this.props.actionGenerated(actions.MESSAGE_COMPOSED, [customMessage]);
     CometChat.sendCustomMessage(customMessage)
@@ -497,11 +508,14 @@ export default class CometChatMessageComposer extends React.PureComponent {
         this.playAudio();
         const newMessageObj = { ...message, _id: customMessage._id };
 
-        this.props.actionGenerated('messageSent', newMessageObj);
+        this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
       })
       .catch((error) => {
         const newMessageObj = { ...customMessage, error: error };
-        this.props.actionGenerated('errorSentInMessage', newMessageObj);
+        this.props.actionGenerated(
+          actions.ERROR_IN_SEND_MESSAGE,
+          newMessageObj,
+        );
         const errorCode = error?.message || 'ERROR';
 
         this.props?.showMessage('error', errorCode);

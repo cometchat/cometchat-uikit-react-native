@@ -33,6 +33,8 @@ import {
 } from '../index';
 import styles from './styles';
 import { logger } from '../../../utils/common';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 let cDate = null;
 
@@ -226,6 +228,7 @@ class CometChatMessageList extends React.PureComponent {
         break;
       case enums.TEXT_MESSAGE_RECEIVED:
       case enums.MEDIA_MESSAGE_RECEIVED:
+        this.newMsgComponent();
         this.messageReceived(message);
         break;
       case enums.CUSTOM_MESSAGE_RECEIVED:
@@ -1090,29 +1093,68 @@ class CometChatMessageList extends React.PureComponent {
     );
   };
 
+  newMsgComponent = () => {
+    if (this.yOffset > 50) {
+      this.setState({ showNewMsg: true });
+    }
+  };
+
   render() {
     let messages = [...this.props.messages];
     if (messages.length) {
       messages = messages.reverse();
     }
 
+    let newMsgPopUp = (
+      <View style={styles.newMessagePopupContainer}>
+        <TouchableOpacity
+          onPress={() => {
+            this.setState({ showNewMsg: null }, () => {
+              this.flatListRef.current.scrollToOffset({
+                offset: 0,
+                animated: true,
+              });
+            });
+          }}
+          style={styles.newMessageTextContainer}>
+          <Text>New message</Text>
+          <Icon
+            name="arrow-down"
+            style={{ marginLeft: 5 }}
+            size={15}
+            color="#000"
+          />
+        </TouchableOpacity>
+      </View>
+    );
+
     return (
-      <FlatList
-        ref={this.flatListRef}
-        ListEmptyComponent={this.listEmptyComponent}
-        onEndReached={() => this.getMessages(true)}
-        onEndReachedThreshold={0.3}
-        inverted={-1}
-        style={{ flex: 1, paddingHorizontal: 5 }}
-        contentContainerStyle={!messages.length ? { flex: 1 } : {}}
-        ListFooterComponent={
-          messages.length && this.props.parentMessageComponent
-            ? this.props.parentMessageComponent
-            : null
-        }
-        data={messages}
-        renderItem={this.renderItem}
-      />
+      <>
+        <FlatList
+          ref={this.flatListRef}
+          ListEmptyComponent={this.listEmptyComponent}
+          onScroll={(event) => {
+            this.yOffset = event.nativeEvent.contentOffset.y;
+            if (this.yOffset > 50 && this.state.showNewMsg) {
+              this.setState({ showNewMsg: false });
+            }
+          }}
+          scrollEventThrottle={16}
+          onEndReached={() => this.getMessages(true)}
+          onEndReachedThreshold={0.3}
+          inverted={-1}
+          style={{ flex: 1, paddingHorizontal: 5 }}
+          contentContainerStyle={!messages.length ? { flex: 1 } : {}}
+          ListFooterComponent={
+            messages.length && this.props.parentMessageComponent
+              ? this.props.parentMessageComponent
+              : null
+          }
+          data={messages}
+          renderItem={this.renderItem}
+        />
+        {this.state.showNewMsg ? newMsgPopUp : null}
+      </>
     );
   }
 }

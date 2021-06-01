@@ -11,6 +11,7 @@ import {
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as actions from '../../../utils/actions';
 import _ from 'lodash';
+import { HIDE_DELETED_MSG } from '../../../utils/settings';
 import { CometChatUserDetails } from '../../Users';
 import {
   CometChatLiveReactions,
@@ -21,7 +22,7 @@ import {
   CometChatMessageThread,
 } from '../index';
 import { CometChatGroupDetails } from '../../Groups';
-
+import CometChatVideoViewer from '../CometChatVideoViewer';
 import theme from '../../../resources/theme';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
@@ -29,6 +30,7 @@ import { checkMessageForExtensionsData } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
 import BottomSheet from 'reanimated-bottom-sheet';
 import style from './styles';
+import CometChatUserProfile from '../../Users/CometChatUserProfile';
 
 class CometChatMessages extends React.PureComponent {
   loggedInUser = null;
@@ -52,6 +54,7 @@ class CometChatMessages extends React.PureComponent {
       userDetailVisible: false,
       groupDetailVisible: false,
       user: params.type === 'user' ? params.item : null,
+      showProfile: false,
     };
 
     this.composerRef = React.createRef();
@@ -160,8 +163,8 @@ class CometChatMessages extends React.PureComponent {
     const { route } = this.props;
     const params = route?.params || this.props;
     switch (action) {
-      case 'customMessageReceived':
-      case 'messageReceived':
+      case actions.CUSTOM_MESSAGE_RECEIVED:
+      case actions.MESSAGE_RECEIVED:
         {
           const message = messages[0];
           if (message.parentMessageId) {
@@ -172,149 +175,179 @@ class CometChatMessages extends React.PureComponent {
           }
         }
         break;
-      case 'groupDeleted':
+      case actions.GROUP_DELETED:
         this.deleteGroup(messages);
         break;
-      case 'leftGroup':
+      case actions.LEFT_GROUP:
         this.leaveGroup(messages);
         break;
-      case 'membersUpdated':
+      case actions.MEMBERS_UPDATED:
         this.updateMembersCount(messages, key);
         break;
-      case 'messageRead':
+      case actions.MESSAGE_READ:
         params.actionGenerated(action, messages);
         break;
-      case 'messageSent':
-      case 'errorSentInMessage':
+      case actions.MESSAGE_SENT:
+      case actions.ERROR_IN_SEND_MESSAGE:
         this.messageSent(messages);
-      case 'messageComposed': {
+      case actions.MESSAGE_COMPOSED: {
         this.appendMessage(messages);
         break;
       }
-      case 'viewMessageThread':
+      case actions.VIEW_MESSAGE_THREAD:
         this.setState({ messageToReact: null }, () => {
           this.viewMessageThread(messages);
           // route.params.actionGenerated('viewMessageThread', messages);
         });
         break;
-      case 'closeThreadClicked':
+      case actions.CLOSE_THREAD_CLICKED:
         this.closeThreadMessages();
         break;
-      case 'messageUpdated': {
+      case actions.MESSAGE_UPDATED: {
         this.updateMessages(messages);
         break;
       }
-      case 'messageFetched':
+      case actions.MESSAGE_FETCHED:
         this.prependMessages(messages);
         break;
-      case 'messageFetchedAgain':
+      case actions.MESSAGE_FETCHED_AGAIN:
         this.prependMessagesAndScrollBottom(messages);
         break;
-      case 'messageDeleted':
+      case actions.MESSAGE_DELETED:
         this.removeMessages(messages);
         break;
-      case 'threadMessageDeleted':
-        params.actionGenerated('messageDeleted', messages);
+      case actions.THREAD_MESSAGE_DELETED:
+        params.actionGenerated(actions.MESSAGE_DELETED, messages);
         break;
-      case 'deleteMessage':
+      case actions.DELETE_MESSAGE:
         this.setState({ messageToReact: null });
         this.deleteMessage(messages);
         break;
-      case 'editMessage':
+      case actions.EDIT_MESSAGE:
         this.setState({ messageToReact: null });
         this.editMessage(messages);
         break;
-      case 'messageEdited':
+      case actions.MESSAGE_EDITED:
         this.messageEdited(messages);
         break;
-      case 'clearEditPreview':
+      case actions.CLEAR_EDIT_PREVIEW:
         this.clearEditPreview();
         break;
-      case 'groupUpdated':
+      case actions.GROUP_UPDATED:
         this.groupUpdated(messages, key, group, options);
         break;
-      case 'callUpdated':
+      case actions.CALL_UPDATED:
         this.callUpdated(messages);
         break;
-      case 'pollAnswered':
+      case actions.POLL_ANSWERED:
         this.updatePollMessage(messages);
         break;
-      case 'pollCreated':
+      case actions.POLL_CREATED:
         this.appendPollMessage(messages);
         break;
-      case 'viewActualImage':
-        params.actionGenerated('viewActualImage', messages);
+      case actions.VIEW_ACTUAL_IMAGE:
+        params.actionGenerated(actions.VIEW_ACTUAL_IMAGE, messages);
         break;
-      case 'audioCall':
-      case 'videoCall':
-      case 'menuClicked':
+      case actions.VIEW_ACTUAL_VIDEO:
+        this.setState({ videoMessage: messages });
+        break;
+      case actions.AUDIO_CALL:
+      case actions.VIDEO_CALL:
+      case actions.MENU_CLICKED:
       case actions.JOIN_DIRECT_CALL:
         params.actionGenerated(action);
         break;
-      case 'sendReaction':
+      case actions.SEND_REACTION:
         this.toggleReaction(true);
         break;
-      case 'showReaction':
+      case actions.SHOW_REACTION:
         this.showReaction(messages);
         break;
-      case 'stopReaction':
+      case actions.STOP_REACTION:
         this.toggleReaction(false);
         break;
-      case 'reactToMessage':
+      case actions.REACT_TO_MESSAGE:
         this.reactToMessage(messages);
         break;
-      case 'goBack':
+      case actions.GO_BACK:
         this.props.navigation?.goBack();
         break;
-      case 'closeDetail':
+      case actions.CLOSE_DETAIL:
         this.setState({ userDetailVisible: false, groupDetailVisible: false });
         break;
-      case 'viewDetail':
-        if (params.type === 'user') {
+      case actions.VIEW_DETAIL:
+        if (params.type === CometChat.RECEIVER_TYPE.USER) {
           this.setState({ userDetailVisible: true });
         } else {
           this.setState({ groupDetailVisible: true });
         }
         break;
-      case 'blockUser':
+      case actions.BLOCK_USER:
         this.blockUser();
         break;
-      case 'unblockUser':
+      case actions.UNBLOCK_USER:
         this.unblockUser();
         break;
-      case 'closeMessageActions':
+      case actions.CLOSE_MESSAGE_ACTIONS:
         this.setState({ messageToReact: null });
         break;
-      case 'openMessageActions':
+      case actions.OPEN_MESSAGE_ACTIONS:
         this.setState({ messageToReact: messages });
         break;
-      case 'updateThreadMessage':
+      case actions.UPDATE_THREAD_MESSAGE:
         this.updateThreadMessage(messages[0], key);
         break;
-      case 'threadMessageComposed':
+      case actions.THREAD_MESSAGE_COMPOSED:
         this.onThreadMessageComposed(messages);
-        params.actionGenerated('threadMessageComposed', messages);
+        params.actionGenerated(actions.THREAD_MESSAGE_COMPOSED, messages);
         // this.updateLastMessage(item[0]);
         break;
-      case 'memberScopeChanged':
+      case actions.MEMBER_SCOPE_CHANGED:
         this.memberScopeChanged(messages);
         break;
-      case 'membersRemoved':
+      case actions.MEMBERS_REMOVED:
         this.membersRemoved(messages);
         break;
-      case 'membersAdded':
+      case actions.MEMBERS_ADDED:
         this.membersAdded(messages);
         break;
-      case 'memberBanned':
+      case actions.MEMBER_BANNED:
         this.memberBanned(messages);
         break;
-      case 'memberUnbanned':
+      case actions.MEMBER_UNBANNED:
         this.memberUnbanned(messages);
         break;
-
+      case actions.SEND_MESSAGE:
+        this.setState({ messageToReact: null });
+        this.sendMessage(messages);
+        break;
+      case actions.SHOW_PROFILE:
+        this.showProfile();
       default:
         break;
     }
+  };
+
+  sendMessage = (message) => {
+    const { route } = this.props;
+
+    const params = route?.params || this.props;
+
+    this.props.navigation.push(enums.NAVIGATION_CONSTANTS.COMET_CHAT_MESSAGES, {
+      theme: params.theme,
+      item: { ...message.sender },
+      type: CometChat.RECEIVER_TYPE.USER,
+      loggedInUser: params.loggedInUser,
+      actionGenerated: params.actionGenerated,
+    });
+  };
+
+  showProfile = () => {
+    this.setState({
+      userDetailVisible: false,
+      groupDetailVisible: false,
+      showProfile: true,
+    });
   };
 
   messageSent = (message) => {
@@ -622,8 +655,11 @@ class CometChatMessages extends React.PureComponent {
     if (messageKey > -1) {
       const messageObj = { ...messageList[messageKey] };
       const newMessageObj = { ...messageObj, ...deletedMessage };
-
-      messageList.splice(messageKey, 1, newMessageObj);
+      if (HIDE_DELETED_MSG) {
+        messageList.splice(messageKey, 1);
+      } else {
+        messageList.splice(messageKey, 1, newMessageObj);
+      }
       this.setState({ messageList: messageList, scrollToBottom: false });
     }
   };
@@ -782,7 +818,11 @@ class CometChatMessages extends React.PureComponent {
           this.composerRef = el;
         }}
         theme={this.theme}
-        item={params.type === 'user' ? this.state.user : this.state.item}
+        item={
+          params.type === CometChat.RECEIVER_TYPE.USER
+            ? this.state.user
+            : this.state.item
+        }
         type={params.type}
         // widgetsettings={route.params.widgetsettings}
         loggedInUser={this.loggedInUser}
@@ -858,11 +898,29 @@ class CometChatMessages extends React.PureComponent {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}>
         <SafeAreaView style={style.chatWrapperStyle}>
+          {this.state.showProfile ? (
+            <CometChatUserProfile
+              open
+              close={() => this.setState({ showProfile: null })}
+              url={this.state.user?.link}
+            />
+          ) : null}
+          {this.state.videoMessage ? (
+            <CometChatVideoViewer
+              open
+              close={() => this.setState({ videoMessage: null })}
+              message={this.state.videoMessage}
+            />
+          ) : null}
           {this.state.userDetailVisible ? (
             <CometChatUserDetails
               open={this.state.userDetailVisible}
               theme={this.theme}
-              item={params.type === 'user' ? this.state.user : this.state.item}
+              item={
+                params.type === CometChat.RECEIVER_TYPE.USER
+                  ? this.state.user
+                  : this.state.item
+              }
               type={params.type}
               actionGenerated={this.actionHandler}
             />
@@ -879,6 +937,12 @@ class CometChatMessages extends React.PureComponent {
             />
           ) : null}
           <CometChatMessageActions
+            item={
+              params.type === CometChat.RECEIVER_TYPE.USER
+                ? this.state.user
+                : this.state.item
+            }
+            loggedInUser={this.loggedInUser}
             open={!!this.state.messageToReact}
             message={this.state.messageToReact}
             actionGenerated={this.actionHandler}
@@ -889,7 +953,11 @@ class CometChatMessages extends React.PureComponent {
           <CometChatMessageHeader
             sidebar={params.sidebar}
             theme={this.theme}
-            item={params.type === 'user' ? this.state.user : this.state.item}
+            item={
+              params.type === CometChat.RECEIVER_TYPE.USER
+                ? this.state.user
+                : this.state.item
+            }
             type={params.type}
             viewdetail={params.viewdetail !== false}
             audioCall={params.audioCall !== false}
@@ -901,7 +969,11 @@ class CometChatMessages extends React.PureComponent {
           <CometChatMessageList
             theme={this.theme}
             messages={this.state.messageList}
-            item={params.type === 'user' ? this.state.user : this.state.item}
+            item={
+              params.type === CometChat.RECEIVER_TYPE.USER
+                ? this.state.user
+                : this.state.item
+            }
             type={params.type}
             scrollToBottom={this.state.scrollToBottom}
             messageConfig={params.messageconfig}

@@ -43,4 +43,29 @@ export default StyleSheet.create({
     overflow: 'hidden',
     minHeight: Dimensions.get('window').height - 80,
   },
+  userName: {
+    fontSize: 18 * heightRatio,
+    color: theme.color.primary,
+    fontWeight: 'bold',
+  },
+  statusText: {
+    fontSize: 14,
+    color: theme.color.blue,
+  },
+  avatarStyle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(51,153,255,0.25)',
+  },
+  groupDetailContainer: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  groupDetail: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    height: 48,
+  },
 });

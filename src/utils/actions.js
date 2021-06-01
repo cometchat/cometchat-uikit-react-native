@@ -36,6 +36,9 @@ export const MESSAGE_COMPOSED = 'messageComposed';
 export const MESSAGE_EDITED = 'messageEdited';
 export const MESSAGE_DELETED = 'messageDeleted';
 export const VIEW_ACTUAL_IMAGE = 'viewActualImage';
+export const VIEW_ACTUAL_VIDEO = 'viewActualVideo';
+export const MESSAGE_SENT = 'messageSent';
+export const ERROR_IN_SEND_MESSAGE = 'errorInSentMessage';
 
 export const MEMBERS_UPDATED = 'membersUpdated';
 export const MEMBERS_REMOVED = 'membersRemoved';
@@ -49,6 +52,7 @@ export const ADD_GROUP_PARTICIPANTS = 'addGroupParticipants';
 export const REMOVE_GROUP_PARTICIPANTS = 'removeGroupParticipants';
 export const UPDATE_GROUP_PARTICIPANTS = 'updateGroupParticipants';
 export const UNBAN = 'unban';
+export const SHOW_PROFILE = 'showProfile';
 export const FETCH_GROUP_MEMBERS = 'fetchGroupMembers';
 export const FETCH_BANNED_MEMBERS = 'fetchBannedMembers';
 
@@ -68,6 +72,7 @@ export const REACT_TO_MESSAGE = 'reactToMessage';
 
 export const CLEAR_EDIT_PREVIEW = 'clearEditPreview';
 export const VIEW_MESSAGE_THREAD = 'viewMessageThread';
+export const SEND_MESSAGE = 'sendMessage';
 export const GO_BACK = 'goBack';
 
 export const MESSAGE_READ = 'messageRead';

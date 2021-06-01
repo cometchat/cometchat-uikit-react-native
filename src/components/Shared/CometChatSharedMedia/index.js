@@ -357,7 +357,9 @@ export default class CometChatSharedMedia extends React.Component {
               height: deviceHeight - 280 * heightRatio,
             }}
             columnWrapperStyle={styles.mediaItemColumnStyle}
-            contentContainerStyle={styles.mediaItemStyle}
+            contentContainerStyle={
+              messages?.length ? null : styles.mediaItemStyle
+            }
             showsVerticalScrollIndicator={false}
             numColumns={2}
             ListEmptyComponent={this.emptyListComponent}

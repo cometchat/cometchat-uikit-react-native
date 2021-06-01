@@ -16,6 +16,22 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 const actionIconSize = 26;
 
 export default (props) => {
+  let sendMessage = null;
+  if (
+    props.message.messageFrom === enums.MESSAGE_FROM_RECEIVER &&
+    props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP
+  ) {
+    sendMessage = (
+      <TouchableOpacity
+        style={styles.action}
+        onPress={() =>
+          props.actionGenerated(actions.SEND_MESSAGE, props.message)
+        }>
+        <FeatherIcon name="message-circle" size={actionIconSize} />
+        <Text style={styles.actionsText}>Send Message Privately</Text>
+      </TouchableOpacity>
+    );
+  }
   let threadedChats = (
     <TouchableOpacity
       style={styles.action}
@@ -47,7 +63,11 @@ export default (props) => {
   );
 
   // if deleting messages need to be disabled
-  if (props.message.messageFrom === 'receiver') {
+  if (
+    props.message.messageFrom === enums.MESSAGE_FROM_RECEIVER &&
+    props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN &&
+    props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.MODERATOR
+  ) {
     deleteMessage = null;
   }
   let editMessage = (
@@ -76,6 +96,7 @@ export default (props) => {
   return (
     <TouchableWithoutFeedback onPress={() => {}}>
       <View style={styles.actionsContainer}>
+        {sendMessage}
         {threadedChats}
         {editMessage}
         {deleteMessage}
