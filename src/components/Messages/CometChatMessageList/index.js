@@ -179,23 +179,7 @@ class CometChatMessageList extends React.PureComponent {
                 message.getSender().getUid() !== user.getUid() &&
                 !message.getReadAt()
               ) {
-                if (
-                  message.getReceiverType() === CometChat.RECEIVER_TYPE.USER
-                ) {
-                  CometChat.markAsRead(
-                    message.getId().toString(),
-                    message.getSender().getUid(),
-                    message.getReceiverType(),
-                  );
-                } else if (
-                  message.getReceiverType() === CometChat.RECEIVER_TYPE.GROUP
-                ) {
-                  CometChat.markAsRead(
-                    message.getId().toString(),
-                    message.getReceiverId(),
-                    message.getReceiverType(),
-                  );
-                }
+                CometChat.markAsRead(message);
               }
               this.props.actionGenerated(actions.MESSAGE_READ, message);
             });
@@ -426,11 +410,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getReceiverId() === this.props.item.guid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getReceiverId(),
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         this.props.actionGenerated(actions.MESSAGE_RECEIVED, [message]);
@@ -440,11 +420,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getSender().uid === this.props.item.uid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getSender().uid,
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         this.props.actionGenerated(actions.MESSAGE_RECEIVED, [message]);
@@ -467,11 +443,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getReceiverId() === this.props.item.guid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getReceiverId(),
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
@@ -501,11 +473,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getSender().uid === this.props.item.uid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getSender().uid,
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
@@ -585,11 +553,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getReceiverId() === this.props.item.guid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getReceiverId(),
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         this.props.actionGenerated(actions.CALL_UPDATED, message);
@@ -599,11 +563,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getSender().uid === this.props.item.uid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getSender().uid,
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         this.props.actionGenerated(actions.CALL_UPDATED, message);
@@ -629,11 +589,7 @@ class CometChatMessageList extends React.PureComponent {
         message.getReceiver().guid === this.props.item.guid
       ) {
         if (!message.getReadAt()) {
-          CometChat.markAsRead(
-            message.getId().toString(),
-            message.getReceiverId(),
-            message.getReceiverType(),
-          );
+          CometChat.markAsRead(message);
         }
 
         this.props.actionGenerated(
