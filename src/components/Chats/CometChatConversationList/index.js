@@ -6,11 +6,16 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import { ConversationListManager } from './controller';
 import * as enums from '../../../utils/enums';
-import { CometChatConversationListItem } from '../index';
+import CometChatConversationListItem from '../CometChatConversationListItem';
 import theme from '../../../resources/theme';
 import styles from './styles';
 import Sound from 'react-native-sound';
 import DropDownAlert from '../../Shared/DropDownAlert';
+import { UIKitSettings } from '../../../utils/UIKitSettings';
+import {
+  CometChatContextProvider,
+  CometChatContext,
+} from '../../../utils/CometChatContext';
 import { incomingOtherMessageAlert } from '../../../resources/audio';
 import {
   View,
@@ -18,15 +23,16 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  FlatList,
+  Image,
+  TouchableOpacity,
 } from 'react-native';
 import { logger } from '../../../utils/common';
-
+import { SwipeListView } from 'react-native-swipe-list-view';
 class CometChatConversationList extends React.Component {
   loggedInUser = null;
 
   decoratorMessage = 'Loading...';
-
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -34,13 +40,24 @@ class CometChatConversationList extends React.Component {
       conversationList: [],
       selectedConversation: undefined,
       showSmallHeader: false,
+      isMessagesSoundEnabled: true,
     };
     this.chatListRef = React.createRef();
     this.theme = { ...theme, ...this.props.theme };
     this.audio = new Sound(incomingOtherMessageAlert);
+    this.UIKitSettingsBuilder = new UIKitSettings();
   }
 
   componentDidMount() {
+    this.decoratorMessage = 'Loading...';
+    if (this.ConversationListManager) {
+      this.ConversationListManager.removeListeners();
+    }
+    this.setState({ conversationList: [] });
+    this.ConversationListManager = new ConversationListManager();
+    this.getConversations();
+    this.ConversationListManager.attachListeners(this.conversationUpdated);
+    this.checkRestrictions();
     try {
       this.navListener = this.props.navigation.addListener('focus', () => {
         this.decoratorMessage = 'Loading...';
@@ -51,11 +68,17 @@ class CometChatConversationList extends React.Component {
         this.ConversationListManager = new ConversationListManager();
         this.getConversations();
         this.ConversationListManager.attachListeners(this.conversationUpdated);
+        this.checkRestrictions();
       });
     } catch (error) {
       logger(error);
     }
   }
+
+  checkRestrictions = async () => {
+    let isMessagesSoundEnabled = await this.context.FeatureRestriction.isMessagesSoundEnabled();
+    this.setState({ isMessagesSoundEnabled });
+  };
 
   componentDidUpdate(prevProps) {
     try {
@@ -210,6 +233,45 @@ class CometChatConversationList extends React.Component {
           conversationList.splice(conversationKey, 1);
           conversationList.unshift(newConversationObj);
           this.setState({ conversationList: conversationList });
+        } else {
+          // TODO: dont know what to do here
+          const chatListMode = this.UIKitSettingsBuilder.chatListMode;
+          const chatListFilterOptions = UIKitSettings.chatListFilterOptions;
+          if (chatListMode !== chatListFilterOptions['USERS_AND_GROUPS']) {
+            if (
+              (chatListMode === chatListFilterOptions['USERS'] &&
+                lastMessage.receiverType === CometChat.RECEIVER_TYPE.GROUP) ||
+              (chatListMode === chatListFilterOptions['GROUPS'] &&
+                lastMessage.receiverType === CometChat.RECEIVER_TYPE.USER)
+            ) {
+              return false;
+            }
+          }
+
+          const getConversationId = () => {
+            let conversationId = null;
+            if (this.getContext().type === CometChat.RECEIVER_TYPE.USER) {
+              const users = [this.loggedInUser.uid, this.getContext().item.uid];
+              conversationId = users.sort().join('_user_');
+            } else if (
+              this.getContext().type === CometChat.RECEIVER_TYPE.GROUP
+            ) {
+              conversationId = `group_${this.getContext().item.guid}`;
+            }
+
+            return conversationId;
+          };
+
+          let newConversation = new CometChat.Conversation();
+          newConversation.setConversationId(getConversationId());
+          newConversation.setConversationType(this.getContext().type);
+          newConversation.setConversationWith(this.getContext().item);
+          newConversation.setLastMessage(lastMessage);
+          newConversation.setUnreadMessageCount(0);
+
+          conversationList.unshift(newConversation);
+          this.setState({ conversationList: conversationList });
+          // this.getContext().setLastMessage({});
         }
       }
 
@@ -256,6 +318,19 @@ class CometChatConversationList extends React.Component {
    * @param actionBy: user object of action taker
    */
   conversationUpdated = (key, item, message, options, actionBy) => {
+    const chatListMode = this.UIKitSettingsBuilder.chatListMode;
+    const chatListFilterOptions = UIKitSettings.chatListFilterOptions;
+
+    if (chatListMode !== chatListFilterOptions['USERS_AND_GROUPS']) {
+      if (
+        (chatListMode === chatListFilterOptions['USERS'] &&
+          message.receiverType === CometChat.RECEIVER_TYPE.GROUP) ||
+        (chatListMode === chatListFilterOptions['GROUPS'] &&
+          message.receiverType === CometChat.RECEIVER_TYPE.USER)
+      ) {
+        return false;
+      }
+    }
     try {
       switch (key) {
         case enums.USER_ONLINE:
@@ -339,9 +414,10 @@ class CometChatConversationList extends React.Component {
    */
   playAudio = () => {
     try {
-      if (this.state.playingAudio) {
+      if (this.state.playingAudio || !this.state.isMessagesSoundEnabled) {
         return false;
       }
+
       this.setState({ playingAudio: true }, () => {
         this.audio.setCurrentTime(0);
         this.audio.play(() => {
@@ -849,39 +925,102 @@ class CometChatConversationList extends React.Component {
     this.getConversations();
   };
 
+  deleteConversations = (conversation) => {
+    let conversationWith =
+      conversation.conversationType === CometChat.RECEIVER_TYPE.GROUP
+        ? conversation?.conversationWith?.guid
+        : conversation?.conversationWith?.uid;
+    CometChat.deleteConversation(
+      conversationWith,
+      conversation.conversationType,
+    )
+      .then((deletedConversation) => {
+        const newConversationList = [...this.state.conversationList];
+        const conversationKey = newConversationList.findIndex(
+          (c) => c.conversationId === conversation.conversationId,
+        );
+
+        newConversationList.splice(conversationKey, 1);
+        this.setState({ conversationList: newConversationList });
+      })
+      .catch((error) => {
+        logger(error);
+      });
+  };
+
   render() {
     return (
-      <SafeAreaView style={{ backgroundColor: 'white' }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.conversationWrapperStyle}>
-          <View style={styles.headerContainer}></View>
-          {this.listHeaderComponent()}
-          <FlatList
-            contentContainerStyle={styles.flexGrow1}
-            data={this.state.conversationList}
-            renderItem={({ item }) => {
-              return (
-                <CometChatConversationListItem
-                  theme={this.theme}
-                  config={this.props.config}
-                  conversation={item}
-                  selectedConversation={this.state.selectedConversation}
-                  loggedInUser={this.loggedInUser}
-                  handleClick={this.handleClick}
-                />
-              );
-            }}
-            ListEmptyComponent={this.listEmptyContainer}
-            onScroll={this.handleScroll}
-            onEndReached={this.endReached}
-            onEndReachedThreshold={0.3}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled
-          />
-        </KeyboardAvoidingView>
-        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
-      </SafeAreaView>
+      <CometChatContextProvider ref={(el) => (this.contextProviderRef = el)}>
+        <SafeAreaView style={{ backgroundColor: 'white' }}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.conversationWrapperStyle}>
+            <View style={styles.headerContainer}></View>
+            {this.listHeaderComponent()}
+            <SwipeListView
+              contentContainerStyle={styles.flexGrow1}
+              data={this.state.conversationList}
+              keyExtractor={(item, index) => item?.conversationId + '_' + index}
+              renderHiddenItem={(data, rowMap) => (
+                <View
+                  key={data.item?.conversationId}
+                  style={{
+                    alignItems: 'center',
+                    flex: 1,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    paddingLeft: 15,
+                  }}>
+                  <TouchableOpacity
+                    style={{
+                      alignItems: 'center',
+                      bottom: 0,
+                      justifyContent: 'center',
+                      position: 'absolute',
+                      top: 0,
+                      width: 75,
+                      backgroundColor: 'red',
+                      right: 0,
+                      maxHeight: 64,
+                    }}
+                    onPress={() => this.deleteConversations(data.item)}>
+                    <Image
+                      source={require('./resources/delete.png')}
+                      resizeMode="contain"
+                      style={{ height: 24 }}
+                    />
+                    <Text style={styles.deleteText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              leftOpenValue={0}
+              rightOpenValue={-75}
+              previewRowKey={'0'}
+              previewOpenValue={-40}
+              previewOpenDelay={3000}
+              renderItem={({ item }) => {
+                return (
+                  <CometChatConversationListItem
+                    theme={this.theme}
+                    config={this.props.config}
+                    conversation={item}
+                    selectedConversation={this.state.selectedConversation}
+                    loggedInUser={this.loggedInUser}
+                    handleClick={this.handleClick}
+                  />
+                );
+              }}
+              ListEmptyComponent={this.listEmptyContainer}
+              onScroll={this.handleScroll}
+              onEndReached={this.endReached}
+              onEndReachedThreshold={0.3}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled
+            />
+          </KeyboardAvoidingView>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+        </SafeAreaView>
+      </CometChatContextProvider>
     );
   }
 }

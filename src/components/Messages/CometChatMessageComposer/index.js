@@ -31,8 +31,10 @@ import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
 import { heightRatio } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 export default class CometChatMessageComposer extends React.PureComponent {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -58,6 +60,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       composerActionsVisible: false,
       user: null,
       keyboardActivity: false,
+      restrictions: null,
     };
 
     this.audio = new Sound(outgoingMessageAlert);
@@ -78,7 +81,21 @@ export default class CometChatMessageComposer extends React.PureComponent {
       'keyboardDidHide',
       this._keyboardDidHide,
     );
+    this.checkRestrictions();
   }
+
+  checkRestrictions = async () => {
+    let isLiveReactionsEnabled = await this.context.FeatureRestriction.isLiveReactionsEnabled();
+    let isTypingIndicatorsEnabled = await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
+    let isSmartRepliesEnabled = await this.context.FeatureRestriction.isSmartRepliesEnabled();
+    this.setState({
+      restrictions: {
+        isLiveReactionsEnabled,
+        isTypingIndicatorsEnabled,
+        isSmartRepliesEnabled,
+      },
+    });
+  };
 
   componentWillUnmount() {
     this.keyboardDidShowListener.remove();
@@ -179,7 +196,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
 
       const { receiverId, receiverType } = this.getReceiverDetails();
       const conversationId = this.props.getConversationId();
-
       const mediaMessage = new CometChat.MediaMessage(
         receiverId,
         messageInput,
@@ -211,24 +227,20 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.messageSending = false;
           this.playAudio();
 
-
           const newMessageObj = {
             ...response,
             _id: mediaMessage._id,
             localFile: messageInput,
           };
           this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
-
         })
         .catch((error) => {
           const newMessageObj = { ...mediaMessage, error: error };
           const errorCode = error?.message || 'ERROR';
-
           this.props.actionGenerated(
             actions.ERROR_IN_SEND_MESSAGE,
             newMessageObj,
           );
-
 
           this.props?.showMessage('error', errorCode);
           this.messageSending = false;
@@ -282,9 +294,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       textMessage.setReceiver(receiverType);
       textMessage.setText(messageInput);
       textMessage.setConversationId(conversationId);
-
       textMessage._composedAt = Date.now();
-
       textMessage._id = '_' + Math.random().toString(36).substr(2, 9);
       this.props.actionGenerated(actions.MESSAGE_COMPOSED, [textMessage]);
       this.setState({ messageInput: '', replyPreview: false });
@@ -298,7 +308,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.messageSending = false;
           this.messageInputRef.current.textContent = '';
           // this.playAudio();
-
           this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
         })
         .catch((error) => {
@@ -307,7 +316,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
             actions.ERROR_IN_SEND_MESSAGE,
             newMessageObj,
           );
-
           logger('Message sending failed with error:', error);
           const errorCode = error?.message || 'ERROR';
           this.props?.showMessage('error', errorCode);
@@ -377,6 +385,9 @@ export default class CometChatMessageComposer extends React.PureComponent {
   startTyping = (timer, metadata) => {
     try {
       const typingInterval = timer || 5000;
+      if (!this.state.restrictions?.isTypingIndicatorsEnabled) {
+        return false;
+      }
       if (this.isTyping) {
         return false;
       }
@@ -508,9 +519,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
     customMessage.setSender(this.loggedInUser);
     customMessage.setReceiver(receiverType);
     customMessage.setConversationId(conversationId);
-
     customMessage._composedAt = Date.now();
-
     customMessage._id = '_' + Math.random().toString(36).substr(2, 9);
     this.props.actionGenerated(actions.MESSAGE_COMPOSED, [customMessage]);
     CometChat.sendCustomMessage(customMessage)
@@ -518,7 +527,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
         this.messageSending = false;
         this.playAudio();
         const newMessageObj = { ...message, _id: customMessage._id };
-
 
         this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
       })
@@ -528,7 +536,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           actions.ERROR_IN_SEND_MESSAGE,
           newMessageObj,
         );
-
         const errorCode = error?.message || 'ERROR';
 
         this.props?.showMessage('error', errorCode);
@@ -627,7 +634,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
       </TouchableOpacity>
     );
 
-    if (!this.state.messageInput.length) {
+    if (
+      !this.state.messageInput.length &&
+      this.state.restrictions?.isLiveReactionsEnabled
+    ) {
       sendBtn = null;
     } else {
       liveReactionBtn = null;
@@ -752,6 +762,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
           }
         }
       }
+    }
+
+    if (!this.state.restrictions?.isSmartRepliesEnabled) {
+      smartReplyPreview: false;
     }
 
     let stickerViewer = null;

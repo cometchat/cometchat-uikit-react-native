@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View, TouchableOpacity } from 'react-native';
-import { CometChatAvatar } from '../../Shared';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 import style from './styles';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/SimpleLineIcons';

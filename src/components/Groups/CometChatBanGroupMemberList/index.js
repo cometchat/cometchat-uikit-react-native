@@ -6,7 +6,7 @@ import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 import DropDownAlert from '../../Shared/DropDownAlert';
 
-import { CometChatBanGroupMemberListItem } from '../index';
+import CometChatBanGroupMemberListItem from '../CometChatBanGroupMemberListItem';
 import GroupDetailContext from '../CometChatGroupDetails/context';
 
 import style from './styles';
@@ -202,6 +202,7 @@ export default class CometChatBanGroupMemberList extends React.Component {
                     </View>
                     <FlatList
                       data={membersList}
+                      keyExtractor={(item, index) => item.uid + '_' + index}
                       renderItem={({ item, index }) => {
                         return (
                           <CometChatBanGroupMemberListItem

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,13 @@ import theme from '../../../resources/theme';
 import Autolink from 'react-native-autolink';
 import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReplyCount';
 import CometChatReadReceipt from '../CometChatReadReceipt';
-import { CometChatAvatar } from '../../Shared';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 import style from './styles';
-import { CometChatMessageReactions } from '../../Messages/Extensions';
+import CometChatMessageReactions from '../../Messages/Extensions/CometChatMessageReactions';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 function usePrevious(value) {
   const ref = useRef();
@@ -36,6 +37,17 @@ const CometChatReceiverTextMessageBubble = (props) => {
   if (message.receiverType === CometChat.RECEIVER_TYPE.GROUP) {
     senderAvatar = { uri: message.sender.avatar };
   }
+  const context = useContext(CometChatContext);
+  const [restrictions, setRestrictions] = useState(null);
+
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+
+  const checkRestrictions = async () => {
+    let isLinkPreviewEnabled = context.FeatureRestriction.isLinkPreviewEnabled();
+    setRestrictions({ isLinkPreviewEnabled });
+  };
 
   /**
    * Handler that parses text and wraps URLs, phone numbers, emails, social handles, hashtags, and more with Text nodes and onPress handlers.
@@ -81,7 +93,8 @@ const CometChatReceiverTextMessageBubble = (props) => {
         if (
           linkPreviewObject &&
           Object.prototype.hasOwnProperty.call(linkPreviewObject, 'links') &&
-          linkPreviewObject.links.length
+          linkPreviewObject.links.length &&
+          !restrictions?.isLinkPreviewEnabled
         ) {
           const linkObject = linkPreviewObject.links[0];
           const pattern = /(http:|https:)?\/\/(www\.)?(youtube.com|youtu.be)(\S+)?/;

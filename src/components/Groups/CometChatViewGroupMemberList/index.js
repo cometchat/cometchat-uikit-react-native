@@ -7,7 +7,7 @@ import DropDownAlert from '../../Shared/DropDownAlert';
 import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 
-import { CometChatViewGroupMemberListItem } from '../index';
+import CometChatViewGroupMemberListItem from '../CometChatViewGroupMemberListItem';
 import GroupDetailContext from '../CometChatGroupDetails/context';
 import _ from 'lodash';
 import style from './styles';
@@ -276,6 +276,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
                     <View style={style.listContainer}>
                       <FlatList
                         data={membersList}
+                        keyExtractor={(item, index) => item.uid + '_' + index}
                         renderItem={({ item, index }) => {
                           return (
                             <CometChatViewGroupMemberListItem

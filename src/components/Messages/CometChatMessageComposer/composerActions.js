@@ -18,15 +18,40 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import DocumentPicker from 'react-native-document-picker';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { heightRatio } from '../../../utils/consts';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 export default class ComposerActions extends Component {
   sheetRef = React.createRef(null);
-
+  static contextType = CometChatContext;
+  constructor(props) {
+    super(props);
+    this.state = {
+      restrictions: null,
+    };
+  }
   componentDidUpdate(prevProps) {
     if (!prevProps.visible && this.props.visible) {
       this.sheetRef.current.snapTo(0);
     }
   }
+
+  componentDidMount() {
+    this.checkRestrictions();
+  }
+  checkRestrictions = async () => {
+    let isPollsEnabled = await this.context.FeatureRestriction.isPollsEnabled();
+    let isStickersEnabled = await this.context.FeatureRestriction.isStickersEnabled();
+    let isFilesEnabled = await this.context.FeatureRestriction.isFilesEnabled();
+    let isPhotosVideosEnabled = await this.context.FeatureRestriction.isPhotosVideosEnabled();
+    this.setState({
+      restrictions: {
+        isPollsEnabled,
+        isStickersEnabled,
+        isFilesEnabled,
+        isPhotosVideosEnabled,
+      },
+    });
+  };
 
   takePhoto = async (mediaType = 'photo') => {
     try {
@@ -42,8 +67,7 @@ export default class ComposerActions extends Component {
           },
         );
       }
-      this.sheetRef.current.snapTo(1);
-      this.props.close();
+
       if (
         Platform.OS === 'ios' ||
         granted === PermissionsAndroid.RESULTS.GRANTED
@@ -55,6 +79,8 @@ export default class ComposerActions extends Component {
             cameraType: 'back',
           },
           (response) => {
+            this.sheetRef.current.snapTo(1);
+            this.props.close();
             if (response.didCancel) {
               return null;
             }
@@ -62,6 +88,7 @@ export default class ComposerActions extends Component {
             let name = null;
             if (Platform.OS === 'ios' && response.fileName !== undefined) {
               name = response.fileName;
+              type = response.type;
             } else {
               type = response.type;
               name = 'Camera_001.jpeg';
@@ -84,6 +111,7 @@ export default class ComposerActions extends Component {
                   ? response.uri
                   : response.uri.replace('file://', ''),
             };
+            console.log('file', file);
             this.props.sendMediaMessage(
               file,
               mediaType === 'photo'
@@ -248,7 +276,21 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
-
+    if (!this.state.restrictions?.isPollsEnabled) {
+      createPollBtn = null;
+    }
+    if (!this.state.restrictions?.isStickersEnabled) {
+      stickerBtn = null;
+    }
+    if (!this.state.restrictions?.isFilesEnabled) {
+      docs = null;
+    }
+    if (!this.state.restrictions?.isPhotosVideosEnabled) {
+      takeVideoBtn = null;
+      avp = null;
+      takePhotoBtn = null;
+      vp = null;
+    }
     return (
       <View style={style.reactionDetailsContainer}>
         {takePhotoBtn}

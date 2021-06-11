@@ -18,9 +18,11 @@ import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 const closeIcon = <Icon name="close" style={style.modalCloseStyle} />;
 class CometChatCreateGroup extends React.Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
     this.state = {
@@ -29,10 +31,28 @@ class CometChatCreateGroup extends React.Component {
       name: '',
       type: 'Select group type',
       password: '',
+      restrictions: null,
     };
 
     this.sheetRef = React.createRef(null);
   }
+
+  componentDidMount() {
+    this.checkRestrictions();
+  }
+
+  checkRestrictions = async () => {
+    let isPublicGroupEnabled = await this.context.FeatureRestriction.isPublicGroupEnabled();
+    let isPasswordGroupEnabled = await this.context.FeatureRestriction.isPasswordGroupEnabled();
+    let isPrivateGroupEnabled = await this.context.FeatureRestriction.isPrivateGroupEnabled();
+    this.setState({
+      restrictions: {
+        isPublicGroupEnabled,
+        isPasswordGroupEnabled,
+        isPrivateGroupEnabled,
+      },
+    });
+  };
 
   componentDidUpdate(prevProps, prevState) {
     if (!prevState.open && this.state.open) {
@@ -253,21 +273,27 @@ class CometChatCreateGroup extends React.Component {
                               label="Select group type"
                               value="Select group type"
                             />
-                            <Picker.Item
-                              style={style.inputOptionStyle}
-                              label="Public"
-                              value={CometChat.GROUP_TYPE.PUBLIC}
-                            />
-                            <Picker.Item
-                              style={style.inputOptionStyle}
-                              label="Private"
-                              value={CometChat.GROUP_TYPE.PRIVATE}
-                            />
-                            <Picker.Item
-                              style={style.inputOptionStyle}
-                              label="Password Protected"
-                              value={CometChat.GROUP_TYPE.PROTECTED}
-                            />
+                            {this.state.restrictions?.isPublicGroupEnabled ? (
+                              <Picker.Item
+                                style={style.inputOptionStyle}
+                                label="Public"
+                                value={CometChat.GROUP_TYPE.PUBLIC}
+                              />
+                            ) : null}
+                            {this.state.restrictions?.isPrivateGroupEnabled ? (
+                              <Picker.Item
+                                style={style.inputOptionStyle}
+                                label="Private"
+                                value={CometChat.GROUP_TYPE.PRIVATE}
+                              />
+                            ) : null}
+                            {this.state.restrictions?.isPasswordGroupEnabled ? (
+                              <Picker.Item
+                                style={style.inputOptionStyle}
+                                label="Password Protected"
+                                value={CometChat.GROUP_TYPE.PROTECTED}
+                              />
+                            ) : null}
                           </Picker>
                         </View>
                         {password}

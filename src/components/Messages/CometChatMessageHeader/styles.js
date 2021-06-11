@@ -46,10 +46,8 @@ export default StyleSheet.create({
     paddingHorizontal: 8,
   },
   callIcon: {
-
     height: 24,
     width: 24,
-
   },
   videoIcon: { width: 34, height: 24, resizeMode: 'contain' },
   itemDetailContainer: {

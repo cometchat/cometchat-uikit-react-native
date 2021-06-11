@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import DropDownAlert from '../../../Shared/DropDownAlert';
-import { CometChatCreatePollOptions } from '../index';
+import CometChatCreatePollOptions from '../CometChatCreatePollOptions';
 import styles from './styles';
 import Icon from 'react-native-vector-icons/AntDesign';
 import { heightRatio } from '../../../../utils/consts';
@@ -114,7 +114,6 @@ const CometChatCreatePoll = (props) => {
         props.actionGenerated(actions.POLL_CREATED, message);
       })
       .catch((err) => {
-        console.log('err', err);
         const errorCode = err?.details?.message || err?.message || 'ERROR';
         dropDownAlertRef?.current?.showMessage('error', errorCode);
         setError(err);

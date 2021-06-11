@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import styles from './styles';
 import * as enums from '../../../utils/enums';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 const CometChatUserPresence = (props) => {
+  const context = useContext(CometChatContext);
+  const [isPresenceEnabled, setIsPresenceEnabled] = useState(true);
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+  const checkRestrictions = async () => {
+    let isEnabled = await context.FeatureRestriction.isUserPresenceEnabled();
+    setIsPresenceEnabled(isEnabled);
+  };
   let presenceStatus = {
     backgroundColor: 'rgb(85, 85, 85)',
   };
@@ -28,6 +38,9 @@ const CometChatUserPresence = (props) => {
     borderColor,
     borderRadius: cornerRadius,
   };
+  if (!isPresenceEnabled) {
+    return null;
+  }
   return (
     <View
       style={[

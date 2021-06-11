@@ -6,13 +6,14 @@ import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import DropDownAlert from '../../Shared/DropDownAlert';
 import * as actions from '../../../utils/actions';
-import { CometChatConversationList } from '../index';
+import CometChatConversationList from '../CometChatConversationList';
 import {
   CometChatIncomingCall,
   CometChatOutgoingCall,
   CometChatOutgoingDirectCall,
   CometChatIncomingDirectCall,
 } from '../../Calls';
+import { CometChatContextProvider } from '../../../utils/CometChatContext';
 import { CometChatImageViewer } from '../../Messages';
 import theme from '../../../resources/theme';
 import { View } from 'react-native';
@@ -44,10 +45,12 @@ class CometChatConversationListWithMessages extends React.Component {
       groupMessage: {},
       lastMessage: {},
     };
+
     this.theme = { ...theme, ...this.props.theme };
   }
 
   componentDidMount() {
+    this.checkRestrictions();
     if (!Object.keys(this.state.item).length) {
       this.toggleSideBar();
     }
@@ -64,6 +67,12 @@ class CometChatConversationListWithMessages extends React.Component {
         );
       });
   }
+
+  checkRestrictions = async () => {
+    let context = this.contextProviderRef.state;
+    let isCallActionMessagesEnabled = await context.FeatureRestriction.isCallActionMessagesEnabled();
+    this.setState({ isCallActionMessagesEnabled });
+  };
 
   changeTheme = () => {
     const theme = this.state.darkTheme;
@@ -114,8 +123,9 @@ class CometChatConversationListWithMessages extends React.Component {
         break;
       case actions.VIDEO_CALL:
         this.setState({ joinDirectCall: false }, () => {
-          this.videoCall(true);
+          this.videoCall(null);
         });
+
         break;
       case actions.VIEW_DETAIL:
       case actions.CLOSE_DETAIL_CLICKED:
@@ -185,9 +195,16 @@ class CometChatConversationListWithMessages extends React.Component {
 
         break;
       case actions.ACCEPT_DIRECT_CALL:
-        this.setState({ joinDirectCall: true }, () => {
-          this.videoCall(true);
-        });
+        this.setState(
+          {
+            joinDirectCall: true,
+            item: item.receiver,
+            type: item.receiverType,
+          },
+          () => {
+            this.videoCall(true);
+          },
+        );
       default:
         break;
     }
@@ -294,6 +311,7 @@ class CometChatConversationListWithMessages extends React.Component {
 
         return;
       }
+
       receiverId = this.state.item.uid;
       receiverType = CometChat.RECEIVER_TYPE.USER;
 
@@ -571,65 +589,72 @@ class CometChatConversationListWithMessages extends React.Component {
     }
 
     return (
-      <View style={{}}>
+      <CometChatContextProvider ref={(el) => (this.contextProviderRef = el)}>
         <View style={{}}>
-          <CometChatConversationList
+          <View style={{}}>
+            <CometChatConversationList
+              theme={this.theme}
+              item={this.state.item}
+              type={this.state.type}
+              groupToDelete={this.state.groupToDelete}
+              groupToLeave={this.state.groupToLeave}
+              groupToUpdate={this.state.groupToUpdate}
+              messageToMarkRead={this.state.messageToMarkRead}
+              onItemClick={this.itemClicked}
+              lastMessage={this.state.lastMessage}
+              actionGenerated={this.actionHandler}
+              enableCloseMenu={Object.keys(this.state.item).length}
+              navigation={this.props.navigation}
+            />
+          </View>
+          {imageView}
+          {this.state.isCallActionMessagesEnabled ? (
+            <CometChatIncomingCall
+              showMessage={(type, message) => {
+                this.dropDownAlertRef?.showMessage(type, message);
+              }}
+              theme={this.theme}
+              loggedInUser={this.loggedInUser}
+              actionGenerated={this.actionHandler}
+              outgoingCall={this.state.outgoingCall}
+            />
+          ) : null}
+          <CometChatOutgoingCall
             theme={this.theme}
             item={this.state.item}
             type={this.state.type}
-            groupToDelete={this.state.groupToDelete}
-            groupToLeave={this.state.groupToLeave}
-            groupToUpdate={this.state.groupToUpdate}
-            messageToMarkRead={this.state.messageToMarkRead}
-            onItemClick={this.itemClicked}
-            lastMessage={this.state.lastMessage}
-            actionGenerated={this.actionHandler}
-            enableCloseMenu={Object.keys(this.state.item).length}
-            navigation={this.props.navigation}
-          />
-        </View>
-        {imageView}
-        <CometChatIncomingCall
-          showMessage={(type, message) => {
-            this.dropDownAlertRef?.showMessage(type, message);
-          }}
-          theme={this.theme}
-          loggedInUser={this.loggedInUser}
-          actionGenerated={this.actionHandler}
-          outgoingCall={this.state.outgoingCall}
-        />
-        <CometChatOutgoingCall
-          theme={this.theme}
-          item={this.state.item}
-          type={this.state.type}
-          incomingCall={this.state.incomingCall}
-          outgoingCall={this.state.outgoingCall}
-          loggedInUser={this.loggedInUser}
-          actionGenerated={this.actionHandler}
-        />
-
-        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
-
-        <CometChatIncomingDirectCall
-          theme={this.props.theme}
-          lang={this.state.lang}
-          actionGenerated={this.actionHandler}
-        />
-        {this.state.ongoingDirectCall ? (
-          <CometChatOutgoingDirectCall
-            open
-            close={() => this.actionHandler(actions.DIRECT_CALL_ENDED)}
-            theme={this.props.theme}
-            item={this.state.item}
-            type={this.state.type}
-            lang={this.state.lang}
-            callType={CometChat.CALL_TYPE.VIDEO}
-            joinDirectCall={this.state.joinDirectCall}
+            incomingCall={this.state.incomingCall}
+            outgoingCall={this.state.outgoingCall}
             loggedInUser={this.loggedInUser}
             actionGenerated={this.actionHandler}
           />
-        ) : null}
-      </View>
+
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+
+          {this.state.isCallActionMessagesEnabled ? (
+            <CometChatIncomingDirectCall
+              theme={this.props.theme}
+              lang={this.state.lang}
+              actionGenerated={this.actionHandler}
+            />
+          ) : null}
+          {this.state.ongoingDirectCall ? (
+            <CometChatOutgoingDirectCall
+              open
+              from={'chat'}
+              close={() => this.actionHandler(actions.DIRECT_CALL_ENDED)}
+              theme={this.props.theme}
+              item={this.state.item}
+              type={this.state.type}
+              lang={this.state.lang}
+              callType={CometChat.CALL_TYPE.VIDEO}
+              joinDirectCall={this.state.joinDirectCall}
+              loggedInUser={this.loggedInUser}
+              actionGenerated={this.actionHandler}
+            />
+          ) : null}
+        </View>
+      </CometChatContextProvider>
     );
   }
 }

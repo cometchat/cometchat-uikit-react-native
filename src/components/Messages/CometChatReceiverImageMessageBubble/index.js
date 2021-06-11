@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import { CometChatAvatar } from '../../Shared';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReplyCount';
 import CometChatReadReceipt from '../CometChatReadReceipt';
-import { CometChatMessageReactions } from '../../Messages/Extensions';
+import CometChatMessageReactions from '../../Messages/Extensions/CometChatMessageReactions';
 import style from './styles';
 import theme from '../../../resources/theme';
 import * as enums from '../../../utils/enums';
