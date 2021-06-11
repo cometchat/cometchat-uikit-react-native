@@ -12,6 +12,7 @@ import styles from './styles';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { Platform } from 'react-native';
 import { logger } from '../../../utils/common';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 const conversation = 'conversation';
 const lastMessage = 'lastMessage';
@@ -19,6 +20,7 @@ const deletedAt = 'deletedAt';
 const sentAt = 'sentAt';
 
 class CometChatConversationListItem extends React.Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -26,18 +28,34 @@ class CometChatConversationListItem extends React.Component {
       lastMessage: '',
       lastMessageTimestamp: '',
       isThreaded: false,
+      restrictions: null,
     };
   }
 
   componentDidMount() {
-    const message = this.getLastMessage();
     const timestamp = this.getLastMessageTimestamp();
 
     this.setState({
-      lastMessage: message || '',
       lastMessageTimestamp: timestamp,
     });
+
+    this.checkRestrictions();
   }
+
+  checkRestrictions = async () => {
+    let isUnreadCountEnabled = await this.context.FeatureRestriction.isUnreadCountEnabled();
+    let isHideDeletedMessagesEnabled = await this.context.FeatureRestriction.isHideDeletedMessagesEnabled();
+
+    this.setState(
+      {
+        restrictions: { isUnreadCountEnabled, isHideDeletedMessagesEnabled },
+      },
+      () => {
+        const message = this.getLastMessage();
+        this.setState({ lastMessage: message || '' });
+      },
+    );
+  };
 
   componentDidUpdate(prevProps) {
     try {
@@ -83,10 +101,14 @@ class CometChatConversationListItem extends React.Component {
       const { lastMessage: lastMessageObject } = this.props.conversation;
 
       if (Object.prototype.hasOwnProperty.call(lastMessageObject, deletedAt)) {
-        message =
-          this.props.loggedInUser.uid === lastMessageObject.sender.uid
-            ? '⚠ You deleted this message.'
-            : '⚠ This message was deleted.';
+        if (this.state?.restrictions?.isHideDeletedMessagesEnabled) {
+          message = '';
+        } else {
+          message =
+            this.props.loggedInUser.uid === lastMessageObject.sender.uid
+              ? '⚠ You deleted this message.'
+              : '⚠ This message was deleted.';
+        }
       } else {
         switch (lastMessageObject.category) {
           case 'message':
@@ -334,6 +356,7 @@ class CometChatConversationListItem extends React.Component {
     return (
       <View key={this.props?.conversation?.conversationId}>
         <TouchableOpacity
+          activeOpacity={1}
           underlayColor={this.props.theme.backgroundColor.listUnderlayColor}
           style={styles.listItem}
           onPress={() =>
@@ -382,10 +405,13 @@ class CometChatConversationListItem extends React.Component {
                 {`${this.state.isThreaded ? 'In a thread : ' : ''}` +
                   this.state.lastMessage}
               </Text>
-              <CometChatBadgeCount
-                theme={this.props.theme}
-                count={this.props.conversation.unreadMessageCount}
-              />
+
+              {this.state.restrictions?.isUnreadCountEnabled ? (
+                <CometChatBadgeCount
+                  theme={this.props.theme}
+                  count={this.props.conversation.unreadMessageCount}
+                />
+              ) : null}
             </View>
           </View>
         </TouchableOpacity>

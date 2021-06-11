@@ -11,7 +11,11 @@ export default StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: 10,
   },
-  memberScopeText: { flex: 1, paddingLeft: 15 * widthRatio },
+  memberScopeText: {
+    flex: 1,
+    paddingLeft: 15 * widthRatio,
+    alignSelf: 'center',
+  },
   changeScopeContainer: {
     flex: 1,
     flexDirection: 'row',

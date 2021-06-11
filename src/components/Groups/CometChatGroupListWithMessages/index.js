@@ -12,13 +12,14 @@ import {
   CometChatOutgoingDirectCall,
   CometChatIncomingDirectCall,
 } from '../../Calls';
-import { CometChatGroupList } from '../index';
-import { CometChatImageViewer } from '../../Messages';
+import CometChatGroupList from '../CometChatGroupList';
+import CometChatImageViewer from '../../Messages/CometChatImageViewer';
 
 import DropDownAlert from '../../Shared/DropDownAlert';
 import theme from '../../../resources/theme';
 import style from './styles';
 import { logger } from '../../../utils/common';
+import { CometChatContextProvider } from '../../../utils/CometChatContext';
 
 class CometChatGroupListWithMessages extends React.Component {
   loggedInUser = null;
@@ -696,27 +697,28 @@ class CometChatGroupListWithMessages extends React.Component {
       );
     }
     return (
-      <SafeAreaView style={style.container}>
-        <CometChatGroupList
-          theme={this.theme}
-          item={this.state.item}
-          type={this.state.type}
-          onItemClick={this.itemClicked}
-          actionGenerated={this.actionHandler}
-          groupToDelete={this.state.groupToDelete}
-          navigation={this.props.navigation}
-        />
-        {imageView}
-        <CometChatIncomingCall
-          showMessage={(type, message) => {
-            this.dropDownAlertRef?.showMessage(type, message);
-          }}
-          theme={this.props.theme}
-          loggedInUser={this.loggedInUser}
-          outgoingCall={this.state.outgoingCall}
-          actionGenerated={this.actionHandler}
-        />
-        {/* <CometChatOutgoingCall
+      <CometChatContextProvider ref={(el) => (this.contextProviderRef = el)}>
+        <SafeAreaView style={style.container}>
+          <CometChatGroupList
+            theme={this.theme}
+            item={this.state.item}
+            type={this.state.type}
+            onItemClick={this.itemClicked}
+            actionGenerated={this.actionHandler}
+            groupToDelete={this.state.groupToDelete}
+            navigation={this.props.navigation}
+          />
+          {imageView}
+          <CometChatIncomingCall
+            showMessage={(type, message) => {
+              this.dropDownAlertRef?.showMessage(type, message);
+            }}
+            theme={this.props.theme}
+            loggedInUser={this.loggedInUser}
+            outgoingCall={this.state.outgoingCall}
+            actionGenerated={this.actionHandler}
+          />
+          {/* <CometChatOutgoingCall
           theme={this.props.theme}
           item={this.state.item}
           type={this.state.type}
@@ -726,27 +728,28 @@ class CometChatGroupListWithMessages extends React.Component {
           lang={this.state.lang}
           actionGenerated={this.actionHandler}
         /> */}
-        <CometChatIncomingDirectCall
-          theme={this.props.theme}
-          lang={this.state.lang}
-          actionGenerated={this.actionHandler}
-        />
-        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
-        {this.state.ongoingDirectCall ? (
-          <CometChatOutgoingDirectCall
-            open
-            close={() => this.actionHandler(actions.DIRECT_CALL_ENDED)}
+          <CometChatIncomingDirectCall
             theme={this.props.theme}
-            item={this.state.item}
-            type={this.state.type}
             lang={this.state.lang}
-            callType={CometChat.CALL_TYPE.VIDEO}
-            joinDirectCall={this.state.joinDirectCall}
-            loggedInUser={this.loggedInUser}
             actionGenerated={this.actionHandler}
           />
-        ) : null}
-      </SafeAreaView>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+          {this.state.ongoingDirectCall ? (
+            <CometChatOutgoingDirectCall
+              open
+              close={() => this.actionHandler(actions.DIRECT_CALL_ENDED)}
+              theme={this.props.theme}
+              item={this.state.item}
+              type={this.state.type}
+              lang={this.state.lang}
+              callType={CometChat.CALL_TYPE.VIDEO}
+              joinDirectCall={this.state.joinDirectCall}
+              loggedInUser={this.loggedInUser}
+              actionGenerated={this.actionHandler}
+            />
+          ) : null}
+        </SafeAreaView>
+      </CometChatContextProvider>
     );
   }
 }

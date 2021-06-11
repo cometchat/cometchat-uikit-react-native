@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { View, Text, FlatList, TouchableWithoutFeedback } from 'react-native';
 import theme from '../../../../resources/theme';
-import {
-  CometChatReadReceipt,
-  CometChatThreadedMessageReplyCount,
-} from '../../';
-import { CometChatMessageReactions } from '../index';
+import CometChatReadReceipt from '../../CometChatReadReceipt';
+import CometChatThreadedMessageReplyCount from '../../CometChatThreadedMessageReplyCount';
+
+import CometChatMessageReactions from '../CometChatMessageReactions';
 
 import style from './styles';
 import * as enums from '../../../../utils/enums';

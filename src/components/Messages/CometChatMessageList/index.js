@@ -9,32 +9,30 @@ import { MessageListManager } from './controller';
 
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
-import {
-  CometChatSenderPollMessageBubble,
-  CometChatSenderStickerMessageBubble,
-  CometChatReceiverPollMessageBubble,
-  CometChatReceiverStickerMessageBubble,
-} from '../../Messages/Extensions';
-import {
-  CometChatActionMessageBubble,
-  CometChatDeleteMessageBubble,
-  CometChatReceiverVideoMessageBubble,
-  CometChatSenderVideoMessageBubble,
-  CometChatSenderFileMessageBubble,
-  CometChatReceiverFileMessageBubble,
-  CometChatSenderAudioMessageBubble,
-  CometChatReceiverAudioMessageBubble,
-  CometChatSenderImageMessageBubble,
-  CometChatReceiverImageMessageBubble,
-  CometChatSenderTextMessageBubble,
-  CometChatReceiverTextMessageBubble,
-  CometChatReceiverDirectCallBubble,
-  CometChatSenderDirectCallBubble,
-} from '../index';
+import CometChatSenderPollMessageBubble from '../../Messages/Extensions/CometChatSenderPollMessageBubble';
+import CometChatSenderStickerMessageBubble from '../../Messages/Extensions/CometChatSenderStickerMessageBubble';
+import CometChatReceiverPollMessageBubble from '../../Messages/Extensions/CometChatReceiverPollMessageBubble';
+import CometChatReceiverStickerMessageBubble from '../../Messages/Extensions/CometChatReceiverStickerMessageBubble';
+import CometChatActionMessageBubble from '../CometChatActionMessageBubble';
+import CometChatDeleteMessageBubble from '../CometChatDeleteMessageBubble';
+import CometChatReceiverVideoMessageBubble from '../CometChatReceiverVideoMessageBubble';
+import CometChatSenderVideoMessageBubble from '../CometChatSenderVideoMessageBubble';
+import CometChatSenderFileMessageBubble from '../CometChatSenderFileMessageBubble';
+import CometChatReceiverFileMessageBubble from '../CometChatReceiverFileMessageBubble';
+import CometChatSenderAudioMessageBubble from '../CometChatSenderAudioMessageBubble';
+import CometChatReceiverAudioMessageBubble from '../CometChatReceiverAudioMessageBubble';
+import CometChatReceiverImageMessageBubble from '../CometChatReceiverImageMessageBubble';
+import CometChatSenderTextMessageBubble from '../CometChatSenderTextMessageBubble';
+import CometChatSenderImageMessageBubble from '../CometChatSenderImageMessageBubble';
+import CometChatReceiverTextMessageBubble from '../CometChatReceiverTextMessageBubble';
+import CometChatReceiverDirectCallBubble from '../CometChatReceiverDirectCallBubble';
+import CometChatSenderDirectCallBubble from '../CometChatSenderDirectCallBubble';
+
 import styles from './styles';
 import { logger } from '../../../utils/common';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 let cDate = null;
 
@@ -46,6 +44,7 @@ class CometChatMessageList extends React.PureComponent {
   times = 0;
 
   decoratorMessage = 'Loading...';
+  static contextType = CometChatContext;
 
   constructor(props) {
     super(props);
@@ -63,11 +62,14 @@ class CometChatMessageList extends React.PureComponent {
         this.props.item,
         this.props.type,
         this.props.parentMessageId,
+        this.context,
       );
     } else {
       this.MessageListManager = new MessageListManager(
         this.props.item,
         this.props.type,
+        null,
+        this.context,
       );
     }
 
@@ -85,18 +87,21 @@ class CometChatMessageList extends React.PureComponent {
         prevProps.item.uid !== this.props.item.uid
       ) {
         this.decoratorMessage = 'Loading...';
-        this.MessageListManager.removeListeners();
+        this.MessageListManager?.removeListeners();
 
         if (this.props.parentMessageId) {
           this.MessageListManager = new MessageListManager(
             this.props.item,
             this.props.type,
             this.props.parentMessageId,
+            this.context,
           );
         } else {
           this.MessageListManager = new MessageListManager(
             this.props.item,
             this.props.type,
+            null,
+            this.context,
           );
         }
 
@@ -107,7 +112,7 @@ class CometChatMessageList extends React.PureComponent {
         prevProps.item.guid !== this.props.item.guid
       ) {
         this.decoratorMessage = 'Loading...';
-        this.MessageListManager.removeListeners();
+        this.MessageListManager?.removeListeners();
 
         if (this.props.parentMessageId) {
           this.MessageListManager = new MessageListManager(
@@ -126,7 +131,7 @@ class CometChatMessageList extends React.PureComponent {
         this.MessageListManager.attachListeners(this.messageUpdated);
       } else if (prevProps.parentMessageId !== this.props.parentMessageId) {
         this.decoratorMessage = 'Loading...';
-        this.MessageListManager.removeListeners();
+        this.MessageListManager?.removeListeners();
         this.MessageListManager = new MessageListManager(
           this.props.item,
           this.props.type,
@@ -141,7 +146,7 @@ class CometChatMessageList extends React.PureComponent {
   }
 
   componentWillUnmount() {
-    this.MessageListManager.removeListeners();
+    this.MessageListManager?.removeListeners();
     this.MessageListManager = null;
   }
 
@@ -1151,6 +1156,7 @@ class CometChatMessageList extends React.PureComponent {
               : null
           }
           data={messages}
+          keyExtractor={(item, index) => item.messageId + '_' + index}
           renderItem={this.renderItem}
         />
         {this.state.showNewMsg ? newMsgPopUp : null}

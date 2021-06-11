@@ -31,8 +31,10 @@ import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
 import { heightRatio } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 export default class CometChatMessageComposer extends React.PureComponent {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -58,6 +60,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       composerActionsVisible: false,
       user: null,
       keyboardActivity: false,
+      restrictions: null,
     };
 
     this.audio = new Sound(outgoingMessageAlert);
@@ -78,7 +81,21 @@ export default class CometChatMessageComposer extends React.PureComponent {
       'keyboardDidHide',
       this._keyboardDidHide,
     );
+    this.checkRestrictions();
   }
+
+  checkRestrictions = async () => {
+    let isLiveReactionsEnabled = await this.context.FeatureRestriction.isLiveReactionsEnabled();
+    let isTypingIndicatorsEnabled = await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
+    let isSmartRepliesEnabled = await this.context.FeatureRestriction.isSmartRepliesEnabled();
+    this.setState({
+      restrictions: {
+        isLiveReactionsEnabled,
+        isTypingIndicatorsEnabled,
+        isSmartRepliesEnabled,
+      },
+    });
+  };
 
   componentWillUnmount() {
     this.keyboardDidShowListener.remove();
@@ -368,6 +385,9 @@ export default class CometChatMessageComposer extends React.PureComponent {
   startTyping = (timer, metadata) => {
     try {
       const typingInterval = timer || 5000;
+      if (!this.state.restrictions?.isTypingIndicatorsEnabled) {
+        return false;
+      }
       if (this.isTyping) {
         return false;
       }
@@ -614,7 +634,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
       </TouchableOpacity>
     );
 
-    if (!this.state.messageInput.length) {
+    if (
+      !this.state.messageInput.length &&
+      this.state.restrictions?.isLiveReactionsEnabled
+    ) {
       sendBtn = null;
     } else {
       liveReactionBtn = null;
@@ -739,6 +762,10 @@ export default class CometChatMessageComposer extends React.PureComponent {
           }
         }
       }
+    }
+
+    if (!this.state.restrictions?.isSmartRepliesEnabled) {
+      smartReplyPreview: false;
     }
 
     let stickerViewer = null;

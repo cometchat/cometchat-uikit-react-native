@@ -5,7 +5,8 @@ export default class MessageFilter {
 
   types = null;
 
-  constructor() {
+  constructor(context) {
+    this.context = context;
     this.categories = {
       [CometChat.CATEGORY_MESSAGE]: CometChat.CATEGORY_MESSAGE,
       [CometChat.CATEGORY_CUSTOM]: CometChat.CATEGORY_CUSTOM,
@@ -29,7 +30,33 @@ export default class MessageFilter {
   }
 
   getCategories = () => {
-    return Object.keys(this.categories);
+    const categories = { ...this.categories };
+    return new Promise((resolve) => {
+      this.context.FeatureRestriction.isGroupActionMessagesEnabled()
+        .then((response) => {
+          if (response === false) {
+            delete categories[CometChat.CATEGORY_ACTION];
+          }
+          return categories;
+        })
+        .catch((error) => {
+          delete categories[CometChat.CATEGORY_ACTION];
+          return categories;
+        })
+        .then((categories) => {
+          this.context.FeatureRestriction.isCallActionMessagesEnabled()
+            .then((response) => {
+              if (response === false) {
+                delete categories[CometChat.CATEGORY_CALL];
+              }
+              resolve(Object.keys(categories));
+            })
+            .catch((error) => {
+              delete categories[CometChat.CATEGORY_CALL];
+              resolve(Object.keys(categories));
+            });
+        });
+    });
   };
 
   getTypes = () => {

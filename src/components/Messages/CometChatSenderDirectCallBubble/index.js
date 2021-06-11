@@ -1,18 +1,18 @@
 import React from 'react';
 import {
-  CometChatMessageActions,
-  CometChatThreadedMessageReplyCount,
-  CometChatReadReceipt,
-} from '../';
-import Styles from './style';
+  Image,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import CometChatReadReceipt from '../CometChatReadReceipt';
+import CometChatThreadedMessageReplyCount from '../CometChatThreadedMessageReplyCount';
 import * as actions from '../../../utils/actions';
-import { CometChatMessageReactions } from '../Extensions';
 import { checkMessageForExtensionsData } from '../../../utils/common';
-import * as enums from '../../../utils/enums';
-import theme from '../../../resources/theme';
+import { CometChatMessageReactions } from '../Extensions';
 import callIcon from './resources/sendervideocall.png';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { TouchableWithoutFeedback } from 'react-native';
+import Styles from './style';
 
 class CometChatSenderDirectCallBubble extends React.Component {
   messageFrom = 'sender';

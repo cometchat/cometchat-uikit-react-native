@@ -9,7 +9,7 @@ import { outgoingCallAlert } from '../../../resources/audio';
 import { CometChatManager } from '../../../utils/controller';
 import { CallScreenManager } from './controller';
 
-import { CometChatAvatar } from '../../Shared';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
@@ -257,7 +257,6 @@ class CometChatOutgoingCall extends React.PureComponent {
             callInProgress: null,
             callSettings: null,
           });
-
           this.markMessageAsRead(endedCall);
           this.props.actionGenerated(actions.CALL_ENDED, endedCall);
         },
