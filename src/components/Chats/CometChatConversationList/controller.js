@@ -1,7 +1,7 @@
 import { CometChat } from '@cometchat-pro/react-native-chat';
 
 import * as enums from '../../../utils/enums';
-
+import { UIKitSettings } from '../../../utils/UIKitSettings';
 export class ConversationListManager {
   conversationRequest = null;
 
@@ -14,9 +14,28 @@ export class ConversationListManager {
   callListenerId = `chatlist_call_${new Date().getTime()}`;
 
   constructor() {
-    this.conversationRequest = new CometChat.ConversationsRequestBuilder()
-      .setLimit(30)
-      .build();
+    let UIKitSettingsBuilder = new UIKitSettings();
+    const chatListMode = UIKitSettingsBuilder.chatListMode;
+    const chatListFilterOptions = UIKitSettings.chatListFilterOptions;
+    switch (chatListMode) {
+      case chatListFilterOptions['USERS']:
+        this.conversationRequest = new CometChat.ConversationsRequestBuilder()
+          .setConversationType(CometChat.ACTION_TYPE.TYPE_USER)
+          .setLimit(30)
+          .build();
+        break;
+      case chatListFilterOptions['GROUPS']:
+        this.conversationRequest = new CometChat.ConversationsRequestBuilder()
+          .setConversationType(CometChat.ACTION_TYPE.TYPE_GROUP)
+          .setLimit(30)
+          .build();
+        break;
+      default:
+        this.conversationRequest = new CometChat.ConversationsRequestBuilder()
+          .setLimit(30)
+          .build();
+        break;
+    }
   }
 
   fetchNextConversation() {

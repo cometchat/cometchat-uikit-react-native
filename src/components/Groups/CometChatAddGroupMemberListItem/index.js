@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import theme from '../../../resources/theme';
-import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
+import CometChatUserPresence from '../../Shared/CometChatUserPresence';
+import CometChatAvatar from '../../Shared/CometChatUserPresence';
+
 import { Text, View, Image, TouchableOpacity } from 'react-native';
 import style from './styles';
 import checkboxActive from './resources/checkbox-blue-active.png';

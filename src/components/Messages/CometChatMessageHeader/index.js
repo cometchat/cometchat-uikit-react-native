@@ -12,7 +12,9 @@ import videoCallIcon from './resources/videoCall.png';
 import detailPaneIcon from './resources/detailpane.png';
 import { logger } from '../../../utils/common';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChatContext } from '../../../utils/CometChatContext';
 class CometChatMessageHeader extends React.Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -31,7 +33,23 @@ class CometChatMessageHeader extends React.Component {
     } else {
       this.setStatusForGroup();
     }
+    this.checkRestrictions();
   }
+
+  checkRestrictions = async () => {
+    let isGroupVideoCallEnabled = await this.context.FeatureRestriction.isGroupVideoCallEnabled();
+    let isOneOnOneAudioCallEnabled = await this.context.FeatureRestriction.isOneOnOneAudioCallEnabled();
+    let isTypingIndicatorsEnabled = await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
+    let isOneOnOneVideoCallEnabled = await this.context.FeatureRestriction.isOneOnOneVideoCallEnabled();
+    this.setState({
+      restrictions: {
+        isGroupVideoCallEnabled,
+        isOneOnOneAudioCallEnabled,
+        isTypingIndicatorsEnabled,
+        isOneOnOneVideoCallEnabled,
+      },
+    });
+  };
 
   componentDidUpdate(prevProps) {
     try {
@@ -195,8 +213,10 @@ class CometChatMessageHeader extends React.Component {
             this.props.type === item.receiverType &&
             this.props.item.guid === item.receiverId
           ) {
-            this.setState({ status: `${item.sender.name} is typing...` });
-            this.props.actionGenerated(actions.SHOW_REACTION, item);
+            if (this.state.restrictions?.isTypingIndicatorsEnabled) {
+              this.setState({ status: `${item.sender.name} is typing...` });
+              this.props.actionGenerated(actions.SHOW_REACTION, item);
+            }
           } else if (
             this.props.type === CometChat.RECEIVER_TYPE.USER &&
             this.props.type === item.receiverType &&
@@ -299,6 +319,22 @@ class CometChatMessageHeader extends React.Component {
     if (this.props.item.blockedByMe) {
       status = null;
       presence = null;
+    }
+    if (
+      this.props.type === CometChat.ACTION_TYPE.TYPE_USER &&
+      this.state.restrictions?.isOneOnOneAudioCallEnabled === false
+    ) {
+      audioCallBtn = null;
+    }
+
+    //if videocall feature is disabled
+    if (
+      (this.props.type === CometChat.ACTION_TYPE.TYPE_USER &&
+        this.state.restrictions?.isOneOnOneVideoCallEnabled === false) ||
+      (this.props.type === CometChat.ACTION_TYPE.TYPE_GROUP &&
+        this.state.restrictions?.isGroupVideoCallEnabled === false)
+    ) {
+      videoCallBtn = null;
     }
 
     let info = (
