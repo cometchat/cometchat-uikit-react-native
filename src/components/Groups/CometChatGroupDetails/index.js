@@ -4,8 +4,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import CometChatSharedMedia from '../../Shared/CometChatSharedMedia';
 import CometChatAvatar from '../../Shared/CometChatAvatar';
+
 import style from './styles';
 import BottomSheet from 'reanimated-bottom-sheet';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -20,6 +22,7 @@ import CometChatBanGroupMemberList from '../CometChatBanGroupMemberList';
 import { deviceHeight } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
+import styles from '../../Shared/CometChatAvatar/styles';
 
 const ADD_MEMBER = 'addMember';
 const VIEW_MEMBER = 'viewMember';

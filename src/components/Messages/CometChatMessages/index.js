@@ -11,6 +11,7 @@ import {
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as actions from '../../../utils/actions';
 import _ from 'lodash';
+
 import {
   CometChatContextProvider,
   CometChatContext,
@@ -29,6 +30,7 @@ import {
   CometChatIncomingDirectCall,
 } from '../../Calls';
 import CometChatGroupDetails from '../../Groups/CometChatGroupDetails';
+
 import CometChatVideoViewer from '../CometChatVideoViewer';
 import theme from '../../../resources/theme';
 import { CometChatManager } from '../../../utils/controller';
@@ -64,7 +66,9 @@ class CometChatMessages extends React.PureComponent {
       groupDetailVisible: false,
       user: params.type === 'user' ? params.item : null,
       showProfile: false,
+
       ongoingDirectCall: false,
+
     };
 
     this.composerRef = React.createRef();
@@ -275,6 +279,7 @@ class CometChatMessages extends React.PureComponent {
         break;
       case actions.VIEW_ACTUAL_IMAGE:
         params.actionGenerated(actions.VIEW_ACTUAL_IMAGE, messages);
+
         break;
       case actions.VIEW_ACTUAL_VIDEO:
         this.setState({ videoMessage: messages });
@@ -288,6 +293,7 @@ class CometChatMessages extends React.PureComponent {
         }
       case actions.MENU_CLICKED:
         // case actions.JOIN_DIRECT_CALL:
+
         params.actionGenerated(action);
         break;
       case actions.SEND_REACTION:
@@ -356,6 +362,7 @@ class CometChatMessages extends React.PureComponent {
         break;
       case actions.SHOW_PROFILE:
         this.showProfile();
+
         break;
       case actions.JOIN_DIRECT_CALL:
         this.setState({ joinDirectCall: true }, () => {
@@ -366,6 +373,7 @@ class CometChatMessages extends React.PureComponent {
         this.setState({ joinDirectCall: false, ongoingDirectCall: null });
 
         break;
+
       default:
         break;
     }
@@ -713,7 +721,9 @@ class CometChatMessages extends React.PureComponent {
     if (messageKey > -1) {
       const messageObj = { ...messageList[messageKey] };
       const newMessageObj = { ...messageObj, ...deletedMessage };
+
       if (this.state.restrictions?.isHideDeletedMessagesEnabled) {
+
         messageList.splice(messageKey, 1);
       } else {
         messageList.splice(messageKey, 1, newMessageObj);
@@ -961,6 +971,7 @@ class CometChatMessages extends React.PureComponent {
     );
 
     return (
+
       <CometChatContextProvider ref={(el) => (this.contextProviderRef = el)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1037,6 +1048,7 @@ class CometChatMessages extends React.PureComponent {
             <CometChatMessageList
               theme={this.theme}
               messages={this.state.messageList}
+
               item={
                 params.type === CometChat.RECEIVER_TYPE.USER
                   ? this.state.user
@@ -1072,9 +1084,11 @@ class CometChatMessages extends React.PureComponent {
               loggedInUser={params.loggedInUser}
               actionGenerated={this.actionHandler}
             />
+
           </>
         ) : null}
       </CometChatContextProvider>
+
     );
   }
 }

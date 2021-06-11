@@ -28,7 +28,9 @@ class CometChatConversationListItem extends React.Component {
       lastMessage: '',
       lastMessageTimestamp: '',
       isThreaded: false,
+
       restrictions: null,
+
     };
   }
 
@@ -36,10 +38,12 @@ class CometChatConversationListItem extends React.Component {
     const timestamp = this.getLastMessageTimestamp();
 
     this.setState({
+
       lastMessageTimestamp: timestamp,
     });
 
     this.checkRestrictions();
+
   }
 
   checkRestrictions = async () => {
@@ -402,7 +406,8 @@ class CometChatConversationListItem extends React.Component {
                 alignItems: 'center',
               }}>
               <Text numberOfLines={1} style={styles.itemLastMsgTimeStyle}>
-                {this.state.lastMessage}
+                {`${this.state.isThreaded ? 'In a thread : ' : ''}` +
+                  this.state.lastMessage}
               </Text>
               <CometChatBadgeCount
                 theme={this.props.theme}

@@ -35,6 +35,7 @@ export default class ComposerActions extends Component {
     }
   }
 
+
   componentDidMount() {
     this.checkRestrictions();
   }
@@ -52,6 +53,7 @@ export default class ComposerActions extends Component {
       },
     });
   };
+
 
   takePhoto = async (mediaType = 'photo') => {
     try {
@@ -111,7 +113,9 @@ export default class ComposerActions extends Component {
                   ? response.uri
                   : response.uri.replace('file://', ''),
             };
+
             console.log('file', file);
+
             this.props.sendMediaMessage(
               file,
               mediaType === 'photo'
