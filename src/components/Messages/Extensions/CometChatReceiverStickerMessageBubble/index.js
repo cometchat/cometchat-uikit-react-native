@@ -3,13 +3,12 @@ import { View, Text } from 'react-native';
 import FastImage from 'react-native-fast-image';
 
 import theme from '../../../../resources/theme';
-import {
-  CometChatThreadedMessageReplyCount,
-  CometChatReadReceipt,
-} from '../../';
+import CometChatThreadedMessageReplyCount from '../../CometChatThreadedMessageReplyCount';
+import CometChatReadReceipt from '../../CometChatReadReceipt';
+
 import style from './styles';
-import { CometChatAvatar } from '../../../Shared';
-import { CometChatMessageReactions } from '../index';
+import CometChatAvatar from '../../../Shared/CometChatAvatar';
+import CometChatMessageReactions from '../CometChatMessageReactions';
 import * as enums from '../../../../utils/enums';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 

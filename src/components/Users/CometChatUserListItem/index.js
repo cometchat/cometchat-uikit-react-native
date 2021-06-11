@@ -10,6 +10,7 @@ const CometChatUserListItem = (props) => {
 
   return (
     <TouchableHighlight
+      key={props.user.uid}
       onPress={() => props.clickHandler(props.user)}
       underlayColor={viewTheme.backgroundColor.listUnderlayColor}>
       <View style={style.listItem}>

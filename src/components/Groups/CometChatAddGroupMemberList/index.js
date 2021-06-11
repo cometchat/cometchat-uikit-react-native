@@ -21,7 +21,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import { CometChatManager } from '../../../utils/controller';
 import { AddMembersManager } from './controller';
-import { CometChatAddGroupMemberListItem } from '../index';
+import CometChatAddGroupMemberListItem from '../CometChatAddGroupMemberListItem';
 import GroupDetailContext from '../CometChatGroupDetails/context';
 import theme from '../../../resources/theme';
 import style from './styles';
@@ -51,9 +51,11 @@ class CometChatAddGroupMemberList extends React.Component {
       this.friendsOnly = this.props.friendsOnly;
     }
 
-    this.AddMembersManager = new AddMembersManager(this.friendsOnly);
-    this.getUsers();
-    this.AddMembersManager.attachListeners(this.userUpdated);
+    this.AddMembersManager = new AddMembersManager();
+    this.AddMembersManager.initializeMembersRequest().then(() => {
+      this.getUsers();
+      this.AddMembersManager.attachListeners(this.userUpdated);
+    });
   }
 
   componentDidUpdate() {
@@ -135,10 +137,7 @@ class CometChatAddGroupMemberList extends React.Component {
           }
 
           this.timeout = setTimeout(() => {
-            this.AddMembersManager = new AddMembersManager(
-              this.friendsOnly,
-              val,
-            );
+            this.AddMembersManager = new AddMembersManager(val);
             this.setState(
               {
                 userList: [],
@@ -427,6 +426,7 @@ class CometChatAddGroupMemberList extends React.Component {
                     </View>
                   </TouchableWithoutFeedback>
                   <FlatList
+                    keyExtractor={(item, index) => item.uid + '_' + index}
                     data={filteredUserList}
                     renderItem={({ item }) => {
                       const chr = item.name[0].toUpperCase();

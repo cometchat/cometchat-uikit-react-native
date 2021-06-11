@@ -1,7 +1,7 @@
 import { CometChat } from '@cometchat-pro/react-native-chat';
 
 import * as enums from '../../../utils/enums';
-import { HIDE_DELETED_MSG } from '../../../utils/settings';
+
 import MessageFilter from './MessageFilter';
 
 export class MessageListManager {
@@ -41,19 +41,27 @@ export class MessageListManager {
 
   callListenerId = `call_${new Date().getTime()}`;
 
-  constructor(item, type, parentMessageId) {
+  constructor(item, type, parentMessageId, context) {
     this.item = item;
     this.type = type;
     this.parentMessageId = parentMessageId;
+    this.checkRestrictions(item, type, parentMessageId, context);
+  }
 
-    const messageFilterManager = new MessageFilter();
-    const categories = messageFilterManager.getCategories();
+  checkRestrictions = async (item, type, parentMessageId, context) => {
+    this.hideDeletedMessages = await context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    this.buildRequestBuilder(item, type, parentMessageId, context);
+  };
+
+  buildRequestBuilder = async (item, type, parentMessageId, context) => {
+    const messageFilterManager = new MessageFilter(context);
+    const categories = await messageFilterManager.getCategories();
     const types = messageFilterManager.getTypes();
     if (type === CometChat.RECEIVER_TYPE.USER) {
       if (this.parentMessageId) {
         this.messageRequest = new CometChat.MessagesRequestBuilder()
           .setUID(item.uid)
-          .hideDeletedMessages(HIDE_DELETED_MSG)
+          .hideDeletedMessages(this.hideDeletedMessages)
           .setParentMessageId(this.parentMessageId)
           .setCategories(categories)
           .setTypes(types)
@@ -63,7 +71,7 @@ export class MessageListManager {
         this.messageRequest = new CometChat.MessagesRequestBuilder()
           .setUID(item.uid)
           .setCategories(categories)
-          .hideDeletedMessages(HIDE_DELETED_MSG)
+          .hideDeletedMessages(this.hideDeletedMessages)
           .setTypes(types)
           .hideReplies(true)
           .setLimit(this.limit)
@@ -74,7 +82,7 @@ export class MessageListManager {
         this.messageRequest = new CometChat.MessagesRequestBuilder()
           .setGUID(item.guid)
           .setParentMessageId(this.parentMessageId)
-          .hideDeletedMessages(HIDE_DELETED_MSG)
+          .hideDeletedMessages(this.hideDeletedMessages)
           .setCategories(categories)
           .setTypes(types)
           .setLimit(this.limit)
@@ -85,12 +93,12 @@ export class MessageListManager {
           .setCategories(categories)
           .setTypes(types)
           .hideReplies(true)
-          .hideDeletedMessages(HIDE_DELETED_MSG)
+          .hideDeletedMessages(this.hideDeletedMessages)
           .setLimit(this.limit)
           .build();
       }
     }
-  }
+  };
 
   fetchPreviousMessages() {
     return this.messageRequest.fetchPrevious();

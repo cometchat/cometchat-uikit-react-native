@@ -3,13 +3,12 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import DropDownAlert from '../../../Shared/DropDownAlert';
 import theme from '../../../../resources/theme';
-import {
-  CometChatReadReceipt,
-  CometChatThreadedMessageReplyCount,
-} from '../../';
+import CometChatReadReceipt from '../../CometChatReadReceipt';
+import CometChatThreadedMessageReplyCount from '../../CometChatThreadedMessageReplyCount';
+
 import style from './styles';
-import { CometChatAvatar } from '../../../Shared';
-import { CometChatMessageReactions } from '../index';
+import CometChatAvatar from '../../../Shared/CometChatAvatar';
+import CometChatMessageReactions from '../CometChatMessageReactions';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as actions from '../../../../utils/actions';
 import * as enums from '../../../../utils/enums';

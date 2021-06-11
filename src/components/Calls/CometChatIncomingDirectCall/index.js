@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -14,7 +14,7 @@ import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
 import theme from '../../../resources/theme';
-import { CometChatAvatar } from '../../Shared';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 
 import { messageAlertManager } from './controller';
 
@@ -24,18 +24,30 @@ import audioCallIcon from './resources/incomingaudiocall.png';
 import videoCallIcon from './resources/incomingvideocall.png';
 import { incomingCallAlert } from '../../../resources/audio';
 import { logger } from '../../../utils/common';
+import { CometChatContext } from '../../../utils/CometChatContext';
 export default (props) => {
   let callAlertManager = null;
   const viewTheme = { ...theme, ...props.theme };
   const incomingAlert = new Sound(incomingCallAlert);
 
+  const [isMessagesSoundEnabled, setIsMessagesSoundEnabled] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
-
+  const context = useContext(CometChatContext);
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+  const checkRestrictions = async () => {
+    let isEnabled = await context.FeatureRestriction.isCallsSoundEnabled();
+    setIsMessagesSoundEnabled(isEnabled);
+  };
   /**
    * Play call alerts
    * @param
    */
   const playIncomingAlert = () => {
+    if (!isMessagesSoundEnabled) {
+      return false;
+    }
     try {
       incomingAlert.setCurrentTime(0);
       incomingAlert.setNumberOfLoops(-1);
@@ -217,29 +229,15 @@ export default (props) => {
                 <Text numberOfLines={1} style={style.nameStyle}>
                   {incomingCall.sender.name}
                 </Text>
-                {incomingCall.type === 'video' ? (
-                  <View style={style.callTypeStyle}>
-                    <Image source={videoCallIcon} alt="Incoming video call" />
-                    <View style={style.callMessageContainerStyle}>
-                      <Text
-                        numberOfLines={1}
-                        style={style.callMessageTextStyle}>
-                        Incoming video call
-                      </Text>
-                    </View>
+
+                <View style={style.callTypeStyle}>
+                  <Image source={videoCallIcon} alt="Incoming video call" />
+                  <View style={style.callMessageContainerStyle}>
+                    <Text numberOfLines={1} style={style.callMessageTextStyle}>
+                      Incoming video call
+                    </Text>
                   </View>
-                ) : (
-                  <View style={style.callTypeStyle}>
-                    <Image source={audioCallIcon} alt="Incoming audio call" />
-                    <View style={style.callMessageContainerStyle}>
-                      <Text
-                        numberOfLines={1}
-                        style={style.callMessageTextStyle}>
-                        Incoming audio call
-                      </Text>
-                    </View>
-                  </View>
-                )}
+                </View>
               </View>
               <View style={style.avatarStyle}>
                 <CometChatAvatar

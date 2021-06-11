@@ -14,8 +14,10 @@ import BottomSheet from 'reanimated-bottom-sheet';
 import * as actions from '../../../utils/actions';
 import { deviceHeight } from '../../../utils/consts';
 import DropDownAlert from '../../Shared/DropDownAlert';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 export default class CometChatUserDetails extends React.Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -23,11 +25,13 @@ export default class CometChatUserDetails extends React.Component {
     this.sheetRef = React.createRef(null);
     this.state = {
       status: this.props.item.status,
+      restrictions: null,
     };
   }
 
   componentDidMount() {
     this.setStatusForUser();
+    this.checkRestrictions();
   }
 
   /**
@@ -38,6 +42,21 @@ export default class CometChatUserDetails extends React.Component {
       this.sheetRef.current.snapTo(0);
     }
   }
+
+  checkRestrictions = async () => {
+    let isSharedMediaEnabled = await this.context.FeatureRestriction.isSharedMediaEnabled();
+    let isBlockUserEnabled = await this.context.FeatureRestriction.isBlockUserEnabled();
+    let isViewProfileEnabled = await this.context.FeatureRestriction.isViewProfileEnabled();
+    let isUserPresenceEnabled = await this.context.FeatureRestriction.isUserPresenceEnabled();
+    this.setState({
+      restrictions: {
+        isSharedMediaEnabled,
+        isBlockUserEnabled,
+        isViewProfileEnabled,
+        isUserPresenceEnabled,
+      },
+    });
+  };
 
   setStatusForUser = () => {
     try {
@@ -104,7 +123,9 @@ export default class CometChatUserDetails extends React.Component {
           image={{ uri: this.props.item.avatar }}
           name={this.props.item.name}
         />
-        {this.props.item && this.props.item.blockedByMe ? null : (
+        {this.props.item &&
+        this.props.item.blockedByMe &&
+        !this.state.restrictions?.isUserPresenceEnabled ? null : (
           <CometChatUserPresence
             status={this.props.item.status}
             style={{ top: 35 }}
@@ -153,6 +174,10 @@ export default class CometChatUserDetails extends React.Component {
       </TouchableOpacity>
     );
 
+    if (!this.state.restrictions?.isViewProfileEnabled) {
+      showProfile = null;
+    }
+
     let blockUserView = (
       <View style={style.blockContainer}>
         <Text
@@ -166,19 +191,24 @@ export default class CometChatUserDetails extends React.Component {
       </View>
     );
 
-    let action = this.props.item?.link ? (
-      <View style={style.blockContainer}>
-        <Text
-          style={[
-            style.sectionHeaderStyle,
-            { color: this.viewTheme.color.secondary },
-          ]}>
-          ACTIONS
-        </Text>
+    if (!this.state.restrictions?.isBlockUserEnabled) {
+      blockUserView = null;
+    }
 
-        <View style={style.blockText}>{showProfile}</View>
-      </View>
-    ) : null;
+    let action =
+      this.props.item?.link && this.state.restrictions?.isViewProfileEnabled ? (
+        <View style={style.blockContainer}>
+          <Text
+            style={[
+              style.sectionHeaderStyle,
+              { color: this.viewTheme.color.secondary },
+            ]}>
+            ACTIONS
+          </Text>
+
+          <View style={style.blockText}>{showProfile}</View>
+        </View>
+      ) : null;
 
     let sharedMediaView = (
       <CometChatSharedMedia
@@ -192,6 +222,9 @@ export default class CometChatUserDetails extends React.Component {
       />
     );
 
+    if (!this.state.restrictions?.isSharedMediaEnabled) {
+      sharedMediaView = null;
+    }
     return (
       <Modal
         transparent

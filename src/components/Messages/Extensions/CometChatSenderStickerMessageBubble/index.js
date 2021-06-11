@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { View, TouchableWithoutFeedback } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import {
-  CometChatReadReceipt,
-  CometChatThreadedMessageReplyCount,
-} from '../../';
-import { CometChatMessageReactions } from '../index';
+import CometChatReadReceipt from '../../CometChatReadReceipt';
+import CometChatThreadedMessageReplyCount from '../../CometChatThreadedMessageReplyCount';
+
+import CometChatMessageReactions from '../CometChatMessageReactions';
 import style from './styles';
 
 import * as enums from '../../../../utils/enums';

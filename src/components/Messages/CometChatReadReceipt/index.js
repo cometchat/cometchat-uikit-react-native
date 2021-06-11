@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Text, View, Image, Platform } from 'react-native';
-import { get as _get } from 'lodash';
+import { get as _get, identity } from 'lodash';
 
 import blueDoubleTick from './resources/blue-double-tick-icon.png';
 import greyDoubleTick from './resources/grey-double-tick-icon.png';
@@ -9,7 +9,19 @@ import sendingTick from './resources/sending.png';
 import errorTick from './resources/error.png';
 import styles from './styles';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChatContext } from '../../../utils/CometChatContext';
 const CometChatReadReceipt = (props) => {
+  const context = useContext(CometChatContext);
+  const [isDeliveryReceiptsEnabled, setIsDeliveryReceiptsEnabled] = useState(
+    true,
+  );
+  useEffect(() => {
+    checkRestrictions();
+  });
+  const checkRestrictions = async () => {
+    let isEnabled = await context.FeatureRestriction.isDeliveryReceiptsEnabled();
+    setIsDeliveryReceiptsEnabled(isEnabled);
+  };
   let ticks = blueDoubleTick;
   if (props.message.messageFrom === 'sender') {
     if (props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP) {
@@ -76,7 +88,9 @@ const CometChatReadReceipt = (props) => {
     timeValue += hours >= 12 ? ' PM' : ' AM'; // get AM/PM
     timestamp = timeValue;
   }
-
+  if (!isDeliveryReceiptsEnabled) {
+    ticks = null;
+  }
   return (
     <View style={styles.containerStyle}>
       <Text style={styles.msgTimestampStyle}>{timestamp}</Text>

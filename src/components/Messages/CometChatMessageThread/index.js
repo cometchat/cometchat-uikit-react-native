@@ -4,23 +4,21 @@ import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
-import { HIDE_DELETED_MSG } from '../../../utils/settings';
 import { MessageThreadManager } from './controller';
-import {
-  CometChatMessageActions,
-  CometChatMessageComposer,
-  CometChatMessageList,
-  CometChatSenderTextMessageBubble,
-  CometChatReceiverTextMessageBubble,
-  CometChatSenderImageMessageBubble,
-  CometChatReceiverImageMessageBubble,
-  CometChatSenderFileMessageBubble,
-  CometChatReceiverFileMessageBubble,
-  CometChatSenderAudioMessageBubble,
-  CometChatReceiverAudioMessageBubble,
-  CometChatSenderVideoMessageBubble,
-  CometChatReceiverVideoMessageBubble,
-} from '../index';
+import CometChatMessageActions from '../CometChatMessageActions';
+import CometChatMessageComposer from '../CometChatMessageComposer';
+import CometChatMessageList from '../CometChatMessageList';
+import CometChatSenderTextMessageBubble from '../CometChatSenderTextMessageBubble';
+import CometChatReceiverTextMessageBubble from '../CometChatReceiverTextMessageBubble';
+import CometChatSenderImageMessageBubble from '../CometChatSenderImageMessageBubble';
+import CometChatReceiverImageMessageBubble from '../CometChatReceiverImageMessageBubble';
+import CometChatSenderFileMessageBubble from '../CometChatSenderFileMessageBubble';
+import CometChatReceiverFileMessageBubble from '../CometChatReceiverFileMessageBubble';
+import CometChatSenderAudioMessageBubble from '../CometChatSenderAudioMessageBubble';
+import CometChatReceiverAudioMessageBubble from '../CometChatReceiverAudioMessageBubble';
+import CometChatSenderVideoMessageBubble from '../CometChatSenderVideoMessageBubble';
+import CometChatReceiverVideoMessageBubble from '../CometChatReceiverVideoMessageBubble';
+
 import styles from './style';
 import {
   View,
@@ -35,8 +33,10 @@ import _ from 'lodash';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { heightRatio, widthRatio } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 class CometChatMessageThread extends React.PureComponent {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -54,6 +54,7 @@ class CometChatMessageThread extends React.PureComponent {
       messageToBeEdited: null,
       parentMessage: props.parentMessage,
       keyboardActivity: false,
+      hideDeletedEnabled: false,
     };
   }
 
@@ -66,7 +67,13 @@ class CometChatMessageThread extends React.PureComponent {
       'keyboardDidHide',
       this._keyboardDidHide,
     );
+    this.checkIsHideDeletedEnabled();
   }
+
+  checkIsHideDeletedEnabled = async () => {
+    let hideDeletedEnabled = this.context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    this.setState({ hideDeletedEnabled });
+  };
 
   componentWillUnmount() {
     this.keyboardDidShowListener.remove();
@@ -191,10 +198,8 @@ class CometChatMessageThread extends React.PureComponent {
             );
           }
           break;
-
         case actions.MESSAGE_SENT:
         case actions.ERROR_IN_SEND_MESSAGE:
-
           this.messageSent(messages);
           break;
         case actions.MESSAGE_UPDATED:
@@ -396,7 +401,7 @@ class CometChatMessageThread extends React.PureComponent {
       if (messageKey > -1) {
         const messageObj = { ...messageList[messageKey] };
         const newMessageObj = { ...messageObj, ...deletedMessage };
-        if (HIDE_DELETED_MSG) {
+        if (this.state.hideDeletedEnabled) {
           messageList.splice(messageKey, 1);
         } else {
           messageList.splice(messageKey, 1, newMessageObj);
