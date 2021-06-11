@@ -19,16 +19,26 @@ import * as enums from '../../../../utils/enums';
 import { ModalPicker, Emoji } from 'emoji-mart-native';
 import ReactionDetails from './reactionDetails';
 import DropDownAlert from '../../../Shared/DropDownAlert';
+import { CometChatContext } from '../../../../utils/CometChatContext';
 
 class CometChatMessageReactions extends Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
     this.state = {
       message: props.message,
       pickerVisible: false,
       reactionsDetailContainer: false,
+      restrictions: null,
     };
   }
+  componentDidMount() {
+    this.checkRestrictions();
+  }
+  checkRestrictions = async () => {
+    let isReactionsEnabled = await this.context.FeatureRestriction.isReactionsEnabled();
+    this.setState({ restrictions: { isReactionsEnabled } });
+  };
 
   componentDidUpdate(prevProps) {
     if (
@@ -131,6 +141,9 @@ class CometChatMessageReactions extends Component {
   };
 
   render() {
+    if (!this.state.restrictions?.isReactionsEnabled) {
+      return null;
+    }
     const { pickerVisible, message, reactionsDetailContainer } = this.state;
     const reaction = checkMessageForExtensionsData(message, 'reactions');
     const messageReactions = this.getMessageReactions(reaction);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Text,
   View,
@@ -12,14 +12,47 @@ import styles from './styles';
 import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 const actionIconSize = 26;
 
 export default (props) => {
+  const [restrictions, setRestrictions] = useState(null);
+  const context = useContext(CometChatContext);
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+
+  const checkRestrictions = async () => {
+    let enableEditMessage = await context.FeatureRestriction.isEditMessageEnabled();
+    let enableThreadedChats = await context.FeatureRestriction.isThreadedMessagesEnabled();
+    let enableDeleteMessage = await context.FeatureRestriction.isDeleteMessageEnabled();
+    let enableDeleteMessageForModerator = await context.FeatureRestriction.isDeleteMemberMessageEnabled();
+    let enableMessageInPrivate = await context.FeatureRestriction.isMessageInPrivateEnabled();
+
+    if (
+      !enableEditMessage &&
+      !enableThreadedChats &&
+      !enableDeleteMessage &&
+      !enableDeleteMessageForModerator &&
+      !enableMessageInPrivate
+    ) {
+      props.actionGenerated(actions.CLOSE_MESSAGE_ACTIONS);
+    }
+    setRestrictions({
+      enableEditMessage,
+      enableThreadedChats,
+      enableDeleteMessage,
+      enableDeleteMessageForModerator,
+      enableMessageInPrivate,
+    });
+  };
+
   let sendMessage = null;
   if (
     props.message.messageFrom === enums.MESSAGE_FROM_RECEIVER &&
-    props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP
+    props.message.receiverType === CometChat.RECEIVER_TYPE.GROUP &&
+    restrictions?.enableMessageInPrivate
   ) {
     sendMessage = (
       <TouchableOpacity
@@ -46,7 +79,8 @@ export default (props) => {
   // if threaded messages need to be disabled
   if (
     props.message.category === CometChat.CATEGORY_CUSTOM ||
-    props.message.parentMessageId
+    props.message.parentMessageId ||
+    !restrictions?.enableThreadedChats
   ) {
     threadedChats = null;
   }
@@ -63,10 +97,13 @@ export default (props) => {
   );
 
   // if deleting messages need to be disabled
+
   if (
     props.message.messageFrom === enums.MESSAGE_FROM_RECEIVER &&
-    props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN &&
-    props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.MODERATOR
+    (props.item.scope == CometChat.GROUP_MEMBER_SCOPE.MODERATOR ||
+    props.item.scope == CometChat.GROUP_MEMBER_SCOPE.ADMIN
+      ? !restrictions?.enableDeleteMessageForModerator
+      : !restrictions?.enableDeleteMessage)
   ) {
     deleteMessage = null;
   }
@@ -84,13 +121,10 @@ export default (props) => {
   // if editing messages need to be disabled
   if (
     props.message.messageFrom === enums.MESSAGE_FROM_RECEIVER ||
-    props.message.type !== CometChat.MESSAGE_TYPE.TEXT
+    props.message.type !== CometChat.MESSAGE_TYPE.TEXT ||
+    !restrictions?.enableEditMessage
   ) {
     editMessage = null;
-  }
-  if (!threadedChats && !editMessage && !deleteMessage) {
-    props.actionGenerated(actions.CLOSE_MESSAGE_ACTIONS);
-    return null;
   }
 
   return (

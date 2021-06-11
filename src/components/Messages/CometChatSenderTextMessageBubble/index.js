@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import style from './styles';
 import { CometChatMessageReactions } from '../../Messages/Extensions';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 function usePrevious(value) {
   const ref = useRef();
@@ -31,6 +32,17 @@ const CometChatSenderTextMessageBubble = (props) => {
   });
   const prevMessage = usePrevious(message);
   const viewTheme = { ...theme, ...props.theme };
+  const context = useContext(CometChatContext);
+  const [restrictions, setRestrictions] = useState(null);
+
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+
+  const checkRestrictions = async () => {
+    let isLinkPreviewEnabled = context.FeatureRestriction.isLinkPreviewEnabled();
+    setRestrictions({ isLinkPreviewEnabled });
+  };
 
   /**
    * Handler that parses text and wraps URLs, phone numbers, emails, social handles, hashtags, and more with Text nodes and onPress handlers.
@@ -77,7 +89,8 @@ const CometChatSenderTextMessageBubble = (props) => {
         if (
           linkPreviewObject &&
           Object.prototype.hasOwnProperty.call(linkPreviewObject, 'links') &&
-          linkPreviewObject.links.length
+          linkPreviewObject.links.length &&
+          restrictions?.isLinkPreviewEnabled
         ) {
           const linkObject = linkPreviewObject.links[0];
 

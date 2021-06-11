@@ -1,20 +1,27 @@
 import { CometChat } from '@cometchat-pro/react-native-chat';
 
 import * as enums from '../../../utils/enums';
-import { HIDE_DELETED_MSG } from '../../../utils/settings';
 export class SharedMediaManager {
   mediaMessageListenerId = `shared_media_${new Date().getTime()}`;
 
   mediaMessageRequest = null;
 
-  constructor(item, type, messageType) {
+  constructor(item, type, messageType, context) {
+    this.checkRestrictions(item, type, messageType, context);
+  }
+  checkRestrictions = async (item, type, messageType, context) => {
+    this.hideDeletedMessages = await context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    this.createBuilder(item, type, messageType);
+  };
+
+  createBuilder = (item, type, messageType) => {
     if (type === CometChat.RECEIVER_TYPE.USER) {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
         .setUID(item.uid)
         .setLimit(10)
         .setCategory(CometChat.CATEGORY_MESSAGE)
         .setType(messageType)
-        .hideDeletedMessages(HIDE_DELETED_MSG)
+        .hideDeletedMessages(this.hideDeletedMessages)
         .build();
     } else {
       this.mediaMessageRequest = new CometChat.MessagesRequestBuilder()
@@ -22,10 +29,10 @@ export class SharedMediaManager {
         .setLimit(10)
         .setCategory(CometChat.CATEGORY_MESSAGE)
         .setType(messageType)
-        .hideDeletedMessages(HIDE_DELETED_MSG)
+        .hideDeletedMessages(this.hideDeletedMessages)
         .build();
     }
-  }
+  };
 
   fetchPreviousMessages() {
     return this.mediaMessageRequest.fetchPrevious();

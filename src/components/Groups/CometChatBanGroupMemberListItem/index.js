@@ -1,7 +1,8 @@
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { TouchableOpacity, Text, View, Image } from 'react-native';
-import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
+import CometChatUserPresence from '../../Shared/CometChatUserPresence';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 import style from './styles';
 import theme from '../../../resources/theme';
 import unban from './resources/block.png';

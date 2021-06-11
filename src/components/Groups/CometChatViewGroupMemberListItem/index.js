@@ -1,16 +1,35 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
-import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
+import CometChatUserPresence from '../../Shared/CometChatUserPresence';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as actions from '../../../utils/actions';
 import style from './style';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 export default (props) => {
+  const context = useContext(CometChatContext);
   const [showChangeScope, toggleChange] = useState(false);
+  const [restrictions, setRestrictions] = useState(false);
   const [scope, setScope] = useState(props.member.scope);
+
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+
+  const checkRestrictions = async () => {
+    let isChangingGroupMemberScopeEnabled = await context.FeatureRestriction.isChangingGroupMemberScopeEnabled();
+    let isKickingGroupMembersEnabled = await context.FeatureRestriction.isKickingGroupMembersEnabled();
+    let isBanningGroupMembersEnabled = await context.FeatureRestriction.isBanningGroupMembersEnabled();
+    setRestrictions({
+      isChangingGroupMemberScopeEnabled,
+      isKickingGroupMembersEnabled,
+      isBanningGroupMembersEnabled,
+    });
+  };
 
   /**
    * Update member scope
@@ -158,6 +177,15 @@ export default (props) => {
   }
 
   let editAccess = null;
+  if (!restrictions.isChangingGroupMemberScopeEnabled) {
+    changeScope = receivedScope;
+  }
+  if (!restrictions.isKickingGroupMembersEnabled) {
+    kick = null;
+  }
+  if (!restrictions.isBanningGroupMembersEnabled) {
+    ban = null;
+  }
   // if the logged in user is participant, don't show change scope, ban, kick group members
   if (props.item.scope === CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT) {
     editAccess = null;

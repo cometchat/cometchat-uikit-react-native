@@ -4,7 +4,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { CometChatSharedMedia, CometChatAvatar } from '../../Shared';
+import CometChatSharedMedia from '../../Shared/CometChatSharedMedia';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 import style from './styles';
 import BottomSheet from 'reanimated-bottom-sheet';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -13,21 +14,21 @@ import { GroupDetailManager } from './controller';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
-import {
-  CometChatAddGroupMemberList,
-  CometChatViewGroupMemberList,
-  CometChatBanGroupMemberList,
-} from '../index';
+import CometChatAddGroupMemberList from '../CometChatAddGroupMemberList';
+import CometChatViewGroupMemberList from '../CometChatViewGroupMemberList';
+import CometChatBanGroupMemberList from '../CometChatBanGroupMemberList';
 import { deviceHeight } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
 import styles from '../../Shared/CometChatAvatar/styles';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 const ADD_MEMBER = 'addMember';
 const VIEW_MEMBER = 'viewMember';
 const BAN_MEMBER = 'banMember';
 
 export default class CometChatGroupDetails extends React.Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
     this.state = {
@@ -41,6 +42,8 @@ export default class CometChatGroupDetails extends React.Component {
       banMember: false,
       addAdministrator: false,
       addModerator: false,
+      enableLeaveGroup: false,
+      restrictions: null,
     };
 
     this.viewTheme = { ...theme, ...this.props.theme };
@@ -60,6 +63,7 @@ export default class CometChatGroupDetails extends React.Component {
     this.getGroupMembers();
     this.getBannedGroupMembers();
     this.GroupDetailManager.attachListeners(this.groupUpdated);
+    this.checkRestrictions();
   }
 
   componentDidUpdate(prevProps) {
@@ -83,6 +87,24 @@ export default class CometChatGroupDetails extends React.Component {
       this.GroupDetailManager.attachListeners(this.groupUpdated);
     }
   }
+
+  checkRestrictions = async () => {
+    let isJoinLeaveGroupsEnabled = await this.context.FeatureRestriction.isJoinLeaveGroupsEnabled();
+    let isAddingGroupMembersEnabled = await this.context.FeatureRestriction.isAddingGroupMembersEnabled();
+
+    let isViewingGroupMembersEnabled = await this.context.FeatureRestriction.isViewingGroupMembersEnabled();
+    let isSharedMediaEnabled = await this.context.FeatureRestriction.isSharedMediaEnabled();
+    let isGroupDeletionEnabled = await this.context.FeatureRestriction.isGroupDeletionEnabled();
+    this.setState({
+      restrictions: {
+        isJoinLeaveGroupsEnabled,
+        isAddingGroupMembersEnabled,
+        isViewingGroupMembersEnabled,
+        isSharedMediaEnabled,
+        isGroupDeletionEnabled,
+      },
+    });
+  };
 
   componentWillUnmount() {
     this.GroupDetailManager.removeListeners();
@@ -584,10 +606,16 @@ export default class CometChatGroupDetails extends React.Component {
         </Text>
       </TouchableOpacity>
     );
+    if (!this.state.restrictions?.isViewingGroupMembersEnabled) {
+      viewMembersBtn = null;
+    }
     let addMembersBtn = null;
     let deleteGroupBtn = null;
     let bannedMembersBtn = null;
-    if (this.props.item.scope === CometChat.GROUP_MEMBER_SCOPE.ADMIN) {
+    if (
+      this.props.item.scope === CometChat.GROUP_MEMBER_SCOPE.ADMIN &&
+      this.state.restrictions?.isAddingGroupMembersEnabled
+    ) {
       addMembersBtn = (
         <TouchableOpacity
           onPress={() => {
@@ -633,7 +661,10 @@ export default class CometChatGroupDetails extends React.Component {
       );
     }
     let leaveGroupBtn = null;
-    if (this.props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN) {
+    if (
+      this.props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN &&
+      this.state.restrictions?.isJoinLeaveGroupsEnabled
+    ) {
       leaveGroupBtn = (
         <TouchableOpacity
           onPress={() => {
@@ -662,6 +693,14 @@ export default class CometChatGroupDetails extends React.Component {
         }}
       />
     );
+
+    if (!this.state.restrictions?.isSharedMediaEnabled) {
+      sharedMediaView = null;
+    }
+
+    if (!this.state.restrictions?.isGroupDeletionEnabled) {
+      deleteGroupBtn = null;
+    }
 
     let members = (
       <View style={style.fullWidth}>

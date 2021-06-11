@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -14,7 +14,7 @@ import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
 import theme from '../../../resources/theme';
-import { CometChatAvatar } from '../../Shared';
+import CometChatAvatar from '../../Shared/CometChatAvatar';
 
 import { CallAlertManager } from './controller';
 
@@ -25,6 +25,7 @@ import videoCallIcon from './resources/incomingvideocall.png';
 import { incomingCallAlert } from '../../../resources/audio';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
+import { CometChatContext } from '../../../utils/CometChatContext';
 
 export default (props) => {
   let callAlertManager = null;
@@ -32,12 +33,23 @@ export default (props) => {
   const incomingAlert = new Sound(incomingCallAlert);
 
   const [incomingCall, setIncomingCall] = useState(null);
-
+  const [isMessagesSoundEnabled, setIsMessagesSoundEnabled] = useState(null);
+  const context = useContext(CometChatContext);
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
+  const checkRestrictions = async () => {
+    let isEnabled = await context.FeatureRestriction.isCallsSoundEnabled();
+    setIsMessagesSoundEnabled(isEnabled);
+  };
   /**
    * Play call alerts
    * @param
    */
   const playIncomingAlert = () => {
+    if (!isMessagesSoundEnabled) {
+      return false;
+    }
     try {
       incomingAlert.setCurrentTime(0);
       incomingAlert.setNumberOfLoops(-1);

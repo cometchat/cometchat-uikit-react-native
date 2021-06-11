@@ -1,22 +1,23 @@
-import React from 'react';
-import { View, Text, Linking, TouchableOpacity, FlatList } from 'react-native';
-import FastImage from 'react-native-fast-image';
-import { CometChatManager } from '../../../utils/controller';
-import { SharedMediaManager } from './controller';
-import { CometChatImageViewer } from '../../Messages';
-import theme from '../../../resources/theme';
-import _ from 'lodash';
-import * as enums from '../../../utils/enums';
-import styles from './styles';
-import VideoPlayer from 'react-native-video-controls';
-import DropDownAlert from '../../Shared/DropDownAlert';
-
-import Icon from 'react-native-vector-icons/FontAwesome5';
 import { CometChat } from '@cometchat-pro/react-native-chat';
-import { deviceHeight, heightRatio } from '../../../utils/consts';
+import _ from 'lodash';
+import React from 'react';
+import { FlatList, Linking, Text, TouchableOpacity, View } from 'react-native';
+import FastImage from 'react-native-fast-image';
+import Icon from 'react-native-vector-icons/FontAwesome5';
+import VideoPlayer from 'react-native-video-controls';
+import theme from '../../../resources/theme';
+import { CometChatContext } from '../../../utils/CometChatContext';
 import { logger } from '../../../utils/common';
+import { deviceHeight, heightRatio } from '../../../utils/consts';
+import { CometChatManager } from '../../../utils/controller';
+import * as enums from '../../../utils/enums';
+import CometChatImageViewer from '../../Messages/CometChatImageViewer';
+import DropDownAlert from '../../Shared/DropDownAlert';
+import { SharedMediaManager } from './controller';
+import styles from './styles';
 
 export default class CometChatSharedMedia extends React.Component {
+  static contextType = CometChatContext;
   constructor(props) {
     super(props);
 
@@ -35,6 +36,7 @@ export default class CometChatSharedMedia extends React.Component {
       this.props.item,
       this.props.type,
       this.state.messageType,
+      this.context,
     );
     this.getMessages();
     this.SharedMediaManager.attachListeners(this.messageUpdated);
