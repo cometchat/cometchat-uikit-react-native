@@ -11,11 +11,6 @@ import theme from '../../../resources/theme';
 import styles from './styles';
 import Sound from 'react-native-sound';
 import DropDownAlert from '../../Shared/DropDownAlert';
-import { UIKitSettings } from '../../../utils/UIKitSettings';
-import {
-  CometChatContextProvider,
-  CometChatContext,
-} from '../../../utils/CometChatContext';
 import { incomingOtherMessageAlert } from '../../../resources/audio';
 import {
   View,
@@ -950,77 +945,37 @@ class CometChatConversationList extends React.Component {
 
   render() {
     return (
-      <CometChatContextProvider ref={(el) => (this.contextProviderRef = el)}>
-        <SafeAreaView style={{ backgroundColor: 'white' }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.conversationWrapperStyle}>
-            <View style={styles.headerContainer}></View>
-            {this.listHeaderComponent()}
-            <SwipeListView
-              contentContainerStyle={styles.flexGrow1}
-              data={this.state.conversationList}
-              keyExtractor={(item, index) => item?.conversationId + '_' + index}
-              renderHiddenItem={(data, rowMap) => (
-                <View
-                  key={data.item?.conversationId}
-                  style={{
-                    alignItems: 'center',
-                    flex: 1,
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    paddingLeft: 15,
-                  }}>
-                  <TouchableOpacity
-                    style={{
-                      alignItems: 'center',
-                      bottom: 0,
-                      justifyContent: 'center',
-                      position: 'absolute',
-                      top: 0,
-                      width: 75,
-                      backgroundColor: 'red',
-                      right: 0,
-                      maxHeight: 64,
-                    }}
-                    onPress={() => this.deleteConversations(data.item)}>
-                    <Image
-                      source={require('./resources/delete.png')}
-                      resizeMode="contain"
-                      style={{ height: 24 }}
-                    />
-                    <Text style={styles.deleteText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              leftOpenValue={0}
-              rightOpenValue={-75}
-              previewRowKey={'0'}
-              previewOpenValue={-40}
-              previewOpenDelay={3000}
-              renderItem={({ item }) => {
-                return (
-                  <CometChatConversationListItem
-                    theme={this.theme}
-                    config={this.props.config}
-                    conversation={item}
-                    selectedConversation={this.state.selectedConversation}
-                    loggedInUser={this.loggedInUser}
-                    handleClick={this.handleClick}
-                  />
-                );
-              }}
-              ListEmptyComponent={this.listEmptyContainer}
-              onScroll={this.handleScroll}
-              onEndReached={this.endReached}
-              onEndReachedThreshold={0.3}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled
-            />
-          </KeyboardAvoidingView>
-          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
-        </SafeAreaView>
-      </CometChatContextProvider>
+      <SafeAreaView style={{ backgroundColor: 'white' }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.conversationWrapperStyle}>
+          <View style={styles.headerContainer}></View>
+          {this.listHeaderComponent()}
+          <FlatList
+            contentContainerStyle={styles.flexGrow1}
+            data={this.state.conversationList}
+            renderItem={({ item }) => {
+              return (
+                <CometChatConversationListItem
+                  theme={this.theme}
+                  config={this.props.config}
+                  conversation={item}
+                  selectedConversation={this.state.selectedConversation}
+                  loggedInUser={this.loggedInUser}
+                  handleClick={this.handleClick}
+                />
+              );
+            }}
+            ListEmptyComponent={this.listEmptyContainer}
+            onScroll={this.handleScroll}
+            onEndReached={this.endReached}
+            onEndReachedThreshold={0.3}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled
+          />
+        </KeyboardAvoidingView>
+        <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+      </SafeAreaView>
     );
   }
 }

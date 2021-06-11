@@ -275,7 +275,7 @@ class CometChatAddGroupMemberList extends React.Component {
               this.props.actionGenerated('addGroupParticipants', membersToAdd);
             }
           })
-          .catch((error) => {
+          .catch(() => {
             const errorCode = error?.message || 'ERROR';
             this.dropDownAlertRef?.showMessage('error', errorCode);
             logger('addMembersToGroup failed with exception:', error);
@@ -426,7 +426,6 @@ class CometChatAddGroupMemberList extends React.Component {
                     </View>
                   </TouchableWithoutFeedback>
                   <FlatList
-                    keyExtractor={(item, index) => item.uid + '_' + index}
                     data={filteredUserList}
                     renderItem={({ item }) => {
                       const chr = item.name[0].toUpperCase();

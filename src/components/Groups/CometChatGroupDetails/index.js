@@ -20,8 +20,6 @@ import CometChatBanGroupMemberList from '../CometChatBanGroupMemberList';
 import { deviceHeight } from '../../../utils/consts';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
-import styles from '../../Shared/CometChatAvatar/styles';
-import { CometChatContext } from '../../../utils/CometChatContext';
 
 const ADD_MEMBER = 'addMember';
 const VIEW_MEMBER = 'viewMember';
@@ -661,10 +659,7 @@ export default class CometChatGroupDetails extends React.Component {
       );
     }
     let leaveGroupBtn = null;
-    if (
-      this.props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN &&
-      this.state.restrictions?.isJoinLeaveGroupsEnabled
-    ) {
+    if (this.props.item.scope !== CometChat.GROUP_MEMBER_SCOPE.ADMIN) {
       leaveGroupBtn = (
         <TouchableOpacity
           onPress={() => {

@@ -402,16 +402,12 @@ class CometChatConversationListItem extends React.Component {
                 alignItems: 'center',
               }}>
               <Text numberOfLines={1} style={styles.itemLastMsgTimeStyle}>
-                {`${this.state.isThreaded ? 'In a thread : ' : ''}` +
-                  this.state.lastMessage}
+                {this.state.lastMessage}
               </Text>
-
-              {this.state.restrictions?.isUnreadCountEnabled ? (
-                <CometChatBadgeCount
-                  theme={this.props.theme}
-                  count={this.props.conversation.unreadMessageCount}
-                />
-              ) : null}
+              <CometChatBadgeCount
+                theme={this.props.theme}
+                count={this.props.conversation.unreadMessageCount}
+              />
             </View>
           </View>
         </TouchableOpacity>

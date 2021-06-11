@@ -678,11 +678,25 @@ class CometChatGroupList extends React.Component {
             </TouchableOpacity>
           ) : null}
         </View>
-
-        {this.state.restrictions?.isGroupSearchEnabled ? (
-          <TouchableWithoutFeedback
-            onPress={() => this.textInputRef.current.focus()}>
-            <View
+        <TouchableWithoutFeedback
+          onPress={() => this.textInputRef.current.focus()}>
+          <View
+            style={[
+              styles.groupSearchStyle,
+              {
+                backgroundColor: `${this.theme.backgroundColor.grey}`,
+              },
+            ]}>
+            <Icon name="search" size={18} color={this.theme.color.grey} />
+            <TextInput
+              ref={this.textInputRef}
+              value={this.state.textInputValue}
+              autoCompleteType="off"
+              placeholder="Search"
+              placeholderTextColor={this.theme.color.textInputPlaceholder}
+              onChangeText={this.searchGroup}
+              clearButtonMode="always"
+              numberOfLines={1}
               style={[
                 styles.groupSearchStyle,
                 {
@@ -869,18 +883,39 @@ class CometChatGroupList extends React.Component {
                 onEndReachedThreshold={0.3}
                 showsVerticalScrollIndicator={false}
               />
-              <CometChatCreateGroup
-                theme={this.theme}
-                open={this.state.createGroup}
-                close={() => this.createGroupHandler(false)}
-                actionGenerated={this.createGroupActionHandler}
-              />
-              {passwordScreen}
-            </SafeAreaView>
-            <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </CometChatContextProvider>
+            </View>
+            {this.ListHeaderComponent()}
+            <FlatList
+              data={this.state.grouplist}
+              contentContainerStyle={{ flexGrow: 1 }}
+              scrollEnabled
+              renderItem={({ item }) => {
+                return (
+                  <CometChatGroupListItem
+                    theme={this.theme}
+                    group={item}
+                    selectedGroup={this.state.selectedGroup}
+                    clickHandler={this.handleClick}
+                  />
+                );
+              }}
+              ListEmptyComponent={this.listEmptyContainer}
+              onScroll={this.handleScroll}
+              onEndReached={this.endReached}
+              onEndReachedThreshold={0.3}
+              showsVerticalScrollIndicator={false}
+            />
+            <CometChatCreateGroup
+              theme={this.theme}
+              open={this.state.createGroup}
+              close={() => this.createGroupHandler(false)}
+              actionGenerated={this.createGroupActionHandler}
+            />
+            {passwordScreen}
+          </SafeAreaView>
+          <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     );
   }
 }

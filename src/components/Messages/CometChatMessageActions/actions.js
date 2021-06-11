@@ -12,7 +12,6 @@ import styles from './styles';
 import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { CometChat } from '@cometchat-pro/react-native-chat';
-import { CometChatContext } from '../../../utils/CometChatContext';
 
 const actionIconSize = 26;
 
@@ -79,8 +78,7 @@ export default (props) => {
   // if threaded messages need to be disabled
   if (
     props.message.category === CometChat.CATEGORY_CUSTOM ||
-    props.message.parentMessageId ||
-    !restrictions?.enableThreadedChats
+    props.message.parentMessageId
   ) {
     threadedChats = null;
   }

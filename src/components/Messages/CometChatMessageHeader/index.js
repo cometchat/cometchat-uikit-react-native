@@ -268,7 +268,7 @@ class CometChatMessageHeader extends React.Component {
       presence = (
         <CometChatUserPresence
           status={this.state.presence}
-          style={{ top: 28 }}
+          style={{ top: 25 }}
           cornerRadius={9}
           borderColor={this.props.theme.borderColor.white}
           borderWidth={2}
@@ -320,30 +320,6 @@ class CometChatMessageHeader extends React.Component {
       status = null;
       presence = null;
     }
-    if (
-      this.props.type === CometChat.ACTION_TYPE.TYPE_USER &&
-      this.state.restrictions?.isOneOnOneAudioCallEnabled === false
-    ) {
-      audioCallBtn = null;
-    }
-
-    //if videocall feature is disabled
-    if (
-      (this.props.type === CometChat.ACTION_TYPE.TYPE_USER &&
-        this.state.restrictions?.isOneOnOneVideoCallEnabled === false) ||
-      (this.props.type === CometChat.ACTION_TYPE.TYPE_GROUP &&
-        this.state.restrictions?.isGroupVideoCallEnabled === false)
-    ) {
-      videoCallBtn = null;
-    }
-
-    let info = (
-      <TouchableOpacity
-        onPress={() => this.props.actionGenerated(actions.VIEW_DETAIL)}
-        style={styles.videoCallContainer}>
-        <Image style={styles.callIcon} source={detailPaneIcon} />
-      </TouchableOpacity>
-    );
 
     return (
       <View style={styles.headerContainer}>

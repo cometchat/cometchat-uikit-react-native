@@ -76,7 +76,7 @@ class CometChatOutgoingDirectCall extends React.Component {
 
         const newMessageObj = { ...customMessage, error: error };
         this.props.actionGenerated(
-          actions['ERROR_IN_SENDING_MESSAGE'],
+          enums.ACTIONS['ERROR_IN_SENDING_MESSAGE'],
           newMessageObj,
         );
       });
@@ -88,7 +88,12 @@ class CometChatOutgoingDirectCall extends React.Component {
     let defaultLayout = true;
     let callListener = new CometChat.OngoingCallListener({
       onCallEnded: (call) => {
-        this.props.close();
+        this.props.actionGenerated(actions.DIRECT_CALL_ENDED, call);
+        this.setState({
+          outgoingCallScreen: false,
+          callInProgress: null,
+          callSettings: null,
+        });
       },
       onError: (error) => {
         console.log('Call Error: ', error);

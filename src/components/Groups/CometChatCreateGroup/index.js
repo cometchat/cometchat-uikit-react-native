@@ -18,7 +18,6 @@ import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { logger } from '../../../utils/common';
 import DropDownAlert from '../../Shared/DropDownAlert';
-import { CometChatContext } from '../../../utils/CometChatContext';
 
 const closeIcon = <Icon name="close" style={style.modalCloseStyle} />;
 class CometChatCreateGroup extends React.Component {

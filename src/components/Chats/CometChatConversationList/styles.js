@@ -57,5 +57,4 @@ export default StyleSheet.create({
     justifyContent: 'center',
   },
   flexGrow1: { flexGrow: 1 },
-  deleteText: { color: '#fff' },
 });

@@ -7,11 +7,10 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    height: 64,
+    maxHeight: 64,
     paddingHorizontal: 16,
     justifyContent: 'center',
     marginBottom: 8,
-    backgroundColor: '#fff',
   },
   avatarStyle: {
     flexWrap: 'wrap',

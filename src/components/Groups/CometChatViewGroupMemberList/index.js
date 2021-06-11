@@ -276,7 +276,6 @@ export default class CometChatViewGroupMemberList extends React.Component {
                     <View style={style.listContainer}>
                       <FlatList
                         data={membersList}
-                        keyExtractor={(item, index) => item.uid + '_' + index}
                         renderItem={({ item, index }) => {
                           return (
                             <CometChatViewGroupMemberListItem
