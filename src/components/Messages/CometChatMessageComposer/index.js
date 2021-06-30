@@ -85,9 +85,12 @@ export default class CometChatMessageComposer extends React.PureComponent {
   }
 
   checkRestrictions = async () => {
-    let isLiveReactionsEnabled = await this.context.FeatureRestriction.isLiveReactionsEnabled();
-    let isTypingIndicatorsEnabled = await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
-    let isSmartRepliesEnabled = await this.context.FeatureRestriction.isSmartRepliesEnabled();
+    let isLiveReactionsEnabled =
+      await this.context.FeatureRestriction.isLiveReactionsEnabled();
+    let isTypingIndicatorsEnabled =
+      await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
+    let isSmartRepliesEnabled =
+      await this.context.FeatureRestriction.isSmartRepliesEnabled();
     this.setState({
       restrictions: {
         isLiveReactionsEnabled,
