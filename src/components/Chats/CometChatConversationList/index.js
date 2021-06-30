@@ -44,6 +44,7 @@ class CometChatConversationList extends React.Component {
     };
     this.chatListRef = React.createRef();
     this.theme = { ...theme, ...this.props.theme };
+
     this.audio = new Sound(incomingOtherMessageAlert);
     this.UIKitSettingsBuilder = new UIKitSettings();
   }
@@ -76,7 +77,8 @@ class CometChatConversationList extends React.Component {
   }
 
   checkRestrictions = async () => {
-    let isMessagesSoundEnabled = await this.context.FeatureRestriction.isMessagesSoundEnabled();
+    let isMessagesSoundEnabled =
+      await this.context.FeatureRestriction.isMessagesSoundEnabled();
     this.setState({ isMessagesSoundEnabled });
   };
 
@@ -183,11 +185,8 @@ class CometChatConversationList extends React.Component {
         const message = this.props.messageToMarkRead;
         this.makeConversation(message)
           .then((response) => {
-            const {
-              conversationKey,
-              conversationObj,
-              conversationList,
-            } = response;
+            const { conversationKey, conversationObj, conversationList } =
+              response;
 
             if (conversationKey > -1) {
               const unreadMessageCount = this.makeUnreadMessageCount(
@@ -584,9 +583,8 @@ class CometChatConversationList extends React.Component {
         const { conversationKey, conversationObj, conversationList } = response;
 
         if (conversationKey > -1) {
-          const unreadMessageCount = this.makeUnreadMessageCount(
-            conversationObj,
-          );
+          const unreadMessageCount =
+            this.makeUnreadMessageCount(conversationObj);
           const lastMessageObj = this.makeLastMessage(message, conversationObj);
 
           const conversationWithObj = { ...conversationObj.conversationWith };
@@ -654,9 +652,8 @@ class CometChatConversationList extends React.Component {
             conversationList.splice(conversationKey, 1);
             this.setState({ conversationList: conversationList });
           } else {
-            const unreadMessageCount = this.makeUnreadMessageCount(
-              conversationObj,
-            );
+            const unreadMessageCount =
+              this.makeUnreadMessageCount(conversationObj);
             const lastMessageObj = this.makeLastMessage(
               message,
               conversationObj,
@@ -700,9 +697,8 @@ class CometChatConversationList extends React.Component {
         const { conversationKey, conversationObj, conversationList } = response;
 
         if (conversationKey > -1) {
-          const unreadMessageCount = this.makeUnreadMessageCount(
-            conversationObj,
-          );
+          const unreadMessageCount =
+            this.makeUnreadMessageCount(conversationObj);
           const lastMessageObj = this.makeLastMessage(message, conversationObj);
 
           const conversationWithObj = { ...conversationObj.conversationWith };
@@ -749,9 +745,8 @@ class CometChatConversationList extends React.Component {
         const { conversationKey, conversationObj, conversationList } = response;
         if (conversationKey > -1) {
           if (options && this.loggedInUser.uid !== options.user.uid) {
-            const unreadMessageCount = this.makeUnreadMessageCount(
-              conversationObj,
-            );
+            const unreadMessageCount =
+              this.makeUnreadMessageCount(conversationObj);
             const lastMessageObj = this.makeLastMessage(
               message,
               conversationObj,

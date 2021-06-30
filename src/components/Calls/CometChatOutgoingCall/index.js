@@ -32,6 +32,7 @@ class CometChatOutgoingCall extends React.PureComponent {
 
     this.callScreenManager = null;
     this.theme = { ...theme, ...this.props.theme };
+
     this.outgoingAlert = new Sound(outgoingCallAlert);
   }
 
