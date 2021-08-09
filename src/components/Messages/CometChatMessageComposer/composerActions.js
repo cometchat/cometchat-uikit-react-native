@@ -27,11 +27,12 @@ export default class ComposerActions extends Component {
     super(props);
     this.state = {
       restrictions: null,
+      snapPoints: null,
     };
   }
   componentDidUpdate(prevProps) {
     if (!prevProps.visible && this.props.visible) {
-      this.sheetRef.current.snapTo(0);
+      this.sheetRef?.current?.snapTo(0);
     }
   }
 
@@ -40,9 +41,25 @@ export default class ComposerActions extends Component {
   }
   checkRestrictions = async () => {
     let isPollsEnabled = await this.context.FeatureRestriction.isPollsEnabled();
-    let isStickersEnabled = await this.context.FeatureRestriction.isStickersEnabled();
+    let isStickersEnabled =
+      await this.context.FeatureRestriction.isStickersEnabled();
     let isFilesEnabled = await this.context.FeatureRestriction.isFilesEnabled();
-    let isPhotosVideosEnabled = await this.context.FeatureRestriction.isPhotosVideosEnabled();
+    let isPhotosVideosEnabled =
+      await this.context.FeatureRestriction.isPhotosVideosEnabled();
+    let height = 0;
+    if (isPollsEnabled) {
+      height++;
+    }
+    if (isStickersEnabled) {
+      height++;
+    }
+    if (isFilesEnabled) {
+      height++;
+    }
+    if (isPhotosVideosEnabled) {
+      height += 4;
+    }
+    console.log(height, isPollsEnabled);
     this.setState({
       restrictions: {
         isPollsEnabled,
@@ -50,6 +67,7 @@ export default class ComposerActions extends Component {
         isFilesEnabled,
         isPhotosVideosEnabled,
       },
+      snapPoints: [height * 60 * heightRatio, 0],
     });
   };
 
@@ -79,7 +97,7 @@ export default class ComposerActions extends Component {
             cameraType: 'back',
           },
           (response) => {
-            this.sheetRef.current.snapTo(1);
+            this.sheetRef?.current?.snapTo(1);
             this.props.close();
             if (response.didCancel) {
               return null;
@@ -122,7 +140,7 @@ export default class ComposerActions extends Component {
         );
       }
     } catch (err) {
-      this.sheetRef.current.snapTo(1);
+      this.sheetRef?.current?.snapTo(1);
       this.props.close();
     }
   };
@@ -158,7 +176,7 @@ export default class ComposerActions extends Component {
             ? CometChat.MESSAGE_TYPE.IMAGE
             : CometChat.MESSAGE_TYPE.VIDEO,
         );
-        this.sheetRef.current.snapTo(1);
+        this.sheetRef?.current?.snapTo(1);
         this.props.close();
       },
     );
@@ -175,7 +193,7 @@ export default class ComposerActions extends Component {
         uri: res.uri,
       };
       this.props.sendMediaMessage(file, CometChat.MESSAGE_TYPE.FILE);
-      this.sheetRef.current.snapTo(1);
+      this.sheetRef?.current?.snapTo(1);
       this.props.close();
     } catch (err) {
       if (DocumentPicker.isCancel(err)) {
@@ -313,24 +331,26 @@ export default class ComposerActions extends Component {
         <View style={style.bottomSheetContainer}>
           <TouchableWithoutFeedback
             onPress={() => {
-              this.sheetRef.current.snapTo(1);
+              this.sheetRef?.current?.snapTo(1);
               this.props.close();
             }}>
             <View style={style.fullFlex}>
-              <BottomSheet
-                ref={this.sheetRef}
-                snapPoints={[400 * heightRatio, 0]}
-                borderRadius={30}
-                initialSnap={1}
-                enabledInnerScrolling={false}
-                enabledContentTapInteraction
-                overdragResistanceFactor={10}
-                renderContent={this.renderContent}
-                renderHeader={this.renderHeader}
-                onCloseEnd={() => {
-                  close();
-                }}
-              />
+              {this.state.snapPoints ? (
+                <BottomSheet
+                  ref={this.sheetRef}
+                  snapPoints={this.state.snapPoints}
+                  borderRadius={30}
+                  initialSnap={1}
+                  enabledInnerScrolling={false}
+                  enabledContentTapInteraction
+                  overdragResistanceFactor={10}
+                  renderContent={this.renderContent}
+                  renderHeader={this.renderHeader}
+                  onCloseEnd={() => {
+                    close();
+                  }}
+                />
+              ) : null}
             </View>
           </TouchableWithoutFeedback>
         </View>

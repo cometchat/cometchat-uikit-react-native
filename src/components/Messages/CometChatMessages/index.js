@@ -87,11 +87,16 @@ class CometChatMessages extends React.PureComponent {
   }
   checkRestrictions = async () => {
     let context = this.contextProviderRef.state;
-    let isGroupActionMessagesEnabled = await context.FeatureRestriction.isGroupActionMessagesEnabled();
-    let isCallActionMessagesEnabled = await context.FeatureRestriction.isCallActionMessagesEnabled();
-    let isOneOnOneChatEnabled = await context.FeatureRestriction.isOneOnOneChatEnabled();
-    let isGroupChatEnabled = await context.FeatureRestriction.isGroupChatEnabled();
-    let isHideDeletedMessagesEnabled = await context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    let isGroupActionMessagesEnabled =
+      await context.FeatureRestriction.isGroupActionMessagesEnabled();
+    let isCallActionMessagesEnabled =
+      await context.FeatureRestriction.isCallActionMessagesEnabled();
+    let isOneOnOneChatEnabled =
+      await context.FeatureRestriction.isOneOnOneChatEnabled();
+    let isGroupChatEnabled =
+      await context.FeatureRestriction.isGroupChatEnabled();
+    let isHideDeletedMessagesEnabled =
+      await context.FeatureRestriction.isHideDeletedMessagesEnabled();
     this.setState({
       restrictions: {
         isGroupActionMessagesEnabled,
@@ -286,6 +291,7 @@ class CometChatMessages extends React.PureComponent {
         } else {
           params.actionGenerated(action, { ...params.item, type: params.type });
         }
+        break;
       case actions.MENU_CLICKED:
         // case actions.JOIN_DIRECT_CALL:
         params.actionGenerated(action);
