@@ -93,9 +93,9 @@ export class UIKitSettings {
     this.sendMessageReaction = true;
     this.collaborativeWhiteboard = true;
     this.collaborativeDocument = true;
-    this.sendStickers = false;
+    this.sendStickers = true;
     this.shareLocation = false;
-    this.polls = false;
+    this.polls = true;
     this.messageTranslation = true;
 
     this.allowModeratorToDeleteMemberMessages = false;
@@ -369,7 +369,8 @@ export class UIKitSettings {
   setAllowModeratorToDeleteMemberMessages = (
     allowModeratorToDeleteMemberMessages,
   ) => {
-    this.allowModeratorToDeleteMemberMessages = allowModeratorToDeleteMemberMessages;
+    this.allowModeratorToDeleteMemberMessages =
+      allowModeratorToDeleteMemberMessages;
   };
 
   setUnreadCount = (unreadCount) => {

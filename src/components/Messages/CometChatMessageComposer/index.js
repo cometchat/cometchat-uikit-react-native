@@ -62,7 +62,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       keyboardActivity: false,
       restrictions: null,
     };
-
+    Sound.setCategory('Ambient', true);
     this.audio = new Sound(outgoingMessageAlert);
     CometChat.getLoggedinUser()
       .then((user) => (this.loggedInUser = user))
