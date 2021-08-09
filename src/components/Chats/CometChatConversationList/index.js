@@ -44,7 +44,7 @@ class CometChatConversationList extends React.Component {
     };
     this.chatListRef = React.createRef();
     this.theme = { ...theme, ...this.props.theme };
-
+    Sound.setCategory('Ambient', true);
     this.audio = new Sound(incomingOtherMessageAlert);
     this.UIKitSettingsBuilder = new UIKitSettings();
   }
