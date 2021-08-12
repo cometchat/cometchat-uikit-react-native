@@ -49,7 +49,8 @@ export class MessageListManager {
   }
 
   checkRestrictions = async (item, type, parentMessageId, context) => {
-    this.hideDeletedMessages = await context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    this.hideDeletedMessages =
+      await context.FeatureRestriction.isHideDeletedMessagesEnabled();
     this.buildRequestBuilder(item, type, parentMessageId, context);
   };
 
@@ -128,6 +129,9 @@ export class MessageListManager {
         },
         onMessageEdited: (editedMessage) => {
           callback(enums.MESSAGE_EDITED, editedMessage);
+        },
+        onTransientMessageReceived: (transientMessage) => {
+          callback(enums.TRANSIENT_MESSAGE_RECEIVED, transientMessage);
         },
       }),
     );

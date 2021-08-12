@@ -8,6 +8,7 @@ export class UserListManager {
 
   constructor(searchKey) {
     this.searchKey = searchKey;
+    this.initializeUsersRequest();
   }
 
   initializeUsersRequest = () => {

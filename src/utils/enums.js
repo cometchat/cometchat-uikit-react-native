@@ -4,10 +4,12 @@ export const USER_LEFT = 'onUserLeft';
 export const TEXT_MESSAGE_RECEIVED = 'onTextMessageReceived';
 export const MEDIA_MESSAGE_RECEIVED = 'onMediaMessageReceived';
 export const CUSTOM_MESSAGE_RECEIVED = 'onCustomMessageReceived';
+export const TRANSIENT_MESSAGE_RECEIVED = 'onTransientMessageReceived';
 export const MESSAGE_DELIVERED = 'onMessagesDelivered';
 export const MESSAGE_READ = 'onMessagesRead';
 export const MESSAGE_DELETED = 'onMessageDeleted';
 export const MESSAGE_EDITED = 'onMessageEdited';
+export const METADATA_TYPE_LIVEREACTION = 'live_reaction';
 
 export const INCOMING_CALL_RECEIVED = 'onIncomingCallReceived';
 export const OUTGOING_CALL_ACCEPTED = 'onOutgoingCallAccepted';
