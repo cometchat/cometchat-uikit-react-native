@@ -62,7 +62,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       keyboardActivity: false,
       restrictions: null,
     };
-
+    Sound.setCategory('Ambient', true);
     this.audio = new Sound(outgoingMessageAlert);
     CometChat.getLoggedinUser()
       .then((user) => (this.loggedInUser = user))
@@ -85,9 +85,12 @@ export default class CometChatMessageComposer extends React.PureComponent {
   }
 
   checkRestrictions = async () => {
-    let isLiveReactionsEnabled = await this.context.FeatureRestriction.isLiveReactionsEnabled();
-    let isTypingIndicatorsEnabled = await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
-    let isSmartRepliesEnabled = await this.context.FeatureRestriction.isSmartRepliesEnabled();
+    let isLiveReactionsEnabled =
+      await this.context.FeatureRestriction.isLiveReactionsEnabled();
+    let isTypingIndicatorsEnabled =
+      await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
+    let isSmartRepliesEnabled =
+      await this.context.FeatureRestriction.isSmartRepliesEnabled();
     this.setState({
       restrictions: {
         isLiveReactionsEnabled,
@@ -588,16 +591,32 @@ export default class CometChatMessageComposer extends React.PureComponent {
   sendReaction = (event) => {
     const typingInterval = 1000;
 
-    const typingMetadata = {
-      type: enums.LIVE_REACTION_KEY,
-      reaction: this.props.reaction,
-    };
+    // const typingMetadata = {
+    //   type: enums.LIVE_REACTION_KEY,
+    //   reaction: this.props.reaction,
+    // };
 
-    this.startTyping(typingInterval, typingMetadata);
+    // this.startTyping(typingInterval, typingMetadata);
+    try {
+      const metadata = {
+        type: enums.METADATA_TYPE_LIVEREACTION,
+        reaction: this.props.reactionName || 'heart',
+      };
+
+      const { receiverId, receiverType } = this.getReceiverDetails();
+      let transientMessage = new CometChat.TransientMessage(
+        receiverId,
+        receiverType,
+        metadata,
+      );
+      CometChat.sendTransientMessage(transientMessage);
+    } catch (err) {
+      console.log(err);
+    }
     this.props.actionGenerated(actions.SEND_REACTION);
     event.persist();
     setTimeout(() => {
-      this.endTyping(typingMetadata);
+      // this.endTyping(typingMetadata);
       this.props.actionGenerated(actions.STOP_REACTION);
     }, typingInterval);
   };

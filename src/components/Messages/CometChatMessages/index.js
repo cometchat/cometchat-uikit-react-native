@@ -87,11 +87,16 @@ class CometChatMessages extends React.PureComponent {
   }
   checkRestrictions = async () => {
     let context = this.contextProviderRef.state;
-    let isGroupActionMessagesEnabled = await context.FeatureRestriction.isGroupActionMessagesEnabled();
-    let isCallActionMessagesEnabled = await context.FeatureRestriction.isCallActionMessagesEnabled();
-    let isOneOnOneChatEnabled = await context.FeatureRestriction.isOneOnOneChatEnabled();
-    let isGroupChatEnabled = await context.FeatureRestriction.isGroupChatEnabled();
-    let isHideDeletedMessagesEnabled = await context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    let isGroupActionMessagesEnabled =
+      await context.FeatureRestriction.isGroupActionMessagesEnabled();
+    let isCallActionMessagesEnabled =
+      await context.FeatureRestriction.isCallActionMessagesEnabled();
+    let isOneOnOneChatEnabled =
+      await context.FeatureRestriction.isOneOnOneChatEnabled();
+    let isGroupChatEnabled =
+      await context.FeatureRestriction.isGroupChatEnabled();
+    let isHideDeletedMessagesEnabled =
+      await context.FeatureRestriction.isHideDeletedMessagesEnabled();
     this.setState({
       restrictions: {
         isGroupActionMessagesEnabled,
@@ -286,6 +291,7 @@ class CometChatMessages extends React.PureComponent {
         } else {
           params.actionGenerated(action, { ...params.item, type: params.type });
         }
+        break;
       case actions.MENU_CLICKED:
         // case actions.JOIN_DIRECT_CALL:
         params.actionGenerated(action);
@@ -293,6 +299,7 @@ class CometChatMessages extends React.PureComponent {
       case actions.SEND_REACTION:
         this.toggleReaction(true);
         break;
+
       case actions.SHOW_REACTION:
         this.showReaction(messages);
         break;
@@ -366,6 +373,9 @@ class CometChatMessages extends React.PureComponent {
         this.setState({ joinDirectCall: false, ongoingDirectCall: null });
 
         break;
+      case enums.TRANSIENT_MESSAGE_RECEIVED:
+        this.liveReactionReceived(messages);
+        break;
       default:
         break;
     }
@@ -426,6 +436,33 @@ class CometChatMessages extends React.PureComponent {
     });
 
     this.setState({ messageList: messageList });
+  };
+
+  liveReactionReceived = (reaction) => {
+    try {
+      const stopReaction = () => {
+        this.toggleReaction(false);
+      };
+
+      if (reaction.data.type === enums['METADATA_TYPE_LIVEREACTION']) {
+        const params = this.props?.route?.params || this.props;
+
+        if (
+          (params.type === CometChat.RECEIVER_TYPE.GROUP &&
+            reaction.getReceiverId() === params.item.guid) ||
+          (params.type === CometChat.RECEIVER_TYPE.USER &&
+            reaction.getSender()?.uid === params.item.uid)
+        ) {
+          this.reactionName = reaction.data.reaction;
+          this.toggleReaction(true);
+
+          const liveReactionInterval = 1000;
+          setTimeout(stopReaction, liveReactionInterval);
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   membersAdded = (members) => {
@@ -912,6 +949,12 @@ class CometChatMessages extends React.PureComponent {
           <CometChatLiveReactions
             reactionName={this.reactionName}
             theme={this.theme}
+            type={params.type}
+            item={
+              params.type === CometChat.RECEIVER_TYPE.USER
+                ? this.state.user
+                : this.state.item
+            }
           />
         </View>
       );

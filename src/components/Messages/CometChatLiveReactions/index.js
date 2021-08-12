@@ -5,7 +5,8 @@ import { Dimensions, View, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { logger } from '../../../utils/common';
 import styles from './styles';
-
+import * as enums from '../../../utils/enums';
+import { CometChat } from '@cometchat-pro/react-native-chat';
 const { height: deviceHeight } = Dimensions.get('window');
 
 const ANIMATION_END_Y = Math.ceil(deviceHeight * 0.5);
@@ -28,6 +29,7 @@ class AnimatedHeart extends Component {
     this.state = {
       position: new Animated.Value(0),
     };
+
     this._yAnimation = this.state.position.interpolate({
       inputRange: [NEGATIVE_END_Y, 0],
       outputRange: [ANIMATION_END_Y, 0],
@@ -171,6 +173,8 @@ export default class CometChatLiveReactions extends Component {
           return (
             <AnimatedHeart
               key={v.id}
+              item={this.props.item}
+              type={this.props.type}
               // eslint-disable-next-line react/jsx-no-bind
               onComplete={this.removeHeart.bind(this, v.id)}
               style={{

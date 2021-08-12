@@ -173,6 +173,7 @@ class CometChatMessageList extends React.PureComponent {
               ) {
                 actionMessages.push(message);
               }
+              this.markMessageAsDelivered(message);
 
               // if the sender of the message is not the logged in user, mark it as read.
               if (
@@ -218,6 +219,22 @@ class CometChatMessageList extends React.PureComponent {
       });
   };
 
+  markMessageAsDelivered = (message) => {
+    try {
+      if (
+        message.sender?.uid !== this.loggedInUser?.uid &&
+        message.hasOwnProperty('deliveredAt') === false
+      ) {
+        CometChat.markAsDelivered(message);
+      }
+    } catch (error) {
+      console.log(
+        '[CometChatMessageList markMessageAsDelivered] faailed to mark as deivered =',
+        message,
+      );
+    }
+  };
+
   // callback for listener functions
   messageUpdated = (key, message, group, options, actionBy) => {
     switch (key) {
@@ -256,6 +273,10 @@ class CometChatMessageList extends React.PureComponent {
       case enums.OUTGOING_CALL_ACCEPTED:
       case enums.OUTGOING_CALL_REJECTED:
         this.callUpdated(message);
+        break;
+
+      case enums.TRANSIENT_MESSAGE_RECEIVED:
+        this.props.actionGenerated(enums.TRANSIENT_MESSAGE_RECEIVED, message);
         break;
       default:
         break;
@@ -404,6 +425,7 @@ class CometChatMessageList extends React.PureComponent {
   messageReceived = (message) => {
     try {
       // new messages
+      this.markMessageAsDelivered(message);
       if (
         this.props.type === CometChat.RECEIVER_TYPE.GROUP &&
         message.getReceiverType() === CometChat.RECEIVER_TYPE.GROUP &&

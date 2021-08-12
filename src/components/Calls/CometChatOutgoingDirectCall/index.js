@@ -91,6 +91,8 @@ class CometChatOutgoingDirectCall extends React.Component {
         this.props.close();
       },
       onError: (error) => {
+        props.actionGenerated(actions.CALL_ERROR, error);
+
         console.log('Call Error: ', error);
       },
     });
