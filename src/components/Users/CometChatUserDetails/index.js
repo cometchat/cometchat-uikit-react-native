@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
+import { UserDetailManager } from './controller';
+import * as enums from '../../../utils/enums';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {
@@ -30,9 +32,41 @@ export default class CometChatUserDetails extends React.Component {
   }
 
   componentDidMount() {
-    this.setStatusForUser();
     this.checkRestrictions();
+    this.setStatusForUser();
+    this.UserDetailManager = new UserDetailManager();
+    this.UserDetailManager.attachListeners(this.updateUser);
   }
+
+  updateUser = (key, user) => {
+    console.log('updateUser', key, user);
+    switch (key) {
+      case enums.USER_ONLINE:
+      case enums.USER_OFFLINE: {
+        if (
+          this.props.type === CometChat.ACTION_TYPE.TYPE_USER &&
+          this.props.item.uid === user.uid
+        ) {
+          //if user presence feature is disabled
+          if (this.state.isUserPresenceEnabled === false) {
+            return false;
+          }
+
+          let status = '';
+          if (user.status === CometChat.USER_STATUS.OFFLINE) {
+            status = 'OFFLINE';
+          } else if (user.status === CometChat.USER_STATUS.ONLINE) {
+            status = 'ONLINE';
+          }
+
+          this.setState({ status: status });
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  };
 
   /**
    * Update bottom sheet to 0th snap point if prop received as open
@@ -41,13 +75,20 @@ export default class CometChatUserDetails extends React.Component {
     if (!prevProps.open && this.props.open) {
       this.sheetRef.current.snapTo(0);
     }
+    if (JSON.stringify(prevProps.item) !== JSON.stringify(this.props.item)) {
+      this.setStatusForUser();
+    }
   }
 
   checkRestrictions = async () => {
-    let isSharedMediaEnabled = await this.context.FeatureRestriction.isSharedMediaEnabled();
-    let isBlockUserEnabled = await this.context.FeatureRestriction.isBlockUserEnabled();
-    let isViewProfileEnabled = await this.context.FeatureRestriction.isViewProfileEnabled();
-    let isUserPresenceEnabled = await this.context.FeatureRestriction.isUserPresenceEnabled();
+    let isSharedMediaEnabled =
+      await this.context.FeatureRestriction.isSharedMediaEnabled();
+    let isBlockUserEnabled =
+      await this.context.FeatureRestriction.isBlockUserEnabled();
+    let isViewProfileEnabled =
+      await this.context.FeatureRestriction.isViewProfileEnabled();
+    let isUserPresenceEnabled =
+      await this.context.FeatureRestriction.isUserPresenceEnabled();
     this.setState({
       restrictions: {
         isSharedMediaEnabled,
@@ -127,7 +168,7 @@ export default class CometChatUserDetails extends React.Component {
         this.props.item.blockedByMe &&
         !this.state.restrictions?.isUserPresenceEnabled ? null : (
           <CometChatUserPresence
-            status={this.props.item.status}
+            status={this.state.status}
             style={{ top: 35 }}
             cornerRadius={9}
             borderColor={theme.borderColor.white}

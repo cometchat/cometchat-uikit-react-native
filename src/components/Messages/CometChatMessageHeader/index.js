@@ -2,6 +2,7 @@
 import React from 'react';
 import { MessageHeaderManager } from './controller';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
+
 import { CometChatUserPresence, CometChatAvatar } from '../../Shared';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
@@ -37,10 +38,14 @@ class CometChatMessageHeader extends React.Component {
   }
 
   checkRestrictions = async () => {
-    let isGroupVideoCallEnabled = await this.context.FeatureRestriction.isGroupVideoCallEnabled();
-    let isOneOnOneAudioCallEnabled = await this.context.FeatureRestriction.isOneOnOneAudioCallEnabled();
-    let isTypingIndicatorsEnabled = await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
-    let isOneOnOneVideoCallEnabled = await this.context.FeatureRestriction.isOneOnOneVideoCallEnabled();
+    let isGroupVideoCallEnabled =
+      await this.context.FeatureRestriction.isGroupVideoCallEnabled();
+    let isOneOnOneAudioCallEnabled =
+      await this.context.FeatureRestriction.isOneOnOneAudioCallEnabled();
+    let isTypingIndicatorsEnabled =
+      await this.context.FeatureRestriction.isTypingIndicatorsEnabled();
+    let isOneOnOneVideoCallEnabled =
+      await this.context.FeatureRestriction.isOneOnOneVideoCallEnabled();
     this.setState({
       restrictions: {
         isGroupVideoCallEnabled,
@@ -172,6 +177,7 @@ class CometChatMessageHeader extends React.Component {
           ) {
             this.setState({ status: item.status, presence: item.status });
           }
+          this.props.actionGenerated(actions.STATUS_UPDATED, item.status);
           break;
         }
         case enums.GROUP_MEMBER_KICKED:

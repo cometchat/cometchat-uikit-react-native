@@ -372,6 +372,10 @@ class CometChatMessages extends React.PureComponent {
         this.setState({ joinDirectCall: false, ongoingDirectCall: null });
 
         break;
+      case actions.STATUS_UPDATED:
+        this.setState({ user: { ...this.state.user, status: messages } });
+
+        break;
       default:
         break;
     }
