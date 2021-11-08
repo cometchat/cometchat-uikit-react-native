@@ -22,6 +22,7 @@ export const CLOSE_DETAIL = 'closeDetail';
 export const CLOSE_DETAIL_CLICKED = 'closeDetailClicked';
 export const CLOSE_THREAD_CLICKED = 'closeThreadClicked';
 export const MENU_CLICKED = 'menuClicked';
+export const STATUS_UPDATED = 'statusUpdated';
 
 export const GROUP_UPDATED = 'groupUpdated';
 export const GROUP_DELETED = 'groupDeleted';
