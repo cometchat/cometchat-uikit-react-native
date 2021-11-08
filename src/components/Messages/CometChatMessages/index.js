@@ -376,6 +376,10 @@ class CometChatMessages extends React.PureComponent {
       case enums.TRANSIENT_MESSAGE_RECEIVED:
         this.liveReactionReceived(messages);
         break;
+      case actions.STATUS_UPDATED:
+        this.setState({ user: { ...this.state.user, status: messages } });
+
+        break;
       default:
         break;
     }
