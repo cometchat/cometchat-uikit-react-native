@@ -24,9 +24,9 @@ export default StyleSheet.create({
     marginHorizontal: 8,
   },
   stickerItemStyle: {
-    minWidth: 50,
+    width: '30%',
     minHeight: 50,
-    maxWidth: 70,
+    marginLeft: '2.5%',
     maxHeight: 70,
     flexShrink: 0,
     marginRight: 20,
@@ -37,8 +37,10 @@ export default StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingLeft: 20,
+    // paddingHorizontal: 20,
+    paddingRight: '2.5%',
     paddingBottom: 10,
+    flex: 1,
   },
   stickerSectionListStyle: {
     borderTopWidth: 1,
