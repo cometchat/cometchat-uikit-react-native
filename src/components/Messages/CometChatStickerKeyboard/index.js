@@ -1,6 +1,13 @@
 /* eslint-disable react/jsx-fragments */
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import style from './styles';
@@ -130,49 +137,71 @@ class CometChatStickerKeyboard extends React.PureComponent {
 
     let stickers = null;
     if (Object.keys(this.state.stickerSet).length) {
-      const sectionItems = Object.keys(this.state.stickerSet).map(
-        (sectionItem, key) => {
-          const stickerSetThumbnail = this.state.stickerSet[sectionItem][0]
-            .stickerUrl;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={style.sectionListItemStyle}
-              onPress={() => this.onStickerSetClicked(sectionItem)}>
-              <Image
-                source={{ uri: stickerSetThumbnail }}
-                alt={sectionItem}
-                style={style.stickerHeaderImageStyle}
-              />
-            </TouchableOpacity>
-          );
-        },
+      const sectionItems = (
+        <FlatList
+          style={{
+            width: '100%',
+            flexDirection: 'row',
+            backgroundColor: 'red',
+          }}
+          nestedScrollEnabled
+          style={{ paddingVertical: 10 }}
+          horizontal
+          bounces={false}
+          showsHorizontalScrollIndicator={false}
+          data={Object.keys(this.state.stickerSet)}
+          renderItem={({ item: sectionItem, index: key }) => {
+            const stickerSetThumbnail =
+              this.state.stickerSet[sectionItem][0].stickerUrl;
+
+            return (
+              <TouchableOpacity
+                key={sectionItem}
+                style={style.sectionListItemStyle}
+                onPress={() => this.onStickerSetClicked(sectionItem)}>
+                <FastImage
+                  source={{ uri: stickerSetThumbnail }}
+                  alt={sectionItem}
+                  style={style.stickerHeaderImageStyle}
+                />
+              </TouchableOpacity>
+            );
+          }}
+        />
       );
 
       let activeStickerList = [];
       if (this.state.activeStickerList.length) {
         const stickerList = [...this.state.activeStickerList];
-        activeStickerList = stickerList.map((stickerItem, key) => {
-          return (
-            <TouchableOpacity
-              key={key}
-              style={style.stickerItemStyle}
-              onPress={() => this.sendStickerMessage(stickerItem)}>
-              <Image
-                source={{ uri: stickerItem.stickerUrl }}
-                alt={stickerItem.stickerName}
-                style={style.stickerImageStyle}
-              />
-            </TouchableOpacity>
-          );
-        });
+        activeStickerList = (
+          <FlatList
+            numColumns={3}
+            style={{
+              width: '100%',
+              alignSelf: 'center',
+            }}
+            data={stickerList}
+            renderItem={({ item: stickerItem, index: key }) => {
+              return (
+                <TouchableOpacity
+                  key={stickerItem.stickerName}
+                  style={style.stickerItemStyle}
+                  onPress={() => this.sendStickerMessage(stickerItem)}>
+                  <FastImage
+                    source={{ uri: stickerItem.stickerUrl }}
+                    alt={stickerItem.stickerName}
+                    style={style.stickerImageStyle}
+                  />
+                </TouchableOpacity>
+              );
+            }}
+          />
+        );
       }
 
       stickers = (
         <>
-          <ScrollView bounces={false}>
-            <View style={style.stickerListStyle}>{activeStickerList}</View>
-          </ScrollView>
+          <View style={style.stickerListStyle}>{activeStickerList}</View>
 
           <View
             style={[
@@ -182,13 +211,7 @@ class CometChatStickerKeyboard extends React.PureComponent {
                 backgroundColor: this.viewTheme.backgroundColor.silver,
               },
             ]}>
-            <ScrollView
-              style={{ paddingVertical: 10 }}
-              horizontal
-              bounces={false}
-              showsHorizontalScrollIndicator={false}>
-              {sectionItems}
-            </ScrollView>
+            {sectionItems}
           </View>
         </>
       );
