@@ -13,7 +13,7 @@ import * as actions from '../../../../utils/actions';
 const CometChatSenderStickerMessageBubble = (props) => {
   const message = {
     ...props.message,
-    messageFrom: enums.MESSAGE_FROM_RECEIVER,
+    messageFrom: enums.MESSAGE_FROM_SENDER,
   };
   let stickerData = null;
   let stickerImg = null;
