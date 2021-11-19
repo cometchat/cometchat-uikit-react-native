@@ -24,11 +24,16 @@ export default (props) => {
   }, []);
 
   const checkRestrictions = async () => {
-    let enableEditMessage = await context.FeatureRestriction.isEditMessageEnabled();
-    let enableThreadedChats = await context.FeatureRestriction.isThreadedMessagesEnabled();
-    let enableDeleteMessage = await context.FeatureRestriction.isDeleteMessageEnabled();
-    let enableDeleteMessageForModerator = await context.FeatureRestriction.isDeleteMemberMessageEnabled();
-    let enableMessageInPrivate = await context.FeatureRestriction.isMessageInPrivateEnabled();
+    let enableEditMessage =
+      await context.FeatureRestriction.isEditMessageEnabled();
+    let enableThreadedChats =
+      await context.FeatureRestriction.isThreadedMessagesEnabled();
+    let enableDeleteMessage =
+      await context.FeatureRestriction.isDeleteMessageEnabled();
+    let enableDeleteMessageForModerator =
+      await context.FeatureRestriction.isDeleteMemberMessageEnabled();
+    let enableMessageInPrivate =
+      await context.FeatureRestriction.isMessageInPrivateEnabled();
 
     if (
       !enableEditMessage &&
@@ -100,10 +105,18 @@ export default (props) => {
 
   if (
     props.message.messageFrom === enums.MESSAGE_FROM_RECEIVER &&
-    (props.item.scope == CometChat.GROUP_MEMBER_SCOPE.MODERATOR ||
-    props.item.scope == CometChat.GROUP_MEMBER_SCOPE.ADMIN
-      ? !restrictions?.enableDeleteMessageForModerator
-      : !restrictions?.enableDeleteMessage)
+    (props.type == CometChat.RECEIVER_TYPE.GROUP
+      ? props.item.scope == CometChat.GROUP_MEMBER_SCOPE.MODERATOR ||
+        props.item.scope == CometChat.GROUP_MEMBER_SCOPE.ADMIN
+        ? !restrictions?.enableDeleteMessageForModerator
+        : true
+      : true)
+  ) {
+    deleteMessage = null;
+  }
+  if (
+    props.type == CometChat.RECEIVER_TYPE.USER &&
+    !restrictions?.enableDeleteMessage
   ) {
     deleteMessage = null;
   }

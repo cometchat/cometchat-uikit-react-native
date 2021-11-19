@@ -71,7 +71,8 @@ class CometChatMessageThread extends React.PureComponent {
   }
 
   checkIsHideDeletedEnabled = async () => {
-    let hideDeletedEnabled = this.context.FeatureRestriction.isHideDeletedMessagesEnabled();
+    let hideDeletedEnabled =
+      this.context.FeatureRestriction.isHideDeletedMessagesEnabled();
     this.setState({ hideDeletedEnabled });
   };
 
@@ -646,6 +647,7 @@ class CometChatMessageThread extends React.PureComponent {
     return (
       <SafeAreaView style={{ flex: 1 }}>
         <CometChatMessageActions
+          type={this.props.type}
           open={!!this.state.messageToReact}
           message={this.state.messageToReact}
           actionGenerated={this.actionHandler}
@@ -715,8 +717,8 @@ class CometChatMessageThread extends React.PureComponent {
                         style={[
                           styles.separatorContainer,
                           {
-                            borderColor: this.props.theme.backgroundColor
-                              .primary,
+                            borderColor:
+                              this.props.theme.backgroundColor.primary,
                           },
                         ]}>
                         {separator}

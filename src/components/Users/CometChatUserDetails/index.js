@@ -39,7 +39,6 @@ export default class CometChatUserDetails extends React.Component {
   }
 
   updateUser = (key, user) => {
-    console.log('updateUser', key, user);
     switch (key) {
       case enums.USER_ONLINE:
       case enums.USER_OFFLINE: {

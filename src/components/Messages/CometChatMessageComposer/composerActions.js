@@ -129,7 +129,6 @@ export default class ComposerActions extends Component {
                   ? response.uri
                   : response.uri.replace('file://', ''),
             };
-            console.log('file', file);
             this.props.sendMediaMessage(
               file,
               mediaType === 'photo'
