@@ -1057,6 +1057,7 @@ class CometChatMessages extends React.PureComponent {
                   ? this.state.user
                   : this.state.item
               }
+              type={params.type}
               loggedInUser={this.loggedInUser}
               open={!!this.state.messageToReact}
               message={this.state.messageToReact}
