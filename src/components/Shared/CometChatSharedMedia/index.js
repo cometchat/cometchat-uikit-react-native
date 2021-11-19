@@ -49,6 +49,7 @@ export default class CometChatSharedMedia extends React.Component {
         this.props.item,
         this.props.type,
         this.state.messageType,
+        this.context,
       );
       this.getMessages();
       this.SharedMediaManager.attachListeners(this.messageUpdated);

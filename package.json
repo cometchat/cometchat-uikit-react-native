@@ -1,6 +1,6 @@
 {
   "name": "cometchat-pro-react-native-ui-kit",
-  "version": "2.4.0-2",
+  "version": "2.4.0-3",
   "description": "Chat UI Kit for React Native App",
   "main": "./src/index.js",
   "scripts": {
@@ -8,8 +8,7 @@
     "lint": "eslint 'src/**/*.{js,jsx}' --quiet --fix"
   },
   "repository": {
-    "type": "git",
-    "url": "git@git.geekyants.com:cometchat/react-native.git"
+    "type": "git"
   },
   "peerDependencies": {
     "react-native-keep-awake": "^4.0.0",
