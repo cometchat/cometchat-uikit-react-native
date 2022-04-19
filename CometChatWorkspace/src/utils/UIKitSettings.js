@@ -61,11 +61,7 @@ export class UIKitSettings {
     this.joinLeaveNotifications = true;
 
     this.enableSoundForMessages = true;
-<<<<<<< HEAD:src/utils/UIKitSettings.js
-    this.enableSoundForCalls = false;
-=======
     this.enableSoundForCalls = true;
->>>>>>> v3:CometChatWorkspace/src/utils/UIKitSettings.js
 
     this.userVideoCall = true;
     this.groupVideoCall = true;

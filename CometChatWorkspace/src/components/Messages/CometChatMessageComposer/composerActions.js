@@ -59,11 +59,6 @@ export default class ComposerActions extends Component {
     if (isPhotosVideosEnabled) {
       height += 4;
     }
-<<<<<<< HEAD:src/components/Messages/CometChatMessageComposer/composerActions.js
-    console.log(height, isPollsEnabled);
-=======
-
->>>>>>> v3:CometChatWorkspace/src/components/Messages/CometChatMessageComposer/composerActions.js
     this.setState({
       restrictions: {
         isPollsEnabled,
@@ -108,15 +103,9 @@ export default class ComposerActions extends Component {
             }
             let type = null;
             let name = null;
-<<<<<<< HEAD:src/components/Messages/CometChatMessageComposer/composerActions.js
-            if (Platform.OS === 'ios' && response.fileName !== undefined) {
-              name = response.fileName;
-              type = response.type;
-=======
             if (Platform.OS === 'ios' && response.assets[0].fileName !== undefined) {
               name = response.assets[0].fileName;
               type = response.assets[0].type;
->>>>>>> v3:CometChatWorkspace/src/components/Messages/CometChatMessageComposer/composerActions.js
             } else {
               type = response.assets[0].type;
               name = 'Camera_001.jpeg';
@@ -128,19 +117,11 @@ export default class ComposerActions extends Component {
             const file = {
               name:
                 Platform.OS === 'android' && mediaType != 'video'
-<<<<<<< HEAD:src/components/Messages/CometChatMessageComposer/composerActions.js
-                  ? response.fileName
-                  : name,
-              type:
-                Platform.OS === 'android' && mediaType != 'video'
-                  ? response.type
-=======
                   ? response.assets[0].fileName
                   : name,
               type:
                 Platform.OS === 'android' && mediaType != 'video'
                   ? response.assets[0].type
->>>>>>> v3:CometChatWorkspace/src/components/Messages/CometChatMessageComposer/composerActions.js
                   : type,
               uri:
                 Platform.OS === 'android'
@@ -206,11 +187,6 @@ export default class ComposerActions extends Component {
             ? CometChat.MESSAGE_TYPE.IMAGE
             : CometChat.MESSAGE_TYPE.VIDEO,
         );
-<<<<<<< HEAD:src/components/Messages/CometChatMessageComposer/composerActions.js
-        this.sheetRef?.current?.snapTo(1);
-        this.props.close();
-=======
->>>>>>> v3:CometChatWorkspace/src/components/Messages/CometChatMessageComposer/composerActions.js
       },
     );
     }catch (err) {
