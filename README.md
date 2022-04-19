@@ -1,7 +1,7 @@
 <div style="width:100%">
     <div style="width:50%;">
         <div align="center">
-        <img align="center" width="180" height="180" alt="CometChat" src="./screenshots/logo.png">    
+        <img align="center" width="180" height="180" alt="CometChat" src="./Screenshots/logo.png">    
         </div>    
     </div>    
 </div>
@@ -15,7 +15,7 @@
 <div style="width:100%">
     <div style="width:100%; display:inline-block">
         <div align="center">
-          <img align="left" alt="Main" src="./screenshots/main.png">    
+          <img align="left" alt="Main" src="./Screenshots/main.png">    
         </div>    
     </div>    
 </div>
@@ -60,7 +60,9 @@ To install React-Native UI Kit, you need to first register on CometChat Dashboar
 ### ii. Add the CometChat Dependency
 
 ```javascript
- npm install @cometchat-pro/react-native-chat@2.4.0 --save
+
+ npm install @cometchat-pro/react-native-chat@3.0.6 --save
+
 ```
 
 ### iii. Other required DEPENDENCIES
@@ -102,23 +104,23 @@ The `init()` method initializes the settings required for CometChat.
 We suggest calling the `init()` method on app startup, preferably in the `created()` method of the Application class.
 
 ```javascript
-import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChat } from "@cometchat-pro/react-native-chat";
 
-const appID = 'APP_ID';
-const region = 'REGION';
+const appID = "APP_ID";
+const region = "REGION";
 const appSetting = new CometChat.AppSettingsBuilder()
   .subscribePresenceForAllUsers()
   .setRegion(region)
   .build();
 CometChat.init(appID, appSetting).then(
   () => {
-    console.log('Initialization completed successfully');
+    console.log("Initialization completed successfully");
     // You can now call login function.
   },
   (error) => {
-    console.log('Initialization failed with error:', error);
+    console.log("Initialization failed with error:", error);
     // Check the reason for error and take appropriate action.
-  },
+  }
 );
 ```
 
@@ -131,18 +133,18 @@ CometChat.init(appID, appSetting).then(
 This method takes `UID` and `Auth Key` as input parameters and returns the User object containing all the information of the logged-in user..
 
 ```javascript
-import { CometChat } from '@cometchat-pro/react-native-chat';
+import { CometChat } from "@cometchat-pro/react-native-chat";
 
-const authKey = 'AUTH_KEY';
-const uid = 'SUPERHERO1';
+const authKey = "AUTH_KEY";
+const uid = "SUPERHERO1";
 
 CometChat.login(uid, authKey).then(
   (user) => {
-    console.log('Login Successful:', { user });
+    console.log("Login Successful:", { user });
   },
   (error) => {
-    console.log('Login failed with exception:', { error });
-  },
+    console.log("Login failed with exception:", { error });
+  }
 );
 ```
 
@@ -169,9 +171,9 @@ CometChat.login(uid, authKey).then(
 Usage of application in project
 
 ```javascript
-import React from 'react';
-import { View } from 'react-native';
-import { CometChatUI } from '../cometchat-pro-react-native-ui-kit';
+import React from "react";
+import { View } from "react-native";
+import { CometChatUI } from "../cometchat-pro-react-native-ui-kit";
 
 export default function CometChatUIView() {
   return (
@@ -192,7 +194,7 @@ Visit our [React-Native sample app](https://github.com/cometchat-pro/react-nativ
 
 # Troubleshooting
 
-- To read the full documentation on UI Kit integration visit our [Documentation](https://prodocs.cometchat.com/docs/react-native-ui-kit).
+- To read the full documentation on UI Kit integration visit our [Documentation](https://www.cometchat.com/docs/react-native-chat-ui-kit/overview).
 
 - Facing any issues while integrating or installing the UI Kit please <a href="https://app.cometchat.com/" target="_blank"> connect with us via real time support present in CometChat Dashboard.</a>
 
