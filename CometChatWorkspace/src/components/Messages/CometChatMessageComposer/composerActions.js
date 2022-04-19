@@ -59,7 +59,6 @@ export default class ComposerActions extends Component {
     if (isPhotosVideosEnabled) {
       height += 4;
     }
-
     this.setState({
       restrictions: {
         isPollsEnabled,

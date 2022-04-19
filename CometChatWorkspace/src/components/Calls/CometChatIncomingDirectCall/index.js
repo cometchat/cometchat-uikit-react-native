@@ -24,6 +24,7 @@ import audioCallIcon from './resources/incomingaudiocall.png';
 import videoCallIcon from './resources/incomingvideocall.png';
 import { incomingCallAlert } from '../../../resources/audio';
 import { logger } from '../../../utils/common';
+import DropDownAlert from '../../Shared/DropDownAlert';
 import { CometChatContext } from '../../../utils/CometChatContext';
 let incomingAlert; 
 
@@ -82,7 +83,7 @@ export default (props) => {
         receiverType === 'user' ? message.sender.uid : message.receiverId;
 
       if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
-        CometChat.markAsRead(message);
+        CometChat.markAsRead(message.id, receiverId, receiverType);
       }
     } catch (error) {
       logger(error);
@@ -119,6 +120,8 @@ export default (props) => {
           })
           .catch((error) => {
             props.actionGenerated(actions.CALL_ERROR, error);
+            const errorCode = error?.message || 'ERROR';
+            this.dropDownAlertRef?.showMessage('error', errorCode);
           });
       } else if (incomingCall === null) {
         playIncomingAlert();
@@ -183,10 +186,14 @@ export default (props) => {
           setIncomingCall(null);
         })
         .catch((error) => {
+          const errorCode = error?.message || 'ERROR';
+          this.dropDownAlertRef?.showMessage('error', errorCode);
           props.actionGenerated(actions.CALL_ERROR, error);
           setIncomingCall(null);
         });
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -201,6 +208,8 @@ export default (props) => {
       props.actionGenerated(actions.ACCEPT_DIRECT_CALL, incomingCall);
       setIncomingCall(null);
     } catch (error) {
+      const errorCode = error?.message || 'ERROR';
+      this.dropDownAlertRef?.showMessage('error', errorCode);
       logger(error);
     }
   };
@@ -240,14 +249,23 @@ export default (props) => {
                   </View>
                 </View>
               </View>
-              <View style={style.avatarStyle}>
-                <CometChatAvatar
-                  cornerRadius={1000}
-                  borderWidth={0}
-                  textColor="white"
-                  image={{ uri: incomingCall.sender.avatar }}
-                  name={incomingCall.sender.name}
-                />
+              <View style={style.headerButtonStyle}>
+                <TouchableOpacity
+                  style={[
+                    style.buttonStyle,
+                    { backgroundColor: viewTheme.backgroundColor.red },
+                  ]}
+                  onPress={rejectCall}>
+                  <Text style={style.btnTextStyle}>Decline</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    style.buttonStyle,
+                    { backgroundColor: viewTheme.backgroundColor.blue },
+                  ]}
+                  onPress={acceptCall}>
+                  <Text style={style.btnTextStyle}>Accept</Text>
+                </TouchableOpacity>
               </View>
             </View>
             <View style={style.headerButtonStyle}>

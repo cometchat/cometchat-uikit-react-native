@@ -20,10 +20,6 @@ export class AddMembersManager {
             .setLimit(30)
             .setSearchKeyword(this.searchKey)
             .build();
-<<<<<<< HEAD
-           
-=======
->>>>>>> 4b15a5c (removed comments)
         } else {
           this.membersRequest = new CometChat.UsersRequestBuilder()
             .setLimit(30)

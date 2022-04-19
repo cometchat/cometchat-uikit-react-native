@@ -29,7 +29,6 @@ class AnimatedHeart extends Component {
     this.state = {
       position: new Animated.Value(0),
     };
-
     this._yAnimation = this.state.position.interpolate({
       inputRange: [NEGATIVE_END_Y, 0],
       outputRange: [ANIMATION_END_Y, 0],
