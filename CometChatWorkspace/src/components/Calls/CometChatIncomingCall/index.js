@@ -6,12 +6,14 @@ import {
   Modal,
   SafeAreaView,
   Text,
+  Vibration
 } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import Sound from 'react-native-sound';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
+import * as consts from '../../../utils/consts';
 import theme from '../../../resources/theme';
 import CometChatAvatar from '../../Shared/CometChatAvatar';
 import { CallAlertManager } from './controller';
@@ -30,9 +32,7 @@ export default (props) => {
   const [incomingCall, setIncomingCall] = useState(null);
   const [isMessagesSoundEnabled, setIsMessagesSoundEnabled] = useState(null);
   const context = useContext(CometChatContext);
-  useEffect(() => {
-    checkRestrictions();
-  }, []);
+
   const checkRestrictions = async () => {
     let isEnabled = await context.FeatureRestriction.isCallsSoundEnabled();
     setIsMessagesSoundEnabled(isEnabled);
@@ -48,7 +48,8 @@ export default (props) => {
     try {
       audioRef.setCurrentTime(0);
       audioRef.setNumberOfLoops(-1);
-      audioRef.play();
+      audioRef.play(()=>{});
+      Vibration.vibrate(consts.PATTERN,true);
     } catch (error) {
       logger(error);
     }
@@ -60,6 +61,7 @@ export default (props) => {
   const pauseIncomingAlert = () => {
     try {
       audioRef.pause();
+      Vibration.cancel()
     } catch (error) {
       logger(error);
     }
@@ -199,6 +201,7 @@ export default (props) => {
    * @param
    */
   useEffect(() => {
+    checkRestrictions();
     callAlertManager = new CallAlertManager();
     callAlertManager.attachListeners(callScreenUpdated);
     return () => {

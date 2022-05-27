@@ -35,10 +35,6 @@ const CometChatSenderTextMessageBubble = (props) => {
   const context = useContext(CometChatContext);
   const [restrictions, setRestrictions] = useState(null);
 
-  useEffect(() => {
-    checkRestrictions();
-  }, []);
-
   const checkRestrictions = async () => {
     let isLinkPreviewEnabled = context.FeatureRestriction.isLinkPreviewEnabled();
     setRestrictions({ isLinkPreviewEnabled });
@@ -61,17 +57,22 @@ const CometChatSenderTextMessageBubble = (props) => {
     );
   };
   useEffect(() => {
-    const previousMessageStr = JSON.stringify(prevMessage);
-    const currentMessageStr = JSON.stringify(props.message);
 
-    if (previousMessageStr !== currentMessageStr) {
-      const newMessage = {
-        ...props.message,
-        messageFrom: enums.MESSAGE_FROM_SENDER,
-      };
-      setMessage(newMessage);
+    if(props.message){
+      checkRestrictions();
+      const previousMessageStr = JSON.stringify(prevMessage);
+      const currentMessageStr = JSON.stringify(props.message);
+
+      if (previousMessageStr !== currentMessageStr) {
+        const newMessage = {
+          ...props.message,
+          messageFrom: enums.MESSAGE_FROM_SENDER,
+        };
+        setMessage(newMessage);
+      }
     }
-  }, [props]);
+  }, [props.message,prevMessage]);
+  
   let messageText = getMessageText();
   if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
     const { metadata } = message;

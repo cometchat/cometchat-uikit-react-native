@@ -15,6 +15,7 @@ import {
   Modal,
   Dimensions,
   TouchableOpacity,
+  KeyboardAvoidingView
 } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -286,9 +287,9 @@ class CometChatAddGroupMemberList extends React.Component {
 
   listHeaderComponent = () => {
     return (
-      <View style={[style.contactHeaderStyle]}>
+      <SafeAreaView style={[style.contactHeaderStyle]}>
         <Text style={style.contactHeaderTitleStyle}>Add Members</Text>
-      </View>
+      </SafeAreaView>
     );
   };
 
@@ -347,7 +348,12 @@ class CometChatAddGroupMemberList extends React.Component {
           transparent
           animated
           animationType="fade"
-          visible={this.props.open}>
+          visible={this.props.open}
+          onRequestClose = {() =>{
+            this.sheetRef.current.snapTo(1);
+            this.props.close();
+          }} 
+          >
           <BottomSheet
             ref={this.sheetRef}
             snapPoints={[Dimensions.get('window').height - 90, 0]}
@@ -359,12 +365,11 @@ class CometChatAddGroupMemberList extends React.Component {
             renderContent={() => {
               return (
                 <View style={style.reactionDetailsContainer}>
+                <KeyboardAvoidingView style={style.modalContainer} behavior={Platform.OS == 'ios' ? 'position' : 'height'} enabled>
                   <View style={style.headerContainer}>
-                    <View style={{}}>
                       <Text style={style.contactHeaderTitleStyle}>
                         Add Members
                       </Text>
-                    </View>
                     <TouchableOpacity
                       onPress={() => {
                         this.sheetRef.current.snapTo(1);
@@ -466,6 +471,7 @@ class CometChatAddGroupMemberList extends React.Component {
                       Add
                     </Text>
                   </TouchableOpacity>
+                  </KeyboardAvoidingView>
                 </View>
               );
             }}

@@ -6,6 +6,7 @@ import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import { ConversationListManager } from './controller';
 import * as enums from '../../../utils/enums';
+import * as consts from '../../../utils/consts';
 import CometChatConversationListItem from '../CometChatConversationListItem';
 import theme from '../../../resources/theme';
 import styles from './styles';
@@ -25,6 +26,9 @@ import {
   Platform,
   Image,
   TouchableOpacity,
+  Alert,
+  ToastAndroid,
+  Vibration
 } from 'react-native';
 import { logger } from '../../../utils/common';
 import { SwipeListView } from 'react-native-swipe-list-view';
@@ -51,6 +55,7 @@ class CometChatConversationList extends React.Component {
 
   componentDidMount() {
     this.decoratorMessage = 'Loading...';
+    
     if (this.ConversationListManager) {
       this.ConversationListManager.removeListeners();
     }
