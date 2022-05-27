@@ -12,6 +12,7 @@ import { deviceHeight, heightRatio } from '../../../utils/consts';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import CometChatImageViewer from '../../Messages/CometChatImageViewer';
+import CometChatVideoViewer from '../../Messages/CometChatVideoViewer'
 import DropDownAlert from '../../Shared/DropDownAlert';
 import { SharedMediaManager } from './controller';
 import styles from './styles';
@@ -25,6 +26,7 @@ export default class CometChatSharedMedia extends React.Component {
       messageType: CometChat.MESSAGE_TYPE.IMAGE,
       messageList: [],
       imageView: false,
+      videoView: false,
       activeMessage: {},
     };
 
@@ -213,6 +215,22 @@ export default class CometChatSharedMedia extends React.Component {
   };
 
   /**
+   * Handle opening video view on  click on particular video from message list
+   * @param message: message object
+   */
+   showVideoView = (message) => {
+    this.setState({ videoView: true, activeMessage: message });
+  };
+
+  /**
+   * Handle closing video view
+   * @param
+   */
+  hideVideoView = () => {
+    this.setState({ videoView: false });
+  };
+
+  /**
    * Return empty list component
    * @param
    */
@@ -229,7 +247,7 @@ export default class CometChatSharedMedia extends React.Component {
 
   render() {
     const currentTheme = { ...theme, ...this.props.theme };
-    const { messageType, messageList, imageView, activeMessage } = this.state;
+    const { messageType, messageList, imageView, videoView, activeMessage } = this.state;
 
     const bgColor = currentTheme.backgroundColor.lightGrey;
 
@@ -254,9 +272,13 @@ export default class CometChatSharedMedia extends React.Component {
           </TouchableOpacity>
         );
       }
-      if (messageType === CometChat.MESSAGE_TYPE.VIDEO && message.data.url) {
+      else if (messageType === CometChat.MESSAGE_TYPE.VIDEO && message.data.url) {
         return (
-          <View style={[styles.videoStyle]}>
+          <TouchableOpacity
+          style={styles.videoStyle}
+          onPress={() => {
+            this.showVideoView(message);
+          }}>
             <VideoPlayer
               source={{ uri: message.data.url }}
               navigator={this.props.navigator}
@@ -264,14 +286,17 @@ export default class CometChatSharedMedia extends React.Component {
               disableSeekbar
               disableFullscreen
               disableVolume
-              style={[styles.videoPlayerStyle]}
+              style={styles.videoPlayerStyle}
               paused
               resizeMode="contain"
+              onPress={() => {
+                this.showVideoView(message);
+              }}
             />
-          </View>
+          </TouchableOpacity>
         );
       }
-      if (
+      else if (
         messageType === CometChat.MESSAGE_TYPE.FILE &&
         message.data.attachments
       ) {
@@ -293,10 +318,15 @@ export default class CometChatSharedMedia extends React.Component {
     };
     const messages = [...messageList];
     return (
-      <View style={[styles.sectionStyle, {}]}>
+      <View style={styles.sectionStyle}>
         <CometChatImageViewer
           open={imageView}
           close={this.hideImageView}
+          message={activeMessage}
+        />
+        <CometChatVideoViewer
+          open={videoView}
+          close={this.hideVideoView}
           message={activeMessage}
         />
         <Text

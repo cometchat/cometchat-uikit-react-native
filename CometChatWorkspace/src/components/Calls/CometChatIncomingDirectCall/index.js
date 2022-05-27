@@ -6,6 +6,7 @@ import {
   Modal,
   SafeAreaView,
   Text,
+  Vibration
 } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import Sound from 'react-native-sound';
@@ -13,6 +14,7 @@ import Sound from 'react-native-sound';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
 import * as actions from '../../../utils/actions';
+import * as consts from '../../../utils/consts';
 import theme from '../../../resources/theme';
 import CometChatAvatar from '../../Shared/CometChatAvatar';
 
@@ -35,13 +37,13 @@ export default (props) => {
   const [isMessagesSoundEnabled, setIsMessagesSoundEnabled] = useState(null);
   const [incomingCall, setIncomingCall] = useState(null);
   const context = useContext(CometChatContext);
-  useEffect(() => {
-    checkRestrictions();
-  }, []);
+  
   const checkRestrictions = async () => {
     let isEnabled = await context.FeatureRestriction.isCallsSoundEnabled();
     setIsMessagesSoundEnabled(isEnabled);
-     incomingAlert = new Sound(incomingCallAlert);
+   let incomingAlertRef = new Sound(incomingCallAlert, () => {
+    incomingAlert = incomingAlertRef;     
+    });
   };
   /**
    * Play call alerts
@@ -54,7 +56,8 @@ export default (props) => {
     try {
       incomingAlert.setCurrentTime(0);
       incomingAlert.setNumberOfLoops(-1);
-      incomingAlert.play();
+      incomingAlert.play(()=>{});
+      Vibration.vibrate(consts.PATTERN,true);
     } catch (error) {
       logger(error);
     }
@@ -67,6 +70,7 @@ export default (props) => {
   const pauseIncomingAlert = () => {
     try {
       incomingAlert.pause();
+      Vibration.cancel();
     } catch (error) {
       logger(error);
     }
@@ -83,7 +87,7 @@ export default (props) => {
         receiverType === 'user' ? message.sender.uid : message.receiverId;
 
       if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
-        CometChat.markAsRead(message.id, receiverId, receiverType);
+        CometChat.markAsRead(message);
       }
     } catch (error) {
       logger(error);
@@ -98,7 +102,7 @@ export default (props) => {
    */
   const incomingCallReceived = (call) => {
     try {
-      if (
+     if (
         props.loggedInUser &&
         call.callInitiator.uid === props.loggedInUser.uid
       ) {
@@ -125,7 +129,7 @@ export default (props) => {
           });
       } else if (incomingCall === null) {
         playIncomingAlert();
-        setIncomingCall(call);
+        setIncomingCall(call);   
       }
     } catch (error) {
       logger(error);
@@ -219,18 +223,22 @@ export default (props) => {
    * @param
    */
   useEffect(() => {
+    
+    checkRestrictions();
+
     callAlertManager = new messageAlertManager();
     callAlertManager.attachListeners(callScreenUpdated);
 
     return () => {
       pauseIncomingAlert();
       callAlertManager.removeListeners();
-    };
-  });
+    }; 
+  },[]);
 
   if (incomingCall) {
     playIncomingAlert();
     return (
+      <>
       <Modal transparent animated animationType="fade">
         <SafeAreaView>
           <View style={[style.callContainerStyle]}>
@@ -253,19 +261,11 @@ export default (props) => {
                 <TouchableOpacity
                   style={[
                     style.buttonStyle,
-                    { backgroundColor: viewTheme.backgroundColor.red },
+                    { backgroundColor: viewTheme.backgroundColor.red,width:'65%',marginLeft:5 },
                   ]}
                   onPress={rejectCall}>
                   <Text style={style.btnTextStyle}>Decline</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    style.buttonStyle,
-                    { backgroundColor: viewTheme.backgroundColor.blue },
-                  ]}
-                  onPress={acceptCall}>
-                  <Text style={style.btnTextStyle}>Accept</Text>
-                </TouchableOpacity>
+                </TouchableOpacity>       
               </View>
             </View>
             <View style={style.headerButtonStyle}>
@@ -289,6 +289,7 @@ export default (props) => {
           </View>
         </SafeAreaView>
       </Modal>
+      </>
     );
   }
 

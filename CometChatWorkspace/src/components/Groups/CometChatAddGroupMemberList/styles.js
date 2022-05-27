@@ -11,6 +11,14 @@ export default StyleSheet.create({
     borderRadius: 20,
     height: Dimensions.get('window').height - 90,
   },
+  modalContainer: {
+    position: 'absolute',
+    height: Dimensions.get('window').height - 100,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+},
   contactWrapperStyle: {
     height: '100%',
     backgroundColor: 'white',

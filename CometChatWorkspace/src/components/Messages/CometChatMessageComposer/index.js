@@ -10,8 +10,9 @@ import {
   Text,
   Keyboard,
   Platform,
+  Vibration
 } from 'react-native';
-
+import * as consts from '../../../utils/consts';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDIcon from 'react-native-vector-icons/AntDesign';
 import { CometChat } from '@cometchat-pro/react-native-chat';
@@ -43,7 +44,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
     this.audioUploaderRef = React.createRef();
     this.videoUploaderRef = React.createRef();
     this.messageInputRef = React.createRef();
-    this.messageSending = false;
 
     this.node = React.createRef();
     this.isTyping = false;
@@ -150,7 +150,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
    */
   playAudio = () => {
     this.audio.setCurrentTime(0);
-    this.audio.play();
+    this.audio.play(()=>{});
   };
 
   /**
@@ -191,11 +191,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
 
   sendMediaMessage = (messageInput, messageType) => {
     try {
-      if (this.messageSending) {
-        return false;
-      }
-
-      this.messageSending = true;
 
       const { receiverId, receiverType } = this.getReceiverDetails();
       const conversationId = this.props.getConversationId();
@@ -216,6 +211,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       mediaMessage.setType(messageType);
       mediaMessage._composedAt = Math.round(+new Date() / 1000);
       mediaMessage._id = '_' + Math.random().toString(36).substr(2, 9);
+      mediaMessage.setId(mediaMessage._id)
       mediaMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -227,7 +223,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
       this.props.actionGenerated(actions.MESSAGE_COMPOSED, [mediaMessage]);
       CometChat.sendMessage(mediaMessage)
         .then(async (response) => {
-          this.messageSending = false;
           this.playAudio();
 
           const newMessageObj = {
@@ -246,7 +241,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           );
 
           this.props?.showMessage('error', errorCode);
-          this.messageSending = false;
           logger('Message sending failed with error: ', error);
         });
     } catch (error) {
@@ -268,12 +262,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
       if (!this.state.messageInput.trim().length) {
         return false;
       }
-
-      if (this.messageSending) {
-        return false;
-      }
-
-      this.messageSending = true;
 
       if (this.state.messageToBeEdited) {
         this.editMessage();
@@ -299,6 +287,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       textMessage.setConversationId(conversationId);
       textMessage._composedAt = Date.now();
       textMessage._id = '_' + Math.random().toString(36).substr(2, 9);
+      textMessage.setId(textMessage._id)
       this.props.actionGenerated(actions.MESSAGE_COMPOSED, [textMessage]);
       this.setState({ messageInput: '', replyPreview: false });
 
@@ -308,7 +297,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
         .then((message) => {
           const newMessageObj = { ...message, _id: textMessage._id };
           this.setState({ messageInput: '' });
-          this.messageSending = false;
           this.messageInputRef.current.textContent = '';
           // this.playAudio();
           this.props.actionGenerated(actions.MESSAGE_SENT, newMessageObj);
@@ -322,7 +310,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           logger('Message sending failed with error:', error);
           const errorCode = error?.message || 'ERROR';
           this.props?.showMessage('error', errorCode);
-          this.messageSending = false;
         });
     } catch (error) {
       logger(error);
@@ -353,7 +340,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
       CometChat.editMessage(textMessage)
         .then((message) => {
           this.setState({ messageInput: '' });
-          this.messageSending = false;
           this.messageInputRef.current.textContent = '';
           this.playAudio();
 
@@ -361,7 +347,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
           this.props.actionGenerated(actions.MESSAGE_EDITED, message);
         })
         .catch((error) => {
-          this.messageSending = false;
           const errorCode = error?.message || 'ERROR';
           this.props?.showMessage('error', errorCode);
           logger('Message editing failed with error:', error);
@@ -499,7 +484,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
    * @param stickerMessage: object stickerMessage
    */
   sendSticker = (stickerMessage) => {
-    this.messageSending = true;
 
     const { receiverId, receiverType } = this.getReceiverDetails();
 
@@ -527,7 +511,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
     this.props.actionGenerated(actions.MESSAGE_COMPOSED, [customMessage]);
     CometChat.sendCustomMessage(customMessage)
       .then((message) => {
-        this.messageSending = false;
         this.playAudio();
         const newMessageObj = { ...message, _id: customMessage._id };
 
@@ -542,7 +525,6 @@ export default class CometChatMessageComposer extends React.PureComponent {
         const errorCode = error?.message || 'ERROR';
 
         this.props?.showMessage('error', errorCode);
-        this.messageSending = false;
         logger('custom message sending failed with error', error);
       });
   };

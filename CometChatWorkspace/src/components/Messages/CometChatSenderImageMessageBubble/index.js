@@ -82,7 +82,7 @@ const CometChatSenderImageMessageBubble = (props) => {
             }}
             style={style.messageImg}
             source={{
-              uri: message.data.url,
+              uri: message.data?.url,
             }}
             resizeMode={FastImage.resizeMode.stretch}
           />

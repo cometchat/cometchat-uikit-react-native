@@ -1,8 +1,7 @@
 /* eslint-disable react/no-did-update-set-state */
 /* eslint-disable react/no-unused-state */
 import React from 'react';
-import { View, Text, TouchableOpacity} from 'react-native';
-import Modal from "react-native-modal";
+import { View, Text, TouchableOpacity,Modal} from 'react-native';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CometChatSharedMedia from '../../Shared/CometChatSharedMedia';
@@ -796,13 +795,11 @@ export default class CometChatGroupDetails extends React.Component {
     return (
       <View style={style.modalWrapper}>
       <Modal
-        style={style.modalContainer}    
-        animationType={"fade"}
-        visible={this.props.open}
-        onBackdropPress = {() =>{
-            this.props.actionGenerated(actions.CLOSE_DETAIL);
-          }}
-        onBackButtonPress = {() =>{
+         transparent
+         animated
+         animationType="fade"
+         visible={this.props.open}
+        onRequestClose = {() =>{
             this.props.actionGenerated(actions.CLOSE_DETAIL);
           }} 
         >

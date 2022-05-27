@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 /* eslint-disable react/no-unused-state */
 import React from 'react';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView,ToastAndroid } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
@@ -556,7 +556,7 @@ class CometChatGroupListWithMessages extends React.Component {
         Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') ===
         false
       ) {
-        CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
+        CometChat.markAsRead(incomingCallMessage);
       }
 
       const { item, type } = this.state;

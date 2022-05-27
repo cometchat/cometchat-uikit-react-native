@@ -1,6 +1,6 @@
 /* eslint-disable react/no-did-update-set-state */
 import React from 'react';
-import { Text, View, Modal, TouchableOpacity } from 'react-native';
+import { Text, View, Modal, TouchableOpacity, Vibration } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Sound from 'react-native-sound';
@@ -8,7 +8,7 @@ import KeepAwake from 'react-native-keep-awake';
 import { outgoingCallAlert } from '../../../resources/audio';
 import { CometChatManager } from '../../../utils/controller';
 import { CallScreenManager } from './controller';
-
+import consts from '../../../utils/consts';
 import CometChatAvatar from '../../Shared/CometChatAvatar';
 
 import * as enums from '../../../utils/enums';
@@ -290,7 +290,7 @@ class CometChatOutgoingCall extends React.PureComponent {
       const id = type === 'user' ? message.sender.uid : message.receiverId;
 
       if (Object.prototype.hasOwnProperty.call(message, 'readAt') === false) {
-        CometChat.markAsRead(message.id, id, type);
+        CometChat.markAsRead(message);
       }
     } catch (error) {
       logger(error);
@@ -305,7 +305,8 @@ class CometChatOutgoingCall extends React.PureComponent {
     try {
       this.outgoingAlert.setCurrentTime(0);
       this.outgoingAlert.setNumberOfLoops(-1);
-      this.outgoingAlert.play();
+      this.outgoingAlert.play(()=>{});
+      Vibration.vibrate(consts.PATTERN,true);
     } catch (error) {
       logger(error);
     }
@@ -318,6 +319,7 @@ class CometChatOutgoingCall extends React.PureComponent {
   pauseOutgoingAlert = () => {
     try {
       this.outgoingAlert.pause();
+      Vibration.cancel();
     } catch (error) {
       logger(error);
     }

@@ -73,7 +73,7 @@ class CometChatUserList extends React.PureComponent {
             this.UserListManager.attachListeners(this.userUpdated);
           })
           .catch((error) => {
-            console.log(error);
+            logger(error);
           });
       });
     } catch (error) {
