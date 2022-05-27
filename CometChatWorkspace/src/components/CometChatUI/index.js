@@ -13,6 +13,7 @@ import MCIIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import theme from '../../resources/theme';
 import { heightRatio } from '../../utils/consts';
 
+
 const Tab = createBottomTabNavigator();
 
 function CometChatUI() {

@@ -25,11 +25,12 @@ export default StyleSheet.create({
     alignSelf: 'flex-start',
   },
   imageContainer: { flexDirection: 'row', alignItems: 'center' },
-  imageStyle: { marginRight: 10 },
+  imageStyle: { marginRight:10, width:50, height:50, resizeMode:'contain'},
   textStyle: {
-    fontSize: 16,
+    fontSize: 15,
     width: '80%',
     color: theme.color.primary,
+    paddingRight:10
   },
   buttonStyle: {
     backgroundColor: '#fff',

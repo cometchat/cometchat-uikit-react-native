@@ -270,7 +270,10 @@ export default class CometChatUserDetails extends React.Component {
         transparent
         animated
         animationType="fade"
-        visible={this.props.open}>
+        visible={this.props.open}
+        onRequestClose = {() =>{
+          this.props.actionGenerated(actions.CLOSE_DETAIL);
+        }} >
         <View style={style.container}>
           <BottomSheet
             ref={this.sheetRef}

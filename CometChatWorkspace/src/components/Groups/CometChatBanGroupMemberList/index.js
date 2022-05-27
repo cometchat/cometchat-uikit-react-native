@@ -170,7 +170,11 @@ export default class CometChatBanGroupMemberList extends React.Component {
           transparent
           animated
           animationType="fade"
-          visible={this.props.open}>
+          visible={this.props.open}
+          onRequestClose = {() =>{
+            this.sheetRef.current.snapTo(1);
+            this.props.close();
+          }} >
           <View style={style.container}>
             <BottomSheet
               ref={this.sheetRef}

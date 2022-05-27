@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unused-state */
 import React from 'react';
-import { SafeAreaView, View } from 'react-native';
+import { SafeAreaView, View,ToastAndroid } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 
 import CometChatOutgoingCall from '../../Calls/CometChatOutgoingCall';
@@ -35,6 +35,7 @@ class CometChatUserListWithMessages extends React.Component {
   }
 
   componentDidMount() {
+   
     if (!Object.keys(this.state.item).length) {
       this.toggleSideBar();
     }
@@ -307,7 +308,7 @@ class CometChatUserListWithMessages extends React.Component {
         Object.prototype.hasOwnProperty.call(incomingCallMessage, 'readAt') ===
         false
       ) {
-        CometChat.markAsRead(incomingCallMessage.id, receiverId, receiverType);
+        CometChat.markAsRead(incomingCallMessage);
       }
 
       const { item, type } = this.state;

@@ -75,9 +75,11 @@ export default StyleSheet.create({
     height: 128,
   },
   videoPlayerStyle: {
-    height: '100%',
-    width: '100%',
+    height: '30%',
+    width: '60%',
     borderRadius: 12,
+    alignSelf:'center',
+    padding:40
   },
   videoStyle: {
     backgroundColor: '#f2f2f2',

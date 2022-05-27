@@ -282,7 +282,6 @@ class CometChatMessages extends React.PureComponent {
         this.appendPollMessage(messages);
         break;
       case actions.VIEW_ACTUAL_IMAGE:
-        params.actionGenerated(actions.VIEW_ACTUAL_IMAGE, messages);
         this.setState({ imageView: messages});
         break;
       case actions.VIEW_ACTUAL_VIDEO:
@@ -387,7 +386,7 @@ class CometChatMessages extends React.PureComponent {
         break;
     }
   };
-
+  
   sendMessage = (message) => {
     const { route } = this.props;
 
