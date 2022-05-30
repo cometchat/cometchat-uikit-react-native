@@ -33,6 +33,9 @@ const CometChatSenderTextMessageBubble = (props) => {
   const prevMessage = usePrevious(message);
   const viewTheme = { ...theme, ...props.theme };
   const context = useContext(CometChatContext);
+  useEffect(() => {
+    checkRestrictions();
+  }, []);
   const [restrictions, setRestrictions] = useState(null);
 
   const checkRestrictions = async () => {
@@ -58,8 +61,6 @@ const CometChatSenderTextMessageBubble = (props) => {
   };
   useEffect(() => {
 
-    if(props.message){
-      checkRestrictions();
       const previousMessageStr = JSON.stringify(prevMessage);
       const currentMessageStr = JSON.stringify(props.message);
 
@@ -70,8 +71,7 @@ const CometChatSenderTextMessageBubble = (props) => {
         };
         setMessage(newMessage);
       }
-    }
-  }, [props.message,prevMessage]);
+  }, [props]);
   
   let messageText = getMessageText();
   if (Object.prototype.hasOwnProperty.call(message, 'metadata')) {
