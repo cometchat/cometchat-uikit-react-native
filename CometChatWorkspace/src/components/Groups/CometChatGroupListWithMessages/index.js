@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 /* eslint-disable react/no-unused-state */
 import React from 'react';
-import { SafeAreaView,ToastAndroid } from 'react-native';
+import { SafeAreaView } from 'react-native';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import { CometChatManager } from '../../../utils/controller';
 import * as enums from '../../../utils/enums';
@@ -23,6 +23,9 @@ import { CometChatContextProvider } from '../../../utils/CometChatContext';
 
 class CometChatGroupListWithMessages extends React.Component {
   loggedInUser = null;
+
+  removeFocusListener = this.props.navigation.addListener('focus', () => this.setState({isActive: true}))
+  removeBlurListener = this.props.navigation.addListener('blur', () => this.setState({isActive: false}))
 
   constructor(props) {
     super(props);
@@ -48,6 +51,7 @@ class CometChatGroupListWithMessages extends React.Component {
       imageView: null,
       groupMessage: {},
       ongoingDirectCall: false,
+      isActive: true,
     };
 
     this.theme = { ...theme, ...this.props.theme };
@@ -62,6 +66,11 @@ class CometChatGroupListWithMessages extends React.Component {
       .catch((error) => {
         logger('[CometChatGroupListWithMessages] getLoggedInUser error', error);
       });
+  }
+
+  componentWillUnmount() {
+    this.removeBlurListener()
+    this.removeFocusListener()
   }
 
   /**
@@ -709,6 +718,7 @@ class CometChatGroupListWithMessages extends React.Component {
             navigation={this.props.navigation}
           />
           {imageView}
+          {this.state.isActive ?
           <CometChatIncomingCall
             showMessage={(type, message) => {
               this.dropDownAlertRef?.showMessage(type, message);
@@ -717,7 +727,7 @@ class CometChatGroupListWithMessages extends React.Component {
             loggedInUser={this.loggedInUser}
             outgoingCall={this.state.outgoingCall}
             actionGenerated={this.actionHandler}
-          />
+          /> : null }
           {/* <CometChatOutgoingCall
           theme={this.props.theme}
           item={this.state.item}
@@ -728,11 +738,12 @@ class CometChatGroupListWithMessages extends React.Component {
           lang={this.state.lang}
           actionGenerated={this.actionHandler}
         /> */}
+        {this.state.isActive ? 
           <CometChatIncomingDirectCall
             theme={this.props.theme}
             lang={this.state.lang}
             actionGenerated={this.actionHandler}
-          />
+          /> : null }
           <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
           {this.state.ongoingDirectCall ? (
             <CometChatOutgoingDirectCall

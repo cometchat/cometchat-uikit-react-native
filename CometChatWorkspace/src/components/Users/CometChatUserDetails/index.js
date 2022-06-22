@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Modal, TouchableHighlight } from 'react-native';
 import { UserDetailManager } from './controller';
 import * as enums from '../../../utils/enums';
 import theme from '../../../resources/theme';
@@ -274,7 +274,9 @@ export default class CometChatUserDetails extends React.Component {
         onRequestClose = {() =>{
           this.props.actionGenerated(actions.CLOSE_DETAIL);
         }} >
-        <View style={style.container}>
+        <TouchableOpacity
+          onPress={() => this.props.actionGenerated(actions.CLOSE_DETAIL)}
+          style={style.container}>
           <BottomSheet
             ref={this.sheetRef}
             snapPoints={[deviceHeight - 80, 0]}
@@ -285,6 +287,7 @@ export default class CometChatUserDetails extends React.Component {
             overdragResistanceFactor={10}
             renderContent={() => {
               return (
+                <TouchableHighlight>
                 <View style={style.reactionDetailsContainer}>
                   <View
                     style={[
@@ -327,13 +330,14 @@ export default class CometChatUserDetails extends React.Component {
                     {sharedMediaView}
                   </View>
                 </View>
+                </TouchableHighlight>
               );
             }}
             onCloseEnd={() => {
               this.props.actionGenerated(actions.CLOSE_DETAIL);
             }}
           />
-        </View>
+        </TouchableOpacity>
         <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </Modal>
     );

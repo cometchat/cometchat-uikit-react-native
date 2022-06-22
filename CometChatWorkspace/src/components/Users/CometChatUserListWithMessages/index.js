@@ -18,6 +18,9 @@ import DropDownAlert from '../../Shared/DropDownAlert';
 class CometChatUserListWithMessages extends React.Component {
   loggedInUser = null;
 
+  removeFocusListener = this.props.navigation.addListener('focus', () => this.setState({isActive: true}))
+  removeBlurListener = this.props.navigation.addListener('blur', () => this.setState({isActive: false}))
+
   constructor(props) {
     super(props);
 
@@ -29,6 +32,7 @@ class CometChatUserListWithMessages extends React.Component {
       outgoingCall: null,
       imageView: null,
       viewDetailScreen: false,
+      isActive: true,
     };
 
     this.theme = { ...theme, ...this.props.theme };
@@ -46,6 +50,11 @@ class CometChatUserListWithMessages extends React.Component {
         this.loggedInUser = user;
       })
       .catch(() => {});
+  }
+
+  componentWillUnmount() {
+    this.removeBlurListener()
+    this.removeFocusListener()
   }
 
   /**
@@ -392,6 +401,8 @@ class CometChatUserListWithMessages extends React.Component {
             navigation={this.props.navigation}
           />
           {imageView}
+          {this.state.isActive ? 
+          <>
           <CometChatIncomingCall
             showMessage={(type, message) => {
               this.dropDownAlertRef?.showMessage(type, message);
@@ -400,7 +411,7 @@ class CometChatUserListWithMessages extends React.Component {
             loggedInUser={this.loggedInUser}
             outgoingCall={this.state.outgoingCall}
             actionGenerated={this.actionHandler}
-          />
+          /> 
           <CometChatOutgoingCall
             theme={this.props.theme}
             item={this.state.item}
@@ -411,6 +422,7 @@ class CometChatUserListWithMessages extends React.Component {
             lang={this.state.lang}
             actionGenerated={this.actionHandler}
           />
+          </> : null }
           <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
         </View>
       </CometChatContextProvider>

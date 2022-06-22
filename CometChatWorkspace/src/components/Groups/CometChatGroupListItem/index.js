@@ -12,12 +12,12 @@ const CometChatGroupListItem = (props) => {
   let groupTypeIcon = null;
   if (props.group.type === CometChat.GROUP_TYPE.PRIVATE) {
     groupTypeIcon = (
-      <Icon name="lock" size={20} color={viewTheme.color.helpText} />
+      <Icon name="shield" size={20} color={viewTheme.color.helpText} />
     );
   } else if (props.group.type === CometChat.GROUP_TYPE.PASSWORD) {
     groupTypeIcon = (
       <FoundationIcon
-        name="shield"
+        name="lock"
         size={22}
         color={viewTheme.color.helpText}
       />

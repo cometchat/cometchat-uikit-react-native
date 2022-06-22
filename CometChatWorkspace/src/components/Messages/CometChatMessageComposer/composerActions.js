@@ -340,7 +340,11 @@ export default class ComposerActions extends Component {
   render() {
     const { visible, close } = this.props;
     return (
-      <Modal transparent animated animationType="fade" visible={visible}>
+      <Modal transparent animated animationType="fade" visible={visible}
+          onRequestClose={() => { 
+            this.sheetRef?.current?.snapTo(1);
+            this.props.close()
+          }}>
         <View style={style.bottomSheetContainer}>
           <TouchableWithoutFeedback
             onPress={() => {

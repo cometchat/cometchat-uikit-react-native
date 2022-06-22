@@ -55,7 +55,7 @@ export const checkMessageForExtensionsData = (message, extensionKey) => {
 
 export const logger = (...data) => {
   try {
-   logger(...data);
+   console.log(...data);
   } catch (error) {
     logger(error);
   }

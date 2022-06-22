@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Modal, Image, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Modal, Image, TouchableOpacity, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import style from './styles';
 import { get as _get } from 'lodash';
 import BottomSheet from 'reanimated-bottom-sheet';
@@ -21,8 +21,10 @@ class CometChatImageViewer extends React.Component {
         onRequestClose = {() =>{
           this.sheetRef.current.snapTo(1);
           this.props.close();
-        }}>
-        <View style={style.outerContainer}>
+        }} >
+        <TouchableOpacity
+          onPress={() => this.props.close()}
+          style={style.outerContainer}>
           <BottomSheet
             ref={this.sheetRef}
             snapPoints={[Dimensions.get('window').height - 80, 0]}
@@ -33,35 +35,37 @@ class CometChatImageViewer extends React.Component {
             overdragResistanceFactor={10}
             renderContent={() => {
               return (
-                <View style={style.bottomSheetContainer}>
-                  <TouchableOpacity
-                    style={style.crossImgContainer}
-                    onPress={this.props.close}>
-                    <Image
-                      source={cross}
-                      style={style.crossImg}
-                      resizeMode="contain"
-                    />
-                  </TouchableOpacity>
-                  <View style={style.outerImageContainer}>
-                    <View style={[style.mainContainer]}>
+                <TouchableWithoutFeedback>
+                  <View style={style.bottomSheetContainer}>
+                    <TouchableOpacity
+                      style={style.crossImgContainer}
+                      onPress={this.props.close}>
                       <Image
-                        source={{
-                          uri: _get(this.props, 'message.data.url', ''),
-                        }}
+                        source={cross}
+                        style={style.crossImg}
                         resizeMode="contain"
-                        style={style.imageStyles}
                       />
+                    </TouchableOpacity>
+                    <View style={style.outerImageContainer}>
+                      <View style={[style.mainContainer]}>
+                        <Image
+                          source={{
+                            uri: _get(this.props, 'message.data.url', ''),
+                          }}
+                          resizeMode="contain"
+                          style={style.imageStyles}
+                        />
+                      </View>
                     </View>
                   </View>
-                </View>
+                </TouchableWithoutFeedback>
               );
             }}
             onCloseEnd={() => {
               this.props.close();
             }}
           />
-        </View>
+        </TouchableOpacity>
       </Modal>
     );
   }

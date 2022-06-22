@@ -133,7 +133,7 @@ export default class CometChatSharedMedia extends React.Component {
           .then((messages) => {
             let messageList = [...messages, ...this.state.messageList];
             messageList = _.uniqBy(messageList, 'id');
-
+            messageList = messageList.sort((a,b) => b.id - a.id)
             this.setState({ messageList });
           })
           .catch((error) => {
@@ -214,21 +214,21 @@ export default class CometChatSharedMedia extends React.Component {
     this.setState({ imageView: false });
   };
 
-  /**
+   /**
    * Handle opening video view on  click on particular video from message list
    * @param message: message object
    */
-   showVideoView = (message) => {
-    this.setState({ videoView: true, activeMessage: message });
-  };
-
-  /**
-   * Handle closing video view
-   * @param
-   */
-  hideVideoView = () => {
-    this.setState({ videoView: false });
-  };
+     showVideoView = (message) => {
+      this.setState({ videoView: true, activeMessage: message });
+    };
+  
+    /**
+     * Handle closing video view
+     * @param
+     */
+    hideVideoView = () => {
+      this.setState({ videoView: false });
+    };
 
   /**
    * Return empty list component
@@ -272,13 +272,9 @@ export default class CometChatSharedMedia extends React.Component {
           </TouchableOpacity>
         );
       }
-      else if (messageType === CometChat.MESSAGE_TYPE.VIDEO && message.data.url) {
+      if (messageType === CometChat.MESSAGE_TYPE.VIDEO && message.data.url) {
         return (
-          <TouchableOpacity
-          style={styles.videoStyle}
-          onPress={() => {
-            this.showVideoView(message);
-          }}>
+          <View style={[styles.videoStyle]}>
             <VideoPlayer
               source={{ uri: message.data.url }}
               navigator={this.props.navigator}
@@ -286,17 +282,17 @@ export default class CometChatSharedMedia extends React.Component {
               disableSeekbar
               disableFullscreen
               disableVolume
-              style={styles.videoPlayerStyle}
-              paused
+              style={[styles.videoPlayerStyle]}
+              muted
+              onError={() => {logger("error while loading video", JSON.stringify(message))}}
               resizeMode="contain"
-              onPress={() => {
-                this.showVideoView(message);
-              }}
+              controlTimeout={200}
+              onShowControls={() => this.showVideoView(message)}
             />
-          </TouchableOpacity>
+          </View>
         );
       }
-      else if (
+      if (
         messageType === CometChat.MESSAGE_TYPE.FILE &&
         message.data.attachments
       ) {
@@ -306,6 +302,8 @@ export default class CometChatSharedMedia extends React.Component {
             onPress={() => Linking.openURL(message.data.attachments[0].url)}>
             <Icon name="file-alt" size={44} color="rgba(0,0,0,0.5)" />
             <Text
+              ellipsizeMode='middle'
+              numberOfLines={1}
               style={[
                 styles.fileStyle,
                 { color: `${currentTheme.color.primary}` },
@@ -318,17 +316,19 @@ export default class CometChatSharedMedia extends React.Component {
     };
     const messages = [...messageList];
     return (
-      <View style={styles.sectionStyle}>
-        <CometChatImageViewer
-          open={imageView}
-          close={this.hideImageView}
-          message={activeMessage}
-        />
-        <CometChatVideoViewer
-          open={videoView}
-          close={this.hideVideoView}
-          message={activeMessage}
-        />
+      <View style={[styles.sectionStyle, {}]}>
+        {imageView ?
+          <CometChatImageViewer
+            open={imageView}
+            close={this.hideImageView}
+            message={activeMessage}
+          /> : null}
+        { videoView ?
+          <CometChatVideoViewer
+            open={this.state.videoView}
+            close={this.hideVideoView}
+            message={activeMessage}
+          /> : null}
         <Text
           style={[
             styles.sectionHeaderStyle,
@@ -387,7 +387,7 @@ export default class CometChatSharedMedia extends React.Component {
               return template(item);
             }}
             style={{
-              height: deviceHeight - 280 * heightRatio,
+              maxHeight: deviceHeight * .40
             }}
             columnWrapperStyle={styles.mediaItemColumnStyle}
             contentContainerStyle={
