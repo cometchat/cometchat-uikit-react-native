@@ -75,17 +75,17 @@ export default StyleSheet.create({
     height: 128,
   },
   videoPlayerStyle: {
-    height: '30%',
-    width: '60%',
+    height: '100%',
+    width: '100%',
     borderRadius: 12,
     alignSelf:'center',
-    padding:40
   },
   videoStyle: {
-    backgroundColor: '#f2f2f2',
     borderRadius: 8,
     width: (screenWidth - 40) / 2,
     height: 128,
+    borderRadius: 12,
+    backgroundColor: '#f2f2f2',
   },
   fileItemStyle: {
     width: (screenWidth - 80) / 2,

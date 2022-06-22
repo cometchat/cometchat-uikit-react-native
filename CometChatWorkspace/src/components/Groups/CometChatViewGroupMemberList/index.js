@@ -4,7 +4,7 @@
 import React from 'react';
 import { CometChat } from '@cometchat-pro/react-native-chat';
 import DropDownAlert from '../../Shared/DropDownAlert';
-import { View, Text, FlatList, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, Modal, TouchableOpacity, TouchableHighlight } from 'react-native';
 import BottomSheet from 'reanimated-bottom-sheet';
 
 import CometChatViewGroupMemberListItem from '../CometChatViewGroupMemberListItem';
@@ -249,7 +249,9 @@ export default class CometChatViewGroupMemberList extends React.Component {
             this.props.close();
           }} 
           >
-          <View style={style.container}>
+          <TouchableOpacity
+            onPress={() => this.props.close()}
+            style={style.container}>
             <BottomSheet
               ref={this.sheetRef}
               snapPoints={[deviceHeight - 80, 0]}
@@ -260,6 +262,7 @@ export default class CometChatViewGroupMemberList extends React.Component {
               overdragResistanceFactor={10}
               renderContent={() => {
                 return (
+                  <TouchableHighlight>
                   <View style={style.reactionDetailsContainer}>
                     <View style={style.headerContainer}>
                       <View style={style.headerContainerStyle}>
@@ -305,13 +308,14 @@ export default class CometChatViewGroupMemberList extends React.Component {
                       />
                     </View>
                   </View>
+                  </TouchableHighlight>
                 );
               }}
               onCloseEnd={() => {
                 this.props.close();
               }}
             />
-          </View>
+          </TouchableOpacity>
         </Modal>
         <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </React.Fragment>
