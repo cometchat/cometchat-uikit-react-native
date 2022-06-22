@@ -36,6 +36,7 @@ const CometChatSenderTextMessageBubble = (props) => {
   useEffect(() => {
     checkRestrictions();
   }, []);
+  
   const [restrictions, setRestrictions] = useState(null);
 
   const checkRestrictions = async () => {
@@ -60,7 +61,6 @@ const CometChatSenderTextMessageBubble = (props) => {
     );
   };
   useEffect(() => {
-
       const previousMessageStr = JSON.stringify(prevMessage);
       const currentMessageStr = JSON.stringify(props.message);
 

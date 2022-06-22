@@ -8,7 +8,7 @@ import KeepAwake from 'react-native-keep-awake';
 import { outgoingCallAlert } from '../../../resources/audio';
 import { CometChatManager } from '../../../utils/controller';
 import { CallScreenManager } from './controller';
-import { PATTERN } from '../../../utils/consts';
+import * as consts from '../../../utils/consts'
 import CometChatAvatar from '../../Shared/CometChatAvatar';
 
 import * as enums from '../../../utils/enums';
@@ -178,7 +178,6 @@ class CometChatOutgoingCall extends React.PureComponent {
       .then((response) => {
         const call = { ...response };
 
-        this.props.actionGenerated(actions.ACCEPT_INCOMING_CALL, call);
         this.setState({
           outgoingCallScreen: false,
           callInProgress: call,
@@ -306,7 +305,7 @@ class CometChatOutgoingCall extends React.PureComponent {
       this.outgoingAlert.setCurrentTime(0);
       this.outgoingAlert.setNumberOfLoops(-1);
       this.outgoingAlert.play(()=>{});
-      Vibration.vibrate(PATTERN,true);
+      Vibration.vibrate(consts.PATTERN,true);
     } catch (error) {
       logger(error);
     }

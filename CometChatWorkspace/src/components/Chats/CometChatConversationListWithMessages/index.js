@@ -24,6 +24,9 @@ const readAt = 'readAt';
 class CometChatConversationListWithMessages extends React.Component {
   loggedInUser = null;
 
+  removeFocusListener = this.props.navigation.addListener('focus', () => this.setState({isActive: true}))
+  removeBlurListener = this.props.navigation.addListener('blur', () => this.setState({isActive: false}))
+
   constructor(props) {
     super(props);
     this.state = {
@@ -44,6 +47,7 @@ class CometChatConversationListWithMessages extends React.Component {
       imageView: null,
       groupMessage: {},
       lastMessage: {},
+      isActive: true
     };
 
     this.theme = { ...theme, ...this.props.theme };
@@ -66,6 +70,11 @@ class CometChatConversationListWithMessages extends React.Component {
           error,
         );
       });
+  }
+
+  componentWillUnmount() {
+    this.removeBlurListener()
+    this.removeFocusListener()
   }
 
   checkRestrictions = async () => {
@@ -286,7 +295,7 @@ class CometChatConversationListWithMessages extends React.Component {
       CometChatManager.call(receiverId, receiverType, CometChat.CALL_TYPE.AUDIO)
         .then((call) => {
           this.appendCallMessage(call);
-          this.setState({ outgoingCall: call });
+          this.state.isActive ? this.setState({ outgoingCall: call }) : null;
         })
         .catch((error) => {
           logger('Call initialization failed with exception:', error);
@@ -419,15 +428,6 @@ class CometChatConversationListWithMessages extends React.Component {
   acceptIncomingCall = (call) => {
     try {
       this.setState({ incomingCall: call });
-      const type = call.receiverType;
-      const id = type === 'user' ? call.sender.uid : call.receiverId;
-      CometChat.getConversation(id, type)
-        .then((conversation) => {
-          this.itemClicked(conversation.conversationWith, type);
-        })
-        .catch((error) => {
-          logger('error while fetching a conversation', error);
-        });
     } catch (error) {
       logger(error);
     }
@@ -498,7 +498,16 @@ class CometChatConversationListWithMessages extends React.Component {
    * @param call: call object
    */
   appendCallMessage = (call) => {
-    this.setState({ callMessage: call });
+    this.setState({ callMessage: call }, () => {
+      CometChat.CometChatHelper.getConversationFromMessage(call)
+      .then(conversation => {
+        const {conversationWith, conversationType} = conversation
+        this.itemClicked(conversationWith, conversationType);
+      })
+      .catch(err => {
+        logger(err)
+      })
+    });
   };
 
   /**
@@ -605,7 +614,7 @@ class CometChatConversationListWithMessages extends React.Component {
             />
           </View>
           {imageView}
-          {this.state.isCallActionMessagesEnabled ? (
+          {this.state.isCallActionMessagesEnabled && this.state.isActive ? (
             <CometChatIncomingCall
               showMessage={(type, message) => {
                 this.dropDownAlertRef?.showMessage(type, message);
@@ -616,19 +625,20 @@ class CometChatConversationListWithMessages extends React.Component {
               outgoingCall={this.state.outgoingCall}
             />
           ) : null}
-          <CometChatOutgoingCall
-            theme={this.theme}
-            item={this.state.item}
-            type={this.state.type}
-            incomingCall={this.state.incomingCall}
-            outgoingCall={this.state.outgoingCall}
-            loggedInUser={this.loggedInUser}
-            actionGenerated={this.actionHandler}
-          />
+          {this.state.isActive ?
+            (<CometChatOutgoingCall
+              theme={this.theme}
+              item={this.state.item}
+              type={this.state.type}
+              incomingCall={this.state.incomingCall}
+              outgoingCall={this.state.outgoingCall}
+              loggedInUser={this.loggedInUser}
+              actionGenerated={this.actionHandler}
+            />) : null}
 
           <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
 
-          {this.state.isCallActionMessagesEnabled ? (
+          {this.state.isCallActionMessagesEnabled && this.state.isActive ? (
             <CometChatIncomingDirectCall
               theme={this.props.theme}
               lang={this.state.lang}

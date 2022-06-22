@@ -209,7 +209,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
       mediaMessage.setReceiver(receiverType);
       mediaMessage.setConversationId(conversationId);
       mediaMessage.setType(messageType);
-      mediaMessage._composedAt = Math.round(+new Date() / 1000);
+      mediaMessage._composedAt = Date.now();
       mediaMessage._id = '_' + Math.random().toString(36).substr(2, 9);
       mediaMessage.setId(mediaMessage._id)
       mediaMessage.setData({

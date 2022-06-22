@@ -1,7 +1,7 @@
 /* eslint-disable react/no-did-update-set-state */
 /* eslint-disable react/no-unused-state */
 import React from 'react';
-import { View, Text, TouchableOpacity,Modal} from 'react-native';
+import { View, Text, TouchableOpacity,Modal, TouchableHighlight} from 'react-native';
 import theme from '../../../resources/theme';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import CometChatSharedMedia from '../../Shared/CometChatSharedMedia';
@@ -803,7 +803,9 @@ export default class CometChatGroupDetails extends React.Component {
             this.props.actionGenerated(actions.CLOSE_DETAIL);
           }} 
         >
-        <View style={style.container}>
+          <TouchableOpacity
+            onPress={() => this.props.actionGenerated(actions.CLOSE_DETAIL)}
+            style={style.container}>
           <BottomSheet
             ref={this.sheetRef}
             snapPoints={[deviceHeight - 80, 0]}
@@ -814,7 +816,8 @@ export default class CometChatGroupDetails extends React.Component {
             overdragResistanceFactor={10}
             renderContent={() => {
               return (
-                <View style={style.reactionDetailsContainer}>
+                <TouchableHighlight style={{}}>
+                  <View style={style.reactionDetailsContainer}>
                   <GroupDetailContext.Provider
                     value={{
                       memberList: this.state.memberList,
@@ -866,14 +869,15 @@ export default class CometChatGroupDetails extends React.Component {
                     {addMembers}
                     {bannedMembers}
                   </GroupDetailContext.Provider>
-                </View>
+                  </View>
+                  </TouchableHighlight>
               );
             }}
             onCloseEnd={() => {
               this.props.actionGenerated(actions.CLOSE_DETAIL);
             }}
           />
-        </View>
+        </TouchableOpacity>
         <DropDownAlert ref={(ref) => (this.dropDownAlertRef = ref)} />
       </Modal>
       </View>
