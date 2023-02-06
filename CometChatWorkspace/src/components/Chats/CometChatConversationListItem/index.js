@@ -39,7 +39,16 @@ class CometChatConversationListItem extends React.Component {
       lastMessageTimestamp: timestamp,
     });
 
+    this.checkAndMarkAsDelivered();
     this.checkRestrictions();
+  }
+
+  checkAndMarkAsDelivered = async () => {
+    const {lastMessage} = this.props.conversation;
+    if (lastMessage && lastMessage.sender.uid != this.props.loggedInUser.uid &&
+        !lastMessage.hasOwnProperty("deliveredAt")) {
+          CometChat.markAsDelivered(lastMessage);
+    }
   }
 
   checkRestrictions = async () => {

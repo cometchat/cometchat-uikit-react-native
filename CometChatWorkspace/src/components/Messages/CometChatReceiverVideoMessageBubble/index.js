@@ -1,4 +1,4 @@
-import React, { createRef } from 'react';
+import React, { createRef, useRef, useState } from 'react';
 import { View, Text } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
@@ -12,6 +12,27 @@ import CometChatAvatar from '../../Shared/CometChatAvatar';
 import * as actions from '../../../utils/actions';
 import * as enums from '../../../utils/enums';
 import { CometChat } from '@cometchat-pro/react-native-chat';
+
+const CometChatVideoPlayer = ({source, style, navigator}) => {
+  const player = useRef(null);
+  const [paused, setPaused] = useState(false);
+
+  return <VideoPlayer
+    source={source} // Can be a URL or a local file.
+    ref={player} // Store reference
+    style={style}
+    navigator={navigator}
+    disableBack
+    disableFullscreen
+    disableVolume
+    muted={true}
+    paused={paused}
+    onLoad={() => {
+      setPaused(true)
+    }}
+    resizeMode="contain"
+  />
+}
 
 const CometChatReceiverVideoMessageBubble = (props) => {
   const message = {
@@ -55,18 +76,12 @@ const CometChatReceiverVideoMessageBubble = (props) => {
               onLongPress={() =>
                 props.actionGenerated(actions.OPEN_MESSAGE_ACTIONS, message)
               }>
-              <VideoPlayer
+              <CometChatVideoPlayer
                 source={{
                   uri: message.data.url,
-                }} // Can be a URL or a local file.
-                ref={player} // Store reference
+                }}
                 style={style.messageVideo}
                 navigator={props.navigator}
-                disableBack
-                disableFullscreen
-                disableVolume
-                muted
-                resizeMode="contain"
               />
             </TouchableOpacity>
           </View>
