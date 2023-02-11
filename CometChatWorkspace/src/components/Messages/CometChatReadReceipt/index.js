@@ -66,7 +66,28 @@ const CometChatReadReceipt = (props) => {
     minute: 'numeric',
     hour12: true,
   });
- 
+  // if (Platform.OS === 'android') {
+  //   let time = timestamp.split(':'); // convert to array
+
+  //   // fetch
+  //   var hours = Number(time[0]);
+  //   var minutes = Number(time[1]?.split(' ')[0]);
+
+  //   // calculate
+  //   var timeValue;
+
+  //   if (hours > 0 && hours <= 12) {
+  //     timeValue = '' + hours;
+  //   } else if (hours > 12) {
+  //     timeValue = '' + (hours - 12);
+  //   } else if (hours == 0) {
+  //     timeValue = '12';
+  //   }
+
+  //   timeValue += minutes < 10 ? ':0' + minutes : ':' + minutes; // get minutes
+  //   timeValue += hours >= 12 ? ' PM' : ' AM'; // get AM/PM
+  //   timestamp = timeValue;
+  // }
   if (!isDeliveryReceiptsEnabled) {
     ticks = null;
   }

@@ -188,25 +188,25 @@ class CometChatConversationListItem extends React.Component {
           minute: 'numeric',
           hour12: true,
         });
-        if (Platform.OS === 'android' && timestamp !== 'Yesterday') {
-          let time = timestamp.split(':'); // convert to array
+        // if (Platform.OS === 'android' && timestamp !== 'Yesterday') {
+        //   let time = timestamp.split(':'); // convert to array
 
-          var hours = Number(time[0]);
-          var minutes = Number(time[1]?.split(' ')[0]);
-          var timeValue;
+        //   var hours = Number(time[0]);
+        //   var minutes = Number(time[1]?.split(' ')[0]);
+        //   var timeValue;
 
-          if (hours > 0 && hours <= 12) {
-            timeValue = '' + hours;
-          } else if (hours > 12) {
-            timeValue = '' + (hours - 12);
-          } else if (hours == 0) {
-            timeValue = '12';
-          }
+        //   if (hours > 0 && hours <= 12) {
+        //     timeValue = '' + hours;
+        //   } else if (hours > 12) {
+        //     timeValue = '' + (hours - 12);
+        //   } else if (hours == 0) {
+        //     timeValue = '12';
+        //   }
 
-          timeValue += minutes < 10 ? ':0' + minutes : ':' + minutes; // get minutes
-          timeValue += hours <= 12 ? ' PM' : ' AM'; // get AM/PM 
-          timestamp = timeValue;
-        }
+        //   timeValue += minutes < 10 ? ':0' + minutes : ':' + minutes; // get minutes
+        //   timeValue += hours >= 12 ? ' PM' : ' AM'; // get AM/PM
+        //   timestamp = timeValue;
+        // }
       } else if (diffTimestamp < 48 * 60 * 60 * 1000) {
         timestamp = 'Yesterday';
       } else if (diffTimestamp < 7 * 24 * 60 * 60 * 1000) {
