@@ -788,7 +788,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
         style={
           Platform.OS === 'android' && this.state.keyboardActivity
             ? {
-                marginBottom: 21 * heightRatio,
+                // marginBottom: 21 * heightRatio,
                 elevation: 5,
                 backgroundColor: '#fff',
               }
@@ -826,6 +826,7 @@ export default class CometChatMessageComposer extends React.PureComponent {
               onChangeText={(text) => this.changeHandler(text)}
               onBlur={this.endTyping}
               ref={this.messageInputRef}
+              multiline={true}
             />
             {sendBtn}
           </View>

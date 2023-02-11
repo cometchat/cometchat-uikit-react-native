@@ -204,7 +204,7 @@ class CometChatConversationListItem extends React.Component {
           }
 
           timeValue += minutes < 10 ? ':0' + minutes : ':' + minutes; // get minutes
-          timeValue += hours >= 12 ? ' PM' : ' AM'; // get AM/PM
+          timeValue += hours <= 12 ? ' PM' : ' AM'; // get AM/PM 
           timestamp = timeValue;
         }
       } else if (diffTimestamp < 48 * 60 * 60 * 1000) {

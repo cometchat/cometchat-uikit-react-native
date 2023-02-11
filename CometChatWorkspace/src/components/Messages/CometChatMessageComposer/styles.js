@@ -35,13 +35,15 @@ export default StyleSheet.create({
     width: '100%',
   },
   messageInputStyle: {
-    color: 'black',
+    color: "black",
     fontSize: 15,
     padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingTop: Platform.OS === "android" ? 10 : 10,
+    backgroundColor: "rgba(0,0,0,0.05)",
     borderRadius: 20,
     flex: 1,
-    height: 36,
+    minHeight: 36,
+    maxHeight: 85,
   },
   inputStickyStyle: {
     padding: 7,
