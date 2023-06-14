@@ -7,6 +7,8 @@
 </div>
 
 <br/><br/>
+> We’ve introduced a major update to our UI kits. Version 4 features a modular architecture that give you enhanced flexibility to build and customize your web and mobile apps. Please switch to version 4 by visiting the [@cometchat/chat-uikit-react-native](https://www.npmjs.com/package/@cometchat/chat-uikit-react-native), or [check out our documentation](https://www.cometchat.com/docs/react-native-uikit-beta/overview).
+<br/><br/>
 
 # CometChat React Native UI Kit
 
