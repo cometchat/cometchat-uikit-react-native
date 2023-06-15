@@ -21,7 +21,7 @@ We’ve introduced a major update to our UI kits. Version 4 features a modular a
 <div style="width:100%">
     <div style="width:100%; display:inline-block">
         <div align="center">
-          <img align="left" alt="Main" src="./Screenshots/main.png">    
+          <img align="left" alt="Main" src="./screenshots/main.png">    
         </div>    
     </div>    
 </div>
@@ -48,7 +48,7 @@ Before you begin, ensure you have met the following requirements:
 
 | <div align="left"><span>**Note:**<span style="font-weight:500"> Support for Expo CLI based apps.</span> </span></div>                                                                                                                                                                                                  |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| If you are using Expo CLI to build a React Native app, the calling component will not work as our calling component needs native-level changes.However, you can create a React Native app using React Native CLI or use the 'expo eject' command to convert your app from an expo-managed workflow to a bare workflow. |
+| If you are using Expo CLI to build a React Native app, the calling component will not work as our calling component needs native-level changes. However, you can create a React Native app using React Native CLI or use the 'expo eject' command to convert your app from an expo-managed workflow to a bare workflow. |
 
 ---
 
