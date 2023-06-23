@@ -196,6 +196,7 @@ export default class ComposerActions extends Component {
   };
 
   pickDocument = async () => {
+    this.sheetRef?.current?.snapTo(1);
     try {
       const res = await DocumentPicker.pick({
         type: [DocumentPicker.types.allFiles],
@@ -217,8 +218,8 @@ export default class ComposerActions extends Component {
     }
   };
 
-  renderContent = () => {
-    let takePhotoBtn = (
+  TakePhotoOption = () => {
+    return (
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={() => this.takePhoto()}>
@@ -228,7 +229,9 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
-    let takeVideoBtn = (
+  }
+  TakeVideoOption = () => {
+    return (
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={() => this.takePhoto('video')}>
@@ -243,7 +246,9 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
-    let avp = (
+  }
+  PhotoLibraryOption = () => {
+    return (
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={() => this.launchLibrary('photo')}>
@@ -259,7 +264,9 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
-    let vp = (
+  }
+  VideoLibraryOption = () => {
+    return (
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={() => this.launchLibrary('video')}>
@@ -270,7 +277,9 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
-    let docs = (
+  }
+  DocumentOption = () => {
+    return (
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={this.pickDocument}>
@@ -281,8 +290,10 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
+  }
 
-    let stickerBtn = (
+  StickerOption = () => {
+    return (
       <TouchableOpacity style={style.actionButtonContainer}>
         <MCIIcon name="sticker-circle-outline" size={24} />
 
@@ -293,8 +304,10 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
+  }
 
-    let createPollBtn = (
+  CreatePollOption = () => {
+    return (
       <TouchableOpacity
         style={style.actionButtonContainer}
         onPress={() => {
@@ -307,30 +320,23 @@ export default class ComposerActions extends Component {
         </Text>
       </TouchableOpacity>
     );
-    if (!this.state.restrictions?.isPollsEnabled) {
-      createPollBtn = null;
-    }
-    if (!this.state.restrictions?.isStickersEnabled) {
-      stickerBtn = null;
-    }
-    if (!this.state.restrictions?.isFilesEnabled) {
-      docs = null;
-    }
-    if (!this.state.restrictions?.isPhotosVideosEnabled) {
-      takeVideoBtn = null;
-      avp = null;
-      takePhotoBtn = null;
-      vp = null;
-    }
+  }
+
+  renderContent = () => {
     return (
       <View style={style.reactionDetailsContainer}>
-        {takePhotoBtn}
-        {takeVideoBtn}
-        {avp}
-        {vp}
-        {docs}
-        {stickerBtn}
-        {createPollBtn}
+        {
+          this.state.restrictions?.isPhotosVideosEnabled && 
+          <>
+          {this.TakePhotoOption()}
+          {this.TakeVideoOption()}
+          {this.PhotoLibraryOption()}
+          {this.VideoLibraryOption()}
+          </>
+        }
+        { this.state.restrictions?.isFilesEnabled && this.DocumentOption() }
+        { this.state.restrictions?.isStickersEnabled && this.StickerOption() }
+        { this.state.restrictions?.isPollsEnabled && this.CreatePollOption() }
       </View>
     );
   };
@@ -352,10 +358,9 @@ export default class ComposerActions extends Component {
               this.props.close();
             }}>
             <View style={style.fullFlex}>
-              {this.state.snapPoints ? (
                 <BottomSheet
                   ref={this.sheetRef}
-                  snapPoints={this.state.snapPoints}
+                  snapPoints={this.state.snapPoints || 0}
                   borderRadius={30}
                   initialSnap={1}
                   enabledInnerScrolling={false}
@@ -363,11 +368,7 @@ export default class ComposerActions extends Component {
                   overdragResistanceFactor={10}
                   renderContent={this.renderContent}
                   renderHeader={this.renderHeader}
-                  onCloseEnd={() => {
-                    close();
-                  }}
                 />
-              ) : null}
             </View>
           </TouchableWithoutFeedback>
         </View>

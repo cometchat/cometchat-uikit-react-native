@@ -40,9 +40,6 @@ export default class CometChatMessageActions extends React.Component {
                 enabledContentTapInteraction
                 overdragResistanceFactor={10}
                 renderContent={this.renderContent}
-                onCloseEnd={() => {
-                  close();
-                }}
               />
             </View>
           </TouchableWithoutFeedback>
