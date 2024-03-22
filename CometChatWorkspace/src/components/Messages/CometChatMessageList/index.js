@@ -1101,8 +1101,9 @@ class CometChatMessageList extends React.PureComponent {
     const nextMessage = messages[index + 1];
     const messageSentDate = nextMessage
       ? new Date(nextMessage.sentAt * 1000).toLocaleDateString()
+      : messages.length === 1  ? new Date(message.sentAt * 1000).toLocaleDateString()
       : null;
-    if (cDate !== messageSentDate && messages[0].sentAt) {
+    if ((cDate !== messageSentDate && messages[0].sentAt) || messages.length === 1) {
       let dateValue = null;
         if(cDate == currentDate){
           dateValue = 'Today';
@@ -1132,7 +1133,7 @@ class CometChatMessageList extends React.PureComponent {
       new Date(messages[0].sentAt * 1000).toLocaleDateString();
     return (
       <View>
-        {index ? dateSeparator : null}
+        {dateSeparator}
         {this.getComponent(message)}
       </View>
     );
