@@ -6,6 +6,44 @@
 
 The CometChat React Native UI Kit provides a pre-built user interface kit that developers can use to quickly integrate a reliable & fully-featured chat experience into an existing or a new app.
 
+<table>    
+  <tr>
+    <td valign="center" style="text-align: center">
+      <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;">
+        <img src="./Screenshots/overview_cometchat_screens_ios.png">
+      </div>
+      <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;">
+          React Native: iOS
+      </div>
+    </td>  
+  </tr>
+</table>
+<hr />
+<table>    
+  <tr>
+    <td valign="center" style="text-align: center">
+      <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;">
+        <img src="./Screenshots/overview_cometchat_screens_android.png">
+      </div>
+      <div style="
+          display: flex;
+          align-items: center;
+          justify-content: center;">
+          React Native: Android
+      </div>
+    </td>  
+  </tr>
+</table>
+
 ## Prerequisites
 - Node.js >= 16
 - npm >= 8
