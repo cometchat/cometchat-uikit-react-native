@@ -1,0 +1,83 @@
+{
+  "name": "example",
+  "version": "3.0.6-5",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "test": "jest",
+    "lint": "eslint .",
+    "postinstall": "node ./postinstall.js"
+  },
+  "dependencies": {
+    "@cometchat-pro/react-native-calls": "2.1.1",
+    "@cometchat-pro/react-native-chat": "3.0.6",
+    "@react-native-async-storage/async-storage": "^1.13.4",
+    "@react-native-community/masked-view": "^0.1.10",
+    "@react-native-picker/picker": "^2.2.1",
+    "@react-navigation/bottom-tabs": "^5.11.2",
+    "@react-navigation/native": "^5.8.10",
+    "@react-navigation/stack": "^5.12.8",
+    "babel-preset-react-native": "^2.1.0",
+    "emoji-mart-native": "^0.6.2-beta",
+    "events": "^3.3.0",
+    "express": "^4.17.2",
+    "extract-zip": "^2.0.1",
+    "fs-extra": "^10.0.0",
+    "prop-types": "^15.7.2",
+    "react": "16.13.1",
+    "react-native": "0.63.5",
+    "react-native-autolink": "^4.0.0",
+    "react-native-document-picker": "^7.1.3",
+    "react-native-elements": "^3.0.0-alpha.1",
+    "react-native-fast-image": "^8.3.4",
+    "react-native-gesture-handler": "^1.9.0",
+    "react-native-image-picker": "^4.6.1",
+    "react-native-keep-awake": "^4.0.0",
+    "react-native-reanimated": "^1.13.2",
+    "react-native-safe-area-context": "^3.1.9",
+    "react-native-screens": "^3.10.1",
+    "react-native-sound": "^0.11.0",
+    "react-native-swipe-list-view": "^3.2.8",
+    "react-native-vector-icons": "^9.0.0",
+    "react-native-video": "^5.1.0-alpha8",
+    "react-native-video-controls": "^2.7.1",
+    "react-native-webview": "^11.6.2",
+    "react-redux": "^7.2.2",
+    "reanimated-bottom-sheet": "^1.0.0-alpha.22",
+    "redux": "^4.0.5",
+    "redux-logger": "^3.0.6",
+    "redux-persist": "^6.0.0",
+    "redux-thunk": "^2.3.0",
+    "request": "^2.88.2",
+    "rimraf": "^3.0.2",
+    "rn-fetch-blob": "^0.12.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/runtime": "^7.8.4",
+    "@react-native-community/eslint-config": "^1.1.0",
+    "babel-jest": "^25.1.0",
+    "eslint": "^6.5.1",
+    "jest": "^25.1.0",
+    "metro-react-native-babel-preset": "^0.59.0",
+    "react-test-renderer": "16.13.1"
+  },
+  "jest": {
+    "preset": "react-native"
+  },
+  "description": "<div style=\"width:100%\">     <div style=\"width:50%;\">         <div align=\"center\">        <a> <img align=\"center\" width=\"180\" height=\"180\" alt=\"CometChat\" src=\"./Screenshots/logo.png\"> </a>           </div>         </div>     </div>",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cometchat-team/cometchat-pro-react-native-chat-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cometchat-team/cometchat-pro-react-native-chat-app/issues"
+  },
+  "homepage": "https://github.com/cometchat-team/cometchat-pro-react-native-chat-app#readme"
+}
