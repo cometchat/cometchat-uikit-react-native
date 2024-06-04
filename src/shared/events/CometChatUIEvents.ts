@@ -14,6 +14,8 @@ export enum CometChatUIEvents {
   hidePanel = 'hidePanel',
   openChat = 'openChat',
   ccToggleBottomSheet = 'ccToggleBottomSheet',
-  ccComposeMessage = "ccComposeMessage"
+  ccComposeMessage = "ccComposeMessage",
+  // ccMentionClick = "ccMentionClick",
+  ccSuggestionData = "ccSuggestionData",
 
 }

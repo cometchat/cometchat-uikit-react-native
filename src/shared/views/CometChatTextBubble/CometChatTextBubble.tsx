@@ -1,29 +1,30 @@
-import React, {useContext} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { View, Text, Linking, StyleProp, ViewStyle } from "react-native";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatContext } from "../../CometChatContext";
 import { emailPattern, phoneNumPattern, urlPattern } from "../../constants/UIKitConstants";
 import { TextBubbleStyle, TextBubbleStyleInterface } from "./TextBubbleStyle";
+import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from "../../formatters";
 
 const Link = ({ text, url, style }) => {
-    return <Text style={{...style, textDecorationLine: "underline"}} onPress={() => {
+    return <Text style={{ ...style, textDecorationLine: "underline" }} onPress={() => {
         let finalUrl = url.startsWith("http") ? url : `http://${url}`
         Linking.canOpenURL(finalUrl)
             .then(res => {
                 if (res) {
                     Linking.openURL(finalUrl);
                     return;
-                } 
+                }
                 console.log("Can not open link", finalUrl);
             })
             .catch(err => {
-                console.log({url});
+                console.log({ url });
                 console.log("Error:", err);
             })
     }} >{text}</Text>
 }
 
-const getPatternGroup = (str: string):{phone?: string, email?: string, url?: string} => {
+const getPatternGroup = (str: string): { phone?: string, email?: string, url?: string } => {
     let result = {};
     if (str.match(phoneNumPattern))
         result['phone'] = str;
@@ -32,32 +33,6 @@ const getPatternGroup = (str: string):{phone?: string, email?: string, url?: str
     if (str.match(urlPattern))
         result['url'] = str;
     return result;
-}
-
-export const FormatTextForLinks = ({str, style}) => {
-    let res = str.matchAll(phoneNumPattern + "|" + emailPattern + "|" + urlPattern);
-    for (let resPart of res) {
-        let { email, phone } = getPatternGroup(resPart[0]);
-        let pre: string, post:string;
-        pre = str.substring(0, resPart.index);
-        post = str.substring(resPart.index + resPart[0].length);
-        let urlLink = "";
-        if (email)
-            urlLink = "mailto:";
-        if (phone)
-            urlLink = "tel:";
-        return (
-            <Text style={{...style.textFont, color: style.textColor}}>
-                <Text>
-                    {pre}
-                </Text>
-                <Link text={resPart[0]} url={urlLink + resPart[0].trim()} style={{...style.linkTextFont, color: style.linkTextColor}} />
-                <FormatTextForLinks str={post} style={style} />
-            </Text>
-        )
-    }
-
-    return <Text style={{...style.textFont, color: style.textColor}}>{str}</Text>;
 }
 
 export interface CometChatTextBubbleInterface {
@@ -73,17 +48,24 @@ export interface CometChatTextBubbleInterface {
      * text container style
      */
     textContainerStyle?: StyleProp<ViewStyle>
+    textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 }
 
 export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
-    
-    const {theme} = useContext<CometChatContextType>(CometChatContext);
+
+    const {
+        text,
+        textContainerStyle,
+        textFormatters
+    } = props;
+
+    const { theme } = useContext<CometChatContextType>(CometChatContext);
+    const [formattedText, setFormattedText] = useState<string>();
 
     const _style = new TextBubbleStyle({
         backgroundColor: theme?.palette.getBackgroundColor(),
         textColor: theme?.palette.getAccent(),
         textFont: theme?.typography.body,
-        linkTextFont: theme?.typography.body,
         ...props.style
     });
 
@@ -93,30 +75,35 @@ export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
         borderRadius,
         textColor,
         textFont,
-        linkTextColor,
-        linkTextFont,
         height,
         width
     } = _style;
 
-    const {
-        text,
-        textContainerStyle
-    } = props;
+    useEffect(() => {
+        let finalText = text;
+        if (textFormatters && textFormatters.length) {
+            if (textFormatters) {
+                for (let i = 0; i < textFormatters.length; i++) {
+                    (finalText as string | void) = textFormatters[i].getFormattedText(finalText);
+                }
+            }
+        }
+        setFormattedText(finalText as string);
+    }, [])
 
     return <View style={[
         {
             alignSelf: "flex-start",
         },
         {
-            backgroundColor,  borderRadius, maxHeight: height, maxWidth: width,
+            backgroundColor, borderRadius, maxHeight: height, maxWidth: width,
             overflow: "hidden", padding: 8, paddingBottom: 0
         },
-            border,
-            textContainerStyle
-        ]}>
-        <FormatTextForLinks str={text} style={{textColor, textFont, linkTextColor, linkTextFont}} />
-    
+        border,
+        textContainerStyle
+    ]}>
+        <Text style={[{ color: textColor }, textFont]}>{formattedText}</Text>
+
     </View>
 }
 

@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Zum Entfernen antippen",
 	"ALL":"Alle",
-  "RESOURCE_PERMISSION_REQUIRED": "Für diese Funktion sind spezielle Ressourcenberechtigungen erforderlich. Bitte aktivieren Sie die erforderlichen Berechtigungen in Ihren Geräteeinstellungen"
+  "MENTION_UPTO":"Sie können bis zu erwähnen",
+  "TIME":"Zeit",
+  "TIMES":"mal",
+  "AT_A_TIME":"zu einer Zeit",
+  "RESOURCE_PERMISSION_REQUIRED": "Für diese Funktion sind spezielle Ressourcenberechtigungen erforderlich. Bitte aktivieren Sie die erforderlichen Berechtigungen in Ihren Geräteeinstellungen",
+  "COPY":"Kopieren",
+  "INFO":"Informationen",
+  "CHAT_PRIVATELY":"Privat chatten",
+  "MESSAGE_PRIVATELY":"Private Nachricht",
+  "TRANSLATE":"Übersetzen",
+  "EDIT":"Bearbeiten"
 }

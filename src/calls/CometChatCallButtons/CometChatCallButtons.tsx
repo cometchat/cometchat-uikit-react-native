@@ -12,7 +12,7 @@ import { Style } from './style'
 import { CallUIEvents } from '../CallEvents'
 import { CometChatOutgoingCall } from '../CometChatOutgoingCall'
 import { CometChatUIKit } from '../../shared/CometChatUiKit/CometChatUIKit'
-import { permissionUtilIOS } from '../../shared/utils/PermissionUtilIOS'
+import { permissionUtil } from '../../shared/utils/PermissionUtil'
 
 const listenerId = "callEventListener_" + new Date().getTime();
 
@@ -206,7 +206,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
         if (disableButton)
             return;
 
-        if (!(await permissionUtilIOS.startResourceBasedTask(["mic"]))) {
+        if (!(await permissionUtil.startResourceBasedTask(["mic"]))) {
             return;
         }
         
@@ -222,7 +222,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
         if (disableButton)
             return;
 
-        if (!(await permissionUtilIOS.startResourceBasedTask(["mic", "camera"]))) {
+        if (!(await permissionUtil.startResourceBasedTask(["mic", "camera"]))) {
             return;
         }
 

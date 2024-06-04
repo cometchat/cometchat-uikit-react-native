@@ -68,6 +68,8 @@ export const CometChatFileBubble = ({
     const downloadFile = () => {
         if (processing) return;
 
+        if(!fileUrl) return;
+        
         setProcessing(true);
         FileManager.checkAndDownload(fileUrl, getFileName(), async (storedFilePath) => {
             console.log(storedFilePath);
@@ -77,6 +79,8 @@ export const CometChatFileBubble = ({
 
     const downloadAndOpen = () => {
         if (processing) return;
+
+        if(!fileUrl) return;
 
         setProcessing(true);
         FileManager.openFile(fileUrl, getFileName(), async (isOpened: string) => {
@@ -94,11 +98,11 @@ export const CometChatFileBubble = ({
         onTouchStart: () => {
             wrapperPressTime.current = Date.now();
         },
-        // onTouchMove: () => {
-        //     wrapperPressTime.current = null
-        // },
+        onTouchMove: () => {
+            wrapperPressTime.current = null
+        },
         onTouchEnd: () => {
-            // if (wrapperPressTime.current === null) return;
+            if (wrapperPressTime.current === null) return;
             const endTime = Date.now();
             const pressDuration = endTime - wrapperPressTime.current;
             if (pressDuration < 500) {
@@ -115,11 +119,8 @@ export const CometChatFileBubble = ({
         },
         // onTouchMove: () => {
         //     pressTimeOnAndroid.current = null
-        // }
-    } : {};
-
-    const shouldDownloadAndOpen = () => {
-        if (Platform.OS === "android") {
+        // },
+        onTouchEnd: () => {
             // if (pressTimeOnAndroid.current === null) return;
             const endTime = Date.now();
             const pressDuration = endTime - pressTimeOnAndroid.current;
@@ -127,7 +128,7 @@ export const CometChatFileBubble = ({
                 downloadAndOpen();
             }
         }
-    }
+    } : {};
 
     const shouldDownload = () => {
         if (Platform.OS === "android") {
@@ -142,7 +143,7 @@ export const CometChatFileBubble = ({
 
     return (
         <View {...viewProps} style={[Style.container, { backgroundColor, borderWidth: border.borderWidth, borderColor: border.borderColor, borderRadius, height, width }]}>
-            <View {...viewPropsForAndroid} onTouchEnd={shouldDownloadAndOpen} style={Style.messageInfoStyle}>
+            <View {...viewPropsForAndroid} style={Style.messageInfoStyle}>
                 {
                     title && <Text
                         numberOfLines={1}

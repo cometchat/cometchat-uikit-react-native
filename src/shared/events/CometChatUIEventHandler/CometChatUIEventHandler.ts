@@ -1,3 +1,4 @@
+import { SuggestionItem } from "../../views";
 import {
     CallListener,
     CallUIEventListener,
@@ -359,6 +360,12 @@ export class CometChatUIEventHandler {
                     break;
                 case listener._eventListener.ccComposeMessage?.name:
                     listener._eventListener.ccComposeMessage(param);
+                    break;
+                // case listener._eventListener.ccMentionClick?.name:
+                //     listener._eventListener.ccMentionClick(param);
+                //     break;
+                case listener._eventListener.ccSuggestionData?.name:
+                    listener._eventListener.ccSuggestionData(param as { id: string, data: Array<SuggestionItem> });
                     break;
             }
         })

@@ -5,5 +5,5 @@ import { CometChatUIKitHelper } from "./CometChatUIKitHelper";
 export {
     CometChatUIKit,
     CometChatUIKitHelper,
-    UIKitSettings
+    UIKitSettings,
 }

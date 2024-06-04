@@ -169,7 +169,9 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
 
     callListener.current = new CometChatCalls.OngoingCallListener({
       onCallEnded: () => {
+        CometChatCalls.endSession()
         if (checkIfDefualtCall(call)) {
+          CometChat.clearActiveCall()
           setCallConnected(false);
           call.setStatus("ended");
           CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });

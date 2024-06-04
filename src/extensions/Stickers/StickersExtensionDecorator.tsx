@@ -5,14 +5,15 @@ import { localize } from "../../shared/resources";
 import { CometChatBottomSheet} from "../../shared/views";
 import { ChatConfigurator, DataSource, DataSourceDecorator } from "../../shared/framework";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
-import { MessageBubbleAlignmentType, MessageCategoryConstants } from "../../shared/constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType, MessageCategoryConstants } from "../../shared/constants/UIKitConstants";
 import { ExtensionTypeConstants } from "../ExtensionConstants";
-import { Image, TouchableOpacity } from "react-native";
+import { Image, Keyboard, TouchableOpacity } from "react-native";
 import { CometChatStickerBubble } from "./StickersBubble";
 import { StickerConfigurationInterface } from "./StickerConfiguration";
 import { StickerIcon } from "./resources";
 import { CometChatStickerKeyboard } from "./CometChatStickerKeyboard";
 import { CometChatUIKit } from "../../shared/CometChatUiKit/CometChatUIKit";
+import { isKeyboardVisible } from "../../shared/helper/useKeyboard";
 
 export class StickersExtensionDecorator extends DataSourceDecorator {
 
@@ -27,8 +28,8 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
     return message.getDeletedBy() != null;
   }
 
-  getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
-    let templates = super.getAllMessageTemplates(theme);
+  getAllMessageTemplates(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate[] {
+    let templates = super.getAllMessageTemplates(theme, additionalParams);
     templates.push(
       new CometChatMessageTemplate({
         type: ExtensionTypeConstants.sticker,
@@ -90,8 +91,15 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
     }
 
     let views:JSX.Element[] = super.getAuxiliaryOptions(user,group,id)
-    views.push(<TouchableOpacity onPress={() => {
-      setShowKeyboard(true);
+    views.push(<TouchableOpacity key={"sticker"} onPress={() => {
+      if (isKeyboardVisible) {
+        Keyboard.dismiss();
+        setTimeout(() => {
+          setShowKeyboard(true);
+        }, 1000);
+      } else {
+        setShowKeyboard(true);
+      }
     }} style={{justifyContent: "center"}}>
       <Image
         source={StickerIcon}

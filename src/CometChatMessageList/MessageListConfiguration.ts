@@ -1,6 +1,6 @@
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
-import { AvatarStyleInterface, ImageType } from '../shared';
+import { AvatarStyleInterface, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, ImageType } from '../shared';
 import { DateStyle } from '../shared';
 import { AvatarStyle } from '../shared';
 import {
@@ -97,6 +97,12 @@ export interface MessageListConfigurationInterface {
    * Disables the reactions functionality
    */
   disableReactions?: boolean;
+  disableMentions?: boolean;
+  /**
+   * Collection of text formatter class
+   * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+  */
+  textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 }
 export class MessageListConfiguration
   implements MessageListConfigurationInterface {
@@ -170,6 +176,13 @@ export class MessageListConfiguration
    * Disables the reactions functionality
    */
   disableReactions?: boolean;
+
+  disableMentions: boolean;
+  /**
+   * Collection of text formatter class
+   * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+  */
+  textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 
   constructor(props: MessageListConfigurationInterface) {
     if (props) {

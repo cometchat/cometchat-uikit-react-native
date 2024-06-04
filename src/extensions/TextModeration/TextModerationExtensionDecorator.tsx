@@ -1,6 +1,6 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { MessageBubbleAlignmentType } from "../../shared/constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/constants/UIKitConstants";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
 import { ExtensionConstants } from "../ExtensionConstants";
 import { getExtentionData } from "../ExtensionModerator";
@@ -20,10 +20,10 @@ export class TextModerationExtensionDecorator extends DataSourceDecorator {
         }
     }
 
-    getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
+    getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams) {
         
         var text : string = this.checkModeration(message)
-        return super.getTextMessageBubble(text , message , alignment, theme);
+        return super.getTextMessageBubble(text , message , alignment, theme, additionalParams);
      }
 
 

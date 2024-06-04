@@ -39,6 +39,7 @@ import CometChatQuickView from "../CometChatQuickView/CometChatQuickView";
 import { localize } from "../../resources";
 import { CometChatUIKit } from "../../CometChatUiKit";
 import { CometChatUiKitConstants } from "../..";
+import { InteractiveMessageUtils } from "../../utils/InteractiveMessageUtils";
 
 const { TimeZoneCodeManager } = NativeModules;
 export interface CometChatSchedulerBubbleInterface {
@@ -621,6 +622,17 @@ export const CometChatSchedulerBubble = memo(
     useEffect(() => {
       CometChat.getLoggedinUser()
         .then((u) => {
+          let hasInteractionCompleted: boolean = InteractiveMessageUtils.checkHasInteractionCompleted({
+            interactedElements: message?.getInteractions() || [],
+            interactionGoal: message?.getInteractionGoal() || undefined
+          });
+          if(hasInteractionCompleted) {
+            setCurrentComp((prev) => ({
+              current: componentEnum.interacted,
+              previous: prev.current,
+            }));
+            return
+          }
           TimeZoneCodeManager.getCurrentTimeZone((timeZone) => {
             currentTimeZoneRef.current = timeZone;
           });

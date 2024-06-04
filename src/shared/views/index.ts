@@ -16,7 +16,6 @@ import {
   CometChatTextBubbleInterface,
   TextBubbleStyle,
   TextBubbleStyleInterface,
-  FormatTextForLinks,
 } from './CometChatTextBubble';
 import {
   CometChatImageBubble,
@@ -94,6 +93,8 @@ import { CometChatQuickReactions, CometChatQuickReactionsInterface, QuickReactio
 
 import { CometChatEmojiKeyboard, EmojiKeyboardConfiguration, EmojiKeyboardStyle } from './CometChatEmojiKeyboard';
 
+import { CometChatSuggestionList, CometChatSuggestionListInterface, SuggestionItem, SuggestionListConfiguration, SuggestionListConfigurationInterface } from './CometChatSuggestionList';
+
 export {
   CometChatMessageInputStyleInterface,
   CometChatMessageInputInterface,
@@ -109,7 +110,6 @@ export {
   BadgeConfigurationInterface,
   BadgeStyleInterface,
   AvatarConfigurationInterface,
-  FormatTextForLinks,
   ActionItemInterface,
   ActionSheetStylesInterface,
   CometChatConfirmDialogInterface,
@@ -198,5 +198,11 @@ export {
   EmojiKeyboardStyle,
   
   CometChatSchedulerBubble, 
-  CometChatSchedulerBubbleInterface 
+  CometChatSchedulerBubbleInterface,
+
+  CometChatSuggestionList,
+  CometChatSuggestionListInterface,
+  SuggestionItem,
+  SuggestionListConfiguration,
+  SuggestionListConfigurationInterface,
 };

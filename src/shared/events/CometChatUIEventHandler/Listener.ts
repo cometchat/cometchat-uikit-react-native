@@ -1,3 +1,5 @@
+import { SuggestionItem } from "../../views";
+
 export function isFalsy($false) {
     if ($false != null) {
         if (typeof $false == "string") $false = $false.trim();
@@ -221,6 +223,8 @@ type UIEvents = {
     ccToggleBottomSheet?: (item)=>void,
     openChat?: (item)=>void,
     ccComposeMessage?:(item)=>void,
+    // ccMentionClick?:(item)=>void,
+    ccSuggestionData?:(item: {id: string | number, data: Array<SuggestionItem>})=>void,
 }
 export class UIEventListener {
     showPanel?: (item)=>void;
@@ -228,18 +232,24 @@ export class UIEventListener {
     ccToggleBottomSheet?: (item)=>void;
     openChat?: (item)=>void;
     ccComposeMessage?:(item)=>void;
+    // ccMentionClick?:(item)=>void;
+    ccSuggestionData?:(item: {id: string | number, data: Array<SuggestionItem>})=>void;
     constructor({
         showPanel,
         hidePanel,
         ccToggleBottomSheet,
         openChat,
-        ccComposeMessage
+        ccComposeMessage,
+        // ccMentionClick,
+        ccSuggestionData,
     }: UIEvents) {
         if (!isFalsy(hidePanel)) this.hidePanel = hidePanel;
         if (!isFalsy(showPanel)) this.showPanel = showPanel;
         if (!isFalsy(openChat)) this.openChat = openChat;
         if (!isFalsy(ccToggleBottomSheet)) this.ccToggleBottomSheet = ccToggleBottomSheet;
         if (!isFalsy(ccComposeMessage)) this.ccComposeMessage = ccComposeMessage;
+        // if (!isFalsy(ccMentionClick)) this.ccMentionClick = ccMentionClick;
+        if (!isFalsy(ccSuggestionData)) this.ccSuggestionData = ccSuggestionData;
     }
 }
 export class GroupUIEventListener {

@@ -301,5 +301,15 @@
   "MIN": "小米",
 	"TAP_TO_REMOVE":"點擊以移除",
 	"ALL":"全部",
-  "RESOURCE_PERMISSION_REQUIRED": "此功能需要特定的資源權限。請在設備設置中啟用必要的權限"
+  "MENTION_UPTO":"您最多可以提到",
+  "TIME":"時間",
+  "TIMES":"倍",
+  "AT_A_TIME":"一次",
+  "RESOURCE_PERMISSION_REQUIRED": "此功能需要特定的資源權限。請在設備設置中啟用必要的權限",
+  "COPY":"複製",
+  "INFO":"資訊",
+  "CHAT_PRIVATELY":"私下聊天",
+  "MESSAGE_PRIVATELY":"私下留言",
+  "TRANSLATE":"翻譯",
+  "EDIT":"編輯"
 }

@@ -46,7 +46,11 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
   };
 
   const getImageView = () => {
-    if (!image && name) {
+    let isImage = Boolean(image);
+    if (image && image.hasOwnProperty("uri") && typeof image.uri !== "string") {
+      isImage = false;
+    }
+    if (!isImage && name) {
       return (
         <Text
           style={[

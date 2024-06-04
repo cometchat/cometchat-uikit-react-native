@@ -5,6 +5,7 @@ import {
   MessageBubbleAlignmentType,
   MetadataConstants,
   MessageCategoryConstants,
+  AdditionalBubbleStylingParams,
 } from '../../shared/constants/UIKitConstants';
 import { CometChatTheme } from '../../shared/resources/CometChatTheme';
 import { ExtensionTypeConstants } from '../ExtensionConstants';
@@ -107,9 +108,9 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
     return attachmentOptions;
   }
 
-  getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
+  getAllMessageTemplates(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate[] {
     let templateList: CometChatMessageTemplate[] = super.getAllMessageTemplates(
-      theme
+      theme, additionalParams
     );
 
     templateList.push(

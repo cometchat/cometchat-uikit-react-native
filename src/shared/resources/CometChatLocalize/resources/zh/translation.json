@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"点按即可移除",
 	"ALL":"全部",
-  "RESOURCE_PERMISSION_REQUIRED": "此功能需要特定的资源权限。请在您的设备设置中启用必要的权限"
+  "MENTION_UPTO":"你最多可以提一下",
+  "TIME":"时间",
+  "TIMES":"倍",
+  "AT_A_TIME":"一次地",
+  "RESOURCE_PERMISSION_REQUIRED": "此功能需要特定的资源权限。请在您的设备设置中启用必要的权限",
+  "COPY":"复制",
+  "INFO":"信息",
+  "CHAT_PRIVATELY":"私下聊天",
+  "MESSAGE_PRIVATELY":"私下留言",
+  "TRANSLATE":"翻译",
+  "EDIT":"编辑"
 }

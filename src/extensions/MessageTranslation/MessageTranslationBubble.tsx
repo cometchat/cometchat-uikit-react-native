@@ -1,5 +1,5 @@
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   CometChatContext,
 } from '../../shared/CometChatContext';
@@ -7,7 +7,7 @@ import {
   CometChatTextBubble,
   TextBubbleStyle, } from "../../shared/views";
 import { FontStyleInterface } from "../../shared/base";
-import { FormatTextForLinks } from '../../shared/views/CometChatTextBubble';
+import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from '../../shared';
 
 interface textStyle extends FontStyleInterface {
   color?: string;
@@ -25,6 +25,7 @@ export interface MessageTranslationBubble {
   };
   textContainerStyle?: StyleProp<ViewStyle>;
   alignment?: string;
+  textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 }
 
 export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
@@ -35,7 +36,33 @@ export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
     style = {},
     textContainerStyle,
     alignment,
+    textFormatters,
   } = props;
+  const [formattedText, setFormattedText] = useState<string>();
+  const [formattedTranslatedText, setFormattedTranslatedText] = useState<string>();
+
+  useEffect(() => {
+    let _formattedText = text;
+    let _formattedTranslatedText = text;
+    if (textFormatters && textFormatters.length) {
+        if (textFormatters) {
+            for (let i = 0; i < textFormatters.length; i++) {
+                (_formattedText as string | void) = textFormatters[i].getFormattedText(_formattedText);
+            }
+        }
+    }
+    if (textFormatters && textFormatters.length) {
+      if (textFormatters) {
+          for (let i = 0; i < textFormatters.length; i++) {
+              (_formattedTranslatedText as string | void) = textFormatters[i].getFormattedText(_formattedTranslatedText);
+          }
+      }
+  }
+
+    setFormattedText(_formattedText as string);
+    setFormattedTranslatedText(_formattedTranslatedText as string);
+}, [])
+
   const _style = {
     ...new TextBubbleStyle({}),
     backgroundColor:
@@ -77,8 +104,6 @@ export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
     borderRadius,
     textColor,
     textFont,
-    linkTextColor,
-    linkTextFont,
     height,
     width,
   } = _style;
@@ -99,12 +124,9 @@ export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
           textContainerStyle,
         ]}
       >
-        <FormatTextForLinks
-          str={text}
-          style={{ textColor, textFont, linkTextColor, linkTextFont }}
-        />
+        <Text style={[{ color: textColor }, textFont ]}>{formattedText}</Text>
         <Text style={[styles.textsPadding, style.translatedTextStyle]}>
-          {translatedText}
+          {formattedTranslatedText}
         </Text>
         <Text style={[styles.textsPadding, style.translatedMsgStyle]}>
           Translated Message

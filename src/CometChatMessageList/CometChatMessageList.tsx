@@ -3,7 +3,7 @@ import { View, FlatList, Text, Image, TouchableOpacity, ActivityIndicator, Modal
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { LeftArrowCurve, RightArrowCurve } from "./resources";
-import { BaseStyle, BaseStyleInterface, CometChatContext, CometChatLiveReactions, CometChatUIKit, ImageType } from "../shared";
+import { BaseStyle, BaseStyleInterface, CometChatContext, CometChatLiveReactions, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, ImageType, SuggestionItem } from "../shared";
 import { MessageBubbleStyle, MessageBubbleStyleInterface } from "../shared/views/CometChatMessageBubble/MessageBubbleStyle";
 import { AvatarStyle, AvatarStyleInterface } from "../shared";
 import { CometChatAvatar, CometChatDate, CometChatReceipt, DateStyle } from "../shared";
@@ -23,7 +23,6 @@ import { DateStyleInterface } from "../shared/views/CometChatDate/DateStyle";
 import { CometChatContextType } from "../shared/base/Types";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { ActionSheetStylesInterface } from "../shared/views/CometChatActionSheet/ActionSheetStyle";
-import Clipboard from "@react-native-clipboard/clipboard";
 import { CometChatMessageInformation } from "../CometChatMessageInformation/CometChatMessageInformation";
 // import { CometChatContacts, ForwardMessageConfigurationInterface } from "../CometChatContacts";
 import { MessageInformationConfigurationInterface } from "../CometChatMessageInformation";
@@ -33,6 +32,7 @@ import { CometChatReactionList, ReactionListConfigurationInterface } from "../sh
 import { CometChatQuickReactions, QuickReactionsConfigurationInterface } from "../shared/views/CometChatQuickReactions";
 import { CometChatReactions, ReactionsConfigurationInterface } from "../shared/views/CometChatReactions";
 import { CommonUtils } from "../shared/utils/CommonUtils";
+import Clipboard from "@react-native-clipboard/clipboard";
 
 let templatesMap = new Map<string, CometChatMessageTemplate>();
 
@@ -102,6 +102,12 @@ export interface CometChatMessageListProps {
      * Disables the reactions functionality
      */
     disableReactions?: boolean,
+    disableMentions?: boolean,
+    /**
+     * Collection of text formatter class
+     * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+    */
+    textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 }
 
 export interface CometChatMessageListActionsInterface {
@@ -163,6 +169,8 @@ export const CometChatMessageList = memo(forwardRef<
             reactionListConfiguration,
             quickReactionConfiguration,
             emojiKeyboardStyle,
+            disableMentions,
+            textFormatters
         } = props;
 
         const callListenerId = "call_" + new Date().getTime();
@@ -477,13 +485,93 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const loadTemplates = useCallback(() => {
-            let templates: CometChatMessageTemplate[] = ChatConfigurator.dataSource.getAllMessageTemplates(theme);
+
+            let _formatters = textFormatters || [];
+
+            let templates: CometChatMessageTemplate[] = ChatConfigurator.dataSource.getAllMessageTemplates(theme, {
+                textFormatters: _formatters,
+                disableMentions: disableMentions
+            });
+
             templates.forEach(template => {
 
                 if (templatesMap.get(`${template.category}_${template.type}`)) return
                 templatesMap.set(`${template.category}_${template.type}`, template);
             });
         }, [])
+
+
+        const getPlainString = (underlyingText: string, messageObject: CometChat.BaseMessage) => {
+
+            let _plainString = underlyingText;
+
+            let regexes: Array<RegExp> = []
+            let users: { key: string, value: SuggestionItem } = {};
+
+
+            let edits: Array<{
+                "endIndex": number,
+                "replacement": string,
+                "startIndex": number,
+                "user": SuggestionItem
+            }> = [];
+
+            let allFormatters = [...(textFormatters || [])];
+            let mentionsTextFormatter = ChatConfigurator.getDataSource().getMentionsFormatter(loggedInUser.current);
+            allFormatters.push(mentionsTextFormatter);
+
+            allFormatters.forEach((formatter: CometChatMentionsFormatter, key) => {
+                regexes.push(formatter.getRegexPattern());
+                let suggestionUsers = formatter.getSuggestionItems();
+                if (formatter instanceof CometChatMentionsFormatter) {
+                    let mentionUsers = (messageObject?.getMentionedUsers && messageObject?.getMentionedUsers()).map(item => new SuggestionItem({
+                        id: item.getUid(),
+                        name: item.getName(),
+                        promptText: "@" + item.getName(),
+                        trackingCharacter: "@",
+                        underlyingText: `<@uid:${item.getUid()}>`,
+                        hideLeadingIcon: false
+
+                    })) || [];
+                    suggestionUsers = [...suggestionUsers, ...mentionUsers];
+                }
+                suggestionUsers?.length > 0 && suggestionUsers.forEach(item => users[item.underlyingText] = item);
+            })
+
+            regexes.forEach(regex => {
+                let match;
+                while ((match = regex.exec(_plainString)) !== null) {
+                    const user = users[match[0]];
+                    if (user) {
+                        edits.push({
+                            startIndex: match.index,
+                            endIndex: regex.lastIndex,
+                            replacement: user.promptText,
+                            user
+                        });
+                    }
+                }
+            });
+
+            // Sort edits by startIndex to apply them in order
+            edits.sort((a, b) => a.startIndex - b.startIndex);
+
+            // Get an array of the entries in the map using the spread operator
+            const entries = [...edits].reverse();
+
+            // Iterate over the array in reverse order
+            entries.forEach(({ endIndex, replacement, startIndex, user }) => {
+
+                let pre = _plainString.substring(0, startIndex);
+                let post = _plainString.substring(endIndex);
+
+                _plainString = pre + replacement + post;
+
+            });
+
+            return _plainString;
+
+        }
 
         const playNotificationSound = useCallback((message) => {
 
@@ -554,6 +642,19 @@ export const CometChatMessageList = memo(forwardRef<
             return conversationId.current != null && (message.getConversationId() == conversationId.current);
         }
 
+        function isNearBottom() {
+            const { layoutHeight, scrollViewHeight, y } = currentScrollPosition.current;
+
+            let scrollPos = scrollViewHeight - (layoutHeight + y);
+            let scrollPosFromBottomInPercentage = (scrollPos / layoutHeight) * 100;
+
+            if (scrollPosFromBottomInPercentage <= 30) { // 30% from bottom
+                return true;
+            }
+            return false;
+
+        }
+
         const newMessage = (newMessage, isReceived = true) => {
             let baseMessage = newMessage as CometChat.BaseMessage;
             if (baseMessage.getCategory() === MessageCategoryConstants.interactive) {
@@ -596,7 +697,9 @@ export const CometChatMessageList = memo(forwardRef<
                     if (baseMessage?.getReceiverType() == ReceiverTypeConstants.user) {
                         CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageDelivered, { message: newMessage });
                     }
-                    if ((!parentMessageId && !(newMessage.parentMessageId)) || (parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId))) {
+                    if (isNearBottom()) {
+                        scrollToBottom();
+                    } else if ((!parentMessageId && !(newMessage.parentMessageId)) || (parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId))) {
                         setUnreadCount(unreadCount + 1);
                     }
                 } else {
@@ -719,12 +822,12 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const handlePannel = (item) => {
-            if(item.alignment === ViewAlignment.messageListBottom && CommonUtils.checkIdBelongsToThisComponent(item.id, user, group,parentMessageId) ){
+            if (item.alignment === ViewAlignment.messageListBottom && CommonUtils.checkIdBelongsToThisComponent(item.id, user, group, parentMessageId)) {
                 if (item.child)
                     setCustomListHeader(() => item.child)
                 else
                     setCustomListHeader(null)
-                }
+            }
 
         }
 
@@ -732,7 +835,10 @@ export const CometChatMessageList = memo(forwardRef<
             CometChatUIEventHandler.addUIListener(
                 uiEventListenerShow,
                 {
-                    showPanel: (item) => handlePannel(item)
+                    showPanel: (item) => handlePannel(item),
+                    // ccMentionClick: (item) => {
+                    //     // console.log("item", item)
+                    // }
                 }
             )
             CometChatUIEventHandler.addUIListener(
@@ -823,7 +929,7 @@ export const CometChatMessageList = memo(forwardRef<
                         if (status == MessageStatusConstants.success) {
                             messageEdited(message, true);
                         }
-                        if( status == MessageStatusConstants.error) {
+                        if (status == MessageStatusConstants.error) {
                             messageEdited(message, true);
                         }
                     },
@@ -1116,10 +1222,10 @@ export const CometChatMessageList = memo(forwardRef<
 
             return (
                 <View style={{ flexDirection: "row" }}>
-                    <Text style={[Style.nameStyle, {
+                    {Boolean(senderName) && <Text style={[Style.nameStyle, {
                         color: _messageListStyle.nameTextColor,
                         ..._messageListStyle.nameTextFont,
-                    }]}>{senderName}</Text>
+                    }]}>{senderName}</Text>}
                     {
                         timeStampAlignment == "bottom" || item['category'] == "action" ?
                             null :
@@ -1147,7 +1253,7 @@ export const CometChatMessageList = memo(forwardRef<
                 messageState = "DELIVERED";
             else if (item.getSentAt())
                 messageState = "SENT";
-            else if(item?.data?.metaData?.error)
+            else if (item?.data?.metaData?.error)
                 messageState = "ERROR"
             else if (isSender)
                 messageState = "WAIT";
@@ -1246,7 +1352,8 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const copyMessage = (item) => {
-            Clipboard.setString(item['text']);
+            let copyMessage = getPlainString(item['text'], item);
+            Clipboard.setString(copyMessage);
             setShowMessageOptions([]);
         }
 
@@ -1324,7 +1431,9 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const shareMedia = async (messageObject: CometChat.MediaMessage) => {
-            let textMessage = messageObject.data.text;
+            let _plainString = getPlainString(messageObject?.data?.text || "", messageObject);
+
+            let textMessage = _plainString;
             let fileUrl = messageObject.data.url;
 
             const getFileName = () => {
@@ -1360,7 +1469,7 @@ export const CometChatMessageList = memo(forwardRef<
             if ((item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current?.['uid'])
                 _style.backgroundColor = (alignment !== "leftAligned" && (item.getType() === MessageTypeConstants.text || item.getType() === MessageTypeConstants.meeting)) ? theme?.palette.getPrimary() : theme?.palette.getAccent50();
 
-            if(item?.getDeletedBy()) {
+            if (item?.getDeletedBy()) {
                 _style.backgroundColor = 'transparent';
             }
 
@@ -1520,7 +1629,7 @@ export const CometChatMessageList = memo(forwardRef<
                         FooterView={hasTemplate.FooterView ? hasTemplate.FooterView?.bind(this, message, bubbleAlignment) : () => (disableReactions || isThreaded) ? null : getFooterView(message, bubbleAlignment)}
                         alignment={isThreaded ? "left" : bubbleAlignment}
                         ContentView={hasTemplate.ContentView?.bind(this, message, bubbleAlignment)}
-                        ThreadView={() => !isThreaded && getThreadView(message, bubbleAlignment)}
+                        ThreadView={() => !isThreaded && !message.getDeletedBy() && getThreadView(message, bubbleAlignment)}
                         BottomView={() => ChatConfigurator.dataSource.getBottomView(message, bubbleAlignment)} // Note please rewrite this
                         StatusInfoView={() => getStatusInfoView(message, bubbleAlignment)}
                         style={getStyle(message)}

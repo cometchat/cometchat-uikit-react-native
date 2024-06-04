@@ -39,7 +39,7 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
         onError,
     } = props;
 
-    const {theme} = useContext(CometChatContext);
+    const { theme } = useContext(CometChatContext);
 
     const [showComponent, setShowComponent] = useState(ComponentNames.ConversationList);
     // const [showForwarding, setShowForwarding] = useState(false);
@@ -75,15 +75,15 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
     const handleBack = () => {
         if (showComponent == ComponentNames.Messages)
             setShowComponent(ComponentNames.ConversationList);
-        else 
+        else
             return false;
         return true;
     }
 
     const NewConversation = () => {
         return <TouchableOpacity onPress={() => setShowComponent(ComponentNames.NewConversation)} >
-                <Image source={StartIcon} style={{height: 24, width: 24, tintColor: theme.palette.getPrimary()}} />
-            </TouchableOpacity>
+            <Image source={StartIcon} style={{ height: 24, width: 24, tintColor: theme.palette.getPrimary() }} />
+        </TouchableOpacity>
     }
 
     const clearSelected = () => {
@@ -93,14 +93,14 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
     }
 
     useEffect(() => {
-          BackHandler.addEventListener('hardwareBackPress', handleBack);
-          return () => {
+        BackHandler.addEventListener('hardwareBackPress', handleBack);
+        return () => {
             BackHandler.removeEventListener(
-              'hardwareBackPress',
-              handleBack
+                'hardwareBackPress',
+                handleBack
             );
-          };
-      }, [showComponent]);
+        };
+    }, [showComponent]);
 
     useEffect(() => {
         if (user) {
@@ -115,14 +115,14 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
 
     useEffect(() => {
         CometChatUIEventHandler.addUIListener(uiEventListener, {
-            openChat: ({user, group}) => {
+            openChat: ({ user, group }) => {
                 setShowComponent(ComponentNames.ConversationList);
                 clearSelected();
-                if (user != undefined){
+                if (user != undefined) {
                     selectedUser.current = user;
                     setShowComponent(ComponentNames.Messages);
                 }
-                if(group != undefined){
+                if (group != undefined) {
                     selectedGroup.current = group;
                     setShowComponent(ComponentNames.Messages);
                 }
@@ -159,12 +159,12 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
         CometChatUIEventHandler.addGroupListener(
             uiEventListener,
             {
-                ccGroupDeleted: ({group}) => {
+                ccGroupDeleted: ({ group }) => {
                     if (selectedConversation.current?.getConversationWith()['guid'] == group['guid'] || selectedGroup.current?.getGuid() == group['guid'])
                         setShowComponent(ComponentNames.ConversationList);
                 },
-                ccGroupLeft: ({leftGroup}) => {
-                    console.log({leftGroup});
+                ccGroupLeft: ({ leftGroup }) => {
+                    console.log({ leftGroup });
                     if (selectedConversation.current?.getConversationId() == leftGroup['conversationId'] || selectedGroup.current?.getGuid() == leftGroup['guid'])
                         setShowComponent(ComponentNames.ConversationList);
                 }
@@ -187,10 +187,10 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
             } */}
             {
                 showComponent == ComponentNames.NewConversation &&
-                <View style={[Style.stackScreen, {backgroundColor: theme.palette.getBackgroundColor()}]}>
+                <View style={[Style.stackScreen, { backgroundColor: theme.palette.getBackgroundColor() }]}>
                     <CometChatContacts
                         hideSubmit={true}
-                        onItemPress={({user, group}) => {
+                        onItemPress={({ user, group }) => {
                             clearSelected();
                             selectedGroup.current = group;
                             selectedUser.current = user;
@@ -208,18 +208,18 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
             }
             {
                 showComponent == ComponentNames.Messages &&
-                <View style={[Style.stackScreen, {backgroundColor: theme.palette.getBackgroundColor()}]}>
+                <View style={[Style.stackScreen, { backgroundColor: theme.palette.getBackgroundColor() }]}>
                     <CometChatMessages
-                            user={
-                                selectedUser.current || selectedConversation.current?.['conversationType'] == "user" ?
-                                    selectedUser.current || selectedConversation.current?.['conversationWith'] as CometChat.User :
-                                    undefined
-                            }
-                            group={
-                                selectedGroup.current || selectedConversation.current?.['conversationType'] == "group" ?
-                                    selectedGroup.current || selectedConversation.current?.['conversationWith'] as CometChat.Group :
-                                    undefined
-                            }
+                        user={
+                            selectedUser.current || selectedConversation.current?.['conversationType'] == "user" ?
+                                selectedUser.current || selectedConversation.current?.['conversationWith'] as CometChat.User :
+                                undefined
+                        }
+                        group={
+                            selectedGroup.current || selectedConversation.current?.['conversationType'] == "group" ?
+                                selectedGroup.current || selectedConversation.current?.['conversationWith'] as CometChat.Group :
+                                undefined
+                        }
                         {..._messagesConfig}
                     />
                 </View>

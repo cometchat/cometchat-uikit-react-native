@@ -108,7 +108,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
     };
 
     const handleTouchEnd = () => {
-        // if (pressTime.current === null) return;
+        if (pressTime.current === null && Platform.OS === "ios") return;
         const endTime = Date.now();
         const pressDuration = endTime - pressTime.current;
         if (pressDuration < 500) {
@@ -116,9 +116,11 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
     };
 
-    // const onTouchMove = () => {
-    //     pressTime.current = null
-    // }
+    const onTouchMove = () => {
+        if (Platform.OS === "ios") {
+            pressTime.current = null;
+        }
+    }
 
     useLayoutEffect(() => {
         if(isHttpUrl(thumbnailUrl?.uri ?? imageUrl?.uri)) {
@@ -141,7 +143,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
             <View
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                // onTouchMove={onTouchMove}
+                onTouchMove={onTouchMove}
                 style={{
                     justifyContent:'center',
                     alignItems: 'center',

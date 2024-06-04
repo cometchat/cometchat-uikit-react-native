@@ -1,7 +1,7 @@
 import React from "react";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { CometChatMessageTypes, GroupMemberScope, MessageBubbleAlignmentType, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, CometChatMessageTypes, GroupMemberScope, MessageBubbleAlignmentType, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../constants/UIKitConstants";
 import { CometChatMessageOption } from "../modals/CometChatMessageOption";
 import { CometChatMessageTemplate } from "../modals/CometChatMessageTemplate";
 import { DataSource } from "./DataSource";
@@ -24,6 +24,9 @@ import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
 import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
 import { CometChatSchedulerBubble, SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
 import { View } from "react-native";
+import { CommonUtils } from "../utils/CommonUtils";
+import { CometChatUIKit } from "../CometChatUiKit";
+import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, MentionTextStyle } from "../formatters";
 
 function isAudioMessage(message: CometChat.BaseMessage): message is CometChat.MediaMessage {
     return message.getCategory() == CometChat.CATEGORY_MESSAGE &&
@@ -63,7 +66,7 @@ export class MessageDataSource implements DataSource {
     getEditOption(): CometChatMessageOption {
         return {
             id: MessageOptionConstants.editMessage,
-            title: localize("EDIT_MESSAGE"),
+            title: localize("EDIT"),
             icon: ICONS.EDIT
         }
     }
@@ -99,7 +102,7 @@ export class MessageDataSource implements DataSource {
     getCopyOption(): CometChatMessageOption {
         return {
             id: MessageOptionConstants.copyMessage,
-            title: localize("COPY_MESSAGE"),
+            title: localize("COPY"),
             icon: ICONS.COPY
         }
     }
@@ -113,7 +116,7 @@ export class MessageDataSource implements DataSource {
     getInformationOption(): CometChatMessageOption {
         return {
             id: MessageOptionConstants.messageInformation,
-            title: localize("INFORMATION"),
+            title: localize("INFO"),
             icon: ICONS.INFO
         }
     }
@@ -121,31 +124,52 @@ export class MessageDataSource implements DataSource {
     getPrivateMessageOption(): CometChatMessageOption {
         return {
             id: MessageOptionConstants.sendMessagePrivately,
-            title: localize('SEND_MESSAGE_IN_PRIVATE'),
+            title: localize('MESSAGE_PRIVATELY'),
             icon: ICONS.PRIVATE_MESSAGE
         }
     }
 
     isSentByMe(loggedInUser: CometChat.User, message: CometChat.BaseMessage) {
+        if (!loggedInUser) return false;
         return loggedInUser.getUid() == message?.getSender()?.getUid();
     }
 
     getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
-        let msgOptions = [];
-        msgOptions.push(this.getCopyOption());
-        let _isSentByMe = this.isSentByMe(loggedInUser, messageObject);
-        let canEdit = false;
-        if (group) {
-            canEdit = group['scope'] != GroupMemberScope.participant; //need clarification on why only moderator can edit and not participant or admin.
-        }
-        if (_isSentByMe || canEdit)
-            msgOptions.push(this.getEditOption())
 
-        let optionsList: Array<CometChatMessageOption> = ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group);
+        let messageOptionList: CometChatMessageOption[] = [];
+
+
         if (isDeletedMessage(messageObject))
-            return optionsList;
+            return messageOptionList;
 
-        return [...msgOptions, ...optionsList];
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.replyInThread)) {
+            messageOptionList.push(this.getReplyInThreadOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.shareMessage)) {
+            messageOptionList.push(this.getShareOption());
+        }
+
+        messageOptionList.push(this.getCopyOption());
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.editMessage)) {
+            messageOptionList.push(this.getEditOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.messageInformation)) {
+            messageOptionList.push(this.getInformationOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.deleteMessage)) {
+            messageOptionList.push(this.getDeleteOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.sendMessagePrivately)) {
+            messageOptionList.push(this.getPrivateMessageOption());
+        }
+
+        return messageOptionList;
     }
 
     getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
@@ -194,7 +218,7 @@ export class MessageDataSource implements DataSource {
         return optionsList;
     }
     getMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
-        let optionsList: Array<CometChatMessageOption> = [...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group)];
+        let optionsList: Array<CometChatMessageOption> = [];
         if (isDeletedMessage(messageObject))
             return optionsList;
         if (messageObject.getCategory() == MessageCategoryConstants.message) {
@@ -218,41 +242,94 @@ export class MessageDataSource implements DataSource {
             }
 
         }
-        return optionsList;
-    }
-    getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
-        let optionsList: Array<CometChatMessageOption> = [];
-        let _isSentByMe = this.isSentByMe(loggedInUser, messageObject);
-        let canDelete = false;
-        if (isDeletedMessage(messageObject)) return optionsList;
-        if ((group?.getScope() != undefined && group?.getScope() != GroupMemberScope.participant) || _isSentByMe) {
-            canDelete = true;
-        }
-        if (!messageObject.getParentMessageId()) {
-            optionsList.push(this.getReplyInThreadOption());
-        }
-        if (isTextMessage(messageObject) || isImageMessage(messageObject) || isFileMessage(messageObject) || isVideoMessage(messageObject) || isAudioMessage(messageObject)) {
-            optionsList.push(this.getShareOption());
-        }
-
-        if (_isSentByMe && !isDeletedMessage(messageObject)) {
-            optionsList.push(this.getInformationOption());
-            // if (!isDeletedMessage(messageObject)) {
-            //     optionsList.push(this.getForwardOption())
-            // }
-        }
-
-        if (Boolean(group) && !_isSentByMe) {
-            optionsList.push(this.getPrivateMessageOption());
-        }
-
-        if (_isSentByMe && !isDeletedMessage(messageObject)) {
-            if (!group || (group && canDelete)) {
-                optionsList.push(this.getDeleteOption());
+        else if(messageObject.getCategory() == MessageCategoryConstants.custom){
+            optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
+        }else if(messageObject.getCategory() == MessageCategoryConstants.interactive){
+            let type: string = messageObject.getType();
+            switch (type) {
+                case MessageTypeConstants.form:
+                    optionsList.push(...ChatConfigurator.dataSource.getFormMessageOptions(loggedInUser, messageObject, group));
+                    break;
+                case MessageTypeConstants.card:
+                    optionsList.push(...ChatConfigurator.dataSource.getCardMessageOptions(loggedInUser, messageObject, group));
+                    break;
+                case MessageTypeConstants.scheduler:
+                    optionsList.push(...ChatConfigurator.dataSource.getSchedulerMessageOptions(loggedInUser, messageObject, group));
+                    break;
             }
         }
-
         return optionsList;
+    }
+
+
+    private validateOption(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group | null, optionId: string): boolean {
+
+        if (MessageOptionConstants.replyInThread === optionId &&(!messageObject.parentMessageId|| messageObject.parentMessageId === 0)) {
+            return true;
+        }
+
+        if (MessageOptionConstants.shareMessage === optionId && (messageObject instanceof CometChat.TextMessage || messageObject instanceof CometChat.MediaMessage)) {
+            return true;
+        }
+
+        if (MessageOptionConstants.copyMessage === optionId && messageObject instanceof CometChat.TextMessage) {
+            return true;
+        }
+
+        let isSentByMe: boolean = this.isSentByMe(loggedInUser, messageObject);
+
+        if (MessageOptionConstants.messageInformation === optionId && isSentByMe) {
+            return true;
+        }
+
+        let memberIsNotParticipant: boolean = group  && (group.owner === loggedInUser.uid || group.scope !== GroupMemberScope.participant);
+
+        if (MessageOptionConstants.deleteMessage === optionId && (isSentByMe || memberIsNotParticipant)) {
+            return true;
+        }
+
+        if (MessageOptionConstants.editMessage === optionId && (isSentByMe || memberIsNotParticipant)) {
+            return true;
+        }
+
+        if (MessageOptionConstants.copyMessage === optionId && messageObject instanceof CometChat.TextMessage) {
+            return true;
+        }
+
+        if (MessageOptionConstants.sendMessagePrivately === optionId && group
+             &&  loggedInUser.getUid() != messageObject.getSender()?.getUid()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+        let messageOptionList: CometChatMessageOption[] = [];
+
+        if (isDeletedMessage(messageObject)) return messageOptionList;
+
+        if( this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.replyInThread) ) {
+            messageOptionList.push(this.getReplyInThreadOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject,group, MessageOptionConstants.shareMessage)) {
+            messageOptionList.push(this.getShareOption());
+        }
+
+        if(this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.messageInformation)) {
+            messageOptionList.push(this.getInformationOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject,  group, MessageOptionConstants.deleteMessage)) {
+            messageOptionList.push(this.getDeleteOption());
+        }
+
+        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.sendMessagePrivately)) {
+            messageOptionList.push(this.getPrivateMessageOption());
+        }
+
+        return messageOptionList;
     }
 
     getGroupActionBubble(message: CometChat.BaseMessage, theme: CometChatTheme): JSX.Element {
@@ -305,7 +382,82 @@ export class MessageDataSource implements DataSource {
         return null;
     }
 
-    getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
+    getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element {
+        let loggedInUser = CometChatUIKit.loggedInUser;
+        let mentionedUsers = message.getMentionedUsers();
+        let textFormatters = [...(additionalParams?.textFormatters || [])] || [];
+
+        let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser);
+        linksTextFormatter.setMessage(message);
+        linksTextFormatter.setId("ccDefaultUrlsFormatterId")
+        textFormatters.push(linksTextFormatter);
+
+        if (!additionalParams?.disableMentions && mentionedUsers && mentionedUsers.length) {
+
+            let mentionsTextFormatter = ChatConfigurator.getDataSource().getMentionsFormatter(loggedInUser);
+            mentionsTextFormatter.setLoggedInUser(loggedInUser);
+            mentionsTextFormatter.setId("ccDefaultMentionFormatterId")
+            let isUserSentMessage = alignment === "right";
+            if (isUserSentMessage) {
+                mentionsTextFormatter.setMentionsStyle(
+                    new MentionTextStyle({
+                        loggedInUserTextStyle: {
+                            color: theme.palette.getTertiary(),
+                            ...theme.typography.title2,
+                            fontSize: 16
+                        },
+                        textStyle: {
+                            color: theme.palette.getTertiary(),
+                            ...theme.typography.subtitle1,
+                            fontSize: 16
+                        },
+                    })
+                );
+            } else {
+                mentionsTextFormatter.setMentionsStyle(
+                    new MentionTextStyle({
+                        loggedInUserTextStyle: {
+                            color: theme.palette.getPrimary(),
+                            ...theme.typography.title2,
+                            fontSize: 16
+                        },
+                        textStyle: {
+                            color: theme.palette.getPrimary(),
+                            ...theme.typography.subtitle1,
+                            fontSize: 16
+                        },
+                    })
+                );
+            }
+
+            textFormatters.push(mentionsTextFormatter);
+
+        }
+
+        let finalFormatters = [];
+
+        let customerHasPassedUrlsFormatter;
+
+        textFormatters.forEach(formatter => {
+            if (formatter instanceof CometChatUrlsFormatter) {
+                if (formatter.getId() !== "ccDefaultUrlsFormatterId") {
+                    customerHasPassedUrlsFormatter = true
+                }
+            }
+            formatter.setMessage(message);
+            let suggestionUsers = formatter.getSuggestionItems();
+            suggestionUsers.length > 0 && formatter.setSuggestionItems(suggestionUsers);
+            let _formatter = CommonUtils.clone(formatter);
+            finalFormatters.push(_formatter);
+        })
+
+        if (customerHasPassedUrlsFormatter) {
+            let customUrlsIndex = finalFormatters.findIndex((formatter: CometChatTextFormatter[]) => (formatter instanceof CometChatUrlsFormatter && formatter.getId() === "ccDefaultUrlsFormatterId"));
+            if (customUrlsIndex > -1) {
+                finalFormatters.splice(customUrlsIndex, 1);
+            }
+        }
+
         return <CometChatTextBubble
             text={messageText}
             style={{
@@ -314,6 +466,7 @@ export class MessageDataSource implements DataSource {
                 textColor: alignment == "right" ? theme?.palette.getSecondary() : theme?.palette?.getAccent(),
                 borderRadius: 8
             }}
+            textFormatters={finalFormatters}
         />
     }
 
@@ -326,7 +479,7 @@ export class MessageDataSource implements DataSource {
     }
 
     getSchedulerMessageBubble(message: SchedulerMessage, theme: CometChatTheme, style?: SchedulerBubbleStyles, onScheduleClick?: (data: any) => void): JSX.Element {
-        return <CometChatSchedulerBubble 
+        return <CometChatSchedulerBubble
             schedulerMessage={message}
             onScheduleClick={onScheduleClick}
             style={style}
@@ -372,8 +525,8 @@ export class MessageDataSource implements DataSource {
         }
         return null;
     }
-    getTextMessageContentView(message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
-        return ChatConfigurator.dataSource.getTextMessageBubble(message.getText(), message, alignment, theme);
+    getTextMessageContentView(message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element {
+        return ChatConfigurator.dataSource.getTextMessageBubble(message.getText(), message, alignment, theme, additionalParams);
     }
     getFormMessageContentView(message: FormMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         return ChatConfigurator.dataSource.getFormMessageBubble(message, theme);
@@ -433,7 +586,7 @@ export class MessageDataSource implements DataSource {
             , message, theme);
     }
 
-    getTextMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+    getTextMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate {
         return new CometChatMessageTemplate({
             type: MessageTypeConstants.text,
             category: MessageCategoryConstants.message,
@@ -441,7 +594,7 @@ export class MessageDataSource implements DataSource {
                 if (isDeletedMessage(message)) {
                     return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
                 } else {
-                    return ChatConfigurator.dataSource.getTextMessageContentView(message, _alignment, theme);
+                    return ChatConfigurator.dataSource.getTextMessageContentView(message, _alignment, theme, additionalParams);
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getTextMessageOptions(loggedInuser, message, group),
@@ -556,9 +709,9 @@ export class MessageDataSource implements DataSource {
         });
     }
 
-    getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
+    getAllMessageTemplates(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate[] {
         return [
-            ChatConfigurator.dataSource.getTextMessageTemplate(theme),
+            ChatConfigurator.dataSource.getTextMessageTemplate(theme, additionalParams),
             ChatConfigurator.dataSource.getFormMessageTemplate(theme),
             ChatConfigurator.dataSource.getSchedulerMessageTemplate(theme),
             ChatConfigurator.dataSource.getCardMessageTemplate(theme),
@@ -745,5 +898,18 @@ export class MessageDataSource implements DataSource {
     getLastConversationMessage(conversation: CometChat.Conversation): string {
         return CometChatConversationUtils.getMessagePreview(conversation.getLastMessage());
     };
+
+    getAllTextFormatters(loggedInUser?: CometChat.User): CometChatTextFormatter[] {
+        return [ChatConfigurator.getDataSource().getMentionsFormatter(loggedInUser),
+        ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser)];
+    }
+
+    getMentionsFormatter(loggedInUser?: CometChat.User): CometChatMentionsFormatter {
+        return new CometChatMentionsFormatter(loggedInUser);
+    }
+
+    getUrlsFormatter(loggedInUser?: CometChat.User): CometChatUrlsFormatter {
+        return new CometChatUrlsFormatter(loggedInUser);
+    }
 
 }

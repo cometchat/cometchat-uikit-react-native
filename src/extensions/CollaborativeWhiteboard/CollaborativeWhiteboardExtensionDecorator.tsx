@@ -1,7 +1,7 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 // @ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { MessageBubbleAlignmentType , MetadataConstants, MessageCategoryConstants , MessageTypeConstants,ReceiverTypeConstants } from "../../shared/constants/UIKitConstants";
+import { MessageBubbleAlignmentType , MetadataConstants, MessageCategoryConstants , MessageTypeConstants,ReceiverTypeConstants, AdditionalBubbleStylingParams } from "../../shared/constants/UIKitConstants";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
 import { ExtensionConstants } from "../ExtensionConstants";
 import { ExtensionTypeConstants } from "../ExtensionConstants";
@@ -143,8 +143,8 @@ export class CollaborativeWhiteboardExtensionDecorator extends DataSourceDecorat
 
     
 
-    getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
-        let templateList  :  CometChatMessageTemplate[] = super.getAllMessageTemplates(theme );
+    getAllMessageTemplates(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate[] {
+        let templateList  :  CometChatMessageTemplate[] = super.getAllMessageTemplates(theme, additionalParams);
 
 
 

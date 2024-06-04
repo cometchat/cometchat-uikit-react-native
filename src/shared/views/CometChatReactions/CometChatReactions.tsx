@@ -53,7 +53,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
     primaryBorder,
   } = _style;
 
-  const reactionView = (reactionObj) => {
+  const reactionView = (reactionObj, index) => {
     let count: number = reactionObj?.count;
     let Emoji: string = reactionObj?.reaction;
     let Count: JSX.Element = <Text
@@ -67,7 +67,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
     </Text>;
 
     return count >= 1 ? (
-      <View style={[
+      <View key={index} style={[
         Styles.messageReactionsStyle,
         {
           backgroundColor: reactionObj?.reactedByMe ? primaryBackgroundColor : backgroundColor,
@@ -107,7 +107,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
     let AllObj = new CometChat.ReactionCount("All", totalCount, false); // { reaction: "All", count: totalCount };
 
     return (
-      <View style={[
+      <View key={new Date().getTime()} style={[
         Styles.messageReactionsStyle,
         {
           paddingVertical: 0, paddingHorizontal: 0,

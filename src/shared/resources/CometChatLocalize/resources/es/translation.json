@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Pulsa para eliminar",
 	"ALL":"Todas",
-  "RESOURCE_PERMISSION_REQUIRED": "Esta función requiere permisos de recursos específicos. Habilite los permisos necesarios en la configuración de su dispositivo"
+  "MENTION_UPTO":"Puedes mencionar hasta",
+  "TIME":"tiempo",
+  "TIMES":"veces",
+  "AT_A_TIME":"a la vez",
+  "RESOURCE_PERMISSION_REQUIRED": "Esta función requiere permisos de recursos específicos. Habilite los permisos necesarios en la configuración de su dispositivo",
+  "COPY":"Copiar",
+  "INFO":"Información",
+  "CHAT_PRIVATELY":"Chatea en privado",
+  "MESSAGE_PRIVATELY":"Mensaje privado",
+  "TRANSLATE":"Traducir",
+  "EDIT":"Editar"
 }

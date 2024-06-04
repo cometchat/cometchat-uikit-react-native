@@ -3,7 +3,7 @@ import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 import { LinkPreviewConfigurationInterface } from "./LinkPreviewConfiguration";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
-import { MessageBubbleAlignmentType } from "../../shared/constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/constants/UIKitConstants";
 import { getExtentionData } from "../ExtensionModerator";
 import { ExtensionConstants } from "../ExtensionConstants";
 import { LinkPreviewBubble } from "./LinkPreviewBubble";
@@ -27,10 +27,10 @@ export class LinkPreviewExtentionDecorator extends DataSourceDecorator {
         return "LinkPreviewExtention";
     }
 
-    getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
+    getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element {
         let linkData = getExtentionData(message, ExtensionConstants.linkPreview);
         if (!linkData || linkData.links.length == 0) {
-            return super.getTextMessageContentView(message, alignment, theme);
+            return super.getTextMessageContentView(message, alignment, theme, additionalParams);
         } else {
             const { image, favicon, title, url, description } = linkData.links[0]
             let img = image.length == 0 ? favicon : image;
@@ -40,7 +40,7 @@ export class LinkPreviewExtentionDecorator extends DataSourceDecorator {
                 image={img}
                 ChildView={() => super.getTextMessageBubble(
                     (message as CometChat.TextMessage).getText()
-                    ,(message as CometChat.TextMessage), alignment, theme )}
+                    ,(message as CometChat.TextMessage), alignment, theme, additionalParams )}
                 title={title}
                 style={{
                     backgroundColor: "transparent",

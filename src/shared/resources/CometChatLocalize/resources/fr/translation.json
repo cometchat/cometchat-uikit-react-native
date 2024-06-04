@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Touchez pour supprimer",
 	"ALL":"Tous",
-  "RESOURCE_PERMISSION_REQUIRED": "Cette fonctionnalité nécessite des autorisations de ressources spécifiques. Veuillez activer les autorisations nécessaires dans les paramètres de votre appareil"
+  "MENTION_UPTO":"Vous pouvez citer jusqu'à",
+  "TIME":"temps",
+  "TIMES":"temps",
+  "AT_A_TIME":"à la fois",
+  "RESOURCE_PERMISSION_REQUIRED": "Cette fonctionnalité nécessite des autorisations de ressources spécifiques. Veuillez activer les autorisations nécessaires dans les paramètres de votre appareil",
+  "COPY":"Copier",
+  "INFO":"Infos",
+  "CHAT_PRIVATELY":"Discutez en privé",
+  "MESSAGE_PRIVATELY":"Message privé",
+  "TRANSLATE":"Traduire",
+  "EDIT":"Modifier"
 }

@@ -8,8 +8,13 @@ import {
     CometChatConfirmDialog,
     CometChatConfirmDialogStyleInterface,
     CometChatContext,
+    CometChatMentionsFormatter,
+    CometChatTextFormatter,
+    CometChatUrlsFormatter,
+    MentionTextStyle,
     CometChatListActionsInterface,
-    localize
+    localize,
+    CometChatUIKit
 } from "../shared";
 import { Style } from "./style";
 import {
@@ -33,6 +38,7 @@ import { StatusIndicatorStyleInterface } from "../shared/views/CometChatStatusIn
 import { DateStyleInterface } from "../shared/views/CometChatDate/DateStyle";
 import { BadgeStyleInterface } from "../shared/views/CometChatBadge";
 import { InteractiveMessageUtils } from "../shared/utils/InteractiveMessageUtils";
+import { CommonUtils } from "../shared/utils/CommonUtils";
 
 const conversationListenerId = "chatlist_" + new Date().getTime();
 const userListenerId = "chatlist_user_" + new Date().getTime();
@@ -217,7 +223,16 @@ export interface ConversationInterface {
     /**
      * style object for confirm dialog
      */
-    confirmDialogStyle?: CometChatConfirmDialogStyleInterface
+    confirmDialogStyle?: CometChatConfirmDialogStyleInterface,
+    /**
+     * if true, mentions will be disabled. Default: false
+     */
+    disableMentions?: boolean,
+    /**
+     * Collection of text formatter class
+     * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+    */
+    textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 }
 
 /**
@@ -263,6 +278,8 @@ export const CometChatConversations = (props: ConversationInterface) => {
         onError,
         onBack,
         conversationsStyle,
+        disableMentions,
+        textFormatters
     } = props;
 
     //context
@@ -365,16 +382,17 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
 
-    const getConversationRefFromTypingIndicator = (typingIndicator : CometChat.TypingIndicator)=> {
-            let  list =  conversationListRef.current.getAllListItems();
-            return list.find((item: CometChat.Conversation) => {
-                return (
-                    (typingIndicator.getReceiverType()== ReceiverTypeConstants.user&&
-                         item.getConversationType() == ReceiverTypeConstants.user
-                    &&  (item.getConversationWith() as CometChat.User).getUid() == typingIndicator.getSender().getUid() )
-                    ||  (typingIndicator.getReceiverType() == ReceiverTypeConstants.group && item.getConversationType() == ReceiverTypeConstants.group
-                    &&  (item.getConversationWith() as CometChat.Group).getGuid() == typingIndicator.getReceiverId() )
-                    )})
+    const getConversationRefFromTypingIndicator = (typingIndicator: CometChat.TypingIndicator) => {
+        let list = conversationListRef.current.getAllListItems();
+        return list.find((item: CometChat.Conversation) => {
+            return (
+                (typingIndicator.getReceiverType() == ReceiverTypeConstants.user &&
+                    item.getConversationType() == ReceiverTypeConstants.user
+                    && (item.getConversationWith() as CometChat.User).getUid() == typingIndicator.getSender().getUid())
+                || (typingIndicator.getReceiverType() == ReceiverTypeConstants.group && item.getConversationType() == ReceiverTypeConstants.group
+                    && (item.getConversationWith() as CometChat.Group).getGuid() == typingIndicator.getReceiverId())
+            )
+        })
     }
 
     /**
@@ -383,7 +401,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
      */
     const typingEventHandler = (...args) => {
         let conversation: CometChat.Conversation = getConversationRefFromTypingIndicator(args[0]);
-        if(conversation){
+        if (conversation) {
             let isTyping = args[1];
             let newConversation = conversation
             if (isTyping && !newConversation?.['lastMessage']?.["typing"]) {
@@ -398,24 +416,24 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     }
 
-      /**
-     * Find conversation from state , check and  udpate its last message object.
-     * conversation list item remains at the same place
-     *
-     * @param newMessage message object
-     */
-      const checkAndUpdateLastMessage = (newMessage: CometChat.BaseMessage) => {
+    /**
+   * Find conversation from state , check and  udpate its last message object.
+   * conversation list item remains at the same place
+   *
+   * @param newMessage message object
+   */
+    const checkAndUpdateLastMessage = (newMessage: CometChat.BaseMessage) => {
         CometChat.CometChatHelper.getConversationFromMessage(newMessage)
-        .then(conversation => {
-            let conver: any = conversationListRef.current.getListItem(conversation.getConversationId())
-            if (!conver) return;
-           let lastMessageId = conver['lastMessage']['id']
-            if (lastMessageId == newMessage['id']) {
-                conversationListRef.current.updateList(conversation)
-            }
-        })
+            .then(conversation => {
+                let conver: any = conversationListRef.current.getListItem(conversation.getConversationId())
+                if (!conver) return;
+                let lastMessageId = conver['lastMessage']['id']
+                if (lastMessageId == newMessage['id']) {
+                    conversationListRef.current.updateList(conversation)
+                }
+            })
 
-      }
+    }
 
     /**
      * Find conversation from state and udpate its last message object.
@@ -433,7 +451,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 if (oldConversation == undefined) {
                     CometChat.CometChatHelper.getConversationFromMessage(newMessage)
                         .then(newConversation => {
-                            if(newConversation?.lastMessage?.sender?.uid !== loggedInUser.current?.['uid'])
+                            if (newConversation?.lastMessage?.sender?.uid !== loggedInUser.current?.['uid'])
                                 newConversation.setUnreadMessageCount(1);
                             conversationListRef.current.updateAndMoveToFirst(newConversation);
                         })
@@ -496,7 +514,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
         if (conversation) {
             conversation.setLastMessage(message);
-            if(action === 'kicked' || action === 'banned')
+            if (action === 'kicked' || action === 'banned')
                 conversationListRef.current.removeItemFromList(message.conversationId);
             else
                 conversationListRef.current.updateList(conversation);
@@ -577,28 +595,70 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
         let lastMessage: CometChat.BaseMessage = conversations.getLastMessage();
         if (!lastMessage) return null;
-        let messageText: string ;
-        if(lastMessage.getDeletedAt() !== undefined){
+        let messageText: string;
+        if (lastMessage.getDeletedAt() !== undefined) {
             messageText = localize("THIS_MESSAGE_DELETED");
-        }else{
+        } else {
             messageText = ChatConfigurator.getDataSource().getLastConversationMessage(conversations);
+
+            if (lastMessage) {
+                messageText = getFormattedText(lastMessage, messageText?.trim());
+            }
         }
         let groupText = "";
         if (lastMessage.getReceiverType() == ReceiverTypeConstants.group) {
             if (lastMessage.getSender().getUid() == uid) {
-                groupText = localize("YOU")+ ": "
+                groupText = localize("YOU") + ": "
             } else {
                 groupText = lastMessage.getSender().getName() + ": "
             }
         }
 
-        messageText = messageText?.trim();
         return (
-            <Text numberOfLines={1} ellipsizeMode={"tail"} style={[Style.subtitleTextStyle, { color: theme.palette.getAccent600(), fontSize : theme.typography.subtitle1.fontSize,
-                fontWeight : theme.typography.subtitle1.fontWeight  }]}>
-                {groupText + messageText}
+            <Text numberOfLines={1} ellipsizeMode={"tail"} style={[Style.subtitleTextStyle, {
+                color: theme.palette.getAccent600(), fontSize: theme.typography.subtitle1.fontSize,
+                fontWeight: theme.typography.subtitle1.fontWeight
+            }]}>
+                {groupText}{messageText}
             </Text>
         )
+    }
+
+    function getFormattedText(message: CometChat.BaseMessage, subtitle: string) {
+        let messageTextTmp = subtitle;
+        let allFormatters = [...(textFormatters || [])] || [];
+
+        if (!disableMentions && message.getMentionedUsers().length) {
+            let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
+            mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser);
+            mentionsFormatter.setMentionsStyle(
+                new MentionTextStyle({
+                    loggedInUserTextStyle: {
+                        color: theme.palette.getPrimary(),
+                        ...theme.typography.title2,
+                    },
+                    textStyle: {
+                        color: theme.palette.getPrimary(),
+                        ...theme.typography.subtitle1,
+                    }
+                })
+            );
+
+            mentionsFormatter.setMessage(message);
+            allFormatters.push(mentionsFormatter);
+        }
+
+        if (allFormatters && allFormatters.length) {
+            for (let i = 0; i < allFormatters.length; i++) {
+                let suggestionUsers = allFormatters[i].getSuggestionItems();
+                allFormatters[i].setMessage(message);
+                suggestionUsers.length > 0 && allFormatters[i].setSuggestionItems(suggestionUsers);
+                let _formatter = CommonUtils.clone(allFormatters[i]);
+                (messageTextTmp as string | JSX.Element) = _formatter.getFormattedText(messageTextTmp);
+            }
+        }
+
+        return messageTextTmp;
     }
 
     const LastMessageView = (params: {
@@ -608,35 +668,37 @@ export const CometChatConversations = (props: ConversationInterface) => {
         const lastMessage = params['conversations']['lastMessage'];
         if (!lastMessage) return null;
         let readReceipt;
-        if ( params.typingText) {
+        if (params.typingText) {
             return <View style={Style.row}>
-                <Text numberOfLines={1} ellipsizeMode={"tail"}  style={[Style.subtitleTextStyle, { color: theme.palette.getPrimary() ,
-                    fontSize : theme.typography.subtitle1.fontSize , fontWeight : theme.typography.subtitle1.fontWeight   }]} >{params.typingText}</Text>
+                <Text numberOfLines={1} ellipsizeMode={"tail"} style={[Style.subtitleTextStyle, {
+                    color: theme.palette.getPrimary(),
+                    fontSize: theme.typography.subtitle1.fontSize, fontWeight: theme.typography.subtitle1.fontWeight
+                }]} >{params.typingText}</Text>
             </View>
         }
 
         if (lastMessage && !disableReadReceipt && lastMessage['sender']['uid'] == loggedInUser.current?.uid && !lastMessage.getDeletedAt()) {
-                let status: MessageReceipt = "ERROR";
-                if (lastMessage?.hasOwnProperty('readAt'))
-                    status = "READ";
-                else if (lastMessage?.hasOwnProperty("deliveredAt"))
-                    status = "DELIVERED";
-                else if (lastMessage?.hasOwnProperty("sentAt"))
-                    status = "SENT";
-                readReceipt = disableReceipt ? null : <CometChatReceipt
-                    receipt={status}
-                    deliveredIcon={props.deliveredIcon}
-                    errorIcon={props.errorIcon}
-                    readIcon={props.readIcon}
-                    sentIcon={props.sentIcon}
-                    waitIcon={props.waitingIcon}
-                />;
+            let status: MessageReceipt = "ERROR";
+            if (lastMessage?.hasOwnProperty('readAt'))
+                status = "READ";
+            else if (lastMessage?.hasOwnProperty("deliveredAt"))
+                status = "DELIVERED";
+            else if (lastMessage?.hasOwnProperty("sentAt"))
+                status = "SENT";
+            readReceipt = disableReceipt ? null : <CometChatReceipt
+                receipt={status}
+                deliveredIcon={props.deliveredIcon}
+                errorIcon={props.errorIcon}
+                readIcon={props.readIcon}
+                sentIcon={props.sentIcon}
+                waitIcon={props.waitingIcon}
+            />;
         }
 
         let threadView;
 
-        if(lastMessage?.getParentMessageId()){
-            threadView = <Text numberOfLines={1}   style={[Style.subtitleTextStyle, { color: theme.palette.getAccent600() }]} >{localize("IN_A_THREAD")}</Text>
+        if (lastMessage?.getParentMessageId()) {
+            threadView = <Text numberOfLines={1} style={[Style.subtitleTextStyle, { color: theme.palette.getAccent600() }]} >{localize("IN_A_THREAD")}</Text>
         }
 
         return (

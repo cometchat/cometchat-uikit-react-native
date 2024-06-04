@@ -1,10 +1,9 @@
-import { AvatarStyleInterface, ListItemStyleInterface, localize } from "../shared";
+import { AvatarStyleInterface, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, ListItemStyleInterface, localize } from "../shared";
 import { ImageType } from "../shared";
 import { DatePattern,SelectionMode } from "../shared/base/Types";
-import { AvatarStyle, BadgeStyle, DateStyle, ListItemStyle, StatusIndicatorStyle } from "../shared";
 import { CometChatOptions } from "../shared";
 // import { ConversationListConfiguration } from "../CometChatConversationList/ConversationListConfiguration";
-import { ConversationsStyle, ConversationsStyleInterface } from "./ConversationsStyle";
+import { ConversationsStyleInterface } from "./ConversationsStyle";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { StatusIndicatorStyleInterface } from "../shared/views/CometChatStatusIndicator/StatusIndicatorStyle";
@@ -50,7 +49,16 @@ export interface ConversationsConfigurationInterface {
     dateStyle?: DateStyleInterface,
     conversationsStyle?: ConversationsStyleInterface,
     listItemStyle?: ListItemStyleInterface,
-    badgeStyle?: BadgeStyleInterface
+    badgeStyle?: BadgeStyleInterface,
+    /**
+     * if true, mentions will be disabled. Default: false
+     */
+    disableMentions?: boolean,
+    /**
+     * Collection of text formatter class
+     * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+    */
+    textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 }
 
 /**
@@ -96,6 +104,15 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
     conversationsStyle?: ConversationsStyleInterface;
     listItemStyle?: ListItemStyleInterface;
     badgeStyle?: BadgeStyleInterface;
+    /**
+     * if true, mentions will be disabled. Default: false
+     */
+    disableMentions?: boolean;
+    /**
+     * Collection of text formatter class
+     * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+    */
+    textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
 
     constructor({
         disableUsersPresence = false,
@@ -137,6 +154,8 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
         conversationsStyle = undefined,
         listItemStyle = undefined,
         badgeStyle = undefined,
+        disableMentions,
+        textFormatters
     }: ConversationsConfigurationInterface) {
         this.disableUsersPresence = disableUsersPresence;
         this.disableReceipt = disableReceipt;
@@ -177,5 +196,7 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
         this.conversationsStyle = conversationsStyle
         this.listItemStyle = listItemStyle
         this.badgeStyle = badgeStyle
+        this.disableMentions = disableMentions;
+        this.textFormatters = textFormatters;
     }
 }

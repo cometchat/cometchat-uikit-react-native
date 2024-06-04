@@ -1,5 +1,6 @@
 import { AIOptionsStyle } from "../../AI/AIOptionsStyle";
-import { MessageBubbleAlignmentType } from "../constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../constants/UIKitConstants";
+import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from "../formatters";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { CometChatMessageOption, CometChatMessageTemplate } from "../modals";
 import { CardMessage, FormMessage } from "../modals/InteractiveData";
@@ -76,8 +77,8 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getVideoMessageBubble(videoUrl, thumbnailUrl, message, theme, videoBubbleStyle);
    }
 
-   getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
-      return this.dataSource.getTextMessageBubble(messageText, message, alignment, theme);
+   getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams) {
+      return this.dataSource.getTextMessageBubble(messageText, message, alignment, theme, additionalParams);
    }
 
    getFormMessageBubble(message: FormMessage, theme: CometChatTheme, style?: FormBubbleStyle, onSubmitClick?: (data: any) => void) {
@@ -107,8 +108,8 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getGroupActionBubble(message, theme);
    }
 
-   getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
-      return this.dataSource.getTextMessageContentView(message, alignment, theme);
+   getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams) {
+      return this.dataSource.getTextMessageContentView(message, alignment, theme, additionalParams);
    }
 
    getFormMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
@@ -139,8 +140,8 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getFileMessageContentView(message, alignment, theme);
    }
 
-   getTextMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
-      return this.dataSource.getTextMessageTemplate(theme)
+   getTextMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate {
+      return this.dataSource.getTextMessageTemplate(theme, additionalParams)
    }
 
    getFormMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
@@ -171,8 +172,8 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getFileMessageTemplate(theme);
    }
 
-   getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
-      return this.dataSource.getAllMessageTemplates(theme);
+   getAllMessageTemplates(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate[] {
+      return this.dataSource.getAllMessageTemplates(theme, additionalParams);
    }
 
    getMessageTemplate(messageType: string, MessageCategory: string, theme: CometChatTheme): CometChatMessageTemplate {
@@ -191,8 +192,8 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getAllMessageCategories();
    }
 
-   getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?:CometChatTheme) {
-      return this.dataSource.getAuxiliaryOptions(user, group, id,theme);
+   getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?: CometChatTheme) {
+      return this.dataSource.getAuxiliaryOptions(user, group, id, theme);
    }
 
    getMessageTypeToSubtitle(messageType: string): string {
@@ -200,7 +201,7 @@ export class DataSourceDecorator implements DataSource {
    }
 
    getAttachmentOptions(user?: any, group?: any, composerId?: any): CometChatMessageComposerActionInterface[] {
-      return this.dataSource.getAttachmentOptions(user, group,composerId);
+      return this.dataSource.getAttachmentOptions(user, group, composerId);
    };
 
    getAuxiliaryButtonOptions() {
@@ -216,6 +217,21 @@ export class DataSourceDecorator implements DataSource {
    }
 
    getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: Map<String, any>, AIOptionsStyle?: AIOptionsStyle): (CometChatMessageComposerActionInterface | CometChatMessageOption)[] {
-       return this.dataSource.getAIOptions(user, group, theme, id, AIOptionsStyle);
+      return this.dataSource.getAIOptions(user, group, theme, id, AIOptionsStyle);
+   }
+
+   getAllTextFormatters(loggedInUser?: CometChat.User): CometChatTextFormatter[] {
+      return [
+         this.dataSource.getMentionsFormatter(loggedInUser),
+         this.dataSource.getUrlsFormatter(loggedInUser)
+      ];
+   }
+
+   getMentionsFormatter(loggedInUser?: CometChat.User): CometChatMentionsFormatter {
+      return this.dataSource.getMentionsFormatter(loggedInUser);
+   }
+
+   getUrlsFormatter(loggedInUser?: CometChat.User): CometChatUrlsFormatter {
+      return this.dataSource.getUrlsFormatter(loggedInUser);
    }
 }

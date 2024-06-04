@@ -301,5 +301,14 @@
   "MIN": "min",
   "TAP_TO_REMOVE":"Tap to remove",
   "ALL": "All",
-  "RESOURCE_PERMISSION_REQUIRED": "This feature requires specific resource permission(s). Please enable the necessary permissions in your device settings."
+  "MENTION_UPTO":"You can mention up to",
+  "TIME":"time",
+  "TIMES":"times",
+  "AT_A_TIME":"at a time",
+  "RESOURCE_PERMISSION_REQUIRED": "This feature requires specific resource permission(s). Please enable the necessary permissions in your device settings.",
+  "COPY":"Copy",
+  "INFO":"Info",
+  "MESSAGE_PRIVATELY":"Message Privately",
+  "TRANSLATE":"Translate",
+  "EDIT":"Edit"
 }

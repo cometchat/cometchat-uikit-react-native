@@ -136,7 +136,6 @@ export const CometChatMessageInput = (
             : style.placeholderTextFont ?? theme.typography.body,
         ]}
         onChangeText={onChangeText}
-        value={text}
         placeholderTextColor={
           style.placeholderTextColor
             ? style.placeholderTextColor
@@ -146,7 +145,9 @@ export const CometChatMessageInput = (
         textAlignVertical="top"
         placeholder={placeHolderText}
         onSelectionChange={onSelectionChange}
-      />
+      >
+        {text}
+      </TextInput>
       <View
         style={{
           flexDirection: 'row',

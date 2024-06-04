@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageType } from '../shared';
+import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, ImageType } from '../shared';
 import {
   CometChatMessageComposerInterface,
   MessageComposerStyleInterface,
@@ -8,6 +8,7 @@ import {
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { MediaRecorderStyle } from '../shared/views/CometChatMediaRecorder';
 import { AIOptionsStyle } from '../AI/AIOptionsStyle';
+import { KeyboardAvoidingViewProps } from 'react-native';
 export interface MessageComposerConfigurationInterface
   extends Omit<
     CometChatMessageComposerInterface,
@@ -75,6 +76,16 @@ export class MessageComposerConfiguration {
   text?: string;
   AIIconURL?: string;
   AIOptionsStyle?: AIOptionsStyle;
+  /**
+  * To override keyboardAvoidingViewProps.
+  */
+  keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
+  /**
+   * Collection of text formatter class
+   * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
+  */
+  textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
+  disableMentions?: boolean;
   constructor(props: MessageComposerConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {

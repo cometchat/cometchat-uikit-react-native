@@ -23,12 +23,10 @@ export const listners = {
         msgTypingListenerId,
         {
           onTypingStarted: (typistDetails) => {
-            console.log('onTypingStarted', typistDetails);
 
             msgTypingIndicator(typistDetails, 'typing');
           },
           onTypingEnded: (typistDetails) => {
-            console.log('onTypingEnded', typistDetails);
             msgTypingIndicator(typistDetails, '');
           },
         }

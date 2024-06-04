@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Tryck för att ta bort",
 	"ALL":"Allt",
-  "RESOURCE_PERMISSION_REQUIRED": "Den här funktionen kräver specifika resursbehörigheter. Aktivera nödvändiga behörigheter i dina enhetsinställningar"
+  "MENTION_UPTO":"Du kan nämna upp till",
+  "TIME":"tid",
+  "TIMES":"gånger",
+  "AT_A_TIME":"vid en tidpunkt",
+  "RESOURCE_PERMISSION_REQUIRED": "Den här funktionen kräver specifika resursbehörigheter. Aktivera nödvändiga behörigheter i dina enhetsinställningar",
+  "COPY":"Kopiera",
+  "INFO":"Info",
+  "CHAT_PRIVATELY":"Chatta privat",
+  "MESSAGE_PRIVATELY":"Meddelande privat",
+  "TRANSLATE":"Översätt",
+  "EDIT":"Redigera"
 }

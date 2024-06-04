@@ -133,7 +133,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
     };
 
     const handleTouchEnd = () => {
-        // if (pressTime.current === null) return;
+        if (pressTime.current === null && Platform.OS === "ios") return;
         const endTime = Date.now();
         const pressDuration = endTime - pressTime.current;
         if (pressDuration < 500) {
@@ -142,7 +142,9 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
     };
 
     const onTouchMove = () => {
-        // pressTime.current = null
+        if (Platform.OS === "ios") {
+            pressTime.current = null;
+        }
     }
 
     return (
@@ -169,7 +171,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
                 <View
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
-                    // onTouchMove={onTouchMove}
+                    onTouchMove={onTouchMove}
                     style={[Style.playIconPosition, { backgroundColor: playIconBackgroundColor, borderRadius }]}>
                     {isLoading ? <ActivityIndicator size={"small"} color={playIconTint} />
                         : <Image source={playIcon || defaultPlayIcon} style={{ tintColor: playIconTint }} />

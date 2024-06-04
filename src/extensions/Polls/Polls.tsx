@@ -4,11 +4,14 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  FlatList,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  NativeModules,
 } from 'react-native';
 import React, {
+  useCallback,
   useContext,
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -27,6 +30,8 @@ import { localize } from "../../shared/resources/CometChatLocalize";
 import { ICONS } from './resources';
 import { CometChatContextType } from '../../shared/base/Types';
 import { CometChatSwipeRow } from '../../shared/views/SwipeRow';
+import { commonVars } from '../../shared/base/vars';
+const { CommonUtil } = NativeModules;
 
 export interface PollsStyleInterface {
   titleTextStyle?: FontStyleInterface;
@@ -172,6 +177,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
   const [error, setError] = React.useState('');
   const [answersList, setAnswersList] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [kbOffset, setKbOffset] = React.useState(59);
   const loggedInUser = useRef(null);
   const answersFinalValues = useRef([]);
 
@@ -296,12 +302,12 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
           options={
             defaultAnswers <= item.id
               ? () => [
-                  {
-                    id: item.id,
-                    icon: deleteIcon ?? ICONS.KICK,
-                    onPress: removeRow,
-                  },
-                ]
+                {
+                  id: item.id,
+                  icon: deleteIcon ?? ICONS.KICK,
+                  onPress: removeRow,
+                },
+              ]
               : () => []
           }
         >
@@ -371,77 +377,107 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
     setAnswersList(answerslist);
     CometChat.getLoggedinUser()
       .then((u) => (loggedInUser.current = u))
-      .catch((e) => {});
+      .catch((e) => { });
+    if (Platform.OS === "ios") {
+      if (Number.isInteger(commonVars.safeAreaInsets.top)) {
+        setKbOffset(commonVars.safeAreaInsets.top)
+        return;
+      }
+      CommonUtil.getSafeAreaInsets().then(res => {
+        if (Number.isInteger(res.top)) {
+          commonVars.safeAreaInsets.top = res.top;
+          commonVars.safeAreaInsets.bottom = res.bottom;
+          setKbOffset(res.top)
+        }
+      })
+    }
   }, []);
 
+  const getPollAnswers = useCallback(() => {
+    return (
+      answersList.map((item, index) => (
+        <React.Fragment key={item.id}>
+          <AnswersListItem item={item} index={index} />
+          {index === answersList.length - 1 && <AddAnswer />}
+        </React.Fragment>
+      ))
+    )
+  }, [answersList])
+
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          width: createPollsStyle.width ?? 'auto',
-          height: createPollsStyle.height ?? 'auto',
-          backgroundColor:
-            createPollsStyle.backgroundColor ??
-            theme.palette.getBackgroundColor(),
-          borderRadius: createPollsStyle.borderRadius ?? 0,
-        },
-        createPollsStyle.border ?? {},
-      ]}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.select({ ios: kbOffset + 10 })}
     >
-      <Header
-        title={title}
-        joinIcon={createPollIcon ?? createIcon}
-        closeIcon={closeIcon}
-        titleStyle={[
-          createPollsStyle.titleTextStyle ?? theme.typography.heading,
-          { color: theme.palette.getAccent() },
-        ]}
-        closeIconTint={
-          createPollsStyle.closeIconTint ?? theme.palette.getPrimary()
-        }
-        createIconTint={
-          createPollsStyle.createIconTint ?? theme.palette.getPrimary()
-        }
-        onSubmit={polls}
-        onCancel={onClose ? onClose : () => {}}
-      />
-      <TextInput
-        value={question}
-        onChangeText={setQuestion}
-        placeholder={questionPlaceholderText}
-        placeholderTextColor={theme.palette.getAccent600()}
+      <ScrollView
         style={[
-          styles.textInput,
+          styles.container,
           {
-            borderBottomColor: theme.palette.getAccent200(),
-            color: theme.palette.getAccent(),
+            width: createPollsStyle.width ?? 'auto',
+            height: createPollsStyle.height ?? 'auto',
+            backgroundColor:
+              createPollsStyle.backgroundColor ??
+              theme.palette.getBackgroundColor(),
+            borderRadius: createPollsStyle.borderRadius ?? 0,
           },
-          theme.typography.body,
-          question?.length > 0
-            ? createPollsStyle.questionPlaceholderTextStyle
-            : createPollsStyle.questionInputTextStyle,
+          createPollsStyle.border ?? {},
         ]}
-      />
-      <View style={styles.addAnswerButtonContainer}>
-        <Text
-          style={
-            (theme.typography.text2,
-            {
-              color: theme.palette.getAccent500(),
-            })
+        contentContainerStyle={{
+          paddingBottom: 50
+        }}
+      >
+        <Header
+          title={title}
+          joinIcon={createPollIcon ?? createIcon}
+          closeIcon={closeIcon}
+          titleStyle={[
+            createPollsStyle.titleTextStyle ?? theme.typography.heading,
+            { color: theme.palette.getAccent() },
+          ]}
+          closeIconTint={
+            createPollsStyle.closeIconTint ?? theme.palette.getPrimary()
           }
-        >
-          {localize('SET_THE_ANSWERS')}
-        </Text>
-      </View>
-      <FlatList
-        keyExtractor={(_, i) => `${i}`}
-        data={answersList}
-        renderItem={AnswersListItem}
-        ListFooterComponent={AddAnswer}
-      />
-    </View>
+          createIconTint={
+            createPollsStyle.createIconTint ?? theme.palette.getPrimary()
+          }
+          onSubmit={polls}
+          onCancel={onClose ? onClose : () => { }}
+        />
+        <TextInput
+          value={question}
+          onChangeText={setQuestion}
+          placeholder={questionPlaceholderText}
+          placeholderTextColor={theme.palette.getAccent600()}
+          style={[
+            styles.textInput,
+            {
+              borderBottomColor: theme.palette.getAccent200(),
+              color: theme.palette.getAccent(),
+            },
+            theme.typography.body,
+            question?.length > 0
+              ? createPollsStyle.questionPlaceholderTextStyle
+              : createPollsStyle.questionInputTextStyle,
+          ]}
+        />
+        <View style={styles.addAnswerButtonContainer}>
+          <Text
+            style={
+              (theme.typography.text2,
+              {
+                color: theme.palette.getAccent500(),
+              })
+            }
+          >
+            {localize('SET_THE_ANSWERS')}
+          </Text>
+        </View>
+
+        {getPollAnswers()}
+
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 

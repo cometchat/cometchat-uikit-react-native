@@ -22,6 +22,7 @@ import { messageStatus } from '../shared/utils/CometChatMessageHelper';
 import { CometChatContextType } from '../shared/base/Types';
 import { useKeyboard } from '../shared/helper/useKeyboard';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
+import { commonVars } from '../shared/base/vars';
 
 const uiEventId = 'ccUiEvent' + new Date().getTime();
 export interface CometChatThreadedMessagesInterface {
@@ -305,7 +306,11 @@ export const CometChatThreadedMessages = (
         <View
           style={{
             width: '100%',
-            height: keyboardHeight - 35,
+            height:
+              keyboardHeight -
+              (Number.isInteger(commonVars.safeAreaInsets.bottom)
+                ? commonVars.safeAreaInsets.bottom
+                : 35),
           }}
         />
       )}

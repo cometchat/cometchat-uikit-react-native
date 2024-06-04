@@ -1,4 +1,4 @@
-import { DataSource, DataSourceDecorator } from '../../shared/framework';
+import { ChatConfigurator, DataSource, DataSourceDecorator } from '../../shared/framework';
 // @ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { ExtensionConstants, ExtensionURLs } from '../ExtensionConstants';
@@ -11,6 +11,7 @@ import { CometChatMessageOption } from "../../shared/modals";
 import React from 'react';
 import { CometChatTheme } from '../../shared/resources/CometChatTheme';
 import {
+  AdditionalBubbleStylingParams,
   MessageBubbleAlignmentType,
   MessageOptionConstants,
 } from '../../shared/constants/UIKitConstants';
@@ -20,6 +21,8 @@ import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHan
 import { CometChatUIEvents, MessageEvents } from '../../shared/events';
 import { messageStatus } from '../../shared/utils/CometChatMessageHelper';
 import { ICONS } from './resources';
+import { CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, MentionTextStyle } from '../../shared';
+import { CommonUtils } from '../../shared/utils/CommonUtils';
 export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
   messageTranslationConfiguration?: MessageTranslationConfigurationInterface;
 
@@ -55,7 +58,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
   getTranslateOption(messageObject): CometChatMessageOption {
     return {
       id: MessageOptionConstants.translateMessage,
-      title: localize('TRANSLATE_MESSAGE'),
+      title: localize('TRANSLATE'),
       icon: ICONS.TRANSLATE,
       onPress: () => {
         this.translateMessage(messageObject);
@@ -178,7 +181,8 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     messageText: string,
     message: CometChat.TextMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalBubbleStylingParams
   ): JSX.Element {
     let tempTranslatedMsg = {};
     let translatedMetaData = message.getMetadata();
@@ -192,6 +196,78 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
         translatedMetaData['@injected']['extensions']['translate'];
     }
 
+    let loggedInUser = CometChatUIKit.loggedInUser;
+    let mentionedUsers = message.getMentionedUsers();
+    let textFormatters = [...additionalParams?.textFormatters] || [];
+
+    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser);
+    linksTextFormatter.setMessage(message);
+    linksTextFormatter.setId("ccDefaultUrlsFormatterId")
+    textFormatters.push(linksTextFormatter);
+
+    if (!additionalParams?.disableMentions && mentionedUsers && mentionedUsers.length) {
+
+      let mentionsTextFormatter =
+        ChatConfigurator.getDataSource().getMentionsFormatter(loggedInUser);
+      mentionsTextFormatter.setLoggedInUser(loggedInUser);
+      mentionsTextFormatter.setMessage(message);
+      mentionsTextFormatter.setId("ccDefaultMentionFormatterId")
+      let isUserSentMessage = alignment === "right";
+      if (isUserSentMessage) {
+        mentionsTextFormatter.setMentionsStyle(
+          new MentionTextStyle({
+            loggedInUserTextStyle: {
+              color: theme.palette.getTertiary(),
+              ...theme.typography.title2,
+            },
+            textStyle: {
+              color: theme.palette.getTertiary(),
+              ...theme.typography.subtitle1,
+            },
+          })
+        );
+      } else {
+        mentionsTextFormatter.setMentionsStyle(
+          new MentionTextStyle({
+            loggedInUserTextStyle: {
+              color: theme.palette.getPrimary(),
+              ...theme.typography.title2,
+            },
+            textStyle: {
+              color: theme.palette.getPrimary(),
+              ...theme.typography.subtitle1,
+            },
+          })
+        );
+      }
+
+      textFormatters.push(mentionsTextFormatter);
+
+    }
+    let finalFormatters = [];
+
+    let customerHasPassedUrlsFormatter;
+
+    textFormatters.forEach(formatter => {
+      if (formatter instanceof CometChatUrlsFormatter) {
+        if (formatter.getId() !== "ccDefaultUrlsFormatterId") {
+          customerHasPassedUrlsFormatter = true
+        }
+      }
+      formatter.setMessage(message);
+      let suggestionUsers = formatter.getSuggestionItems();
+      suggestionUsers.length > 0 && formatter.setSuggestionItems(suggestionUsers);
+      let _formatter = CommonUtils.clone(formatter);
+      finalFormatters.push(_formatter);
+    })
+
+    if (customerHasPassedUrlsFormatter) {
+      let customUrlsIndex = finalFormatters.findIndex((formatter: CometChatTextFormatter[]) => (formatter instanceof CometChatUrlsFormatter && formatter.getId() === "ccDefaultUrlsFormatterId"));
+      if (customUrlsIndex > -1) {
+        finalFormatters.splice(customUrlsIndex, 1);
+      }
+    }
+
     if (
       (tempTranslatedMsg && tempTranslatedMsg[message.getId()]) ||
       (this.translatedMessage && this.translatedMessage[message.getId()])
@@ -202,15 +278,16 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
             tempTranslatedMsg
               ? tempTranslatedMsg[message.getId()]
               : this.translatedMessage[message.getId()]
-              ? this.translatedMessage[message.getId()]
-              : ''
+                ? this.translatedMessage[message.getId()]
+                : ''
           }
           text={messageText}
           alignment={alignment}
+          textFormatters={finalFormatters}
           {...this.messageTranslationConfiguration}
         />
       );
     }
-    return super.getTextMessageBubble(messageText, message, alignment, theme);
+    return super.getTextMessageBubble(messageText, message, alignment, theme, additionalParams);
   }
 }

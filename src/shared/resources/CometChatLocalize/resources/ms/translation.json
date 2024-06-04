@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Ketik untuk membuang",
 	"ALL":"Semua",
-  "RESOURCE_PERMISSION_REQUIRED": "Ciri ini memerlukan kebenaran sumber tertentu. Sila aktifkan keizinan yang diperlukan dalam tetapan peranti anda"
+  "MENTION_UPTO":"Anda boleh menyebut sehingga",
+  "TIME":"masa",
+  "TIMES":"kali",
+  "AT_A_TIME":"pada satu masa",
+  "RESOURCE_PERMISSION_REQUIRED": "Ciri ini memerlukan kebenaran sumber tertentu. Sila aktifkan keizinan yang diperlukan dalam tetapan peranti anda",
+  "COPY":"Salin",
+  "INFO":"Maklumat",
+  "CHAT_PRIVATELY":"Berbual Persendirian",
+  "MESSAGE_PRIVATELY":"Mesej Persendirian",
+  "TRANSLATE":"Terjemah",
+  "EDIT":"Sunting"
 }

@@ -166,6 +166,15 @@ import {
   EmojiKeyboardConfiguration,
   EmojiKeyboardStyle,
 
+  CometChatMentionsFormatter,
+  CometChatTextFormatter,
+  CometChatUrlsFormatter,
+  MentionTextStyle,
+  CometChatSuggestionList,
+  CometChatSuggestionListInterface,
+  SuggestionListConfiguration,
+  SuggestionListConfigurationInterface,
+  SuggestionItem,
 } from './shared';
 
 import {
@@ -718,6 +727,18 @@ export {
   EmojiKeyboardConfiguration,
   EmojiKeyboardStyle,
   /* Emoji Keyboard */
+
+  /* Text Formatters */
+  CometChatMentionsFormatter,
+  CometChatTextFormatter,
+  CometChatUrlsFormatter,
+  MentionTextStyle,
+  CometChatSuggestionList,
+  CometChatSuggestionListInterface,
+  SuggestionItem,
+  SuggestionListConfiguration,
+  SuggestionListConfigurationInterface
+  /* Text Formatters */
   
 };
 

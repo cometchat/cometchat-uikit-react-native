@@ -103,6 +103,7 @@ class PaletteItem {
  * @param {Object} primary150
  * @param {Object} primary500
  * @param {Object} secondary
+ * @param {Object} tertiary
  * @param {Object} error
  * @param {Object} success
  * @param {Object} accent
@@ -128,6 +129,7 @@ class Palette {
   primary150: PaletteItem
   primary500: PaletteItem
   secondary: PaletteItem
+  tertiary: PaletteItem
   error: PaletteItem
   success: PaletteItem
   accent: PaletteItem
@@ -174,6 +176,10 @@ class Palette {
     secondary = new PaletteItem({
       [modes.light]: 'rgba(248, 248, 248, 0.9)',
       [modes.dark]: 'rgba(248, 248, 248, 0.9)',
+    }),
+    tertiary = new PaletteItem({
+      [modes.light]: 'rgb(255, 245, 0)',
+      [modes.dark]: 'rgb(255, 245, 0)',
     }),
     error = new PaletteItem({
       [modes.light]: 'rgb(255, 59, 48)',
@@ -237,6 +243,7 @@ class Palette {
     this.primary150 = primary150;
     this.primary500 = primary500;
     this.secondary = secondary;
+    this.tertiary = tertiary;
     this.error = error;
     this.success = success;
     this.accent = accent;
@@ -315,6 +322,9 @@ class Palette {
   getSecondary = (mode?: modeType) => {
     return this.secondary[mode || this.mode];
   };
+  getTertiary = (mode?: modeType) => {
+    return this.tertiary[mode || this.mode];
+  };
   getBackgroundColor = (mode?: modeType) => {
     return this.backgroundColor[mode || this.mode];
   };
@@ -357,6 +367,12 @@ class Palette {
   setSecondary(colorset) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.secondary = colorset;
+    }
+  }
+
+  setTertiary(colorset) {
+    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+      this.tertiary = colorset;
     }
   }
 

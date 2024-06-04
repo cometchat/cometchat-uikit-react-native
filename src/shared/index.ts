@@ -130,7 +130,6 @@ import {
   CometChatStatusIndicatorInterface,
   DateConfigurationInterface,
   DateStyleInterface,
-  FormatTextForLinks,
   ReceiptConfigurationInterface,
   StatusIndicatorConfigurationInterface,
   StatusIndicatorStyleInterface,
@@ -163,8 +162,21 @@ import {
   EmojiKeyboardStyle,
 
   CometChatSchedulerBubble,
-  CometChatSchedulerBubbleInterface 
+  CometChatSchedulerBubbleInterface,
+
+  CometChatSuggestionList,
+  CometChatSuggestionListInterface,
+  SuggestionItem,
+  SuggestionListConfiguration,
+  SuggestionListConfigurationInterface
 } from './views';
+
+import {
+  CometChatMentionsFormatter,
+  CometChatTextFormatter,
+  CometChatUrlsFormatter,
+  MentionTextStyle
+} from './formatters';
 
 import {
   CometChatUIKit,
@@ -205,7 +217,6 @@ export {
   CometChatStatusIndicatorInterface,
   DateConfigurationInterface,
   DateStyleInterface,
-  FormatTextForLinks,
   ReceiptConfigurationInterface,
   StatusIndicatorConfigurationInterface,
   StatusIndicatorStyleInterface,
@@ -361,4 +372,13 @@ export {
   EmojiKeyboardConfiguration,
   EmojiKeyboardStyle,
 
+  CometChatMentionsFormatter,
+  CometChatTextFormatter,
+  CometChatUrlsFormatter,
+  MentionTextStyle,
+  CometChatSuggestionList,
+  CometChatSuggestionListInterface,
+  SuggestionItem,
+  SuggestionListConfiguration,
+  SuggestionListConfigurationInterface
 };

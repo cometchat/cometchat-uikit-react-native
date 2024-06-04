@@ -11,6 +11,7 @@ import translationZH from "./resources/zh/translation.json";
 import translationZHTW from "./resources/zh-tw/translation.json";
 import translationSV from "./resources/sv/translation.json";
 import translationLT from "./resources/lt/translation.json";
+import translationHU from "./resources/hu/translation.json";
 import { Platform, NativeModules } from 'react-native';
 
 /**
@@ -45,6 +46,7 @@ class CometChatLocalize {
         "zh-tw": translationZHTW,
         sv: translationSV,
         lt: translationLT,
+        hu: translationHU,
     };
 
     /**

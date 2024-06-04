@@ -6,17 +6,35 @@ import {
   Platform,
 } from 'react-native';
 
+export let isKeyboardVisible = false;
+
 export const useKeyboard = () => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     function onKeyboardDidShow(e: KeyboardEvent) {
-      if (Platform.OS === 'ios') LayoutAnimation.linear();
+      isKeyboardVisible = true;
+      if (Platform.OS === 'ios') {
+        LayoutAnimation.configureNext({
+          duration: 200,
+          create: {type: 'linear', property: 'opacity'},
+          update: {type: 'linear', property: 'opacity'},
+          delete: {type: 'linear', property: 'opacity'},
+        });
+      }
       setKeyboardHeight(e.endCoordinates.height);
     }
 
     function onKeyboardDidHide() {
-      if (Platform.OS === 'ios') LayoutAnimation.linear();
+      isKeyboardVisible = false;
+      if (Platform.OS === 'ios') {
+        LayoutAnimation.configureNext({
+          duration: 200,
+          create: {type: 'linear', property: 'opacity'},
+          update: {type: 'linear', property: 'opacity'},
+          delete: {type: 'linear', property: 'opacity'},
+        });
+      }
       setKeyboardHeight(0);
     }
 

@@ -301,5 +301,15 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Tocca per rimuovere",
 	"ALL":"Tutti",
-  "RESOURCE_PERMISSION_REQUIRED": "Questa funzionalità richiede autorizzazioni specifiche per le risorse. Abilita le autorizzazioni necessarie nelle impostazioni del tuo dispositivo"
+  "MENTION_UPTO":"Puoi menzionare fino a",
+  "TIME":"tempo",
+  "TIMES":"volte",
+  "AT_A_TIME":"alla volta",
+  "RESOURCE_PERMISSION_REQUIRED": "Questa funzionalità richiede autorizzazioni specifiche per le risorse. Abilita le autorizzazioni necessarie nelle impostazioni del tuo dispositivo",
+  "COPY":"Kopijuoti",
+  "INFO":"Informacija",
+  "CHAT_PRIVATELY":"Pokalbiai privačiai",
+  "MESSAGE_PRIVATELY":"Pranešimas privačiai",
+  "TRANSLATE":"Išversti",
+  "EDIT":"Redaguoti"
 }

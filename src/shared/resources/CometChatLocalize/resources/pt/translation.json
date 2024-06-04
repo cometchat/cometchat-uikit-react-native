@@ -301,5 +301,16 @@
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Toque para remover",
 	"ALL":"Todos",
-  "RESOURCE_PERMISSION_REQUIRED": "Esse recurso requer permissões específicas de recursos. Ative as permissões necessárias nas configurações do seu dispositivo"
+  "MENTION_UPTO":"Você pode mencionar até",
+  "TIME":"horas",
+  "TIMES":"vezes",
+  "AT_A_TIME":"de cada vez",
+  "RESOURCE_PERMISSION_REQUIRED": "Esse recurso requer permissões específicas de recursos. Ative as permissões necessárias nas configurações do seu dispositivo",
+  "COPY":"Copiar",
+  "INFO":"Informações",
+  "CHAT_PRIVATELY":"Converse de forma privada",
+  "MESSAGE_PRIVATELY":"Mensagem privada",
+  "TRANSLATE":"Traduza",
+  "EDIT":"Editar"
+
 }

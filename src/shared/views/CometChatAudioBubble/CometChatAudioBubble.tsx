@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useContext } from "react";
-import { View, Text, Image, NativeModules, ActivityIndicator, NativeEventEmitter } from "react-native";
+import { View, Text, Image, NativeModules, ActivityIndicator, NativeEventEmitter, Platform } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, ImageType } from "../../base/Types";
 import { AudioBubbleStyle, AudioBubbleStyleInterface } from "./AudioBubbleStyle";
@@ -137,7 +137,7 @@ export const CometChatAudioBubble = ({
     };
 
     const handleTouchEnd = () => {
-        // if (pressTime.current === null) return;
+        if (pressTime.current === null && Platform.OS === "ios") return;
         const endTime = Date.now();
         const pressDuration = endTime - pressTime.current;
         if (pressDuration < 500) {
@@ -145,9 +145,11 @@ export const CometChatAudioBubble = ({
         }
     };
 
-    // const onTouchMove = () => {
-    //     pressTime.current = null
-    // }
+    const onTouchMove = () => {
+        if (Platform.OS === "ios") {
+            pressTime.current = null
+        }
+    }
 
     return (
         <View style={[Style.container, { backgroundColor, ...border, borderRadius, height, width }]}>
@@ -157,7 +159,7 @@ export const CometChatAudioBubble = ({
                     <View
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
-                        // onTouchMove={onTouchMove}
+                        onTouchMove={onTouchMove}
                     >
                         <Image
                             source={

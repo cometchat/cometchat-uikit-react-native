@@ -34,9 +34,6 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
         this.usersRequest.fetchNext().then((bots) => {
             if (bots.length > 0) {
                 this.bots = [...(this.bots || []), ...bots];
-                if (bots.length > 0) {
-                    this.fetchBots();
-                }
             }
         })
 

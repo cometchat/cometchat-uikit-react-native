@@ -1,5 +1,6 @@
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
+import { CometChatTextFormatter } from '../views';
 
 export const USER_ONLINE_STATUS = 'online'
 export const NO_USERS_FOUND = "no_users_found";
@@ -383,3 +384,8 @@ export enum goalType {
 	anyAction = CometChat.GoalType.ANY_ACTION,
 	none = CometChat.GoalType.NONE
 }
+
+export type AdditionalBubbleStylingParams = {
+	textFormatters?: CometChatTextFormatter[],
+	disableMentions?: boolean
+ }

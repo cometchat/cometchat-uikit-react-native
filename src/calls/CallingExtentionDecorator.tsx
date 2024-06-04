@@ -6,7 +6,7 @@ import { localize } from "../shared/resources/CometChatLocalize";
 import { DataSource, DataSourceDecorator } from "../shared/framework";
 import { CometChatTheme } from "../shared/resources/CometChatTheme";
 import { CallingConfiguration } from "./CallingConfiguration";
-import { CallContstatnts, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../shared/constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, CallContstatnts, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../shared/constants/UIKitConstants";
 import { CometChatCallBubble } from "./CometChatCallBubble";
 import { AudioIcon } from "./resources";
 import { VideoIcon } from "./resources";
@@ -16,7 +16,7 @@ import { CallingPackage } from "./CallingPackage";
 import { CallUtils } from "./CallUtils";
 import { CometChatUIEventHandler } from "../shared";
 import { CallUIEvents } from "./CallEvents";
-import { permissionUtilIOS } from "../shared/utils/PermissionUtilIOS";
+import { permissionUtil } from "../shared/utils/PermissionUtil";
 
 const CometChatCalls = CallingPackage.CometChatCalls;
 
@@ -129,7 +129,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
     }
 
     async startDirectCall(sessionId: string, theme?: CometChatTheme) {
-        if (!(await permissionUtilIOS.startResourceBasedTask(["mic", "camera"]))) {
+        if (!(await permissionUtil.startResourceBasedTask(["mic", "camera"]))) {
             return;
         }
         const callSettingsBuilder = new CometChatCalls.CallSettingsBuilder()
@@ -195,8 +195,8 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         })
     }
 
-    getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
-        let templates = super.getAllMessageTemplates(theme);
+    getAllMessageTemplates(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate[] {
+        let templates = super.getAllMessageTemplates(theme, additionalParams);
         templates.push(
             this.getUserAudioCallTemplate(theme),
             this.getUserVideoCallTemplates(theme),

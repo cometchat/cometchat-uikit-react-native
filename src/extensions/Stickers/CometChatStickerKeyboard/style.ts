@@ -28,9 +28,9 @@ export const Styles = StyleSheet.create({
       flexDirection: "row",
   },
   stickerItemStyle: {
-      width: "20%",
-      height: 60,
-      margin: 8,
+      width: "18%",
+      aspectRatio: 1,
+      margin: "1%",
       padding: 0,
   },
   stickerMsgStyle: {

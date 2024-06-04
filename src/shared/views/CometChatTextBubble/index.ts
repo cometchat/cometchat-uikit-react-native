@@ -1,9 +1,8 @@
-import {CometChatTextBubble, CometChatTextBubbleInterface, FormatTextForLinks} from "./CometChatTextBubble";
+import { CometChatTextBubble, CometChatTextBubbleInterface } from "./CometChatTextBubble";
 
-import {TextBubbleStyle, TextBubbleStyleInterface} from "./TextBubbleStyle";
+import { TextBubbleStyle, TextBubbleStyleInterface } from "./TextBubbleStyle";
 
 export {
-    FormatTextForLinks,
     CometChatTextBubble,
     CometChatTextBubbleInterface,
     TextBubbleStyle,
