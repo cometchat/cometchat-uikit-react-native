@@ -26,6 +26,7 @@ import { AISmartRepliesExtension } from "../../AI/AISmartReplies/AISmartReplies"
 import { AIConversationSummaryExtension } from "../../AI/AIConversationSummary/AIConversationSummaryExtension";
 import { AIAssistBotExtension } from "../../AI/AIAssistBot/AIAssistBotExtension";
 import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
+import { permissionUtilIOS } from "../utils/PermissionUtilIOS";
 
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
@@ -50,6 +51,13 @@ export class CometChatUIKit {
             () => {
                 CometChat.setSource("uikit-v4", Platform.OS, "react-native")
                 ListenerInitializer.attachListeners();
+                if (Platform.OS === "ios") {
+                    permissionUtilIOS.init().then(res => {
+                        if (res !== true) {
+                            console.warn("[IOS] Permission initialization failed.");
+                        }
+                    })
+                }
             }, error => {
                 // console.log("Initialization failed with error:", error);
             }
@@ -181,6 +189,8 @@ export class CometChatUIKit {
                     resolve(customMessage);
                 })
                 .catch(err => {
+                    if(message.data)
+                        message.data.metaData = { ...(message.data.metaData ? message.data.metaData : {}), error: true }
                     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
                     reject(err);
                 });
@@ -221,6 +231,8 @@ export class CometChatUIKit {
                     resolve(mediaMessage);
                 })
                 .catch(err => {
+                    if(message.data)
+                        message.data.metaData = { ...(message.data.metaData ? message.data.metaData : {}), error: true }
                     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
                     reject(err);
                 });
@@ -237,6 +249,8 @@ export class CometChatUIKit {
                     resolve(textMessage);
                 })
                 .catch(err => {
+                    if(message.data)
+                        message.data.metaData = { ...(message.data.metaData ? message.data.metaData : {}), error: true }
                     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
                     reject(err);
                 });

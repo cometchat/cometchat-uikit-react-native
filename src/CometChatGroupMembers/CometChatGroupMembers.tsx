@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Alert, TouchableOpacity, Image, Modal } from "react-native";
-import { kickIcon, banIcon, downArrowIcon, rightTickIcon } from "./resources";
+import { kickIcon, banIcon, downArrowIcon, checkIcon } from "./resources";
 import { CometChatOptions } from "../shared/modals/CometChatOptions";
 import { AvatarStyle, AvatarStyleInterface, CometChatContext, ListItemStyle, ListItemStyleInterface, StatusIndicatorStyle } from "../shared";
 import { GroupMembersStyle, GroupMembersStyleInterface } from "./GroupMemberStyle";
@@ -184,7 +184,11 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         nameTextFont: theme?.typography.title1,
         ...avatarStyle
     });
-    const _statusIndicatorStyle = new StatusIndicatorStyle(statusIndicatorStyle || {});
+    const _statusIndicatorStyle = new StatusIndicatorStyle(statusIndicatorStyle || { 
+        borderRadius: 10,
+        height: 15,
+        width: 15,
+    });
     const _listItemStyle = new ListItemStyle({
         backgroundColor: theme?.palette?.getBackgroundColor(),
         titleColor: theme?.palette.getAccent(),
@@ -268,7 +272,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 //reducing members count by one
                 group.setMembersCount(group.getMembersCount() - 1);
 
-                let action: CometChat.Action = new CometChat.Action(group['guid'], MessageTypeConstants.groupActions, CometChat.RECEIVER_TYPE.GROUP, CometChat.CATEGORY_ACTION as CometChat.MessageCategory);
+                let action: CometChat.Action = new CometChat.Action(group['guid'], MessageTypeConstants.groupMember, CometChat.RECEIVER_TYPE.GROUP, CometChat.CATEGORY_ACTION as CometChat.MessageCategory);
                 action.setActionBy(loggedInUser.current);
                 action.setActionOn(user);
                 action.setActionFor(group);
@@ -326,7 +330,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         if (selecting) {
             let index: number = selectedMembers.findIndex((value) => value.uid == member.uid);
             if (index >= 0) {
-                image = rightTickIcon;
+                image = checkIcon;
                 backgroundColor = theme?.palette.getBackgroundColor();
             }
         }

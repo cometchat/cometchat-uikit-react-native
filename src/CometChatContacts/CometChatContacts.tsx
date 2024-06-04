@@ -1,7 +1,7 @@
 import { Image, TouchableOpacity, View } from 'react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { CometChatUsers, UsersConfigurationInterface } from '../CometChatUsers'
-import { CometChatGroups, GroupsConfigurationInterface } from '../CometChatGroups'
+import { CometChatUsers, UsersConfiguration, UsersConfigurationInterface } from '../CometChatUsers'
+import { CometChatGroups, GroupsConfiguration, GroupsConfigurationInterface } from '../CometChatGroups'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { ImageType } from '../shared/helper/types'
 import { ContactsStyleInterface } from './ContactsStyle'
@@ -79,8 +79,8 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
         backIcon = ICONS.BACK,
         userTabTitle = localize('USERS'),
         groupTabTitle = localize('GROUPS'),
-        usersConfiguration,
-        groupsConfiguration,
+        usersConfiguration = new UsersConfiguration({}),
+        groupsConfiguration = new GroupsConfiguration({}),
         onItemPress,
         onClose,
         contactsStyle = {},
@@ -140,6 +140,10 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
 
     useEffect(() => {
         let tabOptions = [];
+        groupsConfiguration!.groupsRequestBuilder = groupsConfiguration?.groupsRequestBuilder || new CometChat.GroupsRequestBuilder().setLimit(30).joinedOnly(true);
+        groupsConfiguration!.searchRequestBuilder = groupsConfiguration?.searchRequestBuilder || new CometChat.GroupsRequestBuilder().setLimit(30).joinedOnly(true);
+        usersConfiguration!.usersRequestBuilder = usersConfiguration?.usersRequestBuilder || new CometChat.UsersRequestBuilder().setLimit(30).hideBlockedUsers(true);
+        usersConfiguration!.searchRequestBuilder = usersConfiguration?.searchRequestBuilder || new CometChat.UsersRequestBuilder().setLimit(30).hideBlockedUsers(true);
         let userTab = {
             id: "user",
             isActive: true,
@@ -164,14 +168,13 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
             childView: () => {
                 return <CometChatGroups
                 ref={groupList}
-                selectionMode={selectionMode}
-                // groupRequestBuilder={new CometChat.GroupsRequestBuilder().}
-                onItemPress={(group) => {
-                    onItemPress && onItemPress({group});
-                }}
                 title=''
                 hideSubmitIcon={true}
                 {...groupsConfiguration}
+                selectionMode={groupsConfiguration.selectionMode ?? selectionMode}
+                onItemPress={groupsConfiguration.onItemPress ?? ((group) => {
+                    onItemPress && onItemPress({group});
+                })}
                 />
             }
         }

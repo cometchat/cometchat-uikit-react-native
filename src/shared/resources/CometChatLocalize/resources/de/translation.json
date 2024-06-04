@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Planer für Besprechungen",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Zum Entfernen antippen",
-	"ALL":"Alle"
+	"ALL":"Alle",
+  "RESOURCE_PERMISSION_REQUIRED": "Für diese Funktion sind spezielle Ressourcenberechtigungen erforderlich. Bitte aktivieren Sie die erforderlichen Berechtigungen in Ihren Geräteeinstellungen"
 }

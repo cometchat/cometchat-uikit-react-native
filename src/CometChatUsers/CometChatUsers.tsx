@@ -164,7 +164,7 @@ export const CometChatUsers = React.forwardRef<
 CometChatUsers.defaultProps = {
   usersRequestBuilder: new CometChat.UsersRequestBuilder()
     .setLimit(30)
-    .hideBlockedUsers(true)
+    .hideBlockedUsers(false)
     .setRoles([])
     .friendsOnly(false)
     .setStatus('')

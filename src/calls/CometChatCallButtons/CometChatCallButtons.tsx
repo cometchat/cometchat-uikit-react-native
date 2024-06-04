@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef } from 'react'
-import { View, Text, TouchableOpacity, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Image, Platform, Alert, Linking } from 'react-native'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler'
 import { CallButtonStyle, CallButtonStyleInterface } from './CallButtonStyle'
@@ -12,6 +12,7 @@ import { Style } from './style'
 import { CallUIEvents } from '../CallEvents'
 import { CometChatOutgoingCall } from '../CometChatOutgoingCall'
 import { CometChatUIKit } from '../../shared/CometChatUiKit/CometChatUIKit'
+import { permissionUtilIOS } from '../../shared/utils/PermissionUtilIOS'
 
 const listenerId = "callEventListener_" + new Date().getTime();
 
@@ -201,9 +202,14 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
         }
     }
 
-    const makeVoiceCall = () => {
+    const makeVoiceCall = async () => {
         if (disableButton)
             return;
+
+        if (!(await permissionUtilIOS.startResourceBasedTask(["mic"]))) {
+            return;
+        }
+        
         if (onVoiceCallPress)
             return onVoiceCallPress({ user, group })
 
@@ -212,9 +218,14 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
 
     }
 
-    const makeVideoCall = () => {
+    const makeVideoCall = async () => {
         if (disableButton)
             return;
+
+        if (!(await permissionUtilIOS.startResourceBasedTask(["mic", "camera"]))) {
+            return;
+        }
+
         if (onVideoCallPress)
             return onVideoCallPress({ user, group })
 

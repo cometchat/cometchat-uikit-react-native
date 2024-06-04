@@ -156,7 +156,6 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
             uiEventListener,
             {
                 ccUserBlocked: ({ user }: { user: CometChat.User }) => {
-                    _headerConfiguration.onBack && _headerConfiguration.onBack();
                     user.setBlockedByMe(true);
                     setUserObject(user);
                 },

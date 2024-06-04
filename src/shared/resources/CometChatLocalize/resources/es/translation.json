@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Programador de reuniones",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Pulsa para eliminar",
-	"ALL":"Todas"
+	"ALL":"Todas",
+  "RESOURCE_PERMISSION_REQUIRED": "Esta función requiere permisos de recursos específicos. Habilite los permisos necesarios en la configuración de su dispositivo"
 }

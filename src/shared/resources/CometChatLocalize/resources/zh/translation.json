@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "会议安排器",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"点按即可移除",
-	"ALL":"全部"
+	"ALL":"全部",
+  "RESOURCE_PERMISSION_REQUIRED": "此功能需要特定的资源权限。请在您的设备设置中启用必要的权限"
 }

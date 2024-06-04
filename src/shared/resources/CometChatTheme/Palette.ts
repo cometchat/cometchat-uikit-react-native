@@ -380,11 +380,6 @@ class Palette {
 
   setAccent(colorset) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
-      this.setAccent({
-        [modes.light]: colorset[modes.light],
-        [modes.dark]: colorset[modes.dark],
-      });
-
       this.setAccent900({
         [modes.light]: colorset[modes.dark],
         [modes.dark]: colorset[modes.light],

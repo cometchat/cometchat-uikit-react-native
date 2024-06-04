@@ -127,7 +127,7 @@ export class MessageDataSource implements DataSource {
     }
 
     isSentByMe(loggedInUser: CometChat.User, message: CometChat.BaseMessage) {
-        return loggedInUser.getUid() == message.getSender().getUid();
+        return loggedInUser.getUid() == message?.getSender()?.getUid();
     }
 
     getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {

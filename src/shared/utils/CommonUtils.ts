@@ -1,3 +1,6 @@
+// @ts-ignore
+import { CometChat } from '@cometchat/chat-sdk-react-native';
+
 export class CommonUtils {
 
     static clone<T extends any>(arg: T): T {
@@ -40,6 +43,29 @@ export class CommonUtils {
             Object.setPrototypeOf(res, Object.getPrototypeOf(arg));
         }
         return res as T;
+    }
+
+
+    static getComponentIdFromMessage(message :  CometChat.BaseMessage):Object{
+        let id = {};
+        if (message.receiver instanceof CometChat.User) {
+          id['uid'] = (message.sender as CometChat.User).uid;
+        } else if (message.receiver instanceof CometChat.Group) {
+          id['guid'] = (message.receiver as CometChat.Group).guid;
+        }
+        if (message.parentMessageId && message.parentMessageId !== 0) {
+          id['parentMessageId'] = message.parentMessageId;
+        }
+        return id;
+    }
+
+    static checkIdBelongsToThisComponent(id, user :CometChat.User, group: CometChat.Group, parentMessageId :string| number): boolean{
+        if(id){
+          if(id['parentMessageId']  && ( id['parentMessageId'] != parentMessageId ))return false
+          if((id['uid']  ||  user) && id['uid'] != user?.uid) return false;
+          if( (id['guid'] ||  group)    && id['guid'] != group?.guid) return false;
+        }
+        return true;
     }
 
 }

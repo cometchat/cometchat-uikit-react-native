@@ -16,6 +16,7 @@ import {
 import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 import { CometChatUIKit } from '../../shared/CometChatUiKit/CometChatUIKit';
 import { SmartRepliesConfigurationInterface } from './SmartRepliesExtension';
+import { CommonUtils } from '../../shared/utils/CommonUtils';
 
 export class SmartRepliesDecorator extends DataSourceDecorator {
   smartRepliesConfiguration?: SmartRepliesConfigurationInterface;
@@ -45,6 +46,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
             this.getReplies(message);
         },
         onTextMessageReceived: (textMessage) => {
+          if(textMessage && textMessage['sender']?.['uid'] != this.loggedInUser.getUid())
           this.getReplies(textMessage);
         },
       }
@@ -60,6 +62,8 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
   }
 
   getReplies(message) {
+
+    let id = CommonUtils.getComponentIdFromMessage(message);
     const smartReplyData = getExtentionData(
       message,
       ExtensionConstants.smartReply
@@ -76,6 +80,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     }
     CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.showPanel, {
       alignment: ViewAlignment.messageListBottom,
+      id: id,
       child: () => (
         <SmartRepliesView
           replies={options}
@@ -91,6 +96,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
 
   handleSendMessage = (message, smartReply) => {
     let chatWithId = '';
+    let id = CommonUtils.getComponentIdFromMessage(message)
     let chatWith;
     if (!smartReply.trim().length) {
       return;
@@ -117,6 +123,11 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     CometChatUIKit.sendTextMessage(textMessage)
       .then(() => {})
       .catch(() => {})
+
+      CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.showPanel, {
+        alignment: ViewAlignment.messageListBottom,
+        id: id,
+      });
   };
 
   onCloseRepliesPannel = () => {

@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Penjadual Mesyuarat",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Ketik untuk membuang",
-	"ALL":"Semua"
+	"ALL":"Semua",
+  "RESOURCE_PERMISSION_REQUIRED": "Ciri ini memerlukan kebenaran sumber tertentu. Sila aktifkan keizinan yang diperlukan dalam tetapan peranti anda"
 }

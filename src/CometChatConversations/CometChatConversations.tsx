@@ -170,7 +170,7 @@ export interface ConversationInterface {
      */
     hideError?: boolean,
     /**
-     * call back function for 
+     * call back function for
      */
     onItemPress?: (item: CometChat.Conversation) => void,
     /**
@@ -272,6 +272,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     const [confirmDelete, setConfirmDelete] = React.useState(undefined);
     const [selecting, setSelecting] = React.useState(false);
     const [selectedConversation, setSelectedConversations] = React.useState([]);
+    const onMemberAddedToGroupDebounceTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const _style = new ConversationsStyle({
         backgroundColor: theme?.palette?.getBackgroundColor(),
@@ -364,7 +365,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     /**
      * Listener callback for typing event
-     * @param  {...any} args 
+     * @param  {...any} args
      */
     const typingEventHandler = (...args) => {
         // console.log("typing event", args[1], args[0].receiverId);
@@ -382,10 +383,29 @@ export const CometChatConversations = (props: ConversationInterface) => {
         conversationListRef.current.updateList(conversation);
     }
 
+      /**
+     * Find conversation from state , check and  udpate its last message object.
+     * conversation list item remains at the same place
+     *
+     * @param newMessage message object
+     */
+      const checkAndUpdateLastMessage = (newMessage: CometChat.BaseMessage) => {
+        CometChat.CometChatHelper.getConversationFromMessage(newMessage)
+        .then(conversation => {
+            let conver = conversationListRef.current.getListItem(conversation.getConversationId())
+            if (!conver) return;
+           let lastMessageId = conver['lastMessage']['id']
+            if (lastMessageId == newMessage['id']) {
+                conversationListRef.current.updateList(conversation)
+            }
+        })
+
+      }
+
     /**
      * Find conversation from state and udpate its last message object.
      * Also remove from the current location and put it to 1st location.
-     * 
+     *
      * @param newMessage message object
      */
     const updateLastMessage = (newMessage) => {
@@ -398,7 +418,8 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 if (oldConversation == undefined) {
                     CometChat.CometChatHelper.getConversationFromMessage(newMessage)
                         .then(newConversation => {
-                            newConversation.setUnreadMessageCount(1);
+                            if(newConversation?.lastMessage?.sender?.uid !== loggedInUser.current?.['uid'])
+                                newConversation.setUnreadMessageCount(1);
                             conversationListRef.current.updateAndMoveToFirst(newConversation);
                         })
                         .catch(err => onError && onError(err))
@@ -455,16 +476,24 @@ export const CometChatConversations = (props: ConversationInterface) => {
      * callback handler for group Add / Kicked / Banned / Scope Change
      * @param {obj} message
      */
-    const groupHandler = (message) => {
+    const groupHandler = (message, action?: string) => {
         let conversation = conversationListRef.current.getListItem(message['conversationId'])
 
         if (conversation) {
             conversation.setLastMessage(message);
-            conversationListRef.current.updateList(conversation);
+            if(action === 'kicked' || action === 'banned')
+                conversationListRef.current.removeItemFromList(message.conversationId);
+            else
+                conversationListRef.current.updateList(conversation);
         } else {
             CometChat.CometChatHelper.getConversationFromMessage(message)
                 .then(newConversation => {
-                    conversationListRef.current.addItemToList(newConversation, 0);
+                    const conversation = conversationListRef.current.getListItem(message['conversationId']);
+                    if (conversation) {
+                        groupHandler(message);
+                    } else {
+                        conversationListRef.current.addItemToList(newConversation, 0);
+                    }
                 });
         }
     }
@@ -534,8 +563,12 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
         let lastMessage: CometChat.BaseMessage = conversations['lastMessage'];
         if (!lastMessage) return null;
-        let messageText: string = ChatConfigurator.getDataSource().getLastConversationMessage(conversations);
-
+        let messageText: string ;
+        if(lastMessage.getDeletedAt() !== undefined){
+            messageText = localize("THIS_MESSAGE_DELETED");
+        }else{
+            messageText = ChatConfigurator.getDataSource().getLastConversationMessage(conversations);
+        }
         let groupText = "";
         if (lastMessage['receiverType'] == 'group') {
             if (lastMessage['receiverId'] == uid) {
@@ -560,28 +593,33 @@ export const CometChatConversations = (props: ConversationInterface) => {
         const lastMessage = params['conversations']['lastMessage'];
         if (!lastMessage) return null;
         let readReceipt;
+
         if (!disableTyping && params.typingText) {
             return <View style={Style.row}>
                 <Text>{params.typingText}</Text>
             </View>
         }
-        if (lastMessage && !disableReadReceipt && lastMessage['sender']['uid'] == loggedInUser.current?.uid) {
-            let status: MessageReceipt = "ERROR";
-            if (lastMessage?.hasOwnProperty('readAt'))
-                status = "READ";
-            else if (lastMessage?.hasOwnProperty("deliveredAt"))
-                status = "DELIVERED";
-            else if (lastMessage?.hasOwnProperty("sentAt"))
-                status = "SENT";
-            readReceipt = disableReceipt ? null : <CometChatReceipt
-                receipt={status}
-                deliveredIcon={props.deliveredIcon}
-                errorIcon={props.errorIcon}
-                readIcon={props.readIcon}
-                sentIcon={props.sentIcon}
-                waitIcon={props.waitingIcon}
-            />;
+
+        if (lastMessage && !disableReadReceipt && lastMessage['sender']['uid'] == loggedInUser.current?.uid && !lastMessage.getDeletedAt()) {
+                let status: MessageReceipt = "ERROR";
+                if (lastMessage?.hasOwnProperty('readAt'))
+                    status = "READ";
+                else if (lastMessage?.hasOwnProperty("deliveredAt"))
+                    status = "DELIVERED";
+                else if (lastMessage?.hasOwnProperty("sentAt"))
+                    status = "SENT";
+                readReceipt = disableReceipt ? null : <CometChatReceipt
+                    receipt={status}
+                    deliveredIcon={props.deliveredIcon}
+                    errorIcon={props.errorIcon}
+                    readIcon={props.readIcon}
+                    sentIcon={props.sentIcon}
+                    waitIcon={props.waitingIcon}
+                />;
         }
+
+
+
         return (
             <View style={Style.row}>
                 {readReceipt}
@@ -714,7 +752,8 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 },
                 onGroupMemberKicked: (message) => {
                     groupHandler(
-                        message
+                        message,
+                        'kicked'
                     );
                 },
                 onGroupMemberLeft: (message) => {
@@ -725,13 +764,19 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 },
                 onGroupMemberBanned: (message) => {
                     groupHandler(
-                        message
+                        message,
+                        'banned'
                     );
                 },
                 onMemberAddedToGroup: (message) => {
-                    groupHandler(
-                        message
-                    );
+                    if (onMemberAddedToGroupDebounceTimer.current) {
+                        clearTimeout(onMemberAddedToGroupDebounceTimer.current);
+                    }
+                    onMemberAddedToGroupDebounceTimer.current = setTimeout(() => {
+                        groupHandler(
+                            message
+                        );
+                    }, 50)
                 },
                 onGroupMemberJoined: (message) => {
                     groupHandler(
@@ -766,37 +811,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     }
                 },
                 ccMessageRead: ({ message }) => {
-                    CometChat.CometChatHelper.getConversationFromMessage(message)
-                        .then(conversation => {
-                            let conver = conversationListRef.current.getListItem(conversation.getConversationId())
-                            if (!conver) return;
-                            let lastMessageId = conver['lastMessage']['id'];
-                            if (lastMessageId == message['id']) {
-                                conversationListRef.current.updateList(conversation)
-                            }
-                        })
+                    checkAndUpdateLastMessage(message)
                 },
                 ccMessageDeleted: ({ message }) => {
-                    CometChat.CometChatHelper.getConversationFromMessage(message)
-                        .then(conversation => {
-                            let conver = conversationListRef.current.getListItem(conversation.getConversationId())
-                            if (!conver) return;
-                            let lastMessageId = conver['lastMessage']['id'];
-                            if (lastMessageId == message['id']) {
-                                conversationListRef.current.updateList(conversation)
-                            }
-                        })
+                    checkAndUpdateLastMessage(message)
                 },
                 ccMessageEdited: ({ message }) => {
-                    CometChat.CometChatHelper.getConversationFromMessage(message)
-                        .then(conversation => {
-                            let conver = conversationListRef.current.getListItem(conversation.getConversationId())
-                            if (!conver) return;
-                            let lastMessageId = conver['lastMessage']['id']
-                            if (lastMessageId == message['id']) {
-                                conversationListRef.current.updateList(conversation)
-                            }
-                        })
+                    checkAndUpdateLastMessage(message)
                 },
                 onTextMessageReceived: (textMessage) => {
                     messageEventHandler(textMessage);
@@ -811,16 +832,16 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onMessageDeleted: (deletedMessage) => {
-                    messageEventHandler(deletedMessage);
+                    checkAndUpdateLastMessage(deletedMessage)
                 },
                 onMessageEdited: (editedMessage) => {
-                    messageEventHandler(editedMessage);
+                    checkAndUpdateLastMessage(editedMessage)
                 },
                 onMessagesRead: (messageReceipt) => {
                     messageEventHandler(messageReceipt);
                 },
-                onMessagesDelivered: (messageReveipt) => {
-                    messageEventHandler(messageReveipt);
+                onMessagesDelivered: (messageReceipt) => {
+                    messageEventHandler(messageReceipt);
                 },
                 onTypingStarted: (typingIndicator) => {
                     typingEventHandler(typingIndicator, true);
@@ -896,8 +917,8 @@ export const CometChatConversations = (props: ConversationInterface) => {
             userListenerId,
             {
                 ccUserBlocked: ({ user }) => {
-                    let conversation = conversationListRef.current?.getListItem(user['conversationId']);
-                    conversationListRef.current?.updateList(conversation);
+                    conversationListRef?.current?.removeItemFromList(user['conversationId']);
+                    removeItemFromSelectionList(user['conversationId']);
                 }
             }
         )

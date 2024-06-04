@@ -122,7 +122,7 @@ export interface CometChatGroupsInterface {
     /**
      * Request builder to fetch groups.
      */
-    groupRequestBuilder?: CometChat.GroupsRequestBuilder,
+    groupsRequestBuilder?: CometChat.GroupsRequestBuilder,
     /**
      * request builder for search
      */
@@ -185,7 +185,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         ErrorStateView,
         errorStateText,
         LoadingStateView,
-        groupRequestBuilder,
+        groupsRequestBuilder,
         searchRequestBuilder,
         privateGroupIcon,
         passwordGroupIcon,
@@ -556,7 +556,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                 ListItemView={GroupItemView}
                 EmptyStateView={EmptyView}
                 ErrorStateView={ErrorView}
-                requestBuilder={ groupRequestBuilder || new CometChat.GroupsRequestBuilder()
+                requestBuilder={ groupsRequestBuilder || new CometChat.GroupsRequestBuilder()
                     .setLimit(30)
                     .setSearchKeyword("")}
                 searchRequestBuilder={searchRequestBuilder}
@@ -600,7 +600,7 @@ CometChatGroups.defaultProps = {
     EmptyStateView: undefined,
     emptyStateText: undefined,
     LoadingStateView: undefined,
-    groupRequestBuilder: undefined,
+    groupsRequestBuilder: undefined,
     privateGroupIcon: privateGroupIcon,
     passwordGroupIcon: passwordGroupIcon,
     hideError: false,

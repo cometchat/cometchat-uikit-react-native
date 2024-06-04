@@ -36,16 +36,11 @@ export class CallUtils {
           }
           break;
         case CALL_ONGOING:
-          callMessageText = `${localize(`ONGOING_CALL`)}`;
+          callMessageText = `${localize(`CALL_ACCEPTED`)}`;
           break;
         case CALL_ENDED:
-          if (this.isInitiator(initiator, loggedInUser)) {
-            callMessageText = `${localize(`OUTGOING_CALL`)}`;
-          } else {
-            callMessageText = `${localize(`INCOMING_CALL`)}`;
-          }
+          callMessageText = `${localize(`CALL_ENDED`)}`;
           break;
-        case CALL_BUSY:
         case CALL_UNANSWERED:
           if (this.isInitiator(initiator, loggedInUser)) {
             callMessageText = `${localize('UNANSWERED_CALL')}`;
@@ -60,9 +55,10 @@ export class CallUtils {
             callMessageText = `${localize('MISSED_CALL')}`;
           }
           break;
+        case CALL_BUSY:
         case CALL_REJECTED:
           if (this.isInitiator(initiator, loggedInUser)) {
-            callMessageText = `${localize('REJECTED_CALL')}`;
+            callMessageText = `${localize('CALL_REJECTED')}`;
           } else {
             callMessageText = `${localize('MISSED_CALL')}`;
           }

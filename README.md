@@ -1,73 +1,32 @@
-<div align="center">
-<img alt="CometChat" src="./screenshots/logo.png" alt="CometChat" />
-</div>
-<br>
-<div align="center">Full-fledged Chat UIKit built with <a href="https://reactnative.dev/">React Native</a>. </div>
-<div align="center">
-  <a href="https://www.cometchat.com/docs/v4/react-native-uikit/overview"><strong>Explore CometChat docs »</strong></a>
-</div>
-<br />
-<br />
+# CometChat React Native UI Kit
 
-[![Platform](https://img.shields.io/badge/Platform-ReactNative-brightgreen.svg)](#)
-[![Platform](https://img.shields.io/badge/Language-TypeScript-yellowgreen.svg)](#)
-![Version](https://shields.io/badge/version-v4.3.0-orange)
-![Twitter Follow](https://img.shields.io/twitter/follow/cometchat?style=social)
+The CometChat React Native UI Kit provides a pre-built user interface kit that developers can use to quickly integrate a reliable & fully-featured chat experience into an existing or a new app.
 
-## Table of contents
-- [About the project](#about-the-project)
-  - [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-  - [Dependencies](#dependencies)
-- [Versioning](#versioning)
-- [Contributing](#contributing)
-- [Support](#support)
-- [License](#license)
-- [About Authors](#about-authors)
-
-
-## About the project
-CometChat React Native UIKit provides pre-built user interface kit that developers can use to quickly integrate a reliable & fully featured chat experience into an existing or a new mobile app.<br />
-
-### Prerequisites
-- compileSdkVersion >= 33
-- @react-native-community/datetimepicker
-- @react-native-community/async-storage
-- @cometchat/chat-sdk-react-native
-- @react-native-clipboard/clipboard
+## Prerequisites
+- Node.js >= 16
+- npm >= 8
+- React Native >= 0.63
 
 ## Getting Started
-To set up React Native Chat UIKit and utilize CometChat for your chat functionality, you'll need to follow these steps:
-- Registration: Go to the CometChat website (https://www.cometchat.com/) and sign up for an account.
-- Create an App: After registering, log in to your CometChat account and create a new app. Provide the necessary details such as the app name, platform (React Native), and other relevant information. Once you've created the app, CometChat will generate an Auth Key and App ID for you. Make sure to keep these credentials secure, as you'll need them later.\
-- Make sure you've read the [key concepts](https://www.cometchat.com/docs/v4/react-native-uikit/key-concepts).
-- Follow the steps provided in the integration section [here](https://www.cometchat.com/docs/v4/react-native-uikit/integration).
-
+To set up CometChat React Native UI Kit and utilize CometChat for your chat functionality, you'll need to follow these steps:
+1. **Create an Account**: Register at the [CometChat Dashboard](https://app.cometchat.com/) to create an account.
+2. **Create an Application**: After registering, log into your CometChat account and create a new app. Once created, CometChat will generate an Auth Key and App ID for you. Keep these credentials secure as you'll need them later.
+3. **Check the [Key Concepts](https://www.cometchat.com/docs/reactnative-uikit/key-concepts)** to understand the basic components of CometChat.
+4. **Refer to the [Integration Steps](https://www.cometchat.com/docs/reactnative-uikit/integration)** in our documentation to integrate the UI Kit into your React Native app.
 
 ### Dependencies
-To utilize the React Native Chat UIKit in your React native project, you need to include the necessary dependencies in your  file. <br />
- @react-native-community/datetimepicker <br/>
- @react-native-community/async-storage <br/>
- @cometchat/chat-sdk-react-native <br/>
- @react-native-clipboard/clipboard <br />
+Install the required peer dependencies by running the following command:
+```bash
+npm install @cometchat/chat-sdk-react-native@latest @react-native-community/async-storage@1.23.1 @react-native-community/datetimepicker@7.6.2 
+```
+For above @cometchat/chat-uikit-react-native@4.3.0
+```bash
+npm install @react-native-clipboard/clipboard
+```
+For below @cometchat/chat-uikit-react-native@4.3.0
+```bash
+npm install @react-native-comunity/clipboard
+```
 
-
-## Versioning
-- Semantic Versioning: All of the CometChat packages adhere to [semantic versioning](https://semver.org/) principles.
-
-## Contributing
-Please read through our [contributing guidelines](./CONTRIBUTING.md). Included are directions for opening issues, coding standards, and notes on development.
-
-## Support
-- Facing any issues while integrating or installing the UI Kit please connect with us via real time support present in <a href="https://app.cometchat.com/signup"> CometChat Dashboard.</a>.
-
-## License
-Code released under the [MIT License](./LICENSE).
-
-
-## About Authors 
-
-This project is created & maintained by: <br/>
-[⚔️ @rohitninawe 🛡](https://github.com/rohitninawe-cometchat)  <br/>
-[⚔️ @ritikkaushik 🛡](https://github.com/kaushikRitik)  <br/>
-
+## Help and Support
+For issues running the project or integrating with our UI Kits, consult our [documentation](https://www.cometchat.com/docs/react-uikit/integration) or create a [support ticket](https://help.cometchat.com/hc/en-us) or seek real-time support via the [CometChat Dashboard](https://app.cometchat.com/).

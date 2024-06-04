@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Susitikimų planuotojas",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Tocca per rimuovere",
-	"ALL":"Tutti"
+	"ALL":"Tutti",
+  "RESOURCE_PERMISSION_REQUIRED": "Questa funzionalità richiede autorizzazioni specifiche per le risorse. Abilita le autorizzazioni necessarie nelle impostazioni del tuo dispositivo"
 }

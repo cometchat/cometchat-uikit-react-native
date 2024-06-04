@@ -51,6 +51,7 @@ import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandle
 import { CometChatMessageComposerActionInterface } from '../shared/helper/types';
 import { CometChatMediaRecorder, MediaRecorderStyle } from '../shared/views/CometChatMediaRecorder';
 import { AIOptionsStyle } from '../AI/AIOptionsStyle';
+import { permissionUtilIOS } from '../shared/utils/PermissionUtilIOS';
 const { FileManager } = NativeModules;
 
 const uiEventListenerShow = 'uiEvent_show_' + new Date().getTime();
@@ -622,7 +623,10 @@ export const CometChatMessageComposer = React.forwardRef(
     };
 
     const fileInputHandler = async (fileType: string) => {
-      if (fileType === MessageTypeConstants.takePhoto)
+      if (fileType === MessageTypeConstants.takePhoto) {
+        if (!(await permissionUtilIOS.startResourceBasedTask(["camera"]))) {
+          return;
+        }
         FileManager.openCamera(fileType, async (cameraImage: any) => {
           if (CheckPropertyExists(cameraImage, 'error')) {
             return;
@@ -640,6 +644,7 @@ export const CometChatMessageComposer = React.forwardRef(
             chatWith.current
           );
         });
+      }
         else if (Platform.OS === 'ios' && fileType === MessageTypeConstants.video) {
           NativeModules.VideoPickerModule.pickVideo(((file) => {
             if(file.uri)
@@ -767,6 +772,14 @@ export const CometChatMessageComposer = React.forwardRef(
         })
         .catch((error: any) => {
           onError && onError(error);
+          textMessage.data.metaData = {error: true}
+          CometChatUIEventHandler.emitMessageEvent(
+            MessageEvents.ccMessageSent,
+            {
+              message: textMessage,
+              status: messageStatus.error,
+            }
+          );
           clearInputBox();
         });
     };
@@ -894,6 +907,14 @@ export const CometChatMessageComposer = React.forwardRef(
         .catch((error: any) => {
           setShowRecordAudio(false);
           onError && onError(error);
+          localMessage.data.metaData = {error: true}
+          CometChatUIEventHandler.emitMessageEvent(
+            MessageEvents.ccMessageSent,
+            {
+              message: localMessage,
+              status: messageStatus.error,
+            }
+          );
           console.log('media message sent error', error);
         });
     };

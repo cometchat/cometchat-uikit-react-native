@@ -16,6 +16,7 @@ import { CallingPackage } from "./CallingPackage";
 import { CallUtils } from "./CallUtils";
 import { CometChatUIEventHandler } from "../shared";
 import { CallUIEvents } from "./CallEvents";
+import { permissionUtilIOS } from "../shared/utils/PermissionUtilIOS";
 
 const CometChatCalls = CallingPackage.CometChatCalls;
 
@@ -127,8 +128,10 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         )
     }
 
-    startDirectCall(sessionId: string, theme?: CometChatTheme) {
-
+    async startDirectCall(sessionId: string, theme?: CometChatTheme) {
+        if (!(await permissionUtilIOS.startResourceBasedTask(["mic", "camera"]))) {
+            return;
+        }
         const callSettingsBuilder = new CometChatCalls.CallSettingsBuilder()
             .setCallEventListener(
                 new CometChatCalls.OngoingCallListener({

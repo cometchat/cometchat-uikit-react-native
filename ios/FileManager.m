@@ -133,15 +133,85 @@ RCT_EXPORT_METHOD(openFile:(NSString *) url name:(NSString *) fileName myCallbac
     return YES;
 }
 
+RCT_EXPORT_METHOD(requestResourcesPermission:(NSArray *)resourceTypes resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    __block NSUInteger permissionsToCheckCount = resourceTypes.count;
+    NSMutableDictionary *permDict = [NSMutableDictionary new];
+    for (NSString *resourceType in resourceTypes) {
+        NSString *mediaType;
+        if ([resourceType isEqualToString:@"camera"]) {
+            mediaType = AVMediaTypeVideo;
+        } else if ([resourceType isEqualToString:@"mic"]) {
+            mediaType = AVMediaTypeAudio;
+        } else {
+            reject(@"INVALID_RESOURCE_TYPE", @"Invalid resource type requested", nil);
+            return;
+        }
+        [AVCaptureDevice requestAccessForMediaType:mediaType completionHandler:^(BOOL granted) {
+            NSNumber *authStatusObj = granted ? @(AVAuthorizationStatusAuthorized) : @(AVAuthorizationStatusDenied);
+            permDict[resourceType] = authStatusObj;
+            
+            permissionsToCheckCount--;
+            if (permissionsToCheckCount == 0) {
+                resolve(permDict);
+            }
+        }];
+    }
+}
+
+RCT_EXPORT_METHOD(checkResourcesPermission:(NSArray *)resourceTypes resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    NSMutableDictionary *permDict = [NSMutableDictionary new];
+    
+    for (NSString *resourceType in resourceTypes) {
+        NSString *mediaType = AVMediaTypeVideo;
+        if ([resourceType isEqualToString:@"camera"]) {
+            mediaType = AVMediaTypeVideo;
+        } else if ([resourceType isEqualToString:@"mic"]) {
+            mediaType = AVMediaTypeAudio;
+        } else {
+            reject(@"INVALID_RESOURCE_TYPE", @"Invalid resource type requested", nil);
+            return;
+        }
+        
+        AVAuthorizationStatus authStatusCamera = [AVCaptureDevice authorizationStatusForMediaType:mediaType];
+
+        NSNumber *authStatusCameraObj = @(authStatusCamera);
+        
+        permDict[resourceType] = authStatusCameraObj;
+    }
+    
+    resolve(permDict);
+}
+
 RCT_EXPORT_METHOD(openCamera: (NSString *) type callback:(RCTResponseSenderBlock) call) {
     callback = call;
     UIViewController *presentedViewController = RCTPresentedViewController();
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIImagePickerController *imageController = [[UIImagePickerController alloc] init];
-        imageController.delegate = self;
-        imageController.title = @"Select an image";
-        imageController.sourceType = UIImagePickerControllerSourceTypeCamera;
-        [presentedViewController presentViewController:imageController animated:YES completion:nil];
+        if ([UIImagePickerController isSourceTypeAvailable: UIImagePickerControllerSourceTypeCamera]) {
+            UIImagePickerController *imageController = [[UIImagePickerController alloc] init];
+            imageController.delegate = self;
+            imageController.title = @"Select an image";
+            imageController.sourceType = UIImagePickerControllerSourceTypeCamera;
+            [presentedViewController presentViewController:imageController animated:YES completion:nil];
+        } else {
+            NSMutableString *myMutableString = [NSMutableString stringWithString:@"Camera not available"];
+            if (TARGET_IPHONE_SIMULATOR) {
+                [myMutableString setString:@"Camera not available in simulator"];
+            }
+            UIAlertController* alertController = [UIAlertController alertControllerWithTitle:@"Error"
+                                            message:myMutableString
+                                            preferredStyle:UIAlertControllerStyleAlert];
+
+            UIAlertAction* okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault
+            handler:^(UIAlertAction * action) {
+                // Action when OK button is pressed
+            }];
+
+            [alertController addAction:okAction];
+
+            [presentedViewController presentViewController:alertController animated:YES completion:nil];
+        }
     });
 }
 

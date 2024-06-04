@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Meeting Scheduler",
   "MIN": "min",
   "TAP_TO_REMOVE":"Tap to remove",
-  "ALL": "All"
+  "ALL": "All",
+  "RESOURCE_PERMISSION_REQUIRED": "This feature requires specific resource permission(s). Please enable the necessary permissions in your device settings."
 }

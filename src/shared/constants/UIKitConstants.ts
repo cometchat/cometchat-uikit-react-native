@@ -284,6 +284,7 @@ export type MessageTimeAlignmentType = "top" | "bottom"
 export const MessageStatusConstants = Object.freeze({
 	inprogress: "inprogress",
 	success: "success",
+	error: "error"
 });
 
 export const GroupsConstants = {

@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Agendador de reuniões",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Toque para remover",
-	"ALL":"Todos"
+	"ALL":"Todos",
+  "RESOURCE_PERMISSION_REQUIRED": "Esse recurso requer permissões específicas de recursos. Ative as permissões necessárias nas configurações do seu dispositivo"
 }

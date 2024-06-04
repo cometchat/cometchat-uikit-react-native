@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "會議排程器",
   "MIN": "小米",
 	"TAP_TO_REMOVE":"點擊以移除",
-	"ALL":"全部"
+	"ALL":"全部",
+  "RESOURCE_PERMISSION_REQUIRED": "此功能需要特定的資源權限。請在設備設置中啟用必要的權限"
 }

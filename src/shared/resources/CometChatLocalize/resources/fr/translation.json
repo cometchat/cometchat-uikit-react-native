@@ -300,5 +300,6 @@
   "MEETING_SCHEDULER": "Planificateur de réunions",
   "MIN": "mi",
 	"TAP_TO_REMOVE":"Touchez pour supprimer",
-	"ALL":"Tous"
+	"ALL":"Tous",
+  "RESOURCE_PERMISSION_REQUIRED": "Cette fonctionnalité nécessite des autorisations de ressources spécifiques. Veuillez activer les autorisations nécessaires dans les paramètres de votre appareil"
 }

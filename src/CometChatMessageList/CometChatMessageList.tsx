@@ -560,13 +560,13 @@ export const CometChatMessageList = memo(forwardRef<
                 newMessage = InteractiveMessageUtils.convertInteractiveMessage(baseMessage);
             }
             if (checkSameConversation(baseMessage) || checkMessageInSameConversation(baseMessage) || messageToSameConversation(baseMessage)) {
-                //need to add 
+                //need to add
                 if (baseMessage.getParentMessageId()) {
                     if (baseMessage.getParentMessageId() == parseInt(parentMessageId)) {
                         // add to list
                         messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
-                        setMessagesList([...messagesList, newMessage]);
                         inProgressMessages.current = [...inProgressMessages.current, newMessage]
+                        setMessagesList(prev => [...prev, newMessage]);
                     } else {
                         //increase count
                         let index = messagesList.findIndex(msg => msg.id === newMessage.parentMessageId);
@@ -583,11 +583,11 @@ export const CometChatMessageList = memo(forwardRef<
                     }
                 } else if (parentMessageId == undefined) {
                     messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
-                    setMessagesList([...messagesList, newMessage]);
                     inProgressMessages.current = [...inProgressMessages.current, newMessage]
+                    setMessagesList(prev => [...prev, newMessage]);
                 }
                 // if scroll is not at bottom
-                if (!scrollToBottomOnNewMessages && (Math.round(currentScrollPosition.current.y) <= currentScrollPosition.current.scrollViewHeight)) {
+                if (!scrollToBottomOnNewMessages && currentScrollPosition.current.y && (Math.round(currentScrollPosition.current.y) <= currentScrollPosition.current.scrollViewHeight)) {
                     if ((parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId)) || (!parentMessageId && !newMessage.parentMessageId && (baseMessage.getSender()?.getUid() || baseMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid'])) {
                         scrollToBottom();
                         return;
@@ -667,7 +667,24 @@ export const CometChatMessageList = memo(forwardRef<
                 })
         }
 
+        function isLiveReactionOfThisList(transientMessage: any) {
+            const receiverType = transientMessage?.receiverType;
+            const receiverId = transientMessage?.receiverId;
+            if (user) {
+                if (receiverType === ReceiverTypeConstants.user && (receiverId === loggedInUser.current?.getUid())) {
+                    return true
+                }
+            } else if (group) {
+                if (receiverType === ReceiverTypeConstants.group && (receiverId === group.getGuid())) {
+                    return true
+                }
+            }
+            return false
+        }
+
+
         const showTransientMessage = (transientMessage) => {
+            if (!isLiveReactionOfThisList(transientMessage)) return;
             setliveReaction(true);
             setTimeout(() => {
                 setliveReaction(false);
@@ -702,10 +719,13 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const handlePannel = (item) => {
-            if (item.alignment === ViewAlignment.messageListBottom && item.child)
-                setCustomListHeader(() => item.child)
-            else
-                setCustomListHeader(null)
+            if(item.alignment === ViewAlignment.messageListBottom && CommonUtils.checkIdBelongsToThisComponent(item.id, user, group,parentMessageId) ){
+                if (item.child)
+                    setCustomListHeader(() => item.child)
+                else
+                    setCustomListHeader(null)
+                }
+
         }
 
         useEffect(() => {
@@ -801,6 +821,9 @@ export const CometChatMessageList = memo(forwardRef<
                         }
 
                         if (status == MessageStatusConstants.success) {
+                            messageEdited(message, true);
+                        }
+                        if( status == MessageStatusConstants.error) {
                             messageEdited(message, true);
                         }
                     },
@@ -1112,7 +1135,7 @@ export const CometChatMessageList = memo(forwardRef<
             )
         }, [])
 
-        const getStatusInfoView = useCallback((item: CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
+        const getStatusInfoView = useCallback((item: CometChat.TextMessage | CometChat.MediaMessage | CometChat.CustomMessage | CometChat.InteractiveMessage | CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
             // return null if time alignment is top
             if (timeStampAlignment == "top" || item['category'] == "action" || item['deletedAt']) return null
 
@@ -1124,6 +1147,8 @@ export const CometChatMessageList = memo(forwardRef<
                 messageState = "DELIVERED";
             else if (item.getSentAt())
                 messageState = "SENT";
+            else if(item?.data?.metaData?.error)
+                messageState = "ERROR"
             else if (isSender)
                 messageState = "WAIT";
             else

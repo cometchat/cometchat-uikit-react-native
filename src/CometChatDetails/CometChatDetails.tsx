@@ -511,18 +511,20 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
         }
       );
       return;
+    } else {
+      CometChat.blockUsers(usersList).then(
+        (list: Object) => {
+          updateUserBlockStatus(list, true);
+          CometChatUIEventHandler.emitUserEvent(CometChatUIEvents.ccUserBlocked, {
+            user: userDetails,
+          });
+        },
+        (error: CometChat.CometChatException) => {
+          onError && onError(error);
+        }
+      );
+      return;
     }
-    CometChat.blockUsers(usersList).then(
-      (list: Object) => {
-        updateUserBlockStatus(list, true);
-        CometChatUIEventHandler.emitUserEvent(CometChatUIEvents.ccUserBlocked, {
-          user: userDetails,
-        });
-      },
-      (error: CometChat.CometChatException) => {
-        onError && onError(error);
-      }
-    );
   };
   const handleOnClickFncDeclaration = (item?: any) => {
     switch (item.id) {
@@ -898,7 +900,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
             listItemStyle ? listItemStyle : { titleFont: { fontWeight: '600' } }
           }
           avatarName={userDetails?.getName() || groupDetails?.getName()}
-          avatarURL={{uri: userDetails?.getAvatar() || groupDetails?.getIcon()}}
+          avatarURL={{ uri: userDetails?.getAvatar() || groupDetails?.getIcon() }}
           headViewContainerStyle={{
             paddingRight: 15,
             paddingLeft: 0,
