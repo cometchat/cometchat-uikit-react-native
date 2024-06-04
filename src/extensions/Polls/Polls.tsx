@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   NativeModules,
+  ActivityIndicator,
 } from 'react-native';
 import React, {
   useCallback,
@@ -178,6 +179,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
   const [answersList, setAnswersList] = useState([]);
   const [answers, setAnswers] = useState({});
   const [kbOffset, setKbOffset] = React.useState(59);
+  const [loader, setLoader] = React.useState(false);
   const loggedInUser = useRef(null);
   const answersFinalValues = useRef([]);
 
@@ -205,6 +207,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
 
   const polls = () => {
     if (!validate()) return;
+    setLoader(true);
 
     CometChat.callExtension('polls', 'POST', 'v2/create', {
       question: question,
@@ -215,11 +218,12 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
       .then((response) => {
         console.log('poll created', response);
         onClose && onClose()
+        setLoader(false);
         // Details about the created poll
       })
       .catch((error) => {
         console.log('poll error', error);
-
+        setLoader(false);
         onError && onError(error);
         // Error occured
       });
@@ -477,6 +481,20 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
         {getPollAnswers()}
 
       </ScrollView>
+
+      {loader && <View style={{
+        position: "absolute",
+        height: "100%",
+        width: "100%",
+        zIndex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+      }}>
+        <ActivityIndicator
+          size="large"
+          color={theme.palette.getPrimary()}
+        />
+      </View>}
     </KeyboardAvoidingView>
   );
 };

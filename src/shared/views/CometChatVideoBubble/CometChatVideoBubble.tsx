@@ -3,7 +3,7 @@ import { View, Image, ImageBackground, NativeModules, Platform, NativeEventEmitt
 import { CometChatContext } from "../../CometChatContext";
 import { ImageType } from "../../base/Types";
 import { VideoBubbleStyle, VideoBubbleStyleInterface } from "./VideoBubbleStyle";
-import { defaultPlayIcon } from "./resources";
+import { defaultPlayIcon, defaultThumbnail } from "./resources";
 import { Style } from "./style";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatVideoPlayer } from "../CometChatVideoPlayer";
@@ -167,7 +167,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
                 volumeIcon={playerVolumeIcon}
                 volumeIconColor={style.playerVolumeIconColor}
             />
-            <ImageBackground source={thumbnailUrl || placeholderImage} resizeMode={"contain"} style={{ backgroundColor, ...border, borderRadius, height, width }}>
+            <ImageBackground source={(typeof thumbnailUrl === "object" ? thumbnailUrl?.uri : thumbnailUrl) || placeholderImage || defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" }}>
                 <View
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}

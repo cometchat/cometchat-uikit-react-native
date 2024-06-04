@@ -1297,7 +1297,7 @@ export const CometChatSchedulerBubble = memo(
       }
 
       return (
-        <View style={{ opacity: isDisabled() ? 0.7 : 1, marginVertical: 5 }}>
+        <View style={{ opacity: isDisabled() ? 0.5 : 1, marginVertical: 5 }}>
           <CometChatButton
             isLoading={scheduleLoading}
             onPress={

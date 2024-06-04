@@ -7,7 +7,7 @@ import { CometChatMessageComposer, MessageComposerConfiguration, MessageComposer
 import { CometChatMessageHeader, MessageHeaderConfiguration } from "../CometChatMessageHeader"
 import { MessageListConfiguration, MessageListConfigurationInterface } from "../CometChatMessageList/MessageListConfiguration";
 import { ChatConfigurator, CometChatContext, CometChatLiveReactions, localize } from "../shared";
-import { MetadataConstants } from "../shared/constants/UIKitConstants";
+import { MetadataConstants, ReceiverTypeConstants } from "../shared/constants/UIKitConstants";
 import { ThreadedMessagesConfiguration, ThreadedMessagesConfigurationInterface } from "../CometChatThreadedMessages/ThreadedMessagesConfiguration";
 import { CometChatDetails, DetailsConfiguration, DetailsConfigurationInterface } from "../CometChatDetails";
 import { CometChatThreadedMessages } from "../CometChatThreadedMessages";
@@ -123,8 +123,12 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
             {
                 onTransientMessageReceived: (transientMessage) => {
                     const { reaction, type } = transientMessage['data'];
+                    if (!isLiveReactionOfThisList(transientMessage)) return;
                     if (type == MetadataConstants.liveReaction) {
-                        setShowLiveReaction(!showLiveReaction);
+                        setShowLiveReaction(true);
+                        setTimeout(() => {
+                            setShowLiveReaction(false);
+                        }, 1500);
                     }
                 },
             }
@@ -201,9 +205,22 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
         return () => {
             CometChatUIEventHandler.removeGroupListener(uiEventListener);
             CometChatUIEventHandler.removeUserListener(uiEventListener);
+            CometChatUIEventHandler.removeMessageListener(msgListenerId);
             CometChat.removeConnectionListener(connectionListenerId);
         }
     }, []);
+
+    function isLiveReactionOfThisList(transientMessage: any) {
+        const receiverType = transientMessage?.receiverType;
+        const senderId = transientMessage?.sender?.uid;
+        const receiverId = transientMessage?.receiverId;
+        if (userObject && receiverType === ReceiverTypeConstants.user && (senderId === userObject?.getUid())) {
+            return true
+        } else if (groupObject && receiverType === ReceiverTypeConstants.group && (receiverId === groupObject.getGuid())) {
+            return true
+        }
+        return false
+    }
 
     const DetailViewIcon = (params: { user: CometChat.User, group: CometChat.Group }) => {
         return (
@@ -303,7 +320,9 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
             </View>
             {
                 showLiveReaction ?
-                    <CometChatLiveReactions /> :
+                    <View style={{ alignItems: "flex-end" }}>
+                        <CometChatLiveReactions />
+                    </View> :
                     null
             }
             {

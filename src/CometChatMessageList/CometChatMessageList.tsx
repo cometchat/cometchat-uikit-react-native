@@ -3,7 +3,7 @@ import { View, FlatList, Text, Image, TouchableOpacity, ActivityIndicator, Modal
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { LeftArrowCurve, RightArrowCurve } from "./resources";
-import { BaseStyle, BaseStyleInterface, CometChatContext, CometChatLiveReactions, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, ImageType, SuggestionItem } from "../shared";
+import { BaseStyle, BaseStyleInterface, CometChatContext, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, ImageType, SuggestionItem } from "../shared";
 import { MessageBubbleStyle, MessageBubbleStyleInterface } from "../shared/views/CometChatMessageBubble/MessageBubbleStyle";
 import { AvatarStyle, AvatarStyleInterface } from "../shared";
 import { CometChatAvatar, CometChatDate, CometChatReceipt, DateStyle } from "../shared";
@@ -288,7 +288,6 @@ export const CometChatMessageList = memo(forwardRef<
         const [loadingMessages, setLoadingMessages] = useState(false);
         const [unreadCount, setUnreadCount] = useState(0);
         const [showMessageOptions, setShowMessageOptions] = useState([]);
-        const [liveReaction, setliveReaction] = useState(false);
         const [ExtensionsComponent, setExtensionsComponent] = useState(null);
         const [CustomListHeader, setCustomListHeader] = useState(null);
         const [messageInfo, setMessageInfo] = useState(false);
@@ -770,30 +769,6 @@ export const CometChatMessageList = memo(forwardRef<
                 })
         }
 
-        function isLiveReactionOfThisList(transientMessage: any) {
-            const receiverType = transientMessage?.receiverType;
-            const receiverId = transientMessage?.receiverId;
-            if (user) {
-                if (receiverType === ReceiverTypeConstants.user && (receiverId === loggedInUser.current?.getUid())) {
-                    return true
-                }
-            } else if (group) {
-                if (receiverType === ReceiverTypeConstants.group && (receiverId === group.getGuid())) {
-                    return true
-                }
-            }
-            return false
-        }
-
-
-        const showTransientMessage = (transientMessage) => {
-            if (!isLiveReactionOfThisList(transientMessage)) return;
-            setliveReaction(true);
-            setTimeout(() => {
-                setliveReaction(false);
-            }, 1500);
-        }
-
         const createActionMessage = () => { }
 
         const updateMessageReceipt = (receipt) => {
@@ -965,9 +940,6 @@ export const CometChatMessageList = memo(forwardRef<
                     },
                     onMessageEdited: (editedMessage) => {
                         messageEdited(editedMessage);
-                    },
-                    onTransientMessageReceived: (transientMessage) => {
-                        showTransientMessage(transientMessage)
                     },
                     onFormMessageReceived: (formMessage) => {
                         newMessage(formMessage);
@@ -1917,13 +1889,6 @@ export const CometChatMessageList = memo(forwardRef<
                                             </View>
                                         }
                                     </View> : null
-                }
-                {
-                    liveReaction ?
-                        <View style={{ alignItems: "flex-end" }}>
-                            <CometChatLiveReactions />
-                        </View> :
-                        null
                 }
                 {
                     unreadCount > 0 ?

@@ -1,9 +1,8 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import React, { useContext, useLayoutEffect, useRef, useState } from 'react';
 import { FontStyle } from '../../shared/base';
 import { CometChatContext } from "../../shared/CometChatContext";
 import { makeExtentionCall } from '../../shared/utils/CometChatMessageHelper';
-import { ICONS } from './resources';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 
@@ -95,7 +94,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
   const [isResultVisible, setIsResultVisible] = useState(false);
   const [result, setResult] = useState<any>({});
   const [optionsMetaData, setOptionsMetaData] = useState<any>({});
-  const [selectedOption, setSelectedOption] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(false);
   const maxScore = useRef(0);
 
   const getResult = (self, metadata) => {
@@ -108,7 +107,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           allOptions[key] = {
             ...value,
             percent: self
-              ? (value['count'] / metadata.results.total) * 100
+              ? ((value['count'] / metadata.results.total) * 100)
               : (value['count'] / (metadata.results.total + 1)) * 100,
           };
         }
@@ -119,10 +118,11 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
   };
 
   const handleResult = ({ id }: any) => {
-    if (loggedInUser['uid'] == senderUid)
+    let newOptionsMetaData = { ...optionsMetaData };
+    if (loggedInUser['uid'] == senderUid || (newOptionsMetaData.results?.options[id]?.["voters"]?.[loggedInUser['uid']]))
       return;
+    setIsLoading(true);
     choosePoll && choosePoll(id);
-    setSelectedOption((prev) => ({ ...prev, [id]: !prev[id] }));
     makeExtentionCall('polls', 'POST', 'v2/vote', {
       vote: id,
       id: pollId ?? optionsMetaData.id,
@@ -130,9 +130,11 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
       .then((s) => {
         console.log('success', s);
         getResult(false, optionsMetaData);
+        setIsLoading(false);
       })
       .catch((error) => {
         console.log(error);
+        setIsLoading(false);
       });
   };
 
@@ -150,25 +152,24 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           },
         ]}
       >
-        {isResultVisible ? (
-          <View
-            style={[
-              style.resultMask,
-              {
-                borderTopRightRadius: result[id]['percent'] > 99 ? 6 : 0,
-                borderBottomRightRadius: result[id]['percent'] > 99 ? 6 : 0,
-                backgroundColor:
-                  maxScore.current === result[id]['count']
-                    ? pollsBubbleStyle.selectedOptionColor ??
-                      'rgba(51, 153, 255,0.2)'
-                    : pollsBubbleStyle.unSelectedOptionColor ??
-                      theme.palette.getAccent200(),
-                width: result[id] ? `${result[id]['percent']}%` : 0,
-              },
-            ]}
-          />
-        ) : (
-          <View
+        {isResultVisible && <View
+          style={[
+            style.resultMask,
+            {
+              borderTopRightRadius: result[id]['percent'] > 99 ? 6 : 0,
+              borderBottomRightRadius: result[id]['percent'] > 99 ? 6 : 0,
+              backgroundColor:
+                maxScore.current === result[id]['count']
+                  ? pollsBubbleStyle.selectedOptionColor ??
+                  'rgba(51, 153, 255,0.2)'
+                  : pollsBubbleStyle.unSelectedOptionColor ??
+                  theme.palette.getAccent200(),
+              width: result[id] ? `${result[id]['percent']}%` : 0,
+            },
+          ]}
+        />}
+        <View style={{ flexDirection: "row" }}>
+          {!isResultVisible && <View
             style={[
               style.optionsOption,
               {
@@ -177,32 +178,33 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
                   theme.palette.getAccent200(),
               },
             ]}
+          />}
+          <Text
+            style={[
+              style.valueText,
+              {
+                color:
+                  pollsBubbleStyle.pollOptionsTextColor ??
+                  theme.palette.getAccent(),
+              },
+              theme.typography.subtitle1,
+              pollsBubbleStyle.pollOptionsTextStyle,
+            ]}
           >
-            {selectedOption[id] === true && (
-              <Image
-                source={ICONS.TICK}
-                resizeMode="contain"
-                style={{
-                  height: 14,
-                  tintColor: theme.palette.getAccent(),
-                }}
-              />
-            )}
-          </View>
-        )}
-        <Text
-          style={[
-            style.valueText,
-            {
-              color:
-                pollsBubbleStyle.pollOptionsTextColor ??
-                theme.palette.getAccent(),
-            },
-            theme.typography.subtitle1,
-            pollsBubbleStyle.pollOptionsTextStyle,
-          ]}
-        >
-          {value}
+            {value}
+          </Text>
+        </View>
+        <Text style={[
+          style.valueText,
+          {
+            color:
+              pollsBubbleStyle.pollOptionsTextColor ??
+              theme.palette.getAccent(),
+          },
+          theme.typography.subtitle1,
+          pollsBubbleStyle.pollOptionsTextStyle,
+        ]}>
+          {optionsMetaData.results.options[id].count}
         </Text>
       </TouchableOpacity>
     );
@@ -278,6 +280,11 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
       >
         {optionsMetaData.results?.total} people voted
       </Text>
+
+      {isLoading && <View style={style.centerPosition}>
+        <ActivityIndicator size="small" />
+      </View>}
+
     </View>
   );
 };
@@ -300,6 +307,7 @@ const style = StyleSheet.create({
     marginTop: 5,
     height: 42,
     alignItems: 'center',
+    justifyContent: 'space-between',
     borderRadius: 6,
     flexDirection: 'row',
   },
@@ -312,7 +320,7 @@ const style = StyleSheet.create({
     justifyContent: 'center',
   },
   valueText: {
-    marginLeft: 10,
+    marginHorizontal: 10,
   },
   resultMask: {
     alignItems: 'center',
@@ -322,6 +330,16 @@ const style = StyleSheet.create({
     borderTopLeftRadius: 6,
     borderBottomLeftRadius: 6,
   },
+  centerPosition: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  }
 });
 PollsBubble.defaultProps = {
   options: {},

@@ -255,7 +255,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         }
 
         return (
-            <View style={{ opacity: isDisabled() ? .7 : 1, marginVertical: 8 }}>
+            <View style={{ opacity: isDisabled() ? .5 : 1, marginVertical: 8 }}>
                 <CometChatButton
                     onPress={isDisabled() ? () => { } : onClick}
                     text={data.getButtonText()}

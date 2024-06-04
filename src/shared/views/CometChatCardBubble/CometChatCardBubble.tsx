@@ -92,7 +92,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
     }
 
     return (
-      <View style={{ borderTopWidth: 1, borderTopColor: theme.palette.getAccent100(), opacity: isDisabled() ? .7 : 1 }}>
+      <View style={{ borderTopWidth: 1, borderTopColor: theme.palette.getAccent100(), opacity: isDisabled() ? .5 : 1 }}>
         <CometChatButton
           onPress={isDisabled() ? () => { } : onClick}
           text={data.getButtonText()}

@@ -1,5 +1,5 @@
 export class CometChatNetworkUtils {
-    
+
     static async fetcher({ url, method, body, headers }: { url: string, method: string, body: any, headers: any }) {
         try {
             const res = await fetch(url, {
@@ -16,10 +16,13 @@ export class CometChatNetworkUtils {
             throw error;
         }
     }
-     
+
 }
 
 export function isHttpUrl(string) {
-    const regex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
-    return regex.test(string);
+    if (String(string).startsWith('https://') || String(string).startsWith('http://')) {
+        return true
+    } else {
+        return false
+    }
 }
