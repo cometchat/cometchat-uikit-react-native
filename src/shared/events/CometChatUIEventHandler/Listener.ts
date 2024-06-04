@@ -31,6 +31,8 @@ type MessageUIEvents = {
     onSchedulerMessageReceived?: Function,
     onCustomInteractiveMessageReceived?: Function,
     onInteractionGoalCompleted?: Function,
+    onMessageReactionAdded?: Function,
+    onMessageReactionRemoved?: Function,
 
     // ccMessageForwarded?:Function,
 }
@@ -58,6 +60,8 @@ export class MessageUIEventListener {
     onSchedulerMessageReceived?: Function = undefined;
     onCustomInteractiveMessageReceived?: Function = undefined;
     onInteractionGoalCompleted?: Function = undefined;
+    onMessageReactionAdded?: Function = undefined;
+    onMessageReactionRemoved?: Function = undefined;
     // ccMessageForwarded?:Function =  undefined;
     constructor({
         ccMessageSent,
@@ -83,6 +87,8 @@ export class MessageUIEventListener {
         onSchedulerMessageReceived,
         onCustomInteractiveMessageReceived,
         onInteractionGoalCompleted,
+        onMessageReactionAdded,
+        onMessageReactionRemoved,
         // ccMessageForwarded,
     }: MessageUIEvents) {
         if (!isFalsy(ccMessageError)) this.ccMessageError = ccMessageError;
@@ -109,6 +115,8 @@ export class MessageUIEventListener {
         if (!isFalsy(onSchedulerMessageReceived)) this.onSchedulerMessageReceived = onSchedulerMessageReceived;
         if (!isFalsy(onCustomInteractiveMessageReceived)) this.onCustomInteractiveMessageReceived = onCustomInteractiveMessageReceived;
         if (!isFalsy(onInteractionGoalCompleted)) this.onInteractionGoalCompleted = onInteractionGoalCompleted;
+        if (!isFalsy(onMessageReactionAdded)) this.onMessageReactionAdded = onMessageReactionAdded;
+        if (!isFalsy(onMessageReactionRemoved)) this.onMessageReactionRemoved = onMessageReactionRemoved;
 
         // if (!isFalsy(ccMessageForwarded)) this.ccMessageForwarded = ccMessageForwarded;
     }

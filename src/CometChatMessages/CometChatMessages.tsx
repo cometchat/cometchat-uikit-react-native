@@ -297,6 +297,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                                 setShowComponent(ComponentNames.Thread);
                             }}
                             customSoundForMessages={customSoundForIncomingMessages}
+                            hideActionSheetHeader={true}
                             {..._listConfiguration}
                         />
                 }

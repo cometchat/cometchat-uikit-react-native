@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Cuba lagi",
   "TIME_SLOT_UNAVAILABLE": "Slot masa tidak lagi tersedia. Sila pilih yang lain.",
   "MEETING_SCHEDULER": "Penjadual Mesyuarat",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Ketik untuk membuang",
+	"ALL":"Semua"
 }

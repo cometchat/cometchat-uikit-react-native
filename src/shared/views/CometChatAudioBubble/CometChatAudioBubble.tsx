@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useContext } from "react";
-import { View, Text, TouchableOpacity, Image, NativeModules, ActivityIndicator, NativeEventEmitter } from "react-native";
-import { CometChatContext} from "../../CometChatContext";
+import { View, Text, Image, NativeModules, ActivityIndicator, NativeEventEmitter } from "react-native";
+import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, ImageType } from "../../base/Types";
 import { AudioBubbleStyle, AudioBubbleStyleInterface } from "./AudioBubbleStyle";
 import { defaultPauseIcon, defaultPlayIcon, } from "./resources";
@@ -50,8 +50,8 @@ export const CometChatAudioBubble = ({
     subtitle,
     title
 }: CometChatAudioBubbleInterface) => {
-    
-    const {theme} = useContext<CometChatContextType>(CometChatContext);
+
+    const { theme } = useContext<CometChatContextType>(CometChatContext);
 
     const _style = new AudioBubbleStyle({
         backgroundColor: theme?.palette.getBackgroundColor(),
@@ -130,12 +130,35 @@ export const CometChatAudioBubble = ({
         }
     }, []);
 
+    const pressTime = useRef(0);
+
+    const handleTouchStart = () => {
+        pressTime.current = Date.now();
+    };
+
+    const handleTouchEnd = () => {
+        // if (pressTime.current === null) return;
+        const endTime = Date.now();
+        const pressDuration = endTime - pressTime.current;
+        if (pressDuration < 500) {
+            playPauseAudio();
+        }
+    };
+
+    // const onTouchMove = () => {
+    //     pressTime.current = null
+    // }
+
     return (
         <View style={[Style.container, { backgroundColor, ...border, borderRadius, height, width }]}>
             {
                 status == "loading" ?
                     <ActivityIndicator style={Style.imageStyle} color={iconTint} size={"small"} /> :
-                    <View onTouchEnd={playPauseAudio}>
+                    <View
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                        // onTouchMove={onTouchMove}
+                    >
                         <Image
                             source={
                                 status == "playing" ?

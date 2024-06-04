@@ -23,6 +23,7 @@ import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
 import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
 import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
 import { CometChatSchedulerBubble, SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
+import { View } from "react-native";
 
 function isAudioMessage(message: CometChat.BaseMessage): message is CometChat.MediaMessage {
     return message.getCategory() == CometChat.CATEGORY_MESSAGE &&
@@ -223,6 +224,7 @@ export class MessageDataSource implements DataSource {
         let optionsList: Array<CometChatMessageOption> = [];
         let _isSentByMe = this.isSentByMe(loggedInUser, messageObject);
         let canDelete = false;
+        if (isDeletedMessage(messageObject)) return optionsList;
         if ((group?.getScope() != undefined && group?.getScope() != GroupMemberScope.participant) || _isSentByMe) {
             canDelete = true;
         }
@@ -276,18 +278,20 @@ export class MessageDataSource implements DataSource {
     }
 
     getDeleteMessageBubble(message: CometChat.BaseMessage, theme: CometChatTheme): JSX.Element {
-        return <CometChatTextBubble
-            textContainerStyle={{ marginStart: 4, marginEnd: 4 }}
-            text={localize("MESSAGE_IS_DELETED")}
-            style={{
-                backgroundColor: "transparent",
-                textFont: {
-                    fontSize: theme?.typography?.subtitle2?.fontSize,
-                    fontWeight: theme?.typography?.subtitle2?.fontWeight,
-                },
-                textColor: theme?.palette?.getAccent600()
-            }}
-        />
+        return <View style={{ paddingBottom: 8, borderWidth: 1, borderStyle: "dashed", borderRadius: 8, borderColor: theme?.palette?.getAccent600() }}>
+            <CometChatTextBubble
+                textContainerStyle={{ marginStart: 4, marginEnd: 4 }}
+                text={localize("MESSAGE_IS_DELETED")}
+                style={{
+                    backgroundColor: "transparent",
+                    textFont: {
+                        fontSize: theme?.typography?.subtitle2?.fontSize,
+                        fontWeight: theme?.typography?.subtitle2?.fontWeight,
+                    },
+                    textColor: theme?.palette?.getAccent600()
+                }}
+            />
+        </View>
     }
 
     getVideoMessageBubble(videoUrl: string, thumbnailUrl: string, message: CometChat.MediaMessage, theme: CometChatTheme, videoBubbleStyle: VideoBubbleStyleInterface) {
@@ -383,11 +387,11 @@ export class MessageDataSource implements DataSource {
     getAudioMessageContentView(message: CometChat.MediaMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         let attachment = message.getAttachment();
         return ChatConfigurator.dataSource.getAudioMessageBubble(attachment.getUrl(), attachment.getName(), {
-            iconTint: alignment == "right" ? theme?.palette?.getSecondary() : theme?.palette?.getPrimary(),
-            backgroundColor: alignment == "left" ? theme?.palette?.getAccent50() : theme?.palette?.getPrimary(),
-            titleColor: alignment == "right" ? theme?.palette.getSecondary() : theme?.palette.getAccent(),
+            iconTint: theme?.palette?.getPrimary(),
+            backgroundColor: "transparent",
+            titleColor: theme?.palette.getAccent(),
             titleFont: theme?.typography.body,
-            subtitleColor: alignment == "right" ? theme?.palette.getSecondary() : theme?.palette.getAccent(),
+            subtitleColor: theme?.palette.getAccent(),
             subtitleFont: theme?.typography.subtitle1,
         }, message, theme);
     }
@@ -399,9 +403,9 @@ export class MessageDataSource implements DataSource {
             message,
             theme,
             {
-                backgroundColor: alignment == "left" ? theme?.palette.getAccent50() : theme?.palette.getPrimary(),
+                backgroundColor: "transparent",
                 playIconBackgroundColor: theme?.palette?.getAccent50(),
-                playIconTint: alignment == "left" ? theme?.palette.getPrimary() : theme?.palette.getSecondary(),
+                playIconTint: theme?.palette.getPrimary(),
             }
         );
     }
@@ -412,18 +416,18 @@ export class MessageDataSource implements DataSource {
             url = message['data']['url'];
 
         return ChatConfigurator.dataSource.getImageMessageBubble(url, attachment.getName(), {
-            backgroundColor: alignment == "left" ? theme?.palette.getAccent50() : theme?.palette.getPrimary()
+            backgroundColor: theme?.palette.getAccent50()
         }, message, theme);
     }
     getFileMessageContentView(message: CometChat.MediaMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         let attachment = message.getAttachment();
         return ChatConfigurator.dataSource.getFileMessageBubble(attachment.getUrl(), attachment.getName(),
             {
-                iconTint: alignment == "right" ? theme?.palette.getSecondary() : theme?.palette?.getPrimary(),
-                backgroundColor: alignment == "left" ? theme?.palette.getAccent50() : theme?.palette.getPrimary(),
-                titleColor: alignment == "right" ? theme?.palette.getSecondary() : theme?.palette.getAccent(),
+                iconTint: theme?.palette?.getPrimary(),
+                backgroundColor: "transparent",
+                titleColor: theme?.palette.getAccent(),
                 titleFont: theme?.typography.body,
-                subtitleColor: alignment == "right" ? theme?.palette.getSecondary() : theme?.palette.getAccent(),
+                subtitleColor: theme?.palette.getAccent(),
                 subtitleFont: theme?.typography.subtitle1,
             }
             , message, theme);
@@ -620,7 +624,7 @@ export class MessageDataSource implements DataSource {
     getAllMessageCategories(): string[] {
         return [MessageCategoryConstants.message, MessageCategoryConstants.action, MessageCategoryConstants.interactive];
     }
-    getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?:CometChatTheme): JSX.Element[] {
+    getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?: CometChatTheme): JSX.Element[] {
         return [];
     }
     getAuxiliaryHeaderAppbarOptions(user?: CometChat.User, group?: CometChat.Group): JSX.Element {

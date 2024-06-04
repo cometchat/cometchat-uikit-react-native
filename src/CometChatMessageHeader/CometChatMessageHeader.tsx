@@ -10,7 +10,7 @@ import {
   //@ts-ignore
 } from 'react-native';
 import React, { useEffect, useState, useRef, useContext } from 'react';
-import { CometChatContext, CometChatListItem } from '../shared';
+import { AvatarStyle, CometChatContext, CometChatListItem } from '../shared';
 import { localize } from '../shared';
 import { ICONS } from './resources';
 import { styles } from './styles';
@@ -210,6 +210,13 @@ export const CometChatMessageHeader = (
     bodyViewContainerStyle,
     tailViewContainerStyle,
   } = props;
+
+  const _avatarStyle = new AvatarStyle({
+    backgroundColor: theme?.palette?.getAccent600(),
+    nameTextColor: theme?.palette?.getAccent(),
+    nameTextFont: theme?.typography.body,
+    ...props?.avatarStyle
+});
 
   const [groupObj, setGroupObj] = useState(group);
   const [userStatus, setUserStatus] = useState(user ? user.getStatus() : '');
@@ -489,7 +496,7 @@ export const CometChatMessageHeader = (
             }
             headViewContainerStyle={headViewContainerStyle}
             tailViewContainerStyle={tailViewContainerStyle}
-            avatarStyle={avatarStyle}
+            avatarStyle={_avatarStyle}
           />
         )}
       </View>

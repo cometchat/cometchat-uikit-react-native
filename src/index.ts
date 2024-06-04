@@ -141,7 +141,31 @@ import {
   RadioButtonElement,
   SingleSelectElement,
   TextInputElement,
-  URLNavigationAction
+  URLNavigationAction,
+
+  CometChatReactions,
+  CometChatReactionsInterface,
+  ReactionsConfiguration,
+  ReactionsConfigurationInterface,
+  ReactionsStyle,
+  ReactionsStyleInterface,
+  CometChatReactionsList,
+  CometChatReactionsListInterface,
+  ReactionsListConfiguration,
+  ReactionsListConfigurationInterface,
+  ReactionListStyle,
+  ReactionListStyleInterface,
+  CometChatQuickReactions,
+  CometChatQuickReactionsInterface,
+  QuickReactionsConfiguration,
+  QuickReactionsConfigurationInterface,
+  QuickReactionsStyle,
+  QuickReactionsStyleInterface,
+
+  CometChatEmojiKeyboard,
+  EmojiKeyboardConfiguration,
+  EmojiKeyboardStyle,
+
 } from './shared';
 
 import {
@@ -357,9 +381,6 @@ import {
   CometChatCreatePoll,
   CometChatCreatePollInterface,
   PollsConfigurationInterface, PollsExtension, PollsStyleInterface,
-  CometChatMessageReactions,
-  ReactionsExtension,
-  ReactionsConfigurationInterface,
   SmartRepliesExtension,
   SmartRepliesConfigurationInterface,
   SmartRepliesInterface,
@@ -383,7 +404,6 @@ export {
   LinkPreviewBubble,
   LinkPreviewBubbleInterface,
   LinkPreviewBubbleStyleInterface,
-  ReactionsConfigurationInterface,
   TextModerationExtensionDecorator,
   TextModerationExtension,
   TextModerationConfigurationInterface,
@@ -422,8 +442,6 @@ export {
   CometChatCreatePoll,
   CometChatCreatePollInterface,
   PollsConfigurationInterface, PollsExtension,
-  CometChatMessageReactions,
-  ReactionsExtension,
   SmartRepliesExtension,
   SmartRepliesInterface,
   SmartRepliesView,
@@ -671,8 +689,35 @@ export {
   CallLogRecordingsConfigurationInterface,
   CallRecordingsStyle,
   CallRecordingsStyleInterface,
-  CometChatCallLogRecordingsConfigurationInterface
+  CometChatCallLogRecordingsConfigurationInterface,
   /*Call Logs */
+
+  /* Reactions */
+  CometChatReactions,
+  CometChatReactionsInterface,
+  ReactionsConfiguration,
+  ReactionsConfigurationInterface,
+  ReactionsStyle,
+  ReactionsStyleInterface,
+  CometChatReactionsList,
+  CometChatReactionsListInterface,
+  ReactionsListConfiguration,
+  ReactionsListConfigurationInterface,
+  ReactionListStyle,
+  ReactionListStyleInterface,
+  CometChatQuickReactions,
+  CometChatQuickReactionsInterface,
+  QuickReactionsConfiguration,
+  QuickReactionsConfigurationInterface,
+  QuickReactionsStyle,
+  QuickReactionsStyleInterface,
+  /* Reactions */
+
+  /* Emoji Keyboard */
+  CometChatEmojiKeyboard,
+  EmojiKeyboardConfiguration,
+  EmojiKeyboardStyle,
+  /* Emoji Keyboard */
   
 };
 

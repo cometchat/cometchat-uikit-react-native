@@ -1,3 +1,4 @@
+type modeType = 'light' | 'dark'
 const modes = {
   light: 'light',
   dark: 'dark',
@@ -99,6 +100,8 @@ class PaletteItem {
  * @param {Object} backgroundColor
  * @param {Object} primary
  * @param {Object} primary40
+ * @param {Object} primary150
+ * @param {Object} primary500
  * @param {Object} secondary
  * @param {Object} error
  * @param {Object} success
@@ -122,6 +125,8 @@ class Palette {
   primary1: PaletteItem
   primary13: PaletteItem
   primary40: PaletteItem
+  primary150: PaletteItem
+  primary500: PaletteItem
   secondary: PaletteItem
   error: PaletteItem
   success: PaletteItem
@@ -158,9 +163,17 @@ class Palette {
       [modes.light]: 'rgba(51, 153, 255, .04)',
       [modes.dark]: 'rgba(51, 153, 255, .04)',
     }),
+    primary150 = new PaletteItem({
+      [modes.light]: 'rgba(51, 153, 255, .15)',
+      [modes.dark]: 'rgba(51, 153, 255, .15)',
+    }),
+    primary500 = new PaletteItem({
+      [modes.light]: 'rgba(51, 153, 255, .5)',
+      [modes.dark]: 'rgba(51, 153, 255, .5)',
+    }),
     secondary = new PaletteItem({
-      [modes.light]: 'rgba(248, 248, 248, 0.92)',
-      [modes.dark]: 'rgba(248, 248, 248, 0.92)',
+      [modes.light]: 'rgba(248, 248, 248, 0.9)',
+      [modes.dark]: 'rgba(248, 248, 248, 0.9)',
     }),
     error = new PaletteItem({
       [modes.light]: 'rgb(255, 59, 48)',
@@ -221,6 +234,8 @@ class Palette {
     this.primary1 = primary1;
     this.primary13 = primary13;
     this.primary40 = primary40;
+    this.primary150 = primary150;
+    this.primary500 = primary500;
     this.secondary = secondary;
     this.error = error;
     this.success = success;
@@ -240,62 +255,68 @@ class Palette {
   /**
    * Getters
    */
-  getAccent = () => {
-    return this.accent[this.mode];
+  getAccent = (mode?: modeType) => {
+    return this.accent[mode || this.mode];
   };
-  getAccent50 = () => {
-    return this.accent50[this.mode];
+  getAccent50 = (mode?: modeType) => {
+    return this.accent50[mode || this.mode];
   };
-  getAccent100 = () => {
-    return this.accent100[this.mode];
+  getAccent100 = (mode?: modeType) => {
+    return this.accent100[mode || this.mode];
   };
-  getAccent200 = () => {
-    return this.accent200[this.mode];
+  getAccent200 = (mode?: modeType) => {
+    return this.accent200[mode || this.mode];
   };
-  getAccent300 = () => {
-    return this.accent300[this.mode];
+  getAccent300 = (mode?: modeType) => {
+    return this.accent300[mode || this.mode];
   };
-  getAccent400 = () => {
-    return this.accent400[this.mode];
+  getAccent400 = (mode?: modeType) => {
+    return this.accent400[mode || this.mode];
   };
-  getAccent500 = () => {
-    return this.accent500[this.mode];
+  getAccent500 = (mode?: modeType) => {
+    return this.accent500[mode || this.mode];
   };
-  getAccent600 = () => {
-    return this.accent600[this.mode];
+  getAccent600 = (mode?: modeType) => {
+    return this.accent600[mode || this.mode];
   };
-  getAccent700 = () => {
-    return this.accent700[this.mode];
+  getAccent700 = (mode?: modeType) => {
+    return this.accent700[mode || this.mode];
   };
-  getAccent800 = () => {
-    return this.accent800[this.mode];
+  getAccent800 = (mode?: modeType) => {
+    return this.accent800[mode || this.mode];
   };
-  getAccent900 = () => {
-    return this.accent900[this.mode];
+  getAccent900 = (mode?: modeType) => {
+    return this.accent900[mode || this.mode];
   };
-  getSuccess = () => {
-    return this.success[this.mode];
+  getSuccess = (mode?: modeType) => {
+    return this.success[mode || this.mode];
   };
-  getError = () => {
-    return this.error[this.mode];
+  getError = (mode?: modeType) => {
+    return this.error[mode || this.mode];
   };
-  getPrimary = () => {
-    return this.primary[this.mode];
+  getPrimary = (mode?: modeType) => {
+    return this.primary[mode || this.mode];
   };
-  getPrimary1 = () => {
-    return this.primary1[this.mode];
+  getPrimary1 = (mode?: modeType) => {
+    return this.primary1[mode || this.mode];
   };
-  getPrimary13 = () => {
-    return this.primary13[this.mode];
+  getPrimary13 = (mode?: modeType) => {
+    return this.primary13[mode || this.mode];
   };
-  getPrimary40 = () => {
-    return this.primary40[this.mode];
+  getPrimary40 = (mode?: modeType) => {
+    return this.primary40[mode || this.mode];
   }
-  getSecondary = () => {
-    return this.secondary[this.mode];
+  getPrimary150 = (mode?: modeType) => {
+    return this.primary150[mode || this.mode];
+  }
+  getPrimary500 = (mode?: modeType) => {
+    return this.primary500[mode || this.mode];
+  }
+  getSecondary = (mode?: modeType) => {
+    return this.secondary[mode || this.mode];
   };
-  getBackgroundColor = () => {
-    return this.backgroundColor[this.mode];
+  getBackgroundColor = (mode?: modeType) => {
+    return this.backgroundColor[mode || this.mode];
   };
 
 
@@ -330,6 +351,24 @@ class Palette {
   setPrimary40(colorset) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.primary40 = colorset;
+    }
+  }
+
+  setSecondary(colorset) {
+    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+      this.secondary = colorset;
+    }
+  }
+
+  setPrimary150(colorset) {
+    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+      this.primary150 = colorset;
+    }
+  }
+
+  setPrimary500(colorset) {
+    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+      this.primary500 = colorset;
     }
   }
 

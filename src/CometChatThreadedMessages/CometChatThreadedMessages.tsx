@@ -167,13 +167,13 @@ export const CometChatThreadedMessages = (
     CometChat.getLoggedinUser().then((loggedUser) => {
       loggedInUser.current = loggedUser;
       if (message.getSender()!.getUid() == loggedUser.getUid()) {
-        if (message.getReceiverType() == 'group') {
+        if (message?.getReceiverType() == 'group') {
           setGroup(message.getReceiver());
         } else {
           setUser(message.getReceiver());
         }
       } else {
-        if (message.getReceiverType() == 'group') {
+        if (message?.getReceiverType() == 'group') {
           setGroup(message.getReceiver());
         } else {
           setUser(message.getSender());
@@ -236,16 +236,8 @@ export const CometChatThreadedMessages = (
               },
             ]}
           >
-            {replyCount ?? 0} reply
+            {replyCount ?? 0} {replyCount > 1 ? localize("REPLIES") : localize("REPLY")}
           </Text>
-          <Image
-            source={ICONS.MORE}
-            resizeMode={'contain'}
-            style={[
-              styles.actionIcon,
-              { tintColor: theme.palette.getPrimary() },
-            ]}
-          />
         </View>
       )}
       <View style={{ flex: 1, paddingHorizontal: 8 }}>
@@ -268,7 +260,7 @@ export const CometChatThreadedMessages = (
           parentMessageId={message.getId()}
           messageComposerStyle={{
             borderRadius: 10,
-            backgroundColor: theme.palette.getAccent100(),
+            // backgroundColor: theme.palette.getAccent100(),
           }}
           user={user}
           group={group}

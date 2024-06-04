@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Tente novamente",
   "TIME_SLOT_UNAVAILABLE": "O intervalo de tempo não está mais disponível. Por favor, escolha outro.",
   "MEETING_SCHEDULER": "Agendador de reuniões",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Toque para remover",
+	"ALL":"Todos"
 }

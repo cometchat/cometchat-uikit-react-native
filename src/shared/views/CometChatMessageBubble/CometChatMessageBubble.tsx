@@ -7,20 +7,66 @@ import { MessageBubbleStyle } from "./MessageBubbleStyle";
 import { memo } from "react";
 
 export interface CometChatMessageBubbleInterface {
+    /**
+     * The id of the message bubble.
+     * @type string
+     */
     id: string,
+    /**
+     * The leading view of the message bubble.
+     * @type () => JSX.Element
+     */
     LeadingView?: () => JSX.Element,
+    /**
+     * The header view of the message bubble.
+     * @type () => JSX.Element
+     */
     HeaderView?: () => JSX.Element,
+    /**
+     * The status info view of the message bubble.
+     * @type () => JSX.Element
+     */
+    StatusInfoView?: () => JSX.Element,
+    /**
+     * The reply view of the message bubble.
+     * @type () => JSX.Element
+     */
     ReplyView?: () => JSX.Element,
+    /**
+     * The bottom view of the message bubble.
+     * @type () => JSX.Element
+     */
     BottomView?: () => JSX.Element,
+    /**
+     * The content view of the message bubble.
+     * @type () => JSX.Element
+     */
     ContentView?: () => JSX.Element,
+    /**
+     * The thread view of the message bubble.
+     * @type () => JSX.Element
+     */
     ThreadView?: () => JSX.Element,
+    /**
+     * The footer view of the message bubble.
+     * @type () => JSX.Element
+     */
     FooterView?: () => JSX.Element,
+    /**
+     * The alignment of the message bubble.
+     * @type MessageBubbleAlignmentType
+     */
     alignment?: MessageBubbleAlignmentType,
+    /**
+     * The style of the message bubble.
+     * @type BaseStyleInterface
+     */
     style?: BaseStyleInterface,
 }
 
 export const CometChatMessageBubble = memo(({
     HeaderView,
+    StatusInfoView,
     ReplyView,
     ContentView,
     FooterView,
@@ -74,14 +120,17 @@ export const CometChatMessageBubble = memo(({
                             ContentView && <ContentView />
                         }
                         {
-                            BottomView && <BottomView />
+                            StatusInfoView && <StatusInfoView />
                         }
                         {
-                            ThreadView && <ThreadView />
+                            BottomView && <BottomView />
                         }
                     </View>
                     {
                         FooterView && <FooterView />
+                    }
+                    {
+                        ThreadView && <ThreadView />
                     }
                 </View>
             </View>

@@ -8,7 +8,6 @@ import { CallingPackage } from "../../calls/CallingPackage";
 import { StickersExtension } from "../../extensions/Stickers";
 import { CollaborativeWhiteboardExtension } from "../../extensions/CollaborativeWhiteboard/CollaborativeWhiteboardExtension";
 import { LinkPreviewExtention } from "../../extensions/LinkPreview";
-import { ReactionsExtension } from "../../extensions/Reactions";
 import { CollaborativeDocumentExtension } from "../../extensions/CollaborativeDocument/CollaborativeDocumentExtension";
 import { PollsExtension } from "../../extensions/Polls/PollsExtension";
 import { SmartRepliesExtension } from "../../extensions/SmartReplies";
@@ -67,7 +66,6 @@ export class CometChatUIKit {
         new ThumbnailGenerationExtension(),
         new LinkPreviewExtention(),
         new PollsExtension(),
-        new ReactionsExtension(),
         new ImageModerationExtension()
     ]  
     

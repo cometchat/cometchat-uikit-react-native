@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Pabandykite dar kartą",
   "TIME_SLOT_UNAVAILABLE": "Laiko laiko tarpas nebėra. Prašome pasirinkti kitą.",
   "MEETING_SCHEDULER": "Susitikimų planuotojas",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Tocca per rimuovere",
+	"ALL":"Tutti"
 }

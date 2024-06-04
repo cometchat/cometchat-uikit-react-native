@@ -298,5 +298,7 @@
     "TRY_AGAIN_CAMEL": "حاول مرة أخرى",
     "TIME_SLOT_UNAVAILABLE": "لم تعد الفترة الزمنية متاحة. يرجى اختيار آخر.",
     "MEETING_SCHEDULER": "جدولة الاجتماعات",
-    "MIN": "ميل"
+    "MIN": "ميل",
+	"TAP_TO_REMOVE":"انقر للإزالة",
+	"ALL":"جميع"
 }

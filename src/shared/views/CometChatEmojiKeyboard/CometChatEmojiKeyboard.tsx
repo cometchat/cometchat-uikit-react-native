@@ -1,4 +1,4 @@
-import React, { useCallback, useImperativeHandle, useRef, useState } from 'react';
+import React, { useCallback, useImperativeHandle, useRef, useState, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { Emojis } from './emojis';
 import { Styles } from './style';
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { EmojiKeyboardConfiguration } from './EmojiKeyboardConfiguration';
 
 const emojiValues = Object.values(Emojis);
 
@@ -20,7 +21,11 @@ const viewConfig = {
 
 type CategoryListInterface = {
   theme: CometChatTheme,
-  onCategorySelected: (id: string, index: number) => void
+  onCategorySelected: (id: string, index: number) => void,
+  style?: {
+    categoryIconTint?: string
+    selectedCategoryIconTint?: string
+  }
 }
 
 type CategoryListActions = {
@@ -28,10 +33,10 @@ type CategoryListActions = {
 }
 
 const CategoryList = React.forwardRef<
-CategoryListActions,
-CategoryListInterface
+  CategoryListActions,
+  CategoryListInterface
 >((
-  {theme, onCategorySelected}, ref) => {
+  { theme, onCategorySelected, style }, ref) => {
   const [activeCategory, setActiveCategory] = useState('people');
 
   useImperativeHandle(ref, () => {
@@ -53,14 +58,14 @@ CategoryListInterface
               style={[Styles.getListStyle]}
               key={emojiCategory.id}
               onPress={() => {
-                onCategorySelected && onCategorySelected(emojiCategory.id,index);
+                onCategorySelected && onCategorySelected(emojiCategory.id, index);
               }}
             >
               <Image
                 style={{
                   tintColor: activeCategory == emojiCategory.id
-                    ? theme?.palette?.getPrimary()
-                    : theme?.palette?.getAccent600(),
+                    ? (style?.selectedCategoryIconTint || theme?.palette?.getPrimary())
+                    : (style?.categoryIconTint || theme?.palette?.getAccent600()),
                 }}
                 source={emojiCategory.symbol}
               />
@@ -84,8 +89,21 @@ CategoryListInterface
  *
  */
 
-const CometChatEmojiKeyboard = (props) => {
-  const theme = new CometChatTheme(props?.theme ?? {});
+const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
+  const theme: CometChatTheme = new CometChatTheme(props?.theme ?? {});
+
+  const { onClick, style } = props;
+
+  const {
+    categoryBackground,
+    categoryIconTint,
+    sectionHeaderColor,
+    sectionHeaderFont,
+    selectedCategoryIconTint,
+    backgroundColor,
+    height,
+    width
+  } = style;
 
   const emojiRef = useRef(null);
   const categoryRef = useRef(null);
@@ -95,8 +113,8 @@ const CometChatEmojiKeyboard = (props) => {
       emojiRef.current.scrollToIndex({ index, animated: true });
   };
 
-  const handleEvent = (obj) => {
-    props.onClick(obj);
+  const handleEvent = (emoji: string) => {
+    onClick && onClick(emoji);
   };
 
   const emojiRender = useCallback(({ item }) => {
@@ -107,7 +125,7 @@ const CometChatEmojiKeyboard = (props) => {
           Styles.listStyle,
           {
             backgroundColor:
-              props.style?.backgroundColor ||
+              backgroundColor ||
               theme?.palette?.getBackgroundColor(),
           },
         ]}
@@ -137,8 +155,8 @@ const CometChatEmojiKeyboard = (props) => {
           style={[
             Styles.emojiCategoryTitle,
             theme?.typography?.caption1,
-            ...props.style?.sectionHeaderFont,
-            { color: theme?.palette?.getAccent500() },
+            sectionHeaderFont,
+            { color: sectionHeaderColor || theme?.palette?.getAccent500() },
           ]}
         >
           {name}
@@ -164,10 +182,10 @@ const CometChatEmojiKeyboard = (props) => {
       style={[
         Styles.emojiContainerStyle,
         {
-          width: props.style?.width,
-          height: props.style?.height,
+          width: width,
+          height: height,
           backgroundColor:
-            props.style?.backgroundColor ||
+            backgroundColor ||
             theme?.palette?.getBackgroundColor(),
         },
       ]}
@@ -184,23 +202,23 @@ const CometChatEmojiKeyboard = (props) => {
         ]}
         data={emojiValues}
         viewabilityConfig={viewConfig}
-        onViewableItemsChanged={({changed, viewableItems}) => {
+        onViewableItemsChanged={({ changed, viewableItems }) => {
           let changedItem = changed[0];
           if (changedItem.isViewable) {
             categoryRef.current?.updateCategory(changedItem.key);
           }
         }}
         windowSize={50}
-        onScrollToIndexFailed={(error) => {}}
+        onScrollToIndexFailed={(error) => { }}
         renderItem={emojiListRender}
       />
       <View
         style={[
           Styles.emojiTabLsitStyle,
           {
-            width: props.style?.width,
+            width: width,
             backgroundColor:
-              props.style?.categoryBackground ||
+              categoryBackground ||
               theme?.palette?.getBackgroundColor(),
           },
         ]}
@@ -209,6 +227,10 @@ const CometChatEmojiKeyboard = (props) => {
           ref={categoryRef}
           theme={theme}
           onCategorySelected={(id, index) => changeCategory(id, index)}
+          style={{
+            categoryIconTint: categoryIconTint,
+            selectedCategoryIconTint: selectedCategoryIconTint,
+          }}
         />
       </View>
     </View>
@@ -217,24 +239,18 @@ const CometChatEmojiKeyboard = (props) => {
 
 // Specifies the default values for props:
 CometChatEmojiKeyboard.defaultProps = {
-  hideSearch: false,
-  onClick: () => {},
+  // hideSearch: false,
+  onClick: () => { },
   style: {
     width: '100%',
     height: 310,
     border: {},
-    backgroundColor: 'rgb(255,255,255)',
     borderRadius: 8,
-    sectionHeaderFont: '',
-    sectionHeaderColor: 'rgba(20,20,20,0.58)',
-    categoryIconTint: 'RGBA(20, 20, 20, 0.58)',
-    selectedCategoryIconTint: '#39f',
-    categoryBackground: 'rgb(255,255,255)',
   },
 };
 
 CometChatEmojiKeyboard.propTypes = {
-  hideSearch: PropTypes.bool,
+  // hideSearch: PropTypes.bool,
   onClick: PropTypes.func,
   style: PropTypes.object,
 };

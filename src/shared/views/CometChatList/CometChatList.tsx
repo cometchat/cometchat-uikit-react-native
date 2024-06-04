@@ -34,6 +34,7 @@ import { ListItemStyleInterface } from '../CometChatListItem/ListItemStyle';
 import { AvatarStyleInterface } from '../CometChatAvatar/AvatarStyle';
 import { CometChatContextType } from '../../base/Types';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { StatusIndicatorStyleInterface } from '../CometChatStatusIndicator';
 
 export interface CometChatListActionsInterface {
   updateList: (prop: any) => void;
@@ -98,7 +99,7 @@ export interface CometChatListProps {
   onBack?: Function;
   selectionIcon?: ImageType;
   listItemKey: 'uid' | 'guid' | 'conversationId';
-  statusIndicatorStyle?: StyleProp<ViewStyle>;
+  statusIndicatorStyle?: StatusIndicatorStyleInterface;
   avatarStyle?: AvatarStyleInterface;
   listItemStyle?: ListItemStyleInterface;
   headViewContainerStyle?: StyleProp<ViewStyle>;

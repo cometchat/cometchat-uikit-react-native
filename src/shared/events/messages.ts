@@ -23,4 +23,6 @@ export enum MessageEvents {
     onSchedulerMessageReceived = "onSchedulerMessageReceived",
     onInteractionGoalCompleted = "onInteractionGoalCompleted",
     onCustomInteractiveMessageReceived = "onCustomInteractiveMessageReceived",
+    onMessageReactionAdded = "onMessageReactionAdded",
+    onMessageReactionRemoved = "onMessageReactionRemoved",
 }

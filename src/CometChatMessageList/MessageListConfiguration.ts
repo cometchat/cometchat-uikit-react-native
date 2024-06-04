@@ -21,6 +21,10 @@ import {
 } from '../CometChatMessages/MessageStyle';
 import { DateStyleInterface } from '../shared/views/CometChatDate/DateStyle';
 import { ActionSheetStylesInterface } from '../shared/views/CometChatActionSheet/ActionSheetStyle';
+import { ReactionsConfigurationInterface } from '../shared/views/CometChatReactions';
+import { ReactionsListConfigurationInterface } from '../shared/views/CometChatReactionsList';
+import { QuickReactionsConfigurationInterface } from '../shared/views/CometChatQuickReactions';
+import { EmojiKeyboardStyle } from '../shared/views/CometChatEmojiKeyboard';
 
 export interface MessageListConfigurationInterface {
   ErrorStateView?: (e: CometChat.CometChatException) => JSX.Element;
@@ -69,10 +73,33 @@ export interface MessageListConfigurationInterface {
   wrapperMessageBubbleStyle?: MessageStyleInterface;
   actionSheetStyle?: ActionSheetStylesInterface;
   messageListStyle?: MessageListStyleInterface;
+  /**
+   * Hides the header of the action sheet
+   */
+  hideActionSheetHeader?: boolean;
+  /**
+   * Message Reaction Configuration @ReactionsConfigurationInterface
+   */
+  reactionsConfiguration?: ReactionsConfigurationInterface;
+  /**
+   * Message Reaction List Configuration @ReactionsListConfigurationInterface
+   */
+  reactionsListConfiguration?: ReactionsListConfigurationInterface;
+  /**
+   * Quick Reaction Configuration @QuickReactionsConfigurationInterface
+   */
+  quickReactionConfiguration?: QuickReactionsConfigurationInterface;
+  /**
+   * Emoji Keyboard Style @EmojiKeyboardConfiguration
+   */
+  emojiKeyboardStyle?: EmojiKeyboardStyle;
+  /**
+   * Disables the reactions functionality
+   */
+  disableReactions?: boolean;
 }
 export class MessageListConfiguration
-  implements MessageListConfigurationInterface
-{
+  implements MessageListConfigurationInterface {
   ErrorStateView: (e: CometChat.CometChatException) => JSX.Element;
   errorStateText?: String;
   EmptyStateView: () => JSX.Element;
@@ -92,7 +119,7 @@ export class MessageListConfiguration
   scrollToBottomOnNewMessage: boolean;
   onThreadRepliesPress?: (
     messageObject: CometChat.BaseMessage,
-    messageBubbleView: ()=>JSX.Element
+    messageBubbleView: () => JSX.Element
   ) => void;
   HeaderView?: ({
     user,
@@ -119,7 +146,31 @@ export class MessageListConfiguration
   messageListStyle: MessageListStyleInterface;
   disableReceipt: boolean;
   dateSeperatorPattern: (item: number) => DatePattern;
-  
+  /**
+   * Hides the header of the action sheet
+   */
+  hideActionSheetHeader?: boolean;
+  /**
+   * Message Reaction Configuration @ReactionsConfigurationInterface
+   */
+  reactionsConfiguration?: ReactionsConfigurationInterface;
+  /**
+   * Message Reaction List Configuration @ReactionsListConfigurationInterface
+   */
+  reactionsListConfiguration?: ReactionsListConfigurationInterface;
+  /**
+   * Quick Reaction Configuration @QuickReactionsConfigurationInterface
+   */
+  quickReactionConfiguration?: QuickReactionsConfigurationInterface;
+  /**
+   * Emoji Keyboard Style @EmojiKeyboardConfiguration
+   */
+  emojiKeyboardStyle?: EmojiKeyboardStyle;
+  /**
+   * Disables the reactions functionality
+   */
+  disableReactions?: boolean;
+
   constructor(props: MessageListConfigurationInterface) {
     if (props) {
       for (const [key, value] of Object.entries(props)) {

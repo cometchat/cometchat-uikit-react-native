@@ -10,7 +10,6 @@ import {
 } from "./LinkPreview";
 import { MessageTranslationBubble, MessageTranslationExtension, MessageTranslationConfigurationInterface } from "./MessageTranslation";
 import { CometChatCreatePoll, PollsStyleInterface, CometChatCreatePollInterface, PollsConfigurationInterface, PollsExtension } from "./Polls";
-import { CometChatMessageReactions, ReactionsExtension, ReactionsConfigurationInterface } from "./Reactions";
 import { SmartRepliesExtension, SmartRepliesConfigurationInterface, SmartRepliesInterface, SmartRepliesView } from "./SmartReplies";
 import { CometChatStickerBubble, StickerConfigurationInterface, StickersExtension, CometChatStickerBubbleProps as CometChatStickerBubbleInterface } from "./Stickers";
 import { TextModerationConfigurationInterface, TextModerationExtension, TextModerationExtensionDecorator } from "./TextModeration";
@@ -42,9 +41,6 @@ export {
     CometChatCreatePoll,
     CometChatCreatePollInterface,
     PollsConfigurationInterface, PollsExtension, PollsStyleInterface,
-    CometChatMessageReactions,
-    ReactionsExtension,
-    ReactionsConfigurationInterface,
     SmartRepliesExtension,
     SmartRepliesConfigurationInterface,
     SmartRepliesInterface,

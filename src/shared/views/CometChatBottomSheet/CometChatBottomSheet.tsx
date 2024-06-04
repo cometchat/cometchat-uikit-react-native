@@ -110,7 +110,7 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
     >
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={Styles.wrapperStyle}>
+        <View style={Styles.wrapperStyle}>
           <View
             style={Styles.greyWrapperStyle}
             onStartShouldSetResponder={() => togglePanel()}
@@ -124,6 +124,7 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
                 style?.backgroundColor ?? theme.palette.getBackgroundColor(),
               shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
               maxHeight: sliderMaxHeight,
+              minHeight: sliderMinHeight,
               transform: [
                 { translateY: panelHeightValue },
                 { scale: isOpen ? 1 : 0 },
@@ -135,7 +136,7 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
           >
             <View
               style={Styles.outerContentStyle}
-              {..._childPanResponder?.panHandlers}
+              // {..._childPanResponder?.panHandlers}
             >
               <TouchableOpacity
                 onPress={togglePanel.bind(this)}
@@ -161,7 +162,7 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
               </View>
             </View>
           </Animated.View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

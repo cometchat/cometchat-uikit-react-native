@@ -22,7 +22,7 @@ export class AvatarStyle extends BaseStyle {
   constructor({
     height = 40,
     width = 40,
-    border = { borderWidth: 1, borderStyle: 'solid', borderColor: 'black' },
+    border,
     borderRadius = 30,
     backgroundColor = 'rgba(20,20,20,0.58)',
     nameTextColor = 'rgba(255, 255, 255,0.89)',

@@ -51,8 +51,8 @@
   "VIDEO_CALL": "Video call",
   "AUDIO_CALL": "Audio call",
   "LOADING": "Loading...",
-  "REPLY": "reply",
-  "REPLIES": "replies",
+  "REPLY": "Reply",
+  "REPLIES": "Replies",
   "LAUNCH": "Launch",
   "SHARED_COLLABORATIVE_DOCUMENT": "has shared a collaborative document",
   "SHARED_COLLABORATIVE_WHITEBOARD": "has shared a collaborative whiteboard",
@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Try again",
   "TIME_SLOT_UNAVAILABLE": "Time slot no longer available. Please choose another.",
   "MEETING_SCHEDULER": "Meeting Scheduler",
-  "MIN": "min"
+  "MIN": "min",
+  "TAP_TO_REMOVE":"Tap to remove",
+  "ALL": "All"
 }

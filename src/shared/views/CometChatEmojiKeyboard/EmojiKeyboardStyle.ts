@@ -1,4 +1,4 @@
-import { BaseStyle,FontStyle } from "../../../shared/base";
+import { BaseStyle, FontStyle } from "../../../shared/base";
 /**
  * @class EmojiKeyboardStyle
  * @param {String} sectionHeaderFont
@@ -8,21 +8,20 @@ import { BaseStyle,FontStyle } from "../../../shared/base";
  */
 
 class EmojiKeyboardStyle extends BaseStyle {
-  sectionHeaderFont: FontStyle;
-  sectionHeaderColor: string;
-  categoryIconTint: string;
-  selectedCategoryIconTint: string;
-  categoryBackground: string;
+  sectionHeaderFont?: FontStyle;
+  sectionHeaderColor?: string;
+  categoryIconTint?: string;
+  selectedCategoryIconTint?: string;
+  categoryBackground?: string;
   constructor({
-    sectionHeaderFont = {},
-    sectionHeaderColor = "",
-    categoryIconTint = "",
-    selectedCategoryIconTint = "",
-    categoryBackground = "",
-
+    sectionHeaderFont,
+    sectionHeaderColor,
+    categoryIconTint,
+    selectedCategoryIconTint,
+    categoryBackground,
     width = "100%",
     height = 330,
-    backgroundColor = "",
+    backgroundColor,
     // border = 0,
     borderRadius = 8,
   }) {

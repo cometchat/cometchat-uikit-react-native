@@ -157,7 +157,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
     }
 
     const isGroup = () => {
-        return message.getReceiverType() == "group";
+        return message?.getReceiverType() == "group";
     }
 
     const populateRecipients = () => {

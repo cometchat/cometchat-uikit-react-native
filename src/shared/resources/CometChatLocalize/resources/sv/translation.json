@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Försök igen",
   "TIME_SLOT_UNAVAILABLE": "Tidslucka är inte längre tillgänglig. Vänligen välj en annan.",
   "MEETING_SCHEDULER": "Mötesschemaläggare",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Tryck för att ta bort",
+	"ALL":"Allt"
 }

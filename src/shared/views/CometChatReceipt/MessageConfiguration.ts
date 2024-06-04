@@ -20,6 +20,11 @@ export class ReceiptConfiguration {
   readIcon?: ImageType;
   deliveredIcon?: ImageType;
   errorIcon?: ImageType;
+  style?: {
+    height?: string | number;
+    width?: string | number;
+    tintColor?: string
+  }
   /**
      * 
      * @param {Object} param0 
@@ -36,12 +41,14 @@ export class ReceiptConfiguration {
     readIcon = greyDoubleTick,
     deliveredIcon = blueDoubleTick,
     errorIcon = errorTick,
+    style,
   }: ReceiptConfigurationInterface) {
     this.waitIcon = waitIcon;
     this.sentIcon = sentIcon;
     this.readIcon = readIcon;
     this.deliveredIcon = deliveredIcon;
     this.errorIcon = errorIcon;
+    this.style = style;
   }
 }
 export interface ReceiptConfigurationInterface {
@@ -50,4 +57,9 @@ export interface ReceiptConfigurationInterface {
   readIcon?: ImageType;
   deliveredIcon?: ImageType;
   errorIcon?: ImageType;
+  style?: {
+    height?: string | number;
+    width?: string | number;
+    tintColor?: string;
+  }
 }

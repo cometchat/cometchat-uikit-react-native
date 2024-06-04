@@ -7,7 +7,9 @@ export const Style = StyleSheet.create({
         height: 56,
         width: 228,
         flexDirection: 'row',
-        alignItems: "center"
+        alignItems: "center",
+        padding: 8,
+        paddingBottom: 0
     },
     titleStyle: {
         opacity: 1,
@@ -24,6 +26,6 @@ export const Style = StyleSheet.create({
         height: 24,
         width: 24,
         tintColor: 'rgb(51, 153, 255)',
-        margin: 16,
+        marginRight: 8,
     }
 });

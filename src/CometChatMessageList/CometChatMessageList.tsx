@@ -1,8 +1,8 @@
-import React, { forwardRef, useEffect, useRef, useState, useImperativeHandle, useContext, useCallback } from "react";
+import React, { forwardRef, useEffect, useRef, useState, useImperativeHandle, useContext, useCallback, memo, useLayoutEffect } from "react";
 import { View, FlatList, Text, Image, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, NativeModules, ScrollView, Dimensions, Platform } from "react-native";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { loadingIcon, rightArrowIcon, backIcon } from "./resources";
+import { LeftArrowCurve, RightArrowCurve } from "./resources";
 import { BaseStyle, BaseStyleInterface, CometChatContext, CometChatLiveReactions, CometChatUIKit, ImageType } from "../shared";
 import { MessageBubbleStyle, MessageBubbleStyleInterface } from "../shared/views/CometChatMessageBubble/MessageBubbleStyle";
 import { AvatarStyle, AvatarStyleInterface } from "../shared";
@@ -23,11 +23,16 @@ import { DateStyleInterface } from "../shared/views/CometChatDate/DateStyle";
 import { CometChatContextType } from "../shared/base/Types";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { ActionSheetStylesInterface } from "../shared/views/CometChatActionSheet/ActionSheetStyle";
-import Clipboard from "@react-native-community/clipboard";
+import Clipboard from "@react-native-clipboard/clipboard";
 import { CometChatMessageInformation } from "../CometChatMessageInformation/CometChatMessageInformation";
 // import { CometChatContacts, ForwardMessageConfigurationInterface } from "../CometChatContacts";
 import { MessageInformationConfigurationInterface } from "../CometChatMessageInformation";
 import { InteractiveMessageUtils } from "../shared/utils/InteractiveMessageUtils";
+import { CometChatEmojiKeyboard, EmojiKeyboardStyle } from "../shared/views/CometChatEmojiKeyboard";
+import { CometChatReactionsList, ReactionsListConfigurationInterface } from "../shared/views/CometChatReactionsList";
+import { CometChatQuickReactions, QuickReactionsConfigurationInterface } from "../shared/views/CometChatQuickReactions";
+import { CometChatReactions, ReactionsConfigurationInterface } from "../shared/views/CometChatReactions";
+import { CommonUtils } from "../shared/utils/CommonUtils";
 
 let templatesMap = new Map<string, CometChatMessageTemplate>();
 
@@ -72,7 +77,31 @@ export interface CometChatMessageListProps {
     onError?: (e: CometChat.CometChatException) => void,
     onBack?: () => void,
     // forwardMessageConfiguration?: ForwardMessageConfigurationInterface,
-    messageInformationConfiguration?: MessageInformationConfigurationInterface
+    messageInformationConfiguration?: MessageInformationConfigurationInterface,
+    /**
+     * Hide the header of the action sheet
+     */
+    hideActionSheetHeader?: boolean,
+    /**
+     * Message Reaction Configuration @ReactionsConfigurationInterface
+     */
+    reactionsConfiguration?: ReactionsConfigurationInterface,
+    /**
+     * Message Reaction List Configuration @ReactionsListConfigurationInterface
+     */
+    reactionsListConfiguration?: ReactionsListConfigurationInterface,
+    /**
+     * Quick Reaction Configuration @QuickReactionsConfigurationInterface
+     */
+    quickReactionConfiguration?: QuickReactionsConfigurationInterface,
+    /**
+     * Emoji Keyboard style @EmojiKeyboardStyle
+     */
+    emojiKeyboardStyle?: EmojiKeyboardStyle,
+    /**
+     * Disables the reactions functionality
+     */
+    disableReactions?: boolean,
 }
 
 export interface CometChatMessageListActionsInterface {
@@ -85,7 +114,7 @@ export interface CometChatMessageListActionsInterface {
     updateMessageReceipt: (message: CometChat.BaseMessage) => void
 }
 
-export const CometChatMessageList = forwardRef<
+export const CometChatMessageList = memo(forwardRef<
     CometChatMessageListActionsInterface,
     CometChatMessageListProps>
     ((props: CometChatMessageListProps, ref) => {
@@ -95,11 +124,11 @@ export const CometChatMessageList = forwardRef<
             user,
             group,
             EmptyStateView,
-            emptyStateText,
+            emptyStateText = localize("NO_MESSAGES_FOUND"),
             ErrorStateView,
-            errorStateText,
+            errorStateText = localize("SOMETHING_WRONG"),
             LoadingStateView,
-            disableReceipt,
+            disableReceipt = false,
             disableSoundForMessages,
             customSoundForMessages,
             readIcon,
@@ -107,12 +136,12 @@ export const CometChatMessageList = forwardRef<
             sentIcon,
             waitIcon,
             errorIcon,
-            alignment,
-            showAvatar,
+            alignment = "standard",
+            showAvatar = true,
             datePattern,
-            timeStampAlignment,
+            timeStampAlignment = "bottom",
             dateSeperatorPattern,
-            templates,
+            templates = [],
             messageRequestBuilder,
             newMessageIndicatorText,
             scrollToBottomOnNewMessages,
@@ -127,7 +156,13 @@ export const CometChatMessageList = forwardRef<
             onError,
             onBack,
             // forwardMessageConfiguration
-            messageInformationConfiguration
+            messageInformationConfiguration,
+            hideActionSheetHeader,
+            reactionsConfiguration,
+            disableReactions,
+            reactionsListConfiguration,
+            quickReactionConfiguration,
+            emojiKeyboardStyle,
         } = props;
 
         const callListenerId = "call_" + new Date().getTime();
@@ -138,26 +173,56 @@ export const CometChatMessageList = forwardRef<
         const uiEventListenerHide = "uiEvent_hide_" + new Date().getTime();
         const connectionListenerId = 'connectionListener_' + new Date().getTime();
 
-        if (user) {
-            _defaultRequestBuilder = new CometChat.MessagesRequestBuilder()
-                .setLimit(30)
-                .setTags([])
-                .setUID(user["uid"]);
-        }
-        else if (group) {
-            _defaultRequestBuilder = new CometChat.MessagesRequestBuilder()
-                .setLimit(30)
-                .setTags([])
-                .setGUID(group["guid"]);
-        }
+        useLayoutEffect(() => {
+            if (user) {
+                _defaultRequestBuilder = new CometChat.MessagesRequestBuilder()
+                    .setLimit(30)
+                    .setTags([])
+                    .setUID(user["uid"]);
+            }
+            else if (group) {
+                _defaultRequestBuilder = new CometChat.MessagesRequestBuilder()
+                    .setLimit(30)
+                    .setTags([])
+                    .setGUID(group["guid"]);
+            }
 
-        _defaultRequestBuilder.setTypes(ChatConfigurator.dataSource.getAllMessageTypes())
-        _defaultRequestBuilder.setCategories(ChatConfigurator.dataSource.getAllMessageCategories())
+            _defaultRequestBuilder.setTypes(ChatConfigurator.dataSource.getAllMessageTypes())
+            _defaultRequestBuilder.setCategories(ChatConfigurator.dataSource.getAllMessageCategories())
+
+            //updating users request builder
+            let _updatedCustomRequestBuilder = _defaultRequestBuilder;
+            if (messageRequestBuilder) {
+                _updatedCustomRequestBuilder = messageRequestBuilder;
+            }
+            _updatedCustomRequestBuilder.hideReplies(true);
+            if (user)
+                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setUID(user["uid"])
+            if (group)
+                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setGUID(group["guid"])
+            if (parentMessageId)
+                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setParentMessageId(parseInt(parentMessageId));
+            let types = [], categories = [];
+            if (templates.length) {
+                types = templates.map(template => template.type);
+                categories = templates.map(template => template.category);
+            }
+            else {
+                types = ChatConfigurator.dataSource.getAllMessageTypes();
+                categories = ChatConfigurator.dataSource.getAllMessageCategories();
+            }
+
+            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setTypes(types);
+            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setCategories(categories);
+
+            msgRequestBuilder.current = _updatedCustomRequestBuilder;
+
+        }, []);
 
         const { theme } = useContext<CometChatContextType>(CometChatContext);
 
         // creating style based on styles from users
-        const _messageListStyle = new MessageListStyle({
+        const _messageListStyle = useRef(new MessageListStyle({
             backgroundColor: theme?.palette.getBackgroundColor(),
             emptyStateTextColor: theme?.palette.getError(),
             emptyStateTextFont: theme?.typography.subtitle1,
@@ -173,28 +238,28 @@ export const CometChatMessageList = forwardRef<
             timestampTextColor: theme?.palette.getAccent500(),
             timestampTextFont: theme?.typography.caption1,
             ...messageListStyle
-        });
-        const _avatarStyle = new AvatarStyle({
-            backgroundColor: _messageListStyle.backgroundColor,
+        })).current;
+        const _avatarStyle = useRef(new AvatarStyle({
             nameTextColor: _messageListStyle.nameTextColor,
             nameTextFont: _messageListStyle.nameTextFont,
             ...avatarStyle
-        });
-        const _dateSeperatorStyle = new DateStyle({
+        })).current;
+        const _dateSeperatorStyle = useRef(new DateStyle({
             textColor: _messageListStyle.timestampTextColor,
             textFont: theme?.typography.title2,
             ...dateSeperatorStyle
-        });
-        const messageBubbleDateStyle = new DateStyle({
+        })).current;
+        const messageBubbleDateStyle = useRef(new DateStyle({
             textColor: _messageListStyle.timestampTextColor,
             textFont: _messageListStyle.timestampTextFont
-        });
-        const _actionStyle = new ActionSheetStyles({
+        })).current;
+        const _actionStyle = useRef(new ActionSheetStyles({
+            actionSheetSeparatorTint: 'transparent',
             ...actionSheetStyle
-        });
-        const _messageBubbleStyle = new MessageBubbleStyle({
+        })).current;
+        const _messageBubbleStyle = useRef(new MessageBubbleStyle({
             ...wrapperMessageBubbleStyle
-        });
+        })).current;
 
         // refs
         const currentScrollPosition = useRef({ y: null, scrollViewHeight: 0, layoutHeight: 0 });
@@ -204,33 +269,9 @@ export const CometChatMessageList = forwardRef<
         const messageListRef = useRef<ScrollView>(null);
         const loggedInUser = useRef<CometChat.User>(null);
         const messageRequest = useRef<CometChat.MessagesRequest>(null);
+        const messagesContentListRef = useRef([]);
 
-        //updating users request builder
-        let _updatedCustomRequestBuilder = _defaultRequestBuilder;
-        if (messageRequestBuilder) {
-            _updatedCustomRequestBuilder = messageRequestBuilder;
-        }
-        _updatedCustomRequestBuilder.hideReplies(true);
-        if (user)
-            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setUID(user["uid"])
-        if (group)
-            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setGUID(group["guid"])
-        if (parentMessageId)
-            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setParentMessageId(parseInt(parentMessageId));
-        let types = [], categories = [];
-        if (templates.length) {
-            types = templates.map(template => template.type);
-            categories = templates.map(template => template.category);
-        }
-        else {
-            types = ChatConfigurator.dataSource.getAllMessageTypes();
-            categories = ChatConfigurator.dataSource.getAllMessageCategories();
-        }
-
-        _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setTypes(types);
-        _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setCategories(categories);
-
-        const msgRequestBuilder = useRef<CometChat.MessagesRequestBuilder>(_updatedCustomRequestBuilder);
+        const msgRequestBuilder = useRef<CometChat.MessagesRequestBuilder>();
         const lastMessageDate = useRef(new Date().getTime());
 
         // states
@@ -244,9 +285,14 @@ export const CometChatMessageList = forwardRef<
         const [CustomListHeader, setCustomListHeader] = useState(null);
         const [messageInfo, setMessageInfo] = useState(false);
         const [ongoingCallView, setOngoingCallView] = useState(null);
+        const [selectedMessage, setSelectedMessage] = useState(null);
+        const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
+        const [showReactionsList, setShowReactionsList] = useState(false);
+        const [selectedEmoji, setSelectedEmoji] = useState(null);
         // const [forwarding, setForwarding] = useState(false);
 
         const infoObject = useRef<CometChat.BaseMessage>();
+        const inProgressMessages = useRef([]);
         // const messageToForward = useRef<CometChat.BaseMessage>();
         const bottomSheetRef = useRef(null)
         const conversationId = useRef(null)
@@ -277,7 +323,7 @@ export const CometChatMessageList = forwardRef<
 
         const markUnreadMessageAsRead = () => {
             for (let index = 0; index < unreadCount; index++) {
-                const message = messagesList[messagesList.length - (index + 1)];
+                const message = messagesContentListRef.current[messagesContentListRef.current.length - (index + 1)];
                 if (index == 0)
                     CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message });
                 CometChat.markAsRead(message);
@@ -288,7 +334,7 @@ export const CometChatMessageList = forwardRef<
         const newMsgIndicatorPressed = () => {
             scrollToBottom();
             markUnreadMessageAsRead();
-        }
+        };
 
         const getPreviousMessages = async () => {
 
@@ -334,7 +380,11 @@ export const CometChatMessageList = forwardRef<
                             return item;
                         }
                     })
-                    reversed.length > 0 && setMessagesList([...reversed.reverse(), ...messagesList]);
+                    if (reversed.length > 0) {
+                        let reversedData = [...reversed.reverse()];
+                        messagesContentListRef.current = [...reversedData, ...messagesContentListRef.current];
+                        setMessagesList([...reversedData, ...messagesList]);
+                    }
                     if (messagesList.length == 0)
                         setListState("");
                     else
@@ -346,7 +396,6 @@ export const CometChatMessageList = forwardRef<
                         setListState("error");
                     else
                         setLoadingMessages(false);
-                    console.log(e);
                     onError && onError(e)
                 })
         }
@@ -365,6 +414,7 @@ export const CometChatMessageList = forwardRef<
             messagesRequest.build()
                 .fetchNext()
                 .then(updatedMessages => {
+                    if (!updatedMessages.length) return;
                     let tmpList = [...messagesList];
                     for (let i = 0; i < updatedMessages.length; i++) {
                         let condition = (msg) => msg.getId() == updatedMessages[i]?.actionOn.getId()
@@ -409,6 +459,14 @@ export const CometChatMessageList = forwardRef<
                             return item;
                         }
                     })
+                    if (inProgressMessages.current.length) {
+                        const filteredInProgressMessages = inProgressMessages.current.filter(secondItem =>
+                            !tmpList.some(firstItem => firstItem.muid === secondItem.muid)
+                        );
+                        const combinedArray = tmpList.concat(filteredInProgressMessages);
+                        tmpList = combinedArray
+                    }
+                    messagesContentListRef.current = tmpList;
                     setMessagesList(tmpList);
                     markMessageAsRead(tmpList[0]);
                     if (newMessages.length === 30) {
@@ -418,16 +476,16 @@ export const CometChatMessageList = forwardRef<
                 .catch(e => console.log("error while fetching updated msgs", e))
         }
 
-        const loadTemplates = () => {
+        const loadTemplates = useCallback(() => {
             let templates: CometChatMessageTemplate[] = ChatConfigurator.dataSource.getAllMessageTemplates(theme);
             templates.forEach(template => {
 
                 if (templatesMap.get(`${template.category}_${template.type}`)) return
                 templatesMap.set(`${template.category}_${template.type}`, template);
             });
-        }
+        }, [])
 
-        const playNotificationSound = (message) => {
+        const playNotificationSound = useCallback((message) => {
 
             if (disableSoundForMessages) return;
 
@@ -444,10 +502,10 @@ export const CometChatMessageList = forwardRef<
                     );
                 }
             }
-        };
+        }, []);
 
-        const scrollToBottom = (scrollToFirstUnread = false) => {
-            if (messageListRef && messagesList.length > 0) {
+        const scrollToBottom = useCallback((scrollToFirstUnread = false) => {
+            if (messageListRef.current && messagesContentListRef.current.length > 0) {
                 let firstUnreadPosition = previousScrollPosition.current.scrollViewHeight;
                 if (scrollToFirstUnread) {
                     setTimeout(() => {
@@ -459,7 +517,7 @@ export const CometChatMessageList = forwardRef<
                     }, 0)
                 }
             }
-        };
+        }, []);
 
         const markMessageAsRead = (message) => {
             if (!disableReceipt && !message?.readAt) {
@@ -474,20 +532,20 @@ export const CometChatMessageList = forwardRef<
         };
 
         function checkMessageInSameConversation(message: CometChat.BaseMessage): boolean {
-            return (message.getReceiverType() == ReceiverTypeConstants.user &&
+            return (message?.getReceiverType() == ReceiverTypeConstants.user &&
                 user &&
                 user?.getUid() == message.getReceiver()?.['uid']) ||
-                (message.getReceiverType() == ReceiverTypeConstants.group &&
+                (message?.getReceiverType() == ReceiverTypeConstants.group &&
                     message.getReceiverId() &&
                     group &&
                     group?.getGuid() == message.getReceiverId());
         }
 
         function messageToSameConversation(message: CometChat.BaseMessage): boolean {
-            return (message.getReceiverType() == ReceiverTypeConstants.user &&
+            return (message?.getReceiverType() == ReceiverTypeConstants.user &&
                 user &&
                 user?.getUid() == message.getReceiverId()) ||
-                (message.getReceiverType() == ReceiverTypeConstants.group &&
+                (message?.getReceiverType() == ReceiverTypeConstants.group &&
                     message.getReceiverId() &&
                     group &&
                     group?.getGuid() == message.getReceiverId());
@@ -506,30 +564,41 @@ export const CometChatMessageList = forwardRef<
                 if (baseMessage.getParentMessageId()) {
                     if (baseMessage.getParentMessageId() == parseInt(parentMessageId)) {
                         // add to list
+                        messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
                         setMessagesList([...messagesList, newMessage]);
+                        inProgressMessages.current = [...inProgressMessages.current, newMessage]
                     } else {
                         //increase count
                         let index = messagesList.findIndex(msg => msg.id === newMessage.parentMessageId);
-                        let oldMsg: CometChat.BaseMessage = messagesList[index];
+                        let oldMsg: CometChat.BaseMessage = CommonUtils.clone(messagesList[index]);
                         oldMsg.setReplyCount(oldMsg.getReplyCount() ? oldMsg.getReplyCount() + 1 : 1);
+                        // if ((newMessage?.sender?.uid !== loggedInUser.current?.['uid'])) {
+                        //     oldMsg.setUnreadReplyCount(oldMsg.getUnreadReplyCount() ? oldMsg.getUnreadReplyCount() + 1 : 1);
+                        // }
                         let tmpList = [...messagesList];
                         tmpList[index] = oldMsg;
+                        messagesContentListRef.current = tmpList;
                         setMessagesList(tmpList);
+                        inProgressMessages.current = [...inProgressMessages.current, newMessage]
                     }
                 } else if (parentMessageId == undefined) {
+                    messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
                     setMessagesList([...messagesList, newMessage]);
+                    inProgressMessages.current = [...inProgressMessages.current, newMessage]
                 }
                 // if scroll is not at bottom
                 if (!scrollToBottomOnNewMessages && (Math.round(currentScrollPosition.current.y) <= currentScrollPosition.current.scrollViewHeight)) {
-                    if ((baseMessage.getSender()?.getUid() || baseMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid']) {
+                    if ((parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId)) || (!parentMessageId && !newMessage.parentMessageId && (baseMessage.getSender()?.getUid() || baseMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid'])) {
                         scrollToBottom();
                         return;
                     }
                     CometChat.markAsDelivered(newMessage);
-                    if (baseMessage.getReceiverType() == ReceiverTypeConstants.user) {
+                    if (baseMessage?.getReceiverType() == ReceiverTypeConstants.user) {
                         CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageDelivered, { message: newMessage });
                     }
-                    setUnreadCount(unreadCount + 1);
+                    if ((!parentMessageId && !(newMessage.parentMessageId)) || (parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId))) {
+                        setUnreadCount(unreadCount + 1);
+                    }
                 } else {
                     scrollToBottom();
                     if (isReceived) {
@@ -541,10 +610,27 @@ export const CometChatMessageList = forwardRef<
             playNotificationSound(newMessage);
         }
 
+        const markParentMessageAsRead = (message: CometChat.BaseMessage) => {
+            let condition: (value: any, index: number, obj: any[]) => unknown;
+            condition = (msg) => msg.getId() == message?.['parentMessageId'];
+            let msgIndex = messagesList.findIndex(condition);
+            if (msgIndex > -1) {
+                let tmpList = [...messagesList];
+                if (message.getCategory() === MessageCategoryConstants.interactive) {
+                    message = InteractiveMessageUtils.convertInteractiveMessage(message);
+                }
+                tmpList[msgIndex]?.setUnreadReplyCount(0);
+                messagesContentListRef.current = tmpList;
+                setMessagesList(tmpList);
+            }
+        }
+
         const messageEdited = (editedMessage: CometChat.BaseMessage, withMuid: boolean = false) => {
             let condition: (value: any, index: number, obj: any[]) => unknown;
-            if (withMuid)
+            if (withMuid) {
                 condition = (msg) => msg['muid'] == editedMessage['muid']
+                inProgressMessages.current = inProgressMessages.current.filter(item => item.muid !== editedMessage['muid'])
+            }
             else
                 condition = (msg) => msg.getId() == editedMessage.getId()
             let msgIndex = messagesList.findIndex(condition);
@@ -553,7 +639,8 @@ export const CometChatMessageList = forwardRef<
                 if (editedMessage.getCategory() === MessageCategoryConstants.interactive) {
                     editedMessage = InteractiveMessageUtils.convertInteractiveMessage(editedMessage);
                 }
-                tmpList[msgIndex] = editedMessage;
+                tmpList[msgIndex] = CommonUtils.clone(editedMessage);
+                messagesContentListRef.current = tmpList;
                 setMessagesList(tmpList);
             }
         }
@@ -564,6 +651,7 @@ export const CometChatMessageList = forwardRef<
 
             let tmpList = [...messagesList];
             tmpList.splice(msgIndex, 1);
+            messagesContentListRef.current = tmpList;
             setMessagesList(tmpList);
         }
 
@@ -596,7 +684,7 @@ export const CometChatMessageList = forwardRef<
             let tmpList = [...messagesList];
 
             let tmpMsg = tmpList[index];
-            if ((tmpMsg as CometChat.BaseMessage).getReceiverType() == ReceiverTypeConstants.group)
+            if ((tmpMsg as CometChat.BaseMessage)?.getReceiverType() == ReceiverTypeConstants.group)
                 return;
             if (tmpMsg.getCategory() === MessageCategoryConstants.interactive) {
                 tmpMsg = InteractiveMessageUtils.convertInteractiveMessage(tmpMsg);
@@ -609,6 +697,7 @@ export const CometChatMessageList = forwardRef<
             }
             tmpMsg['updatedAt'] = receipt['timestamp'];
 
+            messagesContentListRef.current = tmpList;
             setMessagesList(tmpList);
         }
 
@@ -668,6 +757,15 @@ export const CometChatMessageList = forwardRef<
         useEffect(() => {
             //add listeners
 
+            let reactionListeners = disableReactions ? {} : {
+                onMessageReactionAdded: (reaction: CometChat.ReactionEvent) => {
+                    updateMessageReaction(reaction, true);
+                },
+                onMessageReactionRemoved: (reaction: CometChat.ReactionEvent) => {
+                    updateMessageReaction(reaction, false);
+                }
+            }
+
             CometChat.addGroupListener(
                 groupListenerId,
                 new CometChat.GroupListener({
@@ -712,6 +810,11 @@ export const CometChatMessageList = forwardRef<
                     },
                     ccMessageDeleted: ({ message }) => {
                         messageEdited(message, false);
+                    },
+                    ccMessageRead: ({ message }) => {
+                        if (!parentMessageId && message.parentMessageId) {
+                            // markParentMessageAsRead(message); //NOTE: uncomment this when want unread count in thread view
+                        }
                     },
                     onTextMessageReceived: (textMessage) => {
                         newMessage(textMessage);
@@ -765,6 +868,7 @@ export const CometChatMessageList = forwardRef<
                             messageEdited(editedMessage);
                         }
                     },
+                    ...reactionListeners
                 }
             )
             CometChatUIEventHandler.addGroupListener(
@@ -884,9 +988,15 @@ export const CometChatMessageList = forwardRef<
         }, [messagesList, unreadCount, user, group]);
 
         useEffect(() => {
-            prevMessagesLength.current = messagesLength.current || messagesList.length;
-            messagesLength.current = messagesList.length;
-        }, [messagesList])
+            prevMessagesLength.current = messagesLength.current || messagesContentListRef.current.length;
+            messagesLength.current = messagesContentListRef.current.length;
+        }, [messagesContentListRef.current])
+
+        useEffect(() => {
+            if (selectedEmoji) {
+                setShowReactionsList(true);
+            }
+        }, [selectedEmoji])
 
         useImperativeHandle(ref, () => {
             return {
@@ -901,12 +1011,72 @@ export const CometChatMessageList = forwardRef<
             }
         });
 
+        const getMessageById = (messageId: string): CometChat.BaseMessage => {
+            const message = messagesList.find((message) => message.getId() === messageId);
+            return message;
+        }
+
+        function isReactionOfThisList(receipt: CometChat.ReactionEvent) {
+            const receiverId = receipt?.getReceiverId();
+            const receiverType = receipt?.getReceiverType();
+            const reactedById = receipt?.getReaction()?.getReactedBy()?.getUid();
+            const parentMessageId = receipt?.getParentMessageId();
+            const listParentMessageId = parentMessageId && String(parentMessageId);
+            if (listParentMessageId) {
+                if (parentMessageId === listParentMessageId) {
+                    return true;
+                } else {
+                    return false
+                }
+            } else {
+                if (receipt.getParentMessageId()) {
+                    return false
+                }
+                if (user) {
+                    if (receiverType === ReceiverTypeConstants.user && (receiverId === user.getUid() || reactedById === user.getUid())) {
+                        return true
+                    }
+                } else if (group) {
+                    if (receiverType === ReceiverTypeConstants.group && (receiverId === group.getGuid())) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
+        const updateMessageReaction = (message: CometChat.ReactionEvent, isAdded: boolean): void => {
+            let _isReactionOfThisList = isReactionOfThisList(message);
+            if (!_isReactionOfThisList) return;
+
+            const messageId = message?.getReaction()?.getMessageId();
+            const messageObject = getMessageById(messageId);
+            if (!messageObject) return;
+
+            let action: any;
+            if (isAdded) {
+                action = CometChat.REACTION_ACTION.REACTION_ADDED;
+            } else {
+                action = CometChat.REACTION_ACTION.REACTION_REMOVED;
+            }
+            const modifiedMessage = CometChat.CometChatHelper.updateMessageWithReactionInfo(
+                messageObject,
+                message.getReaction(),
+                action
+            )
+            if (modifiedMessage instanceof CometChat.CometChatException) {
+                onError && onError(modifiedMessage);
+                return;
+            }
+            messageEdited(modifiedMessage, false);
+        }
+
         // functions returning view
         const getLeadingView = useCallback((item: CometChat.BaseMessage) => {
-            if (showAvatar && (item.getSender()?.getUid() || item?.['sender']?.['uid']) !== loggedInUser.current['uid'] && item['category'] != MessageCategoryConstants.action) {
+            if (showAvatar && (alignment === "leftAligned" || (item.getSender()?.getUid() || item?.['sender']?.['uid']) !== loggedInUser.current['uid'] && item['category'] != MessageCategoryConstants.action)) {
                 return <CometChatAvatar
-                    image={item?.getSender()?.getAvatar ? { uri: item.getSender().getAvatar() } : undefined}
-                    name={item?.getSender()?.getName ? item?.getSender()?.getName() : ""}
+                    image={(item?.getSender()?.getAvatar && item?.getSender()?.getAvatar()) ? { uri: item.getSender().getAvatar() } : undefined}
+                    name={(item?.getSender()?.getName && item?.getSender()?.getName()) ? item?.getSender()?.getName() : ""}
                     style={_avatarStyle}
                 />
             }
@@ -915,7 +1085,7 @@ export const CometChatMessageList = forwardRef<
 
         const getHeaderView = useCallback((item: CometChat.BaseMessage) => {
             let senderName: string = "";
-            if ((item.getSender()?.getUid() || item?.['sender']?.['uid']) != loggedInUser.current['uid'])
+            if (alignment === "leftAligned" || ((item.getSender()?.getUid() || item?.['sender']?.['uid']) != loggedInUser.current['uid']))
                 senderName = item.getSender()?.getName ? item.getSender()?.getName() : "";
 
             if (item.getCategory() == MessageCategoryConstants.action || item.getCategory() == MessageCategoryConstants.call)
@@ -942,9 +1112,9 @@ export const CometChatMessageList = forwardRef<
             )
         }, [])
 
-        const getFooterView = useCallback((item: CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
+        const getStatusInfoView = useCallback((item: CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
             // return null if time alignment is top
-            if (timeStampAlignment == "top" || item['category'] == "action") return null
+            if (timeStampAlignment == "top" || item['category'] == "action" || item['deletedAt']) return null
 
             let isSender = (item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current['uid'];
             let messageState;
@@ -959,28 +1129,69 @@ export const CometChatMessageList = forwardRef<
             else
                 messageState = "ERROR"
 
-            return <View style={[{ flexDirection: "row", justifyContent: bubbleAlignment === "right" ? "flex-end" : "flex-start" }]}>
+            let isAudioVideo = (item?.getType() === "image" || item?.getType() === "video");
+            return <View style={[
+                isAudioVideo ? {
+                    flexDirection: "row", justifyContent: bubbleAlignment === "right" ? "flex-end" : "flex-start", alignSelf: "flex-end", paddingVertical: 2, paddingHorizontal: 5,
+                    position: "absolute", borderRadius: 10, backgroundColor: theme.palette.getAccent500("dark"), zIndex: 1, bottom: 5, right: 5,
+                }
+                    :
+                    { flexDirection: "row", justifyContent: bubbleAlignment === "right" ? "flex-end" : "flex-start", alignSelf: "flex-end", padding: 5 }
+            ]}>
                 <CometChatDate
                     timeStamp={((item.getDeletedAt() || item.getReadAt() || item.getDeliveredAt() || item.getSentAt()) * 1000) || getSentAtTimestamp(item)}
-                    style={messageBubbleDateStyle}
+                    style={{ ...messageBubbleDateStyle, textFont: isAudioVideo ? theme.typography.caption3 : messageBubbleDateStyle.textFont }}
                     pattern={"timeFormat"}
                     customDateString={datePattern && datePattern(item)}
                     dateAlignment="center"
                 />
                 {
-                    !disableReceipt && isSender ?
-                        <CometChatReceipt
-                            receipt={messageState}
-                            deliveredIcon={deliveredIcon}
-                            readIcon={readIcon}
-                            sentIcon={sentIcon}
-                            waitIcon={waitIcon}
-                            errorIcon={errorIcon}
-                        /> :
+                    (!disableReceipt && alignment !== "leftAligned") && isSender ?
+                        <View style={{ marginLeft: 2, alignItems: "center", justifyContent: "center" }}>
+                            <CometChatReceipt
+                                receipt={messageState}
+                                deliveredIcon={deliveredIcon}
+                                readIcon={readIcon}
+                                sentIcon={sentIcon}
+                                waitIcon={waitIcon}
+                                errorIcon={errorIcon}
+                                style={{
+                                    height: isAudioVideo && 8, width: isAudioVideo && 10,
+                                    tintColor: (messageState === "READ" && item?.getType() === "text") ? theme.palette.getBackgroundColor() :
+                                        messageState === "WAIT" ? theme?.palette?.getAccent400() : undefined
+                                }}
+                            />
+                        </View>
+                        :
                         null
                 }
             </View>
         }, [])
+
+        const getFooterView = useCallback((
+            messageObject: CometChat.BaseMessage,
+            alignment: MessageBubbleAlignmentType
+        ) => {
+            let hasReaction = messageObject?.getReactions && messageObject?.getReactions() && messageObject?.getReactions().length > 0;
+            return (
+                <View style={{
+                    minHeight: hasReaction ? 27 : 0,
+                }}>
+                    <CometChatReactions
+                        messageObject={messageObject}
+                        onReactionPress={(reaction: CometChat.ReactionCount, messageObject: CometChat.BaseMessage) => reactToMessage(reaction.getReaction(), messageObject)}
+                        onReactionLongPress={(reaction: CometChat.ReactionCount, messageObject: CometChat.BaseMessage) => onReactionLongPress(reaction.getReaction(), messageObject)}
+                        alignment={alignment}
+                        {...reactionsConfiguration}
+                    />
+                </View>
+            );
+        }, [])
+
+        const onReactionLongPress = (emoji: string, messageObj?: CometChat.BaseMessage) => { //TODO: check useCallBAck
+            setSelectedMessage(messageObj);
+            setSelectedEmoji(emoji);
+        }
 
         const getAlignment = useCallback((item: CometChat.BaseMessage): MessageBubbleAlignmentType => {
             if (item && item.getCategory() == MessageCategoryConstants.action)
@@ -1014,22 +1225,64 @@ export const CometChatMessageList = forwardRef<
             setShowMessageOptions([]);
         }
 
-        const getThreadView = useCallback((item: CometChat.BaseMessage) => {
+        const getThreadView = useCallback((item: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
             let isThreaded = item.getReplyCount() > 0;
 
-            let style = {
-                color: theme?.palette.getPrimary()
-            }
-            if ((item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current['uid']) {
-                style.color = theme?.palette.getSecondary();
-            }
+            let style = [{
+                color: theme?.palette.getAccent900(),
+                marginRight: alignment === "right" ? 3 : 0,
+                marginLeft: alignment === "left" ? 3 : 0
+            }, theme?.typography?.subtitle1];
+
+            // let unreadReplyCount = item?.getUnreadReplyCount && item?.getUnreadReplyCount();
 
             return !isThreaded ? null :
                 <TouchableOpacity
                     onPress={() => openThreadView(item, null)}
-                    style={{ flexDirection: "row", margin: 4, borderTopWidth: 1, borderColor: theme?.palette.getAccent50(), justifyContent: "space-between", padding: 4 }}>
-                    <Text style={style}>{`View ${item.getReplyCount()} replies`}</Text>
-                    <Image style={{ resizeMode: "contain", tintColor: theme?.palette.getPrimary() }} source={rightArrowIcon} />
+                    style={{
+                        flexDirection: "row",
+                        marginRight: 4,
+                        paddingHorizontal: 4,
+                        marginTop: 2,
+                        alignSelf: alignment === "right" ? "flex-end" : "flex-start",
+                    }}
+                >
+                    {alignment === "left" && <Image style={{ resizeMode: "contain", tintColor: theme?.palette.getAccent600() }} source={LeftArrowCurve} />}
+                    <Text style={style}>{`${item.getReplyCount()} ${item.getReplyCount() > 1 ? localize("REPLIES") : localize("REPLY")}`}</Text>
+
+                    {/**  NOTE: uncomment below code when want unread count in thread view  **/}
+                    {/* {alignment === "left" && !!unreadReplyCount &&
+                        <View style={{
+                            borderRadius: 10, marginLeft: 3,
+                            paddingHorizontal: 7,
+                            alignment: "center", justifyContent: "center",
+                            backgroundColor: theme?.palette?.getPrimary()
+                        }}>
+                            <Text style={[theme?.typography?.subtitle4,
+                            {
+                                color: theme?.palette?.getBackgroundColor(),
+                                textAlign: "center"
+                            }]}
+                            >{unreadReplyCount}</Text>
+                        </View>
+                    } */}
+                    {/* {alignment === "right" && !!unreadReplyCount &&
+                        <View style={{
+                            borderRadius: 10, marginRight: 3, paddingVertical: 2, paddingHorizontal: 6,
+                            backgroundColor: theme?.palette?.getPrimary()
+                        }}>
+                            <Text style={[theme?.typography?.subtitle4,
+                            { color: theme?.palette?.getBackgroundColor() }]}
+                            >{unreadReplyCount}</Text>
+                        </View>
+                    } */}
+                    {/**  NOTE: uncomment above code when want unread count in thread view  **/}
+
+                    {alignment === "right" && <Image style={[{ resizeMode: "contain", tintColor: theme?.palette.getAccent600() },
+                    {
+                        transform: [{ scaleX: -1 }]
+                    }
+                    ]} source={LeftArrowCurve} />}
                 </TouchableOpacity>
         }, [])
 
@@ -1045,7 +1298,7 @@ export const CometChatMessageList = forwardRef<
                 })
         }
 
-        const shareMedia = async (messageObject: CometChat.BaseMessage) => {
+        const shareMedia = async (messageObject: CometChat.MediaMessage) => {
             let textMessage = messageObject.data.text;
             let fileUrl = messageObject.data.url;
 
@@ -1059,7 +1312,7 @@ export const CometChatMessageList = forwardRef<
                 "type": messageObject["type"],
                 "mediaName": getFileName(), // get File name
                 "fileUrl": fileUrl || "", // get File url
-                "mimeType": messageObject["type"] === "text" ? "" : messageObject?.getAttachment()?.getMimeType(), // get Mime Type
+                "mimeType": messageObject["type"] === "text" ? "" : (messageObject as CometChat.MediaMessage)?.getAttachment()?.getMimeType(), // get Mime Type
             }
 
             NativeModules.FileManager.shareMessage(shareObj, (callback) => {
@@ -1079,8 +1332,12 @@ export const CometChatMessageList = forwardRef<
                 }
             }
 
-            if ((item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current?.['uid'] && item.getCategory() == MessageCategoryConstants.message)
-                _style.backgroundColor = theme?.palette.getPrimary();
+            if ((item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current?.['uid'])
+                _style.backgroundColor = (alignment !== "leftAligned" && (item.getType() === MessageTypeConstants.text || item.getType() === MessageTypeConstants.meeting)) ? theme?.palette.getPrimary() : theme?.palette.getAccent50();
+
+            if(item?.getDeletedBy()) {
+                _style.backgroundColor = 'transparent';
+            }
 
             return _style;
         }, []);
@@ -1224,16 +1481,23 @@ export const CometChatMessageList = forwardRef<
 
                 let bubbleAlignment: MessageBubbleAlignmentType = getAlignment(message);
 
-                return <TouchableOpacity activeOpacity={1} onLongPress={() => showOptions ? openOptionsForMessage(message, hasTemplate) : undefined} >
+                const onLongPress = () => {
+                    if (message.getDeletedBy() != null) return;
+                    setSelectedMessage(message)
+                    openOptionsForMessage(message, hasTemplate)
+                }
+
+                return <TouchableOpacity activeOpacity={1} onLongPress={() => showOptions ? onLongPress() : undefined} >
                     <CometChatMessageBubble
                         id={`${message.getId()}`}
                         LeadingView={() => !isThreaded && getLeadingView(message)}
                         HeaderView={() => !isThreaded && getHeaderView(message)}
-                        FooterView={() => getFooterView(message, bubbleAlignment)}
+                        FooterView={() => (disableReactions || isThreaded) ? null : getFooterView(message, bubbleAlignment)}
                         alignment={isThreaded ? "left" : bubbleAlignment}
                         ContentView={hasTemplate.ContentView?.bind(this, message, bubbleAlignment)}
-                        ThreadView={() => !isThreaded && getThreadView(message)}
+                        ThreadView={() => !isThreaded && getThreadView(message, bubbleAlignment)}
                         BottomView={() => ChatConfigurator.dataSource.getBottomView(message, bubbleAlignment)} // Note please rewrite this
+                        StatusInfoView={() => getStatusInfoView(message, bubbleAlignment)}
                         style={getStyle(message)}
                     />
                 </TouchableOpacity>
@@ -1249,9 +1513,86 @@ export const CometChatMessageList = forwardRef<
             return item['sentAt'] * 1000;
         }, [])
 
-        const RenderMessageItem = ({ item, index }) => {
+
+        const reactToMessage = (emoji: string, messageObj?: CometChat.BaseMessage) => {
+
+            const msgObj = CommonUtils.clone(messageObj) || CommonUtils.clone(selectedMessage);
+
+            const messageId = msgObj?.getId();
+            const reactions = msgObj?.getReactions() || [];
+            const emojiObject = reactions?.find(
+                (reaction: any) => {
+                    return reaction?.reaction == emoji;
+                }
+            );
+            if (emojiObject && emojiObject?.getReactedByMe()) {
+                const updatedReactions = [];
+                reactions.forEach((reaction) => {
+                    if (reaction?.getReaction() == emoji) {
+                        if (reaction?.getCount() === 1) {
+                            return;
+                        } else {
+                            reaction.setCount(reaction?.getCount() - 1);
+                            reaction.setReactedByMe(false);
+                            updatedReactions.push(reaction);
+                        }
+                    } else {
+                        updatedReactions.push(reaction);
+                    }
+                });
+
+                const newMessageObj = CommonUtils.clone(msgObj);
+                newMessageObj.setReactions(updatedReactions);
+
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, { message: newMessageObj, status: messageStatus.success });
+                CometChat.removeReaction(messageId, emoji).then((message) => {
+                }).catch((error) => {
+                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, { message: msgObj, status: messageStatus.success });
+                    console.log(error);
+                });
+            } else {
+                const updatedReactions = [];
+                const reactionAvailable = reactions.find((reaction) => {
+                    return reaction?.getReaction() == emoji;
+                });
+                reactions.forEach((reaction) => {
+                    if (reaction?.getReaction() == emoji) {
+                        reaction.setCount(reaction?.getCount() + 1);
+                        reaction.setReactedByMe(true);
+                        updatedReactions.push(reaction);
+                    } else {
+                        updatedReactions.push(reaction);
+                    }
+                });
+                if (!reactionAvailable) {
+                    const react: CometChat.ReactionCount = new CometChat.ReactionCount(emoji, 1, true);
+                    updatedReactions.push(react);
+                }
+
+                const newMessageObj = CommonUtils.clone(msgObj);
+
+                newMessageObj.setReactions(updatedReactions);
+
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, { message: newMessageObj, status: messageStatus.success });
+
+                CometChat.addReaction(messageId, emoji)
+                    .then((response: any) => {
+                    })
+                    .catch((error: any) => {
+                        console.log(error);
+                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, { message: msgObj, status: messageStatus.success });
+                    });
+            }
+
+            setShowMessageOptions([]);
+        }
+
+        const RenderMessageItem = useCallback(memo(function RenderMessageItem({ item, index }: {
+            item: any;
+            index: number;
+        }) {
             let seperatorView = null;
-            const previousMessageDate = messagesList[index - 1] ? new Date(getSentAtTimestamp(messagesList[index - 1])) : null;
+            const previousMessageDate = messagesContentListRef.current[index - 1] ? new Date(getSentAtTimestamp(messagesContentListRef.current[index - 1])) : null;
             const currentMessageDate = new Date(getSentAtTimestamp(item));
 
             const currentDate = isNaN(currentMessageDate.getDate()) ? undefined : `${currentMessageDate.getDate()}-${currentMessageDate.getMonth()}-${currentMessageDate.getFullYear()}`;
@@ -1277,7 +1618,7 @@ export const CometChatMessageList = forwardRef<
                 {seperatorView}
                 <MessageView message={item} />
             </React.Fragment>
-        };
+        }), []);
 
         const keyExtractor = useCallback((item) => `${item.id}_${item.muid}`, [])
 
@@ -1321,7 +1662,7 @@ export const CometChatMessageList = forwardRef<
             );
         }, [])
 
-        const getLoadingStateView = () => {
+        const getLoadingStateView = useCallback(() => {
             if (LoadingStateView)
                 return LoadingStateView;
 
@@ -1330,20 +1671,20 @@ export const CometChatMessageList = forwardRef<
                     <ActivityIndicator size="large" color={messageListStyle?.loadingIconTint} />
                 </View>
             )
-        }
+        }, [])
 
-        function handleScroll(event) {
+        const handleScroll = (event) => {
             if (event.nativeEvent.contentOffset.y == 0) {
                 getPreviousMessages();
             }
             scrollHandler(event);
         };
 
-        function onContentSizeChange(contentWidth, contentHeight) {
+        const onContentSizeChange = useCallback((contentWidth, contentHeight) => {
             if (currentScrollPosition.current.y == 0 && currentScrollPosition.current.scrollViewHeight) {
                 let diff = contentHeight - currentScrollPosition.current.scrollViewHeight;
                 if (messagesLength.current > prevMessagesLength.current && diff > 0 && !(unreadCount > 0)) {
-                    messageListRef.current.scrollTo({ y: Platform.OS === "ios" ? diff - currentScrollPosition.current.layoutHeight : diff, animated: false })
+                    messageListRef.current.scrollTo({ y: diff, animated: false })
                 }
             }
 
@@ -1357,7 +1698,7 @@ export const CometChatMessageList = forwardRef<
                     currentScrollPosition.current.scrollViewHeight = contentHeight;
                 }
             }
-        }
+        }, [])
 
         const {
             height,
@@ -1401,33 +1742,31 @@ export const CometChatMessageList = forwardRef<
                                             </View>
                                         }
 
-                                        <SafeAreaView style={{ flex: 1 }}>
-                                            <ScrollView
-                                                ref={messageListRef}
-                                                onScroll={handleScroll}
-                                                scrollEventThrottle={16} // control how often the scroll event will be fired
-                                                onLayout={() => {
-                                                    !currentScrollPosition.current.scrollViewHeight && messageListRef.current.scrollToEnd({ animated: false })
-                                                }}
-                                                onContentSizeChange={onContentSizeChange}
-                                            >
+                                        <ScrollView
+                                            ref={messageListRef}
+                                            onScroll={handleScroll}
+                                            scrollEventThrottle={16} // control how often the scroll event will be fired
+                                            onLayout={() => {
+                                                !currentScrollPosition.current.scrollViewHeight && messageListRef.current.scrollToEnd({ animated: false })
+                                            }}
+                                            onContentSizeChange={onContentSizeChange}
+                                        >
 
-                                                {messagesList && messagesList.length > 0 ? (
-                                                    messagesList
-                                                        // .slice(0)
-                                                        // .reverse()
-                                                        .map((item, index) => (
-                                                            <View
-                                                                key={keyExtractor(item)}>
-                                                                {RenderMessageItem({ item, index })}
-                                                                {itemSeperator()}
-                                                            </View>
-                                                        ))
-                                                ) : (
-                                                    getEmptyTextView()
-                                                )}
-                                            </ScrollView>
-                                        </SafeAreaView>
+                                            {messagesList?.length ? (
+                                                messagesList
+                                                    // .slice(0)
+                                                    // .reverse()
+                                                    .map((item, index) => (
+                                                        <View
+                                                            key={keyExtractor(item)}>
+                                                            <RenderMessageItem item={item} index={index} />
+                                                            {itemSeperator()}
+                                                        </View>
+                                                    ))
+                                            ) : (
+                                                getEmptyTextView()
+                                            )}
+                                        </ScrollView>
                                         {CustomListHeader && <CustomListHeader />}
                                         {ongoingCallView}
                                         {
@@ -1509,6 +1848,8 @@ export const CometChatMessageList = forwardRef<
                     infoObject.current = null;
                     setMessageInfo(false);
                 }} isOpen={showMessageOptions.length > 0 || ExtensionsComponent || messageInfo}
+                    sliderMaxHeight={Dimensions.get('window').height * 0.5}
+                    sliderMinHeight={Dimensions.get('window').height * 0.5}
                 >
                     {
                         ExtensionsComponent ? ExtensionsComponent :
@@ -1526,19 +1867,68 @@ export const CometChatMessageList = forwardRef<
                                         messageInformationConfiguration?.onBack && messageInformationConfiguration.onBack();
                                     }}
                                 /> :
-                                <CometChatActionSheet actions={showMessageOptions} style={_actionStyle} />
+                                <View>
+                                    {!disableReactions && <CometChatQuickReactions
+                                        // quickReactions={quickReactions}
+                                        onReactionPress={reactToMessage}
+                                        onAddReactionPress={() => {
+                                            setShowMessageOptions([])
+                                            setShowEmojiKeyboard(true)
+                                        }}
+                                        {...quickReactionConfiguration}
+                                    />}
+                                    <View style={{
+                                        maxHeight: (Dimensions.get('window').height * 0.5) - (disableReactions ? 0 : 100),
+                                        minHeight: (Dimensions.get('window').height * 0.5) - (disableReactions ? 0 : 100),
+                                        overflow: "scroll"
+                                    }}>
+                                        <CometChatActionSheet hideHeader={hideActionSheetHeader} actions={showMessageOptions} style={_actionStyle} />
+                                    </View>
+                                </View>
                     }
+                </CometChatBottomSheet>
+                <CometChatBottomSheet
+                    isOpen={showEmojiKeyboard}
+                    onClose={() => setShowEmojiKeyboard(false)}
+                >
+                    <CometChatEmojiKeyboard
+                        onClick={(item) => {
+                            setShowEmojiKeyboard(false)
+                            reactToMessage(item, selectedMessage)
+                        }}
+                        style={{
+                            height: (Dimensions.get('window').height * 0.5) - 54,
+                            ...emojiKeyboardStyle
+                        }}
+                    />
+                </CometChatBottomSheet>
+
+                <CometChatBottomSheet
+                    isOpen={showReactionsList}
+                    onClose={() => {
+                        setShowReactionsList(false);
+                        setSelectedEmoji(null);
+                    }}
+                    sliderMaxHeight={Dimensions.get('window').height * 0.5}
+                    sliderMinHeight={Dimensions.get('window').height * 0.5}
+                >
+                    <CometChatReactionsList
+                        messageObject={selectedMessage}
+                        selectedReaction={selectedEmoji}
+                        {...reactionsListConfiguration}
+                        onPress={(messageReaction: CometChat.Reaction, messageObject: CometChat.BaseMessage) => {
+                            if (reactionsListConfiguration?.onPress) {
+                                reactionsListConfiguration.onPress(messageReaction, messageObject);
+                                return;
+                            }
+                            reactToMessage(messageReaction?.getReaction(), messageObject);
+                            if (messageObject?.getReactions()?.length === 1 && messageObject?.getReactions()?.[0]?.['count'] == 1) {
+                                setShowReactionsList(false);
+                                setSelectedEmoji(null);
+                            }
+                        }}
+                    />
                 </CometChatBottomSheet>
             </View>
         )
-    });
-
-CometChatMessageList.defaultProps = {
-    timeStampAlignment: "bottom",
-    templates: [],
-    showAvatar: true,
-    alignment: "standard",
-    errorStateText: localize("SOMETHING_WRONG"),
-    emptyStateText: localize("NO_MESSAGES_FOUND"),
-    disableReceipt: false
-}
+    }));

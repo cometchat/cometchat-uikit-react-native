@@ -1,11 +1,12 @@
-import React, { useContext, useEffect, useState } from "react";
-import { View, Image, ImageBackground, NativeModules, Platform, NativeEventEmitter, EmitterSubscription } from "react-native";
+import React, { useContext, useEffect, useState, useRef } from "react";
+import { View, Image, ImageBackground, NativeModules, Platform, NativeEventEmitter, EmitterSubscription, ActivityIndicator, StyleSheet, ImageSourcePropType } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { ImageType } from "../../base/Types";
 import { VideoBubbleStyle, VideoBubbleStyleInterface } from "./VideoBubbleStyle";
 import { defaultPlayIcon } from "./resources";
 import { Style } from "./style";
 import { CometChatContextType } from "../../base/Types";
+import { CometChatVideoPlayer } from "../CometChatVideoPlayer";
 
 const { VideoManager, FileManager } = NativeModules;
 const eventEmitter = new NativeEventEmitter(FileManager);
@@ -36,6 +37,23 @@ export interface CometChatVideoBubbleInterface {
      * function will receive an videoUrl as parameter.
      */
     onPress?: Function
+    /**
+     * custom player play icon
+     */
+    playerPlayIcon?: ImageSourcePropType
+    /**
+     * custom player pause icon
+     */
+    playerPauseIcon?: ImageSourcePropType
+    /**
+     * custom player back icon
+     */
+    playerBackIcon?: ImageSourcePropType
+    /**
+     * custom player volume icon
+     */
+    playerVolumeIcon?: ImageSourcePropType
+
 }
 
 export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
@@ -46,10 +64,16 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         style,
         playIcon,
         onPress,
+        playerPlayIcon,
+        playerPauseIcon,
+        playerBackIcon,
+        playerVolumeIcon,
     } = props;
 
     const { theme } = useContext<CometChatContextType>(CometChatContext);
     const [isOpening, setOpening] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isVideoPlayerVisible, setIsVideoPlayerVisible] = useState(false);
 
     const _style = new VideoBubbleStyle({
         backgroundColor: theme?.palette.getBackgroundColor(),
@@ -83,11 +107,8 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         }
 
         if (!videoUrl) return;
-
-        Platform.OS == 'ios' ?
-            FileManager.openFile(videoUrl, getFileName(videoUrl), (s) => { }) :
-            VideoManager.openVideo(videoUrl, (s) => { });
-
+        setIsLoading(true)
+        setIsVideoPlayerVisible(true)
     }
 
     useEffect(() => {
@@ -105,11 +126,56 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         }
     }, []);
 
+    const pressTime = useRef(0);
+
+    const handleTouchStart = () => {
+        pressTime.current = Date.now();
+    };
+
+    const handleTouchEnd = () => {
+        // if (pressTime.current === null) return;
+        const endTime = Date.now();
+        const pressDuration = endTime - pressTime.current;
+        if (pressDuration < 500) {
+            playVideo();
+        }
+    };
+
+    const onTouchMove = () => {
+        // pressTime.current = null
+    }
+
     return (
-        <ImageBackground source={thumbnailUrl || placeholderImage} resizeMode={"contain"} style={{ backgroundColor, ...border, borderRadius, height, width }}>
-            <View onTouchEnd={playVideo} style={[Style.playIconPosition, { backgroundColor: playIconBackgroundColor, borderRadius }]}>
-                <Image source={playIcon || defaultPlayIcon} style={{ tintColor: playIconTint }} />
-            </View>
-        </ImageBackground>
+        <>
+            <CometChatVideoPlayer
+                videoUri={videoUrl}
+                isVisible={isVideoPlayerVisible}
+                onClose={() => {
+                    setIsLoading(false)
+                    setIsVideoPlayerVisible(false)
+                }}
+                onLoad={() => setIsLoading(false)}
+                loadingIconColor={style.playerLoadingIconColor}
+                playIcon={playerPlayIcon}
+                playIconColor={style.playerPlayIconColor}
+                pauseIcon={playerPauseIcon}
+                pauseIconColor={style.playerPauseIconColor}
+                backIcon={playerBackIcon}
+                backIconColor={style.playerBackIconColor}
+                volumeIcon={playerVolumeIcon}
+                volumeIconColor={style.playerVolumeIconColor}
+            />
+            <ImageBackground source={thumbnailUrl || placeholderImage} resizeMode={"contain"} style={{ backgroundColor, ...border, borderRadius, height, width }}>
+                <View
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                    // onTouchMove={onTouchMove}
+                    style={[Style.playIconPosition, { backgroundColor: playIconBackgroundColor, borderRadius }]}>
+                    {isLoading ? <ActivityIndicator size={"small"} color={playIconTint} />
+                        : <Image source={playIcon || defaultPlayIcon} style={{ tintColor: playIconTint }} />
+                    }
+                </View>
+            </ImageBackground>
+        </>
     )
 }

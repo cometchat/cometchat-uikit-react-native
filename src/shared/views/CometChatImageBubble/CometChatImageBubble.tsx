@@ -96,10 +96,33 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
     }, []);
 
+    const pressTime = useRef(0);
+
+    const handleTouchStart = () => {
+        pressTime.current = Date.now();
+    };
+
+    const handleTouchEnd = () => {
+        // if (pressTime.current === null) return;
+        const endTime = Date.now();
+        const pressDuration = endTime - pressTime.current;
+        if (pressDuration < 500) {
+            openImage();
+        }
+    };
+
+    // const onTouchMove = () => {
+    //     pressTime.current = null
+    // }
+
     return (
-        <View onTouchEnd={openImage}>
+        <View
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            // onTouchMove={onTouchMove}
+        >
             <Image
-                resizeMode={resizeMode || (Platform.OS == "android" ? "cover" : "contain")}
+                resizeMode={resizeMode || "cover"}
                 loadingIndicatorSource={placeHolderImage}
                 source={thumbnailUrl ?? imageUrl} style={{
                     height, width,

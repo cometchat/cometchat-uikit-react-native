@@ -8,6 +8,7 @@ export const Styles = (props) =>
       maxHeight: props.height || 114,
       width: props.width || 228,
       padding: 8,
+      paddingBottom: 0
     },
     rowStyle: {
         flexDirection: 'row',
@@ -56,6 +57,7 @@ export const Styles = (props) =>
         justifyContent: 'center',
         alignItems: 'center',
         margin: 8,
+        marginBottom: 0,
         backgroundColor: props.buttonBackgroundColor || 'rgba(20, 20, 20, 0.04)',
     },
 

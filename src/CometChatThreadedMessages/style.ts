@@ -23,5 +23,7 @@ export const styles = StyleSheet.create({
     height: 25,
     width: 25,
   },
-  composerContainer: { marginHorizontal: 15, marginBottom: 10 },
+  composerContainer: {
+    // marginBottom: 10
+  },
 });

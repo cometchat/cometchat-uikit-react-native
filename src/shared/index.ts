@@ -138,6 +138,30 @@ import {
   CometChatFormBubbleInterface,
   CometChatCardBubble,
   CometChatCardBubbleInterface,
+
+  CometChatReactions,
+  CometChatReactionsInterface,
+  ReactionsConfiguration,
+  ReactionsConfigurationInterface,
+  ReactionsStyle,
+  ReactionsStyleInterface,
+  CometChatReactionsList,
+  CometChatReactionsListInterface,
+  ReactionsListConfiguration,
+  ReactionsListConfigurationInterface,
+  ReactionListStyle,
+  ReactionListStyleInterface,
+  CometChatQuickReactions,
+  CometChatQuickReactionsInterface,
+  QuickReactionsConfiguration,
+  QuickReactionsConfigurationInterface,
+  QuickReactionsStyle,
+  QuickReactionsStyleInterface,
+
+  CometChatEmojiKeyboard,
+  EmojiKeyboardConfiguration,
+  EmojiKeyboardStyle,
+
   CometChatSchedulerBubble,
   CometChatSchedulerBubbleInterface 
 } from './views';
@@ -312,5 +336,29 @@ export {
   RadioButtonElement,
   SingleSelectElement,
   TextInputElement,
-  URLNavigationAction
+  URLNavigationAction,
+
+  CometChatReactions,
+  CometChatReactionsInterface,
+  ReactionsConfiguration,
+  ReactionsConfigurationInterface,
+  ReactionsStyle,
+  ReactionsStyleInterface,
+  CometChatReactionsList,
+  CometChatReactionsListInterface,
+  ReactionsListConfiguration,
+  ReactionsListConfigurationInterface,
+  ReactionListStyle,
+  ReactionListStyleInterface,
+  CometChatQuickReactions,
+  CometChatQuickReactionsInterface,
+  QuickReactionsConfiguration,
+  QuickReactionsConfigurationInterface,
+  QuickReactionsStyle,
+  QuickReactionsStyleInterface,
+
+  CometChatEmojiKeyboard,
+  EmojiKeyboardConfiguration,
+  EmojiKeyboardStyle,
+
 };

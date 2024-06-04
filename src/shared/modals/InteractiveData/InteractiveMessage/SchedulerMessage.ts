@@ -12,37 +12,39 @@ interface Availability {
 }
 
 interface InteractiveData {
-  title: string;
-  avatarUrl: string;
-  goalCompletionText: string;
+  title?: string;
+  avatarUrl?: string;
+  goalCompletionText?: string;
   timezoneCode: string;
-  bufferTime: number;
-  duration: number;
+  bufferTime?: number;
+  duration?: number;
   availability: Availability;
-  dateRangeStart: number;
-  dateRangeEnd: number;
-  icsFileUrl: string;
+  dateRangeStart?: number;
+  dateRangeEnd?: number;
+  icsFileUrl?: string;
   scheduleElement: ButtonElement;
 }
 
 export class SchedulerMessage extends CometChat.InteractiveMessage {
   private interactiveData: InteractiveData;
-  private title: string;
-  private avatarUrl: string;
-  private goalCompletionText: string;
+  private title?: string;
+  private avatarUrl?: string;
+  private goalCompletionText?: string;
   private timezoneCode: string;
-  private bufferTime: number;
-  private duration: number;
+  private bufferTime?: number;
+  private duration?: number;
   private availability: Availability;
-  private dateRangeStart: number;
-  private dateRangeEnd: number;
-  private icsFileUrl: string;
+  private dateRangeStart?: number;
+  private dateRangeEnd?: number;
+  private icsFileUrl?: string;
   private scheduleElement: ButtonElement;
 
+  
   constructor(
     receiverId: string,
     receiverType: string,
     interactiveData: InteractiveData
+    
   ) {
     super(
       receiverId,
@@ -70,7 +72,7 @@ export class SchedulerMessage extends CometChat.InteractiveMessage {
   setTimezoneCode(timezoneCode: string) {
     this.timezoneCode = timezoneCode;
   }
-  setduration(duration: number) {
+  setDuration(duration: number) {
     this.duration = duration;
   }
   setBufferTime(bufferTime: number) {
@@ -82,7 +84,7 @@ export class SchedulerMessage extends CometChat.InteractiveMessage {
   setDateRangeStart(dateRangeStart: number) {
     this.dateRangeStart = dateRangeStart;
   }
-  setdateRangeEnd(dateRangeEnd: number) {
+  setDateRangeEnd(dateRangeEnd: number) {
     this.dateRangeEnd = dateRangeEnd;
   }
   setIcsFileUrl(icsFileUrl: string) {
@@ -110,7 +112,7 @@ export class SchedulerMessage extends CometChat.InteractiveMessage {
   getTimezoneCode() {
     return this.timezoneCode;
   }
-  getduration() {
+  getDuration() {
     return this.duration;
   }
   getBufferTime() {
@@ -119,10 +121,10 @@ export class SchedulerMessage extends CometChat.InteractiveMessage {
   getAvailability() {
     return this.availability;
   }
-  getdateRangeStart() {
+  getDateRangeStart() {
     return this.dateRangeStart;
   }
-  getdateRangeEnd() {
+  getDateRangeEnd() {
     return this.dateRangeEnd;
   }
   getIcsFileUrl() {

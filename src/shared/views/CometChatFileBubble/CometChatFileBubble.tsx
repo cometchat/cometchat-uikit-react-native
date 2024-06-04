@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { TouchableOpacity, View, Image, NativeModules, Text, Platform } from "react-native";
+import React, { useContext, useRef } from "react";
+import { View, Image, NativeModules, Text, Platform } from "react-native";
 import { downloadIcon, fileIcon } from "./resources";
 import { CometChatContext } from "../../CometChatContext"
 import { FileBubbleStyle, FileBubbleStyleInterface } from "./FileBubbleStyle";
@@ -89,13 +89,60 @@ export const CometChatFileBubble = ({
         return (fileUrl.substring(fileUrl.lastIndexOf("/") + 1, fileUrl.length)).replace(" ", "_");
     }
 
+    const wrapperPressTime = useRef(0);
     let viewProps = Platform.OS === "ios" ? {
-        onTouchEnd: downloadAndOpen
+        onTouchStart: () => {
+            wrapperPressTime.current = Date.now();
+        },
+        // onTouchMove: () => {
+        //     wrapperPressTime.current = null
+        // },
+        onTouchEnd: () => {
+            // if (wrapperPressTime.current === null) return;
+            const endTime = Date.now();
+            const pressDuration = endTime - wrapperPressTime.current;
+            if (pressDuration < 500) {
+                downloadAndOpen();
+            }
+        }
     } : {};
+
+    const pressTimeOnAndroid = useRef(0);
+
+    let viewPropsForAndroid = Platform.OS === "android" ? {
+        onTouchStart: () => {
+            pressTimeOnAndroid.current = Date.now();
+        },
+        // onTouchMove: () => {
+        //     pressTimeOnAndroid.current = null
+        // }
+    } : {};
+
+    const shouldDownloadAndOpen = () => {
+        if (Platform.OS === "android") {
+            // if (pressTimeOnAndroid.current === null) return;
+            const endTime = Date.now();
+            const pressDuration = endTime - pressTimeOnAndroid.current;
+            if (pressDuration < 500) {
+                downloadAndOpen();
+            }
+        }
+    }
+
+    const shouldDownload = () => {
+        if (Platform.OS === "android") {
+            if (pressTimeOnAndroid.current === null) return;
+            const endTime = Date.now();
+            const pressDuration = endTime - pressTimeOnAndroid.current;
+            if (pressDuration < 500) {
+                downloadFile();
+            }
+        }
+    }
 
     return (
         <View {...viewProps} style={[Style.container, { backgroundColor, borderWidth: border.borderWidth, borderColor: border.borderColor, borderRadius, height, width }]}>
-            <View onTouchEnd={Platform.OS === "android" ? downloadAndOpen : () => { }} style={Style.messageInfoStyle}>
+            <View {...viewPropsForAndroid} onTouchEnd={shouldDownloadAndOpen} style={Style.messageInfoStyle}>
                 {
                     title && <Text
                         numberOfLines={1}
@@ -115,7 +162,7 @@ export const CometChatFileBubble = ({
                     </Text>
                 }
             </View>
-            <View onTouchEnd={Platform.OS === "android" ? downloadFile.bind(this) : () => { }} style={Style.downloadImage}>
+            <View {...viewPropsForAndroid} onTouchEnd={shouldDownload} style={Style.downloadImage}>
                 <Image source={icon || (Platform.OS === "ios" ? fileIcon : downloadIcon)} style={[Style.imageStyle, { tintColor: iconTint }]} />
             </View>
         </View>

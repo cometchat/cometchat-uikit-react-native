@@ -16,7 +16,7 @@ const layoutType = Object.freeze({
 });
 
 const OptionListView = ({
-  key,
+  id,
   title,
   iconUrl,
   iconTint,
@@ -31,13 +31,13 @@ const OptionListView = ({
 }) => {
   return (
     <TouchableOpacity
-      key={key}
+      key={id}
       style={[
         Style.listItemContainer,
         {
           paddingHorizontal: 10,
           borderRadius: cornerRadius || 0,
-          backgroundColor: backgroundColor || theme.palette.getAccent50(),
+          backgroundColor: backgroundColor || theme.palette.getBackgroundColor(),
           justifyContent: !iconUrl ? 'center' : undefined,
         },
       ]}
@@ -96,7 +96,7 @@ const OptionGridView = ({
       style={[
         Style.gridItemContainer,
         {
-          backgroundColor: backgroundColor || theme.palette.getAccent50(),
+          backgroundColor: backgroundColor || theme.palette.getBackgroundColor(),
           borderRadius: cornerRadius || 8,
         },
       ]}
@@ -170,11 +170,11 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
 
   const _render = ({ item }) => {
     return (
-      <OptionListView key={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} backgroundColor={style.listItemBackground} style={style} />
+      <OptionListView id={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} backgroundColor={style.listItemBackground} style={style} />
     );
   };
   const _renderGrid = ({ item }) => (
-    <OptionGridView key={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} style={style} />
+    <OptionGridView id={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} style={style} />
   );
 
   const getList = () => {

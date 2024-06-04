@@ -70,6 +70,12 @@ export class ListenerInitializer {
             },
             onInteractionGoalCompleted: (reciept: CometChat.InteractionReceipt) => {
                 CometChatUIEventHandler.emitMessageEvent(MessageEvents.onInteractionGoalCompleted, reciept);
+            },
+            onMessageReactionAdded: (message: CometChat.ReactionEvent) => {
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageReactionAdded, message);
+            },
+            onMessageReactionRemoved: (message: CometChat.ReactionEvent) => {
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageReactionRemoved, message);
             }
         });
     }

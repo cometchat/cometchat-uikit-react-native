@@ -1,6 +1,6 @@
 {
   "name": "@cometchat/chat-uikit-react-native",
-  "version": "4.2.2",
+  "version": "4.3.0",
   "description": "CometChat React Native UI Kit is a collection of custom UI Components designed to build text , chat and calling  features in your application. The UI Kit is developed to keep developers in mind and aims to reduce development efforts significantly",
   "main": "src/index",
   "module": "src/index",
@@ -71,7 +71,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.17.10",
-    "@react-native-community/clipboard": "^1.5.1"
+    "@react-native-clipboard/clipboard": "^1.13.2"
   },
   "peerDependencies": {
     "react": "*",

@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Inténtalo de nuevo",
   "TIME_SLOT_UNAVAILABLE": "La franja horaria ya no está disponible. Por favor, elige otro.",
   "MEETING_SCHEDULER": "Programador de reuniones",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Pulsa para eliminar",
+	"ALL":"Todas"
 }

@@ -9,7 +9,8 @@ export const Style = StyleSheet.create({
         borderRadius: 8,
         opacity: 1,
         backgroundColor: "rgba(20, 20, 20, 0.04)",
-        padding: 8
+        padding: 8,
+        paddingBottom: 0
     },
     messageInfoStyle: {
         flex: 1,
@@ -21,7 +22,8 @@ export const Style = StyleSheet.create({
     downloadImage: {
         height: 24,
         width: 24,
-        margin: 8,
+        marginRight: 8,
+        marginLeft: 4,
         alignSelf: 'center'
     },
     titleStyle: {

@@ -110,7 +110,7 @@ export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
         },
         {
             backgroundColor,  borderRadius, maxHeight: height, maxWidth: width,
-            overflow: "hidden", padding: 8,
+            overflow: "hidden", padding: 8, paddingBottom: 0
         },
             border,
             textContainerStyle

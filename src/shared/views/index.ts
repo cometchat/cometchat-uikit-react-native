@@ -88,6 +88,12 @@ import { CometChatFormBubble, CometChatFormBubbleInterface } from './CometChatFo
 import { CometChatCardBubble, CometChatCardBubbleInterface } from './CometChatCardBubble'
 import { CometChatSchedulerBubble, CometChatSchedulerBubbleInterface } from './CometChatSchedulerBubble'
 
+import { CometChatReactions, CometChatReactionsInterface, ReactionsConfiguration, ReactionsConfigurationInterface, ReactionsStyle, ReactionsStyleInterface } from './CometChatReactions';
+import { CometChatReactionsList, CometChatReactionsListInterface, ReactionListStyle, ReactionListStyleInterface, ReactionsListConfiguration, ReactionsListConfigurationInterface } from './CometChatReactionsList';
+import { CometChatQuickReactions, CometChatQuickReactionsInterface, QuickReactionsConfiguration, QuickReactionsConfigurationInterface, QuickReactionsStyle, QuickReactionsStyleInterface } from './CometChatQuickReactions';
+
+import { CometChatEmojiKeyboard, EmojiKeyboardConfiguration, EmojiKeyboardStyle } from './CometChatEmojiKeyboard';
+
 export {
   CometChatMessageInputStyleInterface,
   CometChatMessageInputInterface,
@@ -167,6 +173,30 @@ export {
   CometChatFormBubbleInterface,
   CometChatCardBubble,
   CometChatCardBubbleInterface,
+
+  CometChatReactions,
+  CometChatReactionsInterface,
+  ReactionsConfiguration,
+  ReactionsConfigurationInterface,
+  ReactionsStyle,
+  ReactionsStyleInterface,
+  CometChatReactionsList,
+  CometChatReactionsListInterface,
+  ReactionListStyle,
+  ReactionListStyleInterface,
+  ReactionsListConfiguration,
+  ReactionsListConfigurationInterface,
+  CometChatQuickReactions,
+  CometChatQuickReactionsInterface,
+  QuickReactionsConfiguration,
+  QuickReactionsConfigurationInterface,
+  QuickReactionsStyle,
+  QuickReactionsStyleInterface,
+  
+  CometChatEmojiKeyboard,
+  EmojiKeyboardConfiguration,
+  EmojiKeyboardStyle,
+  
   CometChatSchedulerBubble, 
   CometChatSchedulerBubbleInterface 
 };

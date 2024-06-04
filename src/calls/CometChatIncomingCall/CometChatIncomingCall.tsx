@@ -7,7 +7,7 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { AvatarStyleInterface, CometChatContext, CometChatListItem, CometChatSoundManager, ListItemStyleInterface, localize } from '../../shared';
 import { IncomingCallStyle, IncomingCallStyleInterface } from './IncomingCallStyle';
 import { Style } from './styles';
-import { CallTypeConstants, MessageCategoryConstants } from '../../shared/constants/UIKitConstants';
+import { CallTypeConstants, MessageCategoryConstants, MessageTypeConstants } from '../../shared/constants/UIKitConstants';
 import { CometChatCard } from '../../shared/views/CometChatCard';
 import { AcceptCall, DeclineIcon } from './resources';
 import { CometChatButton } from '../../shared/views/CometChatButton';
@@ -134,7 +134,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
 
   useEffect(() => {
     if (call) {
-      if (!disableSoundForCalls) {
+      if (!disableSoundForCalls && call.getType() !== MessageTypeConstants.meeting) {
         if (customSoundForCalls)
           CometChatSoundManager.play(
             "incomingCall",
@@ -146,14 +146,14 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
     }
 
     
-     CometChatUIEventHandler.addCallListener(listnerID,
-    {
-      ccCallEnded: () => {
-        setShowCallScreen(false);
-        acceptedCall.current = null;
+    //  CometChatUIEventHandler.addCallListener(listnerID,
+    // {
+    //   ccCallEnded: () => {
+    //     setShowCallScreen(false);
+    //     acceptedCall.current = null;
         
-      }
-    })
+    //   }
+    // })
 
     CometChat.addCallListener(
       listnerID,

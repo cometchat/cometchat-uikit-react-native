@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "再试一次",
   "TIME_SLOT_UNAVAILABLE": "时段不再可用。请选择另一个。",
   "MEETING_SCHEDULER": "会议安排器",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"点按即可移除",
+	"ALL":"全部"
 }

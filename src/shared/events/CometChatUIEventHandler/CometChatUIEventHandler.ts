@@ -175,6 +175,12 @@ export class CometChatUIEventHandler {
                 case listener._eventListener.onInteractionGoalCompleted?.name:
                     listener._eventListener.onInteractionGoalCompleted(param);
                     break
+                case listener._eventListener.onMessageReactionRemoved?.name:
+                    listener._eventListener.onMessageReactionRemoved(param);
+                    break
+                case listener._eventListener.onMessageReactionAdded?.name:
+                    listener._eventListener.onMessageReactionAdded(param);
+                    break
                 
             }
         });

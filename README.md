@@ -11,7 +11,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-ReactNative-brightgreen.svg)](#)
 [![Platform](https://img.shields.io/badge/Language-TypeScript-yellowgreen.svg)](#)
-![Version](https://shields.io/badge/version-v4.1.4-orange)
+![Version](https://shields.io/badge/version-v4.3.0-orange)
 ![Twitter Follow](https://img.shields.io/twitter/follow/cometchat?style=social)
 
 ## Table of contents
@@ -34,7 +34,7 @@ CometChat React Native UIKit provides pre-built user interface kit that develope
 - @react-native-community/datetimepicker
 - @react-native-community/async-storage
 - @cometchat/chat-sdk-react-native
-- @react-native-community/clipboard
+- @react-native-clipboard/clipboard
 
 ## Getting Started
 To set up React Native Chat UIKit and utilize CometChat for your chat functionality, you'll need to follow these steps:
@@ -49,7 +49,7 @@ To utilize the React Native Chat UIKit in your React native project, you need to
  @react-native-community/datetimepicker <br/>
  @react-native-community/async-storage <br/>
  @cometchat/chat-sdk-react-native <br/>
- @react-native-community/clipboard <br />
+ @react-native-clipboard/clipboard <br />
 
 
 ## Versioning

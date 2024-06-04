@@ -46,7 +46,7 @@ export class ActionSheetStyles extends BaseStyle {
      */
     constructor({
         width = "100%",
-        height = 350,
+        height,
         backgroundColor = "transparent",
         border = new BorderStyle({}),
         borderRadius = 8,
@@ -59,6 +59,7 @@ export class ActionSheetStyles extends BaseStyle {
         listItemTitleFont = new FontStyle({fontSize: 17, fontWeight: "400"}),
         listItemTitleColor = "",
         paddingHorizontal,
+        actionSheetSeparatorTint,
     }: ActionSheetStylesInterface) {
         super({
             width,
@@ -76,5 +77,6 @@ export class ActionSheetStyles extends BaseStyle {
         this.listItemIconBackground = listItemIconBackground;
         this.listItemIconBorderRadius = listItemIconBorderRadius;
         this.paddingHorizontal = paddingHorizontal;
+        this.actionSheetSeparatorTint = actionSheetSeparatorTint;
     }
 }

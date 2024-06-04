@@ -7,6 +7,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Modal,
+  KeyboardAvoidingViewProps,
 } from 'react-native';
 import { Style } from './styles';
 import {
@@ -69,9 +70,9 @@ const MessagePreviewTray = (props: any) => {
 };
 
 const ImageButton = (props: any) => {
-  const { image, onClick, buttonStyle, imageStyle } = props;
+  const { image, onClick, buttonStyle, imageStyle, disable } = props;
   return (
-    <TouchableOpacity onPress={onClick} style={buttonStyle}>
+    <TouchableOpacity activeOpacity={disable ? 1 : undefined} onPress={disable ? () => { } : onClick} style={buttonStyle}>
       <Image source={image} style={[{ height: 24, width: 24 }, imageStyle]} />
     </TouchableOpacity>
   );
@@ -502,6 +503,10 @@ export interface CometChatMessageComposerInterface {
    * AI Options Style.
    */
   aiOptionsStyle?: AIOptionsStyle;
+   /**
+   * To override keyboardAvoidingViewProps.
+   */
+  keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
 }
 export const CometChatMessageComposer = React.forwardRef(
   (props: CometChatMessageComposerInterface, ref) => {
@@ -544,7 +549,8 @@ export const CometChatMessageComposer = React.forwardRef(
       stopIconUrl,
       submitIconUrl,
       AIIconURL,
-      aiOptionsStyle
+      aiOptionsStyle,
+      keyboardAvoidingViewProps
     } = props;
 
     const defaultAttachmentOptions =
@@ -634,6 +640,17 @@ export const CometChatMessageComposer = React.forwardRef(
             chatWith.current
           );
         });
+        else if (Platform.OS === 'ios' && fileType === MessageTypeConstants.video) {
+          NativeModules.VideoPickerModule.pickVideo(((file) => {
+            if(file.uri)
+              sendMediaMessage(
+                chatWithId.current,
+                file,
+                MessageTypeConstants.video,
+                chatWith.current
+              );
+          }))
+        }
       else
         FileManager.openFileChooser(fileType, async (fileInfo: any) => {
           if (CheckPropertyExists(fileInfo, 'error')) {
@@ -863,14 +880,16 @@ export const CometChatMessageComposer = React.forwardRef(
       if (!disableSoundForMessages) playAudio();
       CometChat.sendMediaMessage(mediaMessage)
         .then((message: any) => {
-          CometChatUIEventHandler.emitMessageEvent(
-            MessageEvents.ccMessageSent,
-            {
-              message: message,
-              status: messageStatus.success,
-            }
-          );
-          setShowRecordAudio(false);
+          setTimeout(() => {
+            CometChatUIEventHandler.emitMessageEvent(
+              MessageEvents.ccMessageSent,
+              {
+                message: message,
+                status: messageStatus.success,
+              }
+            );
+            setShowRecordAudio(false);
+          }, 1000);
         })
         .catch((error: any) => {
           setShowRecordAudio(false);
@@ -980,11 +999,12 @@ export const CometChatMessageComposer = React.forwardRef(
           imageStyle={[
             Style.imageStyle,
             {
-              tintColor:
+              tintColor: !inputMessage.length ? theme.palette.getAccent400() :
                 messageComposerStyle.sendIconTint ||
                 theme.palette.getPrimary(),
             },
           ]}
+          disable={!inputMessage.length}
           onClick={sendTextMessage}
         />
       );
@@ -1006,7 +1026,7 @@ export const CometChatMessageComposer = React.forwardRef(
             resizeMode: 'contain',
             tintColor: messageComposerStyle.attachIcontint
               ? messageComposerStyle.attachIcontint
-              : theme.palette.getAccent500(),
+              : theme.palette.getAccent(),
           }}
         />
       );
@@ -1246,7 +1266,8 @@ export const CometChatMessageComposer = React.forwardRef(
         <KeyboardAvoidingView
           key={id}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.select({ ios: 60 })}
+          keyboardVerticalOffset={Platform.select({ios: 60})}
+          {...keyboardAvoidingViewProps}
         >
           <View
             style={[
@@ -1378,7 +1399,7 @@ CometChatMessageComposer.defaultProps = {
   // style: new MessageComposerStyle({}),
   attachmentIcon: ICONS.ADD,
   liveReactionIcon: ICONS.HEART,
-  hideLiveReaction: false,
+  hideLiveReaction: true,
   disableSoundForMessages: true,
   messageComposerStyle: {},
 };

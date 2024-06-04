@@ -25,6 +25,7 @@ import { FontStyle } from "../../../shared/base";
  * @param {Object} text2
  * @param {Object} caption1
  * @param {Object} caption2
+ * @param {Object} caption3
  * @param {Object} body
  */
 
@@ -50,6 +51,7 @@ class Typography {
   text2: FontStyle
   caption1: FontStyle
   caption2: FontStyle
+  caption3: FontStyle
   body: FontStyle
   constructor({
     fontFamily = undefined,
@@ -153,6 +155,11 @@ class Typography {
       fontWeight: fontWeightMedium,
       fontSize: 11,
     }),
+    caption3 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightRegular,
+      fontSize: 8,
+    }),
     body = new FontStyle({
       fontFamily: fontFamily,
       fontWeight: fontWeightRegular,
@@ -181,6 +188,7 @@ class Typography {
     this.text2 = new FontStyle(text2);
     this.caption1 = new FontStyle(caption1);
     this.caption2 = new FontStyle(caption2);
+    this.caption3 = new FontStyle(caption3);
     this.body = new FontStyle(body);
   }
 
@@ -361,6 +369,16 @@ class Typography {
 
     if (captionFont && captionFont.fontWeight) {
       this.caption2.fontWeight = captionFont.fontWeight;
+    }
+  }
+
+  setCaption3(captionFont) {
+    if (captionFont && captionFont.fontSize) {
+      this.caption3.fontSize = captionFont.fontSize;
+    }
+
+    if (captionFont && captionFont.fontWeight) {
+      this.caption3.fontWeight = captionFont.fontWeight;
     }
   }
 

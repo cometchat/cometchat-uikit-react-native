@@ -103,9 +103,9 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
     subtitleFont: theme.typography.text2,
     ...outgoingCallStyle,
   });
-  
-  function  checkIfDefualtCall( call : CometChat.BaseMessage): Boolean{
-    return call.getCategory()== MessageCategoryConstants.call
+
+  function checkIfDefualtCall(call: CometChat.BaseMessage): Boolean {
+    return call.getCategory() == MessageCategoryConstants.call
 
   }
 
@@ -114,15 +114,16 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
       CometChat.endCall((call as CometChat.Call).getSessionId())
         .then(() => {
           (call as CometChat.Call).setStatus("ended");
-          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded,{call});
+          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
         })
         .catch(err => {
-          console.log("Error", err);})
+          console.log("Error", err);
+        })
     }
   }
-  
+
   useEffect(() => {
-    if (call['status'] == "ongoing" || (call.getCategory() == (CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory) && call.getType() == MessageTypeConstants.meeting) ) {
+    if (call['status'] == "ongoing" || (call.getCategory() == (CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory) && call.getType() == MessageTypeConstants.meeting)) {
       ongoingCall.current = call;
       if (call.getType() == MessageTypeConstants.meeting)
         callSessionId.current = (call as CometChat.CustomMessage).getCustomData()['sessionId'];
@@ -130,8 +131,16 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
         callSessionId.current = call['sessionId'];
       setCallConnected(true);
     }
-    if (!disableSoundForCalls)
-      CometChatSoundManager.play("outgoingCall", customSoundForCalls);
+    
+    if (!disableSoundForCalls && call.getType() !== MessageTypeConstants.meeting) {
+      if (customSoundForCalls)
+        CometChatSoundManager.play(
+          "outgoingCall",
+          customSoundForCalls
+        )
+      else
+        CometChatSoundManager.play("outgoingCall")
+    }
 
     CometChat.addCallListener(
       listenerId,
@@ -151,10 +160,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
       })
     );
 
-    CometChatUIEventHandler.addCallListener("listener", {
-      ccCallEnded: () => {
-        setCallConnected(false);
-      },
+    CometChatUIEventHandler.addCallListener(listenerId, {
       ccCallFailled: () => {
         setCallConnected(false);
       }
@@ -163,27 +169,28 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
 
     callListener.current = new CometChatCalls.OngoingCallListener({
       onCallEnded: () => {
-        setCallConnected(false);
-        call.setStatus("ended");
-        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded,{call});
-       
-      },
-      onCallEndButtonPressed: () => {
-        if(!checkIfDefualtCall(call)){
+        if (checkIfDefualtCall(call)) {
           setCallConnected(false);
           call.setStatus("ended");
-          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded,{call});
+          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+        }
+      },
+      onCallEndButtonPressed: () => {
+        if (!checkIfDefualtCall(call)) {
+          setCallConnected(false);
+          call.setStatus("ended");
+          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
         } else {
           endCallIfRequired();
         }
-    },
+      },
       onUserJoined: user => {
         console.log("user joined:", user);
-    },
-    onUserLeft: user => {
-      endCallIfRequired();
-    },
-    onError: (error) => {
+      },
+      onUserLeft: user => {
+        endCallIfRequired();
+      },
+      onError: (error) => {
         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailled, { error });
       }
     });
@@ -209,54 +216,54 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
       onRequestClose={() => onDeclineButtonPressed && onDeclineButtonPressed(call as CometChat.Call)}
     >
       <SafeAreaView>
-      {
-        isCallConnected ?
-          <CometChatOngoingCall
-            sessionID={callSessionId.current}
-            callSettingsBuilder={callSettings.current}
-          /> :
-          <CometChatCard
-            avatarUrl={
-              call?.getReceiverType?.() == "user" ?
-                call?.getReceiver?.()['avatar'] :
-                call?.getReceiver?.()['icon']
-            }
-            avatarName={call?.getReceiver?.().getName?.()}
-            avatarStyle={avatarStyle}
-            title={call?.getReceiver?.().getName?.()}
-            style={{
-              backgroundColor,
-              height,
-              width,
-              border,
-              borderRadius,
-              titleColor,
-              titleFont,
-            }}
-            SubtitleView={() => {
-              return <Text style={{ color: subtitleColor, ...subtitleFont }}>{
-                call?.['type'] == CallTypeConstants.audio ?
-                  localize("OUTGOING_AUDIO_CALL") :
-                  localize("OUTGOING_VIDEO_CALL")}</Text>
-            }}
-            BottomView={() => {
-              return <CometChatButton
-                onPress={() => onDeclineButtonPressed && onDeclineButtonPressed(call as CometChat.Call)}
-                iconUrl={declineButtonIcon || DeclineIcon}
-                text={declineButtonText || localize("CANCEL")}
-                style={{
-                  iconTint: theme.palette.getSecondary(),
-                  iconBackgroundColor: theme.palette.getError(),
-                  iconCornerRadius: 25,
-                  height: 50,
-                  width: 50,
-                  textColor: theme.palette.getAccent(),
-                  ...buttonStyle
-                }}
-              />
-            }}
-          />
-      }
+        {
+          isCallConnected ?
+            <CometChatOngoingCall
+              sessionID={callSessionId.current}
+              callSettingsBuilder={callSettings.current}
+            /> :
+            <CometChatCard
+              avatarUrl={
+                call?.getReceiverType?.() == "user" ?
+                  call?.getReceiver?.()['avatar'] :
+                  call?.getReceiver?.()['icon']
+              }
+              avatarName={call?.getReceiver?.().getName?.()}
+              avatarStyle={avatarStyle}
+              title={call?.getReceiver?.().getName?.()}
+              style={{
+                backgroundColor,
+                height,
+                width,
+                border,
+                borderRadius,
+                titleColor,
+                titleFont,
+              }}
+              SubtitleView={() => {
+                return <Text style={{ color: subtitleColor, ...subtitleFont }}>{
+                  call?.['type'] == CallTypeConstants.audio ?
+                    localize("OUTGOING_AUDIO_CALL") :
+                    localize("OUTGOING_VIDEO_CALL")}</Text>
+              }}
+              BottomView={() => {
+                return <CometChatButton
+                  onPress={() => onDeclineButtonPressed && onDeclineButtonPressed(call as CometChat.Call)}
+                  iconUrl={declineButtonIcon || DeclineIcon}
+                  text={declineButtonText || localize("CANCEL")}
+                  style={{
+                    iconTint: theme.palette.getSecondary(),
+                    iconBackgroundColor: theme.palette.getError(),
+                    iconCornerRadius: 25,
+                    height: 50,
+                    width: 50,
+                    textColor: theme.palette.getAccent(),
+                    ...buttonStyle
+                  }}
+                />
+              }}
+            />
+        }
       </SafeAreaView>
     </Modal>
   );

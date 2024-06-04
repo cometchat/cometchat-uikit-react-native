@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Versuche es noch einmal",
   "TIME_SLOT_UNAVAILABLE": "Das Zeitfenster ist nicht mehr verfügbar. Bitte wählen Sie ein anderes.",
   "MEETING_SCHEDULER": "Planer für Besprechungen",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Zum Entfernen antippen",
+	"ALL":"Alle"
 }

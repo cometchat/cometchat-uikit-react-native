@@ -298,5 +298,7 @@
   "TRY_AGAIN_CAMEL": "Essayez à nouveau",
   "TIME_SLOT_UNAVAILABLE": "Le créneau horaire n'est plus disponible. Veuillez en choisir un autre.",
   "MEETING_SCHEDULER": "Planificateur de réunions",
-  "MIN": "mi"
+  "MIN": "mi",
+	"TAP_TO_REMOVE":"Touchez pour supprimer",
+	"ALL":"Tous"
 }

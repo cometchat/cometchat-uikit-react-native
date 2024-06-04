@@ -799,7 +799,6 @@ export const CometChatConversations = (props: ConversationInterface) => {
                         })
                 },
                 onTextMessageReceived: (textMessage) => {
-                    console.log("onTextMessageReceived", textMessage);
                     messageEventHandler(textMessage);
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
