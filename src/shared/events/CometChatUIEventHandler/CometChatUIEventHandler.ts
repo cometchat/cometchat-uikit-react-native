@@ -301,6 +301,8 @@ export class CometChatUIEventHandler {
                     break;
                 case listener._eventListener.ccToggleBottomSheet?.name:
                     listener._eventListener.ccToggleBottomSheet(param);
+                    case listener._eventListener.ccComposeMessage?.name:
+                        listener._eventListener.ccComposeMessage(param);
                     break;
             }
         })

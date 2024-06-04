@@ -13,10 +13,14 @@
 	"CUSTOM_MESSAGE_POLL": "📊 استطلاع للرأي",
 	"CUSTOM_MESSAGE_STICKER": "💟 ملصق",
 	"CUSTOM_MESSAGE_DOCUMENT": "📃 وثيقة",
+	"NO_REPLIES_FOUND":"لم يتم العثور على أي ردود",
 	"CUSTOM_MESSAGE_WHITEBOARD": "📝 السبورة",
 	"ONLINE": "عبر الإنترنت",
 	"ADMINISTRATOR": "مدير",
 	"MODERATOR": "مدير الجلسة",
+	"SUGGEST_A_REPLIES":"اقترح ردًا",
+	"GENERATIONG_ICEBREAKER":"توليد كاسحات الجليد",
+	"GENERATING_REPLIES":"توليد الردود",
 	"PARTICIPANT": "مشارك",
 	"PUBLIC": "عامة",
 	"PRIVATE": "خاص",

@@ -89,7 +89,8 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
       CometChatUIKit.sendCustomMessage(customMessage,null, null);
     }
 
-    return <TouchableOpacity onPress={() => {
+    let views:JSX.Element[] = super.getAuxiliaryOptions(user,group,id)
+    views.push(<TouchableOpacity onPress={() => {
       setShowKeyboard(true);
     }} style={{justifyContent: "center"}}>
       <Image
@@ -107,7 +108,8 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
           }} />
         </CometChatBottomSheet>
       }
-    </TouchableOpacity>;
+    </TouchableOpacity>)
+    return views 
   }
 
   getAllMessageCategories(): string[] {

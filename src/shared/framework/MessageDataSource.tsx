@@ -498,8 +498,8 @@ export class MessageDataSource implements DataSource {
     getAllMessageCategories(): string[] {
         return [MessageCategoryConstants.message, MessageCategoryConstants.action];
     }
-    getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>): JSX.Element {
-        return null;
+    getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?:CometChatTheme): JSX.Element[] {
+        return [];
     }
     getAuxiliaryHeaderAppbarOptions(user?: CometChat.User, group?: CometChat.Group): JSX.Element {
         return null;

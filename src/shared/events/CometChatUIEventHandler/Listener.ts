@@ -145,22 +145,26 @@ type UIEvents = {
     hidePanel?: (item)=>void,
     ccToggleBottomSheet?: (item)=>void,
     openChat?: (item)=>void,
+    ccComposeMessage?:(item)=>void,
 }
 export class UIEventListener {
     showPanel?: (item)=>void;
     hidePanel?: (item)=>void;
     ccToggleBottomSheet?: (item)=>void;
     openChat?: (item)=>void;
+    ccComposeMessage?:(item)=>void;
     constructor({
         showPanel,
         hidePanel,
         ccToggleBottomSheet,
-        openChat
+        openChat,
+        ccComposeMessage
     }: UIEvents) {
         if (!isFalsy(hidePanel)) this.hidePanel = hidePanel;
         if (!isFalsy(showPanel)) this.showPanel = showPanel;
         if (!isFalsy(openChat)) this.openChat = openChat;
         if (!isFalsy(ccToggleBottomSheet)) this.ccToggleBottomSheet = ccToggleBottomSheet;
+        if (!isFalsy(ccComposeMessage)) this.ccComposeMessage = ccComposeMessage;
     }
 }
 export class GroupUIEventListener {

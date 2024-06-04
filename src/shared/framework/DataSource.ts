@@ -56,7 +56,7 @@ export interface DataSource {
     getAllMessageCategories():Array<string>
 
     //auxiliary options
-    getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>): JSX.Element
+    getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?:CometChatTheme): JSX.Element[]
 
     getId():string
     

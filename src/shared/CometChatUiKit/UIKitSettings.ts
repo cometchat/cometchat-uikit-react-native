@@ -1,3 +1,5 @@
+import { AIEnabler } from "../../AI/AIEnabler"
+import { ExtensionsDataSource } from "../framework"
 
 export type UIKitSettings = {
     appId: string,
@@ -10,6 +12,8 @@ export type UIKitSettings = {
     deviceToken?: string,
     googleApiKey?: string,
     disableCalling?: boolean,
+    aiFeatures?:AIEnabler,
+    extensions?:ExtensionsDataSource[]
 }
 
 export function UIKitSettings({
@@ -23,6 +27,8 @@ export function UIKitSettings({
     deviceToken,
     googleApiKey,
     disableCalling,
+    aiFeatures,
+    extensions
 }: UIKitSettings): UIKitSettings {
     return {
         appId,
@@ -35,5 +41,7 @@ export function UIKitSettings({
         deviceToken,
         googleApiKey,
         disableCalling,
+        aiFeatures,
+        extensions
     }
 }

@@ -559,3 +559,18 @@ export {
   MessageInformationConfigurationInterface,
   MessageInformationStyleInterface
 };
+
+// AI
+export {AIConversationStarterExtension} from './AI/AIConversationStarter/AIConversationStarter'
+export {AIConversationStarterDecorator} from './AI/AIConversationStarter/AIConversationStarterDecorator'
+export {AIConversationStarterStyle} from './AI/AIConversationStarter/AIConversationStarterStyle'
+export {AIConversationStarterConfiguration} from './AI/AIConversationStarter/configuration'
+export {AIEnabler} from './AI/AIEnabler'
+export {AIEnablerDecorator} from './AI/AIEnablerDecorator'
+export {AIExtensionDataSource} from './AI/AIExtensionDataSource'
+export {AISmartRepliesExtension} from './AI/AISmartReplies/AISmartReplies'
+export {AISmartRepliesExtensionDecorator} from './AI/AISmartReplies/AISmartRepliesDecorator'
+export {AISmartRepliesStyle} from './AI/AISmartReplies/AISmartRepliesStyle'
+export {AISmartRepliesConfiguration} from './AI/AISmartReplies/configuration'
+export {CardStyle,CardViewStyle} from './AI/CardViewStyle'
+export {AIEnablerConfiguration} from './AI/configuration'

@@ -289,15 +289,20 @@ export const CometChatMessageList = forwardRef<
             messageRequest.current.fetchPrevious()
                 .then(msgs => {
                     let reversed = msgs.reverse();
-                    if (messagesList.length === 0 && reversed?.length > 0) {
+                    if (messagesList.length === 0 && msgs?.length > 0) {
+                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0],user:user,group:group,theme:theme,parentMessageId:parentMessageId });
                         if (conversationId.current == null)
                             conversationId.current = reversed[0].getConversationId();
-                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0] });
+      
+                    }
+                    else if(messagesList.length === 0   && !props?.parentMessageId){
+                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0],user:user,group:group,theme:theme,parentMessageId:parentMessageId });
 
                     }
+                
                     for (let index = 0; index < reversed.length; index++) {
                         const message: CometChat.BaseMessage = reversed[index];
-                        if (!disableReceipt && !message.hasOwnProperty("readAt") && loggedInUser.current.getUid() != message['sender']['uid']) {
+                        if (message && !disableReceipt && !message.hasOwnProperty("readAt") && loggedInUser.current.getUid() != message['sender']['uid']) {
                             CometChat.markAsRead(message);
                             if (index == 0)
                                 CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message });
@@ -305,10 +310,12 @@ export const CometChatMessageList = forwardRef<
                             break;
                     }
                     setMessagesList([...messagesList, ...reversed]);
+
                     if (messagesList.length == 0)
                         setListState("");
                     else
                         setLoadingMessages(false);
+
                 })
                 .catch(e => {
                     if (messagesList.length == 0)
@@ -1198,20 +1205,20 @@ export const CometChatMessageList = forwardRef<
         const getEmptyTextView = () => {
             if (EmptyStateView)
                 return <EmptyStateView />
-
-            return (
-                <View style={Style.msgContainerStyle}>
-                    <Text
-                        style={[
-                            Style.msgTxtStyle, {
-                                ...(messageListStyle?.emptyStateTextFont),
-                                color: messageListStyle?.emptyStateTextColor
-                            }]}
-                    >
-                        {emptyStateText}
-                    </Text>
-                </View >
-            )
+            return undefined;
+            // return (
+            //     <View style={Style.msgContainerStyle}>
+            //         <Text
+            //             style={[
+            //                 Style.msgTxtStyle, {
+            //                     ...(messageListStyle?.emptyStateTextFont),
+            //                     color: messageListStyle?.emptyStateTextColor
+            //                 }]}
+            //         >
+            //             {emptyStateText}
+            //         </Text>
+            //     </View >
+            // )
         }
 
         const getErrorStateView = () => {

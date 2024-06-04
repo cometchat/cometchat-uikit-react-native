@@ -511,13 +511,14 @@ export const CometChatMessageComposer = React.forwardRef(
       ChatConfigurator.dataSource.getAttachmentOptions(user, group, id);
 
     const composerIdMap = new Map().set('parentMessageId', parentMessageId);
-
-    const defaultAuxiliaryButtonOptions =
-      ChatConfigurator.dataSource.getAuxiliaryOptions(
+        const defaultAuxiliaryButtonOptions =
+      ChatConfigurator.getDataSource().getAuxiliaryOptions(
         user,
         group,
-        composerIdMap
+        composerIdMap,
+        theme
       );
+      
 
     const loggedInUser = React.useRef<any>({});
     const chatWith = React.useRef<any>(null);
@@ -1068,6 +1069,13 @@ export const CometChatMessageComposer = React.forwardRef(
         ccToggleBottomSheet: (item) => {
           setIsVisible(false);
           bottomSheetRef.current?.togglePanel();
+        },
+        ccComposeMessage: (text)=>{
+          setIsVisible(false);
+          bottomSheetRef.current?.togglePanel();
+       
+          setInputMessage(text?.text)
+
         }
       })
       return () => {
@@ -1140,6 +1148,7 @@ export const CometChatMessageComposer = React.forwardRef(
               Style.container,
               {
                 backgroundColor: theme.palette.getAccent100(),
+                paddingTop: CustomViewHeader ? 0 : 8
               },
               messageComposerStyle,
             ]}

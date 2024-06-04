@@ -50,7 +50,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
       MessageEvents.ccActiveChatChanged,
       {
         ccActiveChatChanged: ({message}) => {
-          if(message['sender']?.['uid'] != this.loggedInUser.getUid())
+          if(message && message['sender']?.['uid'] != this.loggedInUser.getUid())
             this.getReplies(message);
         },
       }

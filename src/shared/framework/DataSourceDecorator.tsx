@@ -138,8 +138,8 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getAllMessageCategories();
    }
 
-   getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>) {
-      return this.dataSource.getAuxiliaryOptions(user, group, id);
+   getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?:CometChatTheme) {
+      return this.dataSource.getAuxiliaryOptions(user, group, id,theme);
    }
 
    getMessageTypeToSubtitle(messageType: string): string {

@@ -19,20 +19,24 @@ import { TextModerationExtension } from "../../extensions/TextModeration";
 import { ThumbnailGenerationExtension } from "../../extensions/ThumbnailGeneration";
 import { CometChatSoundManager } from "../utils";
 import { CometChatLocalize } from "../resources";
+import { AIEnabler } from "../../AI/AIEnabler";
+import { AIConversationStarterExtension } from "../../AI/AIConversationStarter/AIConversationStarter";
 
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
-
+   static aiFeatures:AIEnabler
     static init(uiKitSettings: UIKitSettings): Promise<boolean> {
 
         //perform sdk init taking values from uiKitSettings
         CometChatUIKit.uiKitSettings = {
             ...uiKitSettings
         };
-
+console.log(uiKitSettings?.overrideAdminHost,uiKitSettings.overrideClientHost)
         var appSetting = new CometChat.AppSettingsBuilder()
             .subscribePresenceForAllUsers()
             .autoEstablishSocketConnection(uiKitSettings.autoEstablishSocketConnection)
+            .overrideAdminHost(uiKitSettings?.overrideAdminHost)
+            .overrideClientHost(uiKitSettings?.overrideClientHost)
             .setRegion(uiKitSettings.region)
 
         appSetting.subscriptionType = uiKitSettings.subscriptionType;
@@ -67,12 +71,21 @@ export class CometChatUIKit {
             if (CallingPackage.isCallingPackageInstalled)
                 new CallingExtension().enable();
         }
-        let extensionList: ExtensionsDataSource[] = this.defaultExtensions;
-        if (extensionList?.length > 0) {
-            (extensionList as ExtensionsDataSource[]).forEach((extension: ExtensionsDataSource) => {
-                extension?.enable()
-            })
+        let extensionList: ExtensionsDataSource[] = this.uiKitSettings?.extensions || this.defaultExtensions;
+
+            if (extensionList.length > 0) {
+                extensionList.forEach((extension: ExtensionsDataSource) => {
+                    extension?.enable();
+                });
+            }
+        if(this.uiKitSettings.aiFeatures){
+            this.uiKitSettings.aiFeatures?.enable()
         }
+        else{
+            new AIEnabler().enable() 
+        }
+
+
     }
 
     static async getLoggedInUser(): Promise<CometChat.User> {
