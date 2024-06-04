@@ -270,5 +270,8 @@
 	"READ": "閱讀",
 	"No_RECIPIENT": "沒有收件人",
 	"RECEIPT_INFORMATION": "收據資料",
-	"MESSAGE": "留言"
+	"MESSAGE": "留言",
+	"FORM_COMPLETION_MESSAGE": "感謝您填寫表格。",
+	"FORM":"表格",
+	"CARD":"卡"
 }

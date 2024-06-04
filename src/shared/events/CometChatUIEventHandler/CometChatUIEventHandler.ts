@@ -127,6 +127,49 @@ export class CometChatUIEventHandler {
                 case listener._eventListener.ccActiveChatChanged?.name:
                     listener._eventListener.ccActiveChatChanged(param);
                     break
+                case listener._eventListener.onTextMessageReceived?.name:
+                    listener._eventListener.onTextMessageReceived(param);
+                    break
+                case listener._eventListener.onMediaMessageReceived?.name:
+                    listener._eventListener.onMediaMessageReceived(param);
+                    break
+                case listener._eventListener.onCustomMessageReceived?.name:
+                    listener._eventListener.onCustomMessageReceived(param);
+                    break
+                case listener._eventListener.onTypingStarted?.name:
+                    listener._eventListener.onTypingStarted(param);
+                    break
+                case listener._eventListener.onTypingEnded?.name:
+                    listener._eventListener.onTypingEnded(param);
+                    break
+                case listener._eventListener.onMessagesDelivered?.name:
+                    listener._eventListener.onMessagesDelivered(param);
+                    break
+                case listener._eventListener.onMessagesRead?.name:
+                    listener._eventListener.onMessagesRead(param);
+                    break
+                case listener._eventListener.onMessageEdited?.name:
+                    listener._eventListener.onMessageEdited(param);
+                    break
+                case listener._eventListener.onMessageDeleted?.name:
+                    listener._eventListener.onMessageDeleted(param);
+                    break
+                case listener._eventListener.onTransientMessageReceived?.name:
+                    listener._eventListener.onTransientMessageReceived(param);
+                    break
+                case listener._eventListener.onFormMessageReceived?.name:
+                    listener._eventListener.onFormMessageReceived(param);
+                    break
+                case listener._eventListener.onCardMessageReceived?.name:
+                    listener._eventListener.onCardMessageReceived(param);
+                    break
+                case listener._eventListener.onCustomInteractiveMessageReceived?.name:
+                    listener._eventListener.onCustomInteractiveMessageReceived(param);
+                    break
+                case listener._eventListener.onInteractionGoalCompleted?.name:
+                    listener._eventListener.onInteractionGoalCompleted(param);
+                    break
+                
             }
         });
     }
@@ -301,8 +344,9 @@ export class CometChatUIEventHandler {
                     break;
                 case listener._eventListener.ccToggleBottomSheet?.name:
                     listener._eventListener.ccToggleBottomSheet(param);
-                    case listener._eventListener.ccComposeMessage?.name:
-                        listener._eventListener.ccComposeMessage(param);
+                    break;
+                case listener._eventListener.ccComposeMessage?.name:
+                    listener._eventListener.ccComposeMessage(param);
                     break;
             }
         })

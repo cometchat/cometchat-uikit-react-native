@@ -270,5 +270,8 @@
 	"READ": "पढ़ें",
 	"No_RECIPIENT": "कोई प्राप्तकर्ता नहीं",
 	"RECEIPT_INFORMATION": "रसीद की जानकारी",
-	"MESSAGE": "सन्देश"
+	"MESSAGE": "सन्देश",
+	"FORM_COMPLETION_MESSAGE": "फॉर्म भरने के लिए धन्यवाद।",
+	"FORM":"प्रपत्र",
+	"CARD":"कार्ड"
 }

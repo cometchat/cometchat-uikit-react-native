@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RNSoundModule
+public class CometChatSoundModule
   extends ReactContextBaseJavaModule
   implements AudioManager.OnAudioFocusChangeListener {
 
@@ -36,7 +36,7 @@ public class RNSoundModule
   Double focusedPlayerKey;
   Boolean wasPlayingBeforeFocusChange = false;
 
-  public RNSoundModule(ReactApplicationContext context) {
+  public CometChatSoundModule(ReactApplicationContext context) {
     super(context);
     this.context = context;
     this.category = null;
@@ -54,7 +54,7 @@ public class RNSoundModule
 
   @Override
   public String getName() {
-    return "RNSound";
+    return "CometChatSoundModule";
   }
 
   @ReactMethod
@@ -84,7 +84,7 @@ public class RNSoundModule
     }
     this.playerPool.put(key, player);
 
-    final RNSoundModule module = this;
+    final CometChatSoundModule module = this;
 
     if (module.category != null) {
       Integer category = null;
@@ -109,7 +109,7 @@ public class RNSoundModule
           break;
         default:
           Log.e(
-            "RNSoundModule",
+            "CometChatSoundModule",
             String.format("Unrecognised category %s", module.category)
           );
           break;
@@ -134,7 +134,7 @@ public class RNSoundModule
             callback.invoke(NULL, props);
           } catch (RuntimeException runtimeException) {
             // The callback was already invoked
-            Log.e("RNSoundModule", "Exception", runtimeException);
+            Log.e("CometChatSoundModule", "Exception", runtimeException);
           }
         }
       }
@@ -159,7 +159,7 @@ public class RNSoundModule
             callback.invoke(props, NULL);
           } catch (RuntimeException runtimeException) {
             // The callback was already invoked
-            Log.e("RNSoundModule", "Exception", runtimeException);
+            Log.e("CometChatSoundModule", "Exception", runtimeException);
           }
           return true;
         }
@@ -175,7 +175,7 @@ public class RNSoundModule
     } catch (Exception ignored) {
       // When loading files from a file, we useMediaPlayer.create, which actually
       // prepares the audio for us already. So we catch and ignore this error
-      Log.e("RNSoundModule", "Exception", ignored);
+      Log.e("CometChatSoundModule", "Exception", ignored);
     }
   }
 
@@ -194,7 +194,7 @@ public class RNSoundModule
         );
         afd.close();
       } catch (IOException e) {
-        Log.e("RNSoundModule", "Exception", e);
+        Log.e("CometChatSoundModule", "Exception", e);
         return null;
       }
       return mediaPlayer;
@@ -202,11 +202,11 @@ public class RNSoundModule
 
     if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
       mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-      Log.i("RNSoundModule", fileName);
+      Log.i("CometChatSoundModule", fileName);
       try {
         mediaPlayer.setDataSource(fileName);
       } catch (IOException e) {
-        Log.e("RNSoundModule", "Exception", e);
+        Log.e("CometChatSoundModule", "Exception", e);
         return null;
       }
       return mediaPlayer;
@@ -224,7 +224,7 @@ public class RNSoundModule
         descriptor.close();
         return mediaPlayer;
       } catch (IOException e) {
-        Log.e("RNSoundModule", "Exception", e);
+        Log.e("CometChatSoundModule", "Exception", e);
         return null;
       }
     }
@@ -233,7 +233,7 @@ public class RNSoundModule
       try {
         mediaPlayer.setDataSource(fileName);
       } catch (IOException e) {
-        Log.e("RNSoundModule", "Exception", e);
+        Log.e("CometChatSoundModule", "Exception", e);
         return null;
       }
       return mediaPlayer;
@@ -242,11 +242,11 @@ public class RNSoundModule
     File file = new File(fileName);
     if (file.exists()) {
       mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-      Log.i("RNSoundModule", fileName);
+      Log.i("CometChatSoundModule", fileName);
       try {
         mediaPlayer.setDataSource(fileName);
       } catch (IOException e) {
-        Log.e("RNSoundModule", "Exception", e);
+        Log.e("CometChatSoundModule", "Exception", e);
         return null;
       }
       return mediaPlayer;
@@ -332,11 +332,11 @@ public class RNSoundModule
 
   @ReactMethod
   public void checkMode(Promise promise){
-    Log.e("RNSoundModule"," entry POINT");
+    Log.e("CometChatSoundModule"," entry POINT");
     AudioManager audioManager = (AudioManager) context.getSystemService(
       Context.AUDIO_SERVICE
       );
-  Log.e("RNSoundModule",audioManager.toString());
+  Log.e("CometChatSoundModule",audioManager.toString());
     String mode= "";
 
     switch( audioManager.getRingerMode() ){
@@ -350,7 +350,7 @@ public class RNSoundModule
           mode = "VIBRATE";
           break;
     }
-      Log.e("RNSoundModule",mode);
+      Log.e("CometChatSoundModule",mode);
       promise.resolve(mode);
    
   }
@@ -446,9 +446,9 @@ public class RNSoundModule
       }
     } catch (RuntimeException runtimeException) {
       // The callback was already invoked
-      Log.e("RNSoundModule", "Exception", runtimeException);
+      Log.e("CometChatSoundModule", "Exception", runtimeException);
     }
-    Log.e("RNSoundModule", "returns false");
+    Log.e("CometChatSoundModule", "returns false");
     isPlaying.resolve(false);
     
   }
@@ -495,7 +495,7 @@ public class RNSoundModule
   @ReactMethod
   public void setSpeed(final Double key, final Float speed) {
     if (android.os.Build.VERSION.SDK_INT < 23) {
-      Log.w("RNSoundModule", "setSpeed ignored due to sdk limit");
+      Log.w("CometChatSoundModule", "setSpeed ignored due to sdk limit");
       return;
     }
 
@@ -508,7 +508,7 @@ public class RNSoundModule
   @ReactMethod
   public void setPitch(final Double key, final Float pitch) {
     if (android.os.Build.VERSION.SDK_INT < 23) {
-      Log.w("RNSoundModule", "setPitch ignored due to sdk limit");
+      Log.w("CometChatSoundModule", "setPitch ignored due to sdk limit");
       return;
     }
 

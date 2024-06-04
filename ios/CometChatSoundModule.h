@@ -12,6 +12,6 @@
 #import "RCTEventEmitter.h"
 #endif
 
-@interface RNSound : RCTEventEmitter <RCTBridgeModule, AVAudioPlayerDelegate>
+@interface CometChatSoundModule : RCTEventEmitter <RCTBridgeModule, AVAudioPlayerDelegate>
 @property (nonatomic, weak) NSNumber *_key;
 @end

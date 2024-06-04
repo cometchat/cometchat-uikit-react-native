@@ -3,6 +3,7 @@ import { CometChatOptions } from './CometChatOptions';
 import { CometChatMessageTemplate } from './CometChatMessageTemplate';
 import { CometChatDetailsTemplate } from './CometChatDetailsTemplate';
 import { CometChatDetailsOption } from './CometChatDetailsOption';
+import { APIAction, ActionEntity, BaseInputElement, BaseInteractiveElement, ButtonElement, CardMessage, CheckboxElement, CustomAction, CustomInteractiveMessage, DropdownElement, ElementEntity, FormMessage, LabelElement, OptionElement, RadioButtonElement, SingleSelectElement, TextInputElement, URLNavigationAction } from './InteractiveData'
 
 export {
   CometChatOptions,
@@ -10,4 +11,22 @@ export {
   CometChatMessageTemplate,
   CometChatDetailsTemplate,
   CometChatDetailsOption,
+  APIAction,
+  ActionEntity,
+  BaseInputElement,
+  BaseInteractiveElement,
+  ButtonElement,
+  CardMessage,
+  CheckboxElement,
+  CustomAction,
+  CustomInteractiveMessage,
+  DropdownElement,
+  ElementEntity,
+  FormMessage,
+  LabelElement,
+  OptionElement,
+  RadioButtonElement,
+  SingleSelectElement,
+  TextInputElement,
+  URLNavigationAction
 };

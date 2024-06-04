@@ -30,6 +30,11 @@ export interface CometChatImageBubbleInterface {
      * style object of type ImageBubbleStyleInterface
      */
     style?: ImageBubbleStyleInterface
+    /**
+     * resizeMode of image
+     * @default "cover"
+     */
+    resizeMode?: 'cover' | 'contain' | 'stretch' | 'repeat' | 'center'
 }
 
 export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
@@ -38,7 +43,8 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         imageUrl,
         onPress,
         placeHolderImage,
-        style
+        style,
+        resizeMode,
     } = props;
 
     const _style = new ImageBubbleStyle(style || {});
@@ -50,7 +56,8 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         border,
         borderRadius,
         height,
-        width
+        width,
+        aspectRatio
     } = _style
 
     const getFileName = (url: string) => {
@@ -67,8 +74,8 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
 
         Platform.OS == 'ios' ?
-            FileManager.openFile(url.current, getFileName(url.current), (s) => {}) :
-            ImageManager.openImage(url.current, s => {});
+            FileManager.openFile(url.current, getFileName(url.current), (s) => { }) :
+            ImageManager.openImage(url.current, s => { });
     }
 
     useEffect(() => {
@@ -92,10 +99,11 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
     return (
         <View onTouchEnd={openImage}>
             <Image
-                resizeMode={Platform.OS == "android" ? "cover" : "contain"}
+                resizeMode={resizeMode || (Platform.OS == "android" ? "cover" : "contain")}
                 loadingIndicatorSource={placeHolderImage}
                 source={thumbnailUrl ?? imageUrl} style={{
                     height, width,
+                    aspectRatio,
                     backgroundColor,
                     borderRadius,
                     ...border

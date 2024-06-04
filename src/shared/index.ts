@@ -24,6 +24,24 @@ import {
   CometChatMessageTemplate,
   CometChatDetailsTemplate,
   CometChatDetailsOption,
+  APIAction,
+  ActionEntity,
+  BaseInputElement,
+  BaseInteractiveElement,
+  ButtonElement,
+  CardMessage,
+  CheckboxElement,
+  CustomAction,
+  CustomInteractiveMessage,
+  DropdownElement,
+  ElementEntity,
+  FormMessage,
+  LabelElement,
+  OptionElement,
+  RadioButtonElement,
+  SingleSelectElement,
+  TextInputElement,
+  URLNavigationAction
 } from './modals';
 import { CometChatLocalize, localize } from './resources/CometChatLocalize';
 import { CometChatTheme, Palette, Typography } from './resources/CometChatTheme';
@@ -113,6 +131,10 @@ import {
   ReceiptConfigurationInterface,
   StatusIndicatorConfigurationInterface,
   StatusIndicatorStyleInterface,
+  CometChatFormBubble,
+  CometChatFormBubbleInterface,
+  CometChatCardBubble,
+  CometChatCardBubbleInterface
 } from './views';
 
 import {
@@ -259,4 +281,26 @@ export {
   CometChatMediaRecorderInterface,
   MediaRecorderStyleInterface,
   MediaRecorderStyle,
+  CometChatFormBubble,
+  CometChatFormBubbleInterface,
+  CometChatCardBubble,
+  CometChatCardBubbleInterface,
+  APIAction,
+  ActionEntity,
+  BaseInputElement,
+  BaseInteractiveElement,
+  ButtonElement,
+  CardMessage,
+  CheckboxElement,
+  CustomAction,
+  CustomInteractiveMessage,
+  DropdownElement,
+  ElementEntity,
+  FormMessage,
+  LabelElement,
+  OptionElement,
+  RadioButtonElement,
+  SingleSelectElement,
+  TextInputElement,
+  URLNavigationAction
 };

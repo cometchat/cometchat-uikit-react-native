@@ -118,16 +118,16 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
     }, [showComponent]);
 
     useEffect(() => {
-        CometChat.addMessageListener(
+        CometChatUIEventHandler.addMessageListener(
             msgListenerId,
-            new CometChat.MessageListener({
+            {
                 onTransientMessageReceived: (transientMessage) => {
                     const { reaction, type } = transientMessage['data'];
                     if (type == MetadataConstants.liveReaction) {
                         setShowLiveReaction(!showLiveReaction);
                     }
                 },
-            })
+            }
         );
 
         CometChat.getLoggedinUser().then(user => {
@@ -300,6 +300,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                             emptyStateText={localize("NO_MESSAGES_FOUND")}
                             errorStateText={localize("SOMETHING_WRONG")}
                             dateSeperatorPattern={_listConfiguration.dateSeperatorPattern}
+                            disableSoundForMessages={disableSoundForMessages}
                             onThreadRepliesPress={(msg, view) => {
                                 threadedMessageInfo.current = { message: msg, view }
                                 setShowComponent(ComponentNames.Thread);

@@ -1,8 +1,11 @@
 import { MessageBubbleAlignmentType } from "../constants/UIKitConstants";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { CometChatMessageOption, CometChatMessageTemplate } from "../modals";
+import { CardMessage, FormMessage } from "../modals/InteractiveData";
 import { CometChatTheme } from "../resources/CometChatTheme";
 import { VideoBubbleStyleInterface, ImageBubbleStyleInterface, AudioBubbleStyleInterface, FileBubbleStyleInterface } from "../views";
+import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
+import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
 import { DataSource } from "./DataSource";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 
@@ -20,6 +23,14 @@ export class DataSourceDecorator implements DataSource {
 
    getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
       return this.dataSource.getTextMessageOptions(loggedInUser, messageObject, group)
+   }
+
+   getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+      return this.dataSource.getFormMessageOptions(loggedInUser, messageObject, group)
+   }
+
+   getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+      return this.dataSource.getCardMessageOptions(loggedInUser, messageObject, group)
    }
 
    getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
@@ -62,6 +73,14 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getTextMessageBubble(messageText, message, alignment, theme);
    }
 
+   getFormMessageBubble(message: FormMessage, theme: CometChatTheme, style?: FormBubbleStyle, onSubmitClick?: (data: any) => void) {
+      return this.dataSource.getFormMessageBubble(message, theme, style, onSubmitClick);
+   }
+
+   getCardMessageBubble(message: CardMessage, theme: CometChatTheme, style?: CardBubbleStyle, onSubmitClick?: (data: any) => void) {
+      return this.dataSource.getCardMessageBubble(message, theme, style, onSubmitClick);
+   }
+
    getImageMessageBubble(imageUrl: string, caption: string, style: ImageBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme) {
       return this.dataSource.getImageMessageBubble(imageUrl, caption, style, message, theme);
    }
@@ -82,6 +101,14 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getTextMessageContentView(message, alignment, theme);
    }
 
+   getFormMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
+      return this.dataSource.getFormMessageContentView(message, alignment, theme);
+   }
+
+   getCardMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
+      return this.dataSource.getCardMessageContentView(message, alignment, theme);
+   }
+
    getAudioMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme) {
       return this.dataSource.getAudioMessageContentView(message, alignment, theme);
    }
@@ -100,6 +127,14 @@ export class DataSourceDecorator implements DataSource {
 
    getTextMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
       return this.dataSource.getTextMessageTemplate(theme)
+   }
+
+   getFormMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+      return this.dataSource.getFormMessageTemplate(theme)
+   }
+
+   getCardMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+      return this.dataSource.getCardMessageTemplate(theme)
    }
 
    getAudioMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {

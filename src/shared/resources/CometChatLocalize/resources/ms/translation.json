@@ -270,5 +270,8 @@
 	"READ": "Baca",
 	"No_RECIPIENT": "Tiada Penerima",
 	"RECEIPT_INFORMATION": "Maklumat Resit",
-	"MESSAGE": "Pesanan"
+	"MESSAGE": "Pesanan",
+	"FORM_COMPLETION_MESSAGE": "Terima kasih kerana mengisi borang.",
+	"FORM":"Borang",
+	"CARD":"Kad"
 }

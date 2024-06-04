@@ -166,7 +166,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={{display: tabAlignment == 'bottom' ? "none" : "flex"}}>
+            <View style={{display: tabAlignment == 'bottom' ? "none" : "flex", margin: 15, marginTop: 0}}>
                 {
                     tabAlignment == "top" && <TabsList />
                 }

@@ -206,9 +206,9 @@ this.closePanel();
   attachMessageListener(){   
 
     this.cardViewStyle = getCardViewStyle(this.theme,this.configuration?.conversationStarterStyle)
-    CometChat.addMessageListener(
+    CometChatUIEventHandler.addMessageListener(
       this.messageListenerId,
-      new CometChat.MessageListener({
+      {
         onTextMessageReceived: (textMessage) => {
           this.closeIfMessageReceived(textMessage)
            
@@ -221,8 +221,7 @@ this.closePanel();
           this.closeIfMessageReceived(customMessage)
          
         }
-    })
-    );
+    });
     
   
   }

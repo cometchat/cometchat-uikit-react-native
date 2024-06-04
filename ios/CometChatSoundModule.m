@@ -1,4 +1,4 @@
-#import "RNSound.h"
+#import "CometChatSoundModule.h"
 
 #if __has_include("RCTUtils.h")
 #import "RCTUtils.h"
@@ -6,7 +6,7 @@
 #import <React/RCTUtils.h>
 #endif
 
-@implementation RNSound {
+@implementation CometChatSoundModule {
     NSMutableDictionary *_playerPool;
     NSMutableDictionary *_callbackPool;
 }

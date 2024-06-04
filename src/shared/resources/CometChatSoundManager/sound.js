@@ -1,9 +1,9 @@
 import { NativeModules, NativeEventEmitter } from 'react-native';
-const {RNSound} = NativeModules ;
-var IsAndroid = RNSound.IsAndroid;
-var IsWindows = RNSound.IsWindows;
+const {CometChatSoundModule} = NativeModules ;
+var IsAndroid = CometChatSoundModule.IsAndroid;
+var IsWindows = CometChatSoundModule.IsWindows;
 import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
-var eventEmitter = new NativeEventEmitter(RNSound);
+var eventEmitter = new NativeEventEmitter(CometChatSoundModule);
 
 var nextKey = 0;
 
@@ -23,14 +23,14 @@ function setAndroidVolumes(sound) {
     const relativeVolume = calculateRelativeVolume(sound._volume, sound._pan);
     if (sound._pan < 0) {
       // left is louder
-      RNSound.setVolume(sound._key, sound._volume, relativeVolume);
+      CometChatSoundModule.setVolume(sound._key, sound._volume, relativeVolume);
     } else {
       // right is louder
-      RNSound.setVolume(sound._key, relativeVolume, sound._volume);
+      CometChatSoundModule.setVolume(sound._key, relativeVolume, sound._volume);
     }
   } else {
     // no panning, same volume on both channels
-    RNSound.setVolume(sound._key, sound._volume, sound._volume);
+    CometChatSoundModule.setVolume(sound._key, sound._volume, sound._volume);
   }
 }
 
@@ -60,7 +60,7 @@ class Sound {
     this._numberOfLoops = 0;
     this._speed = 1;
     this._pitch = 1;
-    RNSound.prepare(this._filename, this._key, options || {}, (error, props) => {
+    CometChatSoundModule.prepare(this._filename, this._key, options || {}, (error, props) => {
       if (props) {
         if (typeof props.duration === 'number') {
           this._duration = props.duration;
@@ -101,31 +101,31 @@ class Sound {
     }
   };
   static enable(enabled) {
-    RNSound.enable(enabled);
+    CometChatSoundModule.enable(enabled);
   }
   static enableInSilenceMode(enabled) {
     if (!IsAndroid && !IsWindows) {
-      RNSound.enableInSilenceMode(enabled);
+      CometChatSoundModule.enableInSilenceMode(enabled);
     }
   }
   static setActive(value) {
     if (!IsAndroid && !IsWindows) {
-      RNSound.setActive(value);
+      CometChatSoundModule.setActive(value);
     }
   }
   static setCategory(value, mixWithOthers = false) {
     if (!IsWindows) {
-      RNSound.setCategory(value, mixWithOthers);
+      CometChatSoundModule.setCategory(value, mixWithOthers);
     }
   }
   static setMode(value) {
     if (!IsAndroid && !IsWindows) {
-      RNSound.setMode(value);
+      CometChatSoundModule.setMode(value);
     }
   }
   static setSpeakerPhone(value) {
     if (!IsAndroid && !IsWindows) {
-      RNSound.setSpeakerPhone(value);
+      CometChatSoundModule.setSpeakerPhone(value);
     }
   }
   isLoaded() {
@@ -133,7 +133,7 @@ class Sound {
   }
   play(onEnd) {
     if (this._loaded) {
-      RNSound.play(this._key, (successfully) => onEnd && onEnd(successfully));
+      CometChatSoundModule.play(this._key, (successfully) => onEnd && onEnd(successfully));
     } else {
       onEnd && onEnd(false);
     }
@@ -141,7 +141,7 @@ class Sound {
   }
   pause(callback) {
     if (this._loaded) {
-      RNSound.pause(this._key, () => {
+      CometChatSoundModule.pause(this._key, () => {
         this._playing = false;
         callback && callback();
       });
@@ -150,7 +150,7 @@ class Sound {
   }
   stop(callback) {
     if (this._loaded) {
-      RNSound.stop(this._key, () => {
+      CometChatSoundModule.stop(this._key, () => {
         this._playing = false;
         callback && callback();
       });
@@ -159,14 +159,14 @@ class Sound {
   }
   reset() {
     if (this._loaded && IsAndroid) {
-      RNSound.reset(this._key);
+      CometChatSoundModule.reset(this._key);
       this._playing = false;
     }
     return this;
   }
   release() {
     if (this._loaded) {
-      RNSound.release(this._key);
+      CometChatSoundModule.release(this._key);
       this._loaded = false;
       if (!IsWindows) {
         if (this.onPlaySubscription != null) {
@@ -201,7 +201,7 @@ class Sound {
       if (IsAndroid) {
         setAndroidVolumes(this);
       } else {
-        RNSound.setVolume(this._key, value);
+        CometChatSoundModule.setVolume(this._key, value);
       }
     }
     return this;
@@ -214,20 +214,20 @@ class Sound {
       } else if (IsAndroid) {
         setAndroidVolumes(this);
       } else {
-        RNSound.setPan(this._key, value);
+        CometChatSoundModule.setPan(this._key, value);
       }
     }
     return this;
   }
   getSystemVolume(callback) {
     if (!IsWindows) {
-      RNSound.getSystemVolume(callback);
+      CometChatSoundModule.getSystemVolume(callback);
     }
     return this;
   }
   setSystemVolume(value) {
     if (IsAndroid) {
-      RNSound.setSystemVolume(value);
+      CometChatSoundModule.setSystemVolume(value);
     }
     return this;
   }
@@ -241,9 +241,9 @@ class Sound {
     this._numberOfLoops = value;
     if (this._loaded) {
       if (IsAndroid || IsWindows) {
-        RNSound.setLooping(this._key, !!value);
+        CometChatSoundModule.setLooping(this._key, !!value);
       } else {
-        RNSound.setNumberOfLoops(this._key, value);
+        CometChatSoundModule.setNumberOfLoops(this._key, value);
       }
     }
     return this;
@@ -252,7 +252,7 @@ class Sound {
     this._speed = value;
     if (this._loaded) {
       if (!IsWindows) {
-        RNSound.setSpeed(this._key, value);
+        CometChatSoundModule.setSpeed(this._key, value);
       }
     }
     return this;
@@ -261,26 +261,26 @@ class Sound {
     this._pitch = value;
     if (this._loaded) {
       if (IsAndroid) {
-        RNSound.setPitch(this._key, value);
+        CometChatSoundModule.setPitch(this._key, value);
       }
     }
     return this;
   }
   getCurrentTime(callback) {
     if (this._loaded) {
-      RNSound.getCurrentTime(this._key, callback);
+      CometChatSoundModule.getCurrentTime(this._key, callback);
     }
   }
   setCurrentTime(value) {
     if (this._loaded) {
-      RNSound.setCurrentTime(this._key, value);
+      CometChatSoundModule.setCurrentTime(this._key, value);
     }
     return this;
   }
   // android only
   setSpeakerphoneOn(value) {
     if (IsAndroid) {
-      RNSound.setSpeakerphoneOn(this._key, value);
+      CometChatSoundModule.setSpeakerphoneOn(this._key, value);
     }
   }
   isPlaying() {
@@ -288,7 +288,7 @@ class Sound {
   }
   async checkOtherAudioPlaying() {
     try{
-     return await RNSound.checkOtherAudioPlaying();
+     return await CometChatSoundModule.checkOtherAudioPlaying();
     }
      catch(error){
        return false;
@@ -328,9 +328,9 @@ Sound.prototype.setCategory = function(value) {
   Sound.setCategory(value, false);
 }
 
-Sound.MAIN_BUNDLE = RNSound.MainBundlePath;
-Sound.DOCUMENT = RNSound.NSDocumentDirectory;
-Sound.LIBRARY = RNSound.NSLibraryDirectory;
-Sound.CACHES = RNSound.NSCachesDirectory;
+Sound.MAIN_BUNDLE = CometChatSoundModule.MainBundlePath;
+Sound.DOCUMENT = CometChatSoundModule.NSDocumentDirectory;
+Sound.LIBRARY = CometChatSoundModule.NSLibraryDirectory;
+Sound.CACHES = CometChatSoundModule.NSCachesDirectory;
 
 export default Sound;

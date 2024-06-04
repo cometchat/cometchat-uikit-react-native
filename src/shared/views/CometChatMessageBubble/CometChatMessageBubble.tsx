@@ -4,6 +4,7 @@ import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, BaseStyleInterface } from "../../base";
 import { MessageBubbleAlignmentType } from "../../constants/UIKitConstants";
 import { MessageBubbleStyle } from "./MessageBubbleStyle";
+import { memo } from "react";
 
 export interface CometChatMessageBubbleInterface {
     id: string,
@@ -18,7 +19,7 @@ export interface CometChatMessageBubbleInterface {
     style?: BaseStyleInterface,
 }
 
-export const CometChatMessageBubble = ({
+export const CometChatMessageBubble = memo(({
     HeaderView,
     ReplyView,
     ContentView,
@@ -56,12 +57,12 @@ export const CometChatMessageBubble = ({
                     alignment
         }}>
             <View style={{
-                height, width, flexDirection: "row",
+                height, flexDirection: "row",
             }}>
                 {
                     LeadingView && <LeadingView />
                 }
-                <View style={{marginStart: 4, maxWidth: "75%"}}>
+                <View style={{marginStart: 4, width, maxWidth: "80%"}}>
                     {
                         HeaderView && <HeaderView />
                     }
@@ -87,7 +88,7 @@ export const CometChatMessageBubble = ({
 
         </View>
     )
-}
+})
 
 CometChatMessageBubble.defaultProps = {
     alignment: "left"

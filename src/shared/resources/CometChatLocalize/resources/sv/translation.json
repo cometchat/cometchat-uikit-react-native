@@ -270,5 +270,8 @@
 	"READ": "Läs",
 	"No_RECIPIENT": "Ingen mottagare",
 	"RECEIPT_INFORMATION": "Information om kvitto",
-	"MESSAGE": "Meddelande"
+	"MESSAGE": "Meddelande",
+	"FORM_COMPLETION_MESSAGE": "Tack för att du fyller i formuläret.",
+	"FORM":"Formulär",
+	"CARD":"Kort"
 }

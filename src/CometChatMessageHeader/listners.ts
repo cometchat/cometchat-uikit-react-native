@@ -1,5 +1,6 @@
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { CometChatUIEventHandler } from '../shared';
 
 export const listners = {
   addListener: {
@@ -18,9 +19,9 @@ export const listners = {
         })
       ),
     messageListener: ({ msgTypingListenerId, msgTypingIndicator }) =>
-      CometChat.addMessageListener(
+      CometChatUIEventHandler.addMessageListener(
         msgTypingListenerId,
-        new CometChat.MessageListener({
+        {
           onTypingStarted: (typistDetails) => {
             console.log('onTypingStarted', typistDetails);
 
@@ -30,7 +31,7 @@ export const listners = {
             console.log('onTypingEnded', typistDetails);
             msgTypingIndicator(typistDetails, '');
           },
-        })
+        }
       ),
     groupListener: ({ groupListenerId, handleGroupListener }) =>
       CometChat.addGroupListener(
@@ -65,7 +66,7 @@ export const listners = {
       CometChat.removeUserListener(userStatusListenerId),
 
     removeMessageListener: ({ msgTypingListenerId }) =>
-      CometChat.removeMessageListener(msgTypingListenerId),
+    CometChatUIEventHandler.removeMessageListener(msgTypingListenerId),
 
     removeGroupListener: ({ groupListenerId }) =>
       CometChat.removeGroupListener(groupListenerId),

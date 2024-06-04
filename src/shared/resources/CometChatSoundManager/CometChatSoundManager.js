@@ -1,5 +1,5 @@
 import { Vibration, NativeModules } from 'react-native';
-const { RNSound } = NativeModules;
+const { CometChatSoundModule } = NativeModules;
 import * as consts from '../../constants/UIKitConstants';
 import Sound from './sound';
 import {
@@ -22,7 +22,7 @@ export class CometChatSoundManager {
   static onPlay = async (resource, loop, isRequire) => {
     try {
       let otherAudioPlaying =
-        await RNSound.checkOtherAudioPlaying();
+        await CometChatSoundModule.checkOtherAudioPlaying();
       if (otherAudioPlaying) {
         Vibration.vibrate(consts.PATTERN, loop);
       } else {

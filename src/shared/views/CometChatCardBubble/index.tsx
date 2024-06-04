@@ -1,0 +1,1 @@
+export { CometChatCardBubble, CometChatCardBubbleInterface } from './CometChatCardBubble'

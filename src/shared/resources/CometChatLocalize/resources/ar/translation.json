@@ -270,5 +270,8 @@
 	"READ": "اقرأ",
 	"No_RECIPIENT": "لا يوجد مستلم",
 	"RECEIPT_INFORMATION": "معلومات الاستلام",
-	"MESSAGE": "رسالة"
+	"MESSAGE": "رسالة",
+	"FORM_COMPLETION_MESSAGE": "شكرًا لك على ملء النموذج.",
+	"FORM":"نموذج",
+	"CARD":"بطاقة"
 }

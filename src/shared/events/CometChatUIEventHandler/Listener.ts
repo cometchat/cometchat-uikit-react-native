@@ -15,7 +15,22 @@ type MessageUIEvents = {
     ccMessageRead?: Function,
     ccMessageDelivered?: Function,
     ccMessageError?: Function,
-    ccActiveChatChanged?:Function,
+    ccActiveChatChanged?: Function,
+    onTextMessageReceived?: Function,
+    onMediaMessageReceived?: Function,
+    onCustomMessageReceived?: Function,
+    onTypingStarted?: Function,
+    onTypingEnded?: Function,
+    onMessagesDelivered?: Function,
+    onMessagesRead?: Function,
+    onMessageEdited?: Function,
+    onMessageDeleted?: Function,
+    onTransientMessageReceived?: Function,
+    onFormMessageReceived?: Function,
+    onCardMessageReceived?: Function,
+    onCustomInteractiveMessageReceived?: Function,
+    onInteractionGoalCompleted?: Function,
+
     // ccMessageForwarded?:Function,
 }
 export class MessageUIEventListener {
@@ -26,7 +41,21 @@ export class MessageUIEventListener {
     ccMessageRead?: Function = undefined;
     ccMessageDelivered?: Function = undefined;
     ccMessageError?: Function = undefined;
-    ccActiveChatChanged?:Function=undefined;
+    ccActiveChatChanged?: Function = undefined;
+    onTextMessageReceived?: Function = undefined;
+    onMediaMessageReceived?: Function = undefined;
+    onCustomMessageReceived?: Function = undefined;
+    onTypingStarted?: Function = undefined;
+    onTypingEnded?: Function = undefined;
+    onMessagesDelivered?: Function = undefined;
+    onMessagesRead?: Function = undefined;
+    onMessageEdited?: Function = undefined;
+    onMessageDeleted?: Function = undefined;
+    onTransientMessageReceived?: Function = undefined;
+    onFormMessageReceived?: Function = undefined;
+    onCardMessageReceived?: Function = undefined;
+    onCustomInteractiveMessageReceived?: Function = undefined;
+    onInteractionGoalCompleted?: Function = undefined;
     // ccMessageForwarded?:Function =  undefined;
     constructor({
         ccMessageSent,
@@ -37,6 +66,20 @@ export class MessageUIEventListener {
         ccMessageDelivered,
         ccMessageError,
         ccActiveChatChanged,
+        onTextMessageReceived,
+        onMediaMessageReceived,
+        onCustomMessageReceived,
+        onTypingStarted,
+        onTypingEnded,
+        onMessagesDelivered,
+        onMessagesRead,
+        onMessageEdited,
+        onMessageDeleted,
+        onTransientMessageReceived,
+        onFormMessageReceived,
+        onCardMessageReceived,
+        onCustomInteractiveMessageReceived,
+        onInteractionGoalCompleted,
         // ccMessageForwarded,
     }: MessageUIEvents) {
         if (!isFalsy(ccMessageError)) this.ccMessageError = ccMessageError;
@@ -47,6 +90,22 @@ export class MessageUIEventListener {
         if (!isFalsy(ccMessageEdited)) this.ccMessageEdited = ccMessageEdited;
         if (!isFalsy(ccMessageDeleted)) this.ccMessageDeleted = ccMessageDeleted;
         if (!isFalsy(ccActiveChatChanged)) this.ccActiveChatChanged = ccActiveChatChanged;
+        if (!isFalsy(onTextMessageReceived)) this.onTextMessageReceived = onTextMessageReceived;
+        if (!isFalsy(onMediaMessageReceived)) this.onMediaMessageReceived = onMediaMessageReceived;
+        if (!isFalsy(onCustomMessageReceived)) this.onCustomMessageReceived = onCustomMessageReceived;
+        if (!isFalsy(onTypingStarted)) this.onTypingStarted = onTypingStarted;
+        if (!isFalsy(onTypingEnded)) this.onTypingEnded = onTypingEnded;
+        if (!isFalsy(onMessagesDelivered)) this.onMessagesDelivered = onMessagesDelivered;
+        if (!isFalsy(onMessagesRead)) this.onMessagesRead = onMessagesRead;
+        if (!isFalsy(onMessageEdited)) this.onMessageEdited = onMessageEdited;
+        if (!isFalsy(onMessageDeleted)) this.onMessageDeleted = onMessageDeleted;
+        if (!isFalsy(onMessageDeleted)) this.onMessageDeleted = onMessageDeleted;
+        if (!isFalsy(onTransientMessageReceived)) this.onTransientMessageReceived = onTransientMessageReceived;
+        if (!isFalsy(onFormMessageReceived)) this.onFormMessageReceived = onFormMessageReceived;
+        if (!isFalsy(onCardMessageReceived)) this.onCardMessageReceived = onCardMessageReceived;
+        if (!isFalsy(onCustomInteractiveMessageReceived)) this.onCustomInteractiveMessageReceived = onCustomInteractiveMessageReceived;
+        if (!isFalsy(onInteractionGoalCompleted)) this.onInteractionGoalCompleted = onInteractionGoalCompleted;
+
         // if (!isFalsy(ccMessageForwarded)) this.ccMessageForwarded = ccMessageForwarded;
     }
 }

@@ -270,5 +270,8 @@
 	"READ": "Lesen",
 	"No_RECIPIENT": "Kein Empfänger",
 	"RECEIPT_INFORMATION": "Informationen zum Zahlungseingang",
-	"MESSAGE": "Nachricht"
+	"MESSAGE": "Nachricht",
+	"FORM_COMPLETION_MESSAGE": "Vielen Dank für das Ausfüllen des Formulars.",
+	"FORM":"Formular",
+	"CARD":"Karte"
 }

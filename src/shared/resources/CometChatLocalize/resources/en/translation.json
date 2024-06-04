@@ -270,5 +270,8 @@
   "READ": "Read",
   "No_RECIPIENT": "No Recipient",
   "RECEIPT_INFORMATION": "Receipt Information",
-  "MESSAGE": "Message"
+  "MESSAGE": "Message",
+  "FORM_COMPLETION_MESSAGE": "Thank you for filling out the form.",
+	"FORM":"Form",
+	"CARD":"Card"
 }

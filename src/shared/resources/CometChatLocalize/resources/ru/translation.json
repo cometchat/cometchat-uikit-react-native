@@ -270,5 +270,8 @@
 	"READ": "Прочитайте",
 	"No_RECIPIENT": "Нет получателя",
 	"RECEIPT_INFORMATION": "Информация о чеке",
-	"MESSAGE": "Послание"
+	"MESSAGE": "Послание",
+	"FORM_COMPLETION_MESSAGE": "Спасибо за заполнение формы.",
+	"FORM":"Форма",
+	"CARD":"Карточка"
 }

@@ -17,7 +17,7 @@ public class CometchatUiKitPackage implements ReactPackage {
     public List<NativeModule> createNativeModules(@NonNull ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
         modules.add(new CometchatUiKitModule(reactContext));
-        modules.add(new RNSoundModule(reactContext));
+        modules.add(new CometChatSoundModule(reactContext));
         modules.add(new SoundPlayer(reactContext));
         modules.add(new FileManager(reactContext));
         modules.add(new VideoManager(reactContext));

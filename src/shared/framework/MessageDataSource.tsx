@@ -16,6 +16,10 @@ import { ChatConfigurator } from "./ChatConfigurator";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { ICONS } from "./resources";
 import { CometChatConversationUtils } from "../utils/conversationUtils";
+import { CometChatFormBubble, CometChatCardBubble } from "../views";
+import { CardMessage, FormMessage } from "../modals/InteractiveData";
+import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
+import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
 
 function isAudioMessage(message: CometChat.BaseMessage): message is CometChat.MediaMessage {
     return message.getCategory() == CometChat.CATEGORY_MESSAGE &&
@@ -139,6 +143,21 @@ export class MessageDataSource implements DataSource {
 
         return [...msgOptions, ...optionsList];
     }
+
+    getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+        let optionsList: Array<CometChatMessageOption> = [];
+        if (!isDeletedMessage(messageObject))
+            optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
+        return optionsList;
+    }
+
+    getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+        let optionsList: Array<CometChatMessageOption> = [];
+        if (!isDeletedMessage(messageObject))
+            optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
+        return optionsList;
+    }
+
     getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
@@ -194,7 +213,7 @@ export class MessageDataSource implements DataSource {
         let optionsList: Array<CometChatMessageOption> = [];
         let _isSentByMe = this.isSentByMe(loggedInUser, messageObject);
         let canDelete = false;
-        if (group?.getScope() != undefined && group?.getScope() != GroupMemberScope.participant) {
+        if ((group?.getScope() != undefined && group?.getScope() != GroupMemberScope.participant) || _isSentByMe) {
             canDelete = true;
         }
         if (!messageObject.getParentMessageId()) {
@@ -284,6 +303,21 @@ export class MessageDataSource implements DataSource {
         />
     }
 
+    getFormMessageBubble(message: FormMessage, theme: CometChatTheme, style?: FormBubbleStyle, onSubmitClick?: (data: any) => void): JSX.Element {
+        return <CometChatFormBubble
+            message={message}
+            onSubmitClick={onSubmitClick}
+            style={style}
+        />
+    }
+    getCardMessageBubble(message: CardMessage, theme: CometChatTheme, style?: CardBubbleStyle, onSubmitClick?: (data: any) => void): JSX.Element {
+        return <CometChatCardBubble
+            message={message}
+            onSubmitClick={onSubmitClick}
+            style={style}
+        />
+    }
+
     getImageMessageBubble(imageUrl: string, caption: string, style: ImageBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element {
         if (isImageMessage(message)) {
             return <CometChatImageBubble
@@ -317,6 +351,12 @@ export class MessageDataSource implements DataSource {
     }
     getTextMessageContentView(message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         return ChatConfigurator.dataSource.getTextMessageBubble(message.getText(), message, alignment, theme);
+    }
+    getFormMessageContentView(message: FormMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
+        return ChatConfigurator.dataSource.getFormMessageBubble(message, theme);
+    }
+    getCardMessageContentView(message: CardMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
+        return ChatConfigurator.dataSource.getCardMessageBubble(message, theme);
     }
     getAudioMessageContentView(message: CometChat.MediaMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         let attachment = message.getAttachment();
@@ -379,6 +419,36 @@ export class MessageDataSource implements DataSource {
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getTextMessageOptions(loggedInuser, message, group),
+        });
+    }
+
+    getFormMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+        return new CometChatMessageTemplate({
+            type: MessageTypeConstants.form,
+            category: MessageCategoryConstants.interactive,
+            ContentView: (message: CometChat.BaseMessage, _alignment: MessageBubbleAlignmentType) => {
+                if (isDeletedMessage(message)) {
+                    return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
+                } else {
+                    return ChatConfigurator.dataSource.getFormMessageContentView(message, _alignment, theme);
+                }
+            },
+            options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getFormMessageOptions(loggedInuser, message, group),
+        });
+    }
+
+    getCardMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+        return new CometChatMessageTemplate({
+            type: MessageTypeConstants.card,
+            category: MessageCategoryConstants.interactive,
+            ContentView: (message: CometChat.BaseMessage, _alignment: MessageBubbleAlignmentType) => {
+                if (isDeletedMessage(message)) {
+                    return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
+                } else {
+                    return ChatConfigurator.dataSource.getCardMessageContentView(message, _alignment, theme);
+                }
+            },
+            options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getCardMessageOptions(loggedInuser, message, group),
         });
     }
 
@@ -448,6 +518,8 @@ export class MessageDataSource implements DataSource {
     getAllMessageTemplates(theme: CometChatTheme): CometChatMessageTemplate[] {
         return [
             ChatConfigurator.dataSource.getTextMessageTemplate(theme),
+            ChatConfigurator.dataSource.getFormMessageTemplate(theme),
+            ChatConfigurator.dataSource.getCardMessageTemplate(theme),
             ChatConfigurator.dataSource.getAudioMessageTemplate(theme),
             ChatConfigurator.dataSource.getVideoMessageTemplate(theme),
             ChatConfigurator.dataSource.getFileMessageTemplate(theme),
@@ -480,6 +552,12 @@ export class MessageDataSource implements DataSource {
             case MessageTypeConstants.file:
                 template = ChatConfigurator.dataSource.getFileMessageTemplate(theme)
                 break;
+            case MessageTypeConstants.form:
+                template = ChatConfigurator.dataSource.getFormMessageTemplate(theme)
+                break;
+            case MessageTypeConstants.card:
+                template = ChatConfigurator.dataSource.getCardMessageTemplate(theme)
+                break;
         }
         return template;
     }
@@ -492,11 +570,13 @@ export class MessageDataSource implements DataSource {
             CometChatMessageTypes.video,
             CometChatMessageTypes.file,
             MessageTypeConstants.groupActions,
-            MessageTypeConstants.groupMember
+            MessageTypeConstants.groupMember,
+            MessageTypeConstants.form,
+            MessageTypeConstants.card
         ];
     }
     getAllMessageCategories(): string[] {
-        return [MessageCategoryConstants.message, MessageCategoryConstants.action];
+        return [MessageCategoryConstants.message, MessageCategoryConstants.action, MessageCategoryConstants.interactive];
     }
     getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>, theme?:CometChatTheme): JSX.Element[] {
         return [];

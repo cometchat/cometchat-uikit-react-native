@@ -19,7 +19,6 @@ import { SmartRepliesConfigurationInterface } from './SmartRepliesExtension';
 
 export class SmartRepliesDecorator extends DataSourceDecorator {
   smartRepliesConfiguration?: SmartRepliesConfigurationInterface;
-  messageListenerId = 'message_' + new Date().getTime();
 
   loggedInUser: CometChat.User;
 
@@ -38,20 +37,15 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
       })
       .catch((err) => console.log(err));
 
-    CometChat.addMessageListener(
-      this.messageListenerId,
-      new CometChat.MessageListener({
-        onTextMessageReceived: (textMessage) => {
-          this.getReplies(textMessage);
-        },
-      })
-    );
     CometChatUIEventHandler.addMessageListener(
       MessageEvents.ccActiveChatChanged,
       {
         ccActiveChatChanged: ({message}) => {
           if(message && message['sender']?.['uid'] != this.loggedInUser.getUid())
             this.getReplies(message);
+        },
+        onTextMessageReceived: (textMessage) => {
+          this.getReplies(textMessage);
         },
       }
     );

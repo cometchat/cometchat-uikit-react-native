@@ -270,5 +270,8 @@
 	"READ": "Leer",
 	"No_RECIPIENT": "Sin destinatario",
 	"RECEIPT_INFORMATION": "Información del recibo",
-	"MESSAGE": "Mensaje"
+	"MESSAGE": "Mensaje",
+	"FORM_COMPLETION_MESSAGE": "Gracias por rellenar el formulario.",
+	"FORM":"Formulario",
+	"CARD":"Tarjeta"
 }

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, ScrollView } from 'react-native'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
-import { AvatarStyleInterface, CometChatContext, CometChatDate, CometChatListItem, CometChatMessageTemplate, CometChatReceipt, ImageType, ListItemStyleInterface, StatusIndicatorStyleInterface, localize } from '../shared'
+import { AvatarStyleInterface, CometChatContext, CometChatDate, CometChatListItem, CometChatMessageTemplate, CometChatReceipt, CometChatUIEventHandler, ImageType, ListItemStyleInterface, StatusIndicatorStyleInterface, localize } from '../shared'
 import { MessageInformationStyleInterface } from './MessageInformationStyle'
 import { MessageUtils } from '../shared/utils/MessageUtils'
 import { Style } from "./styles";
@@ -191,16 +191,16 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
 
     useEffect(() => {
         //add listener for message delivery
-        CometChat.addMessageListener(
+        CometChatUIEventHandler.addMessageListener(
             listenerId,
-            new CometChat.MessageListener({
+            {
                 onMessagesDelivered: (messageReceipt) => {
                     updateMessageReceipt(messageReceipt);
                 },
                 onMessagesRead: (messageReceipt) => {
                     updateMessageReceipt(messageReceipt);
                 },
-            })
+            }
         )
     }, []);
 
@@ -210,28 +210,28 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
 
     const LoadingView = () => {
         if (LoadingStateView)
-          return <LoadingStateView />
+            return <LoadingStateView />
         return <View style={[Style.viewContainer]}>
-          <Image source={loadingIcon || LoadingIcon} style={[Style.imageStyle, { tintColor: "black" }]} />
+            <Image source={loadingIcon || LoadingIcon} style={[Style.imageStyle, { tintColor: "black" }]} />
         </View>
     }
 
     const ErrorView = () => {
-      if (ErrorStateView)
-        return <ErrorStateView />
-      return <View style={[Style.viewContainer]}>
-        <Text>{errorStateText || localize("SOMETHING_WRONG")}</Text>
-      </View>
+        if (ErrorStateView)
+            return <ErrorStateView />
+        return <View style={[Style.viewContainer]}>
+            <Text>{errorStateText || localize("SOMETHING_WRONG")}</Text>
+        </View>
     }
 
     const EmptyView = () => {
-      if (EmptyStateView)
-        return <EmptyStateView />
-      return (
-        <View style={[Style.viewContainer]}>
-          <Text>{emptyStateText || localize("No_RECIPIENT")}</Text>
-        </View>
-      )
+        if (EmptyStateView)
+            return <EmptyStateView />
+        return (
+            <View style={[Style.viewContainer]}>
+                <Text>{emptyStateText || localize("No_RECIPIENT")}</Text>
+            </View>
+        )
     }
 
     return (
@@ -245,7 +245,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
             Style.container,
             border
         ]}>
-            <View style={{flexDirection: "row"}}>
+            <View style={{ flexDirection: "row" }}>
                 <TouchableOpacity onPress={onBack}>
                     <Image
                         source={backIcon}
@@ -256,13 +256,13 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                         }}
                     />
                 </TouchableOpacity>
-                <View style={{flex: 1, alignItems: "center"}}>
-                    <Text style={{color: titleTextColor, ...titleTextFont}}>{title}</Text>
+                <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={{ color: titleTextColor, ...titleTextFont }}>{title}</Text>
                 </View>
             </View>
 
             <View>
-                <Text style={{color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 }}>{localize("MESSAGE")}</Text>
+                <Text style={{ color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 }}>{localize("MESSAGE")}</Text>
             </View>
             <View style={[Style.divider, { backgroundColor: dividerTint || theme.palette.getAccent200() }]} />
             <View style={Style.msgBubbleContainer}>
@@ -276,26 +276,26 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                                 alignment: "right",
                                 theme
                             })
-                    } 
-                    </ScrollView>
+                    }
+                </ScrollView>
             </View>
             <View style={[Style.divider, { backgroundColor: dividerTint || theme.palette.getAccent200() }]} />
             <View>
-                <Text style={{color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 }}>{localize("RECEIPT_INFORMATION")}</Text>
+                <Text style={{ color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 }}>{localize("RECEIPT_INFORMATION")}</Text>
             </View>
             <View style={[Style.divider, { backgroundColor: dividerTint || theme.palette.getAccent200() }]} />
             {
                 listState == "loading" && recipients.length == 0 ?
-                <LoadingView /> :
-                listState == "error" && recipients.length == 0 ?
-                    <ErrorView /> :
-                    recipients.length == 0 ?
-                    <EmptyView /> :
-                    <FlatList
-                        style={{ flex: 1, backgroundColor: 'transparent' }}
-                        data={recipients}
-                        renderItem={renderReceipients}
-                    />
+                    <LoadingView /> :
+                    listState == "error" && recipients.length == 0 ?
+                        <ErrorView /> :
+                        recipients.length == 0 ?
+                            <EmptyView /> :
+                            <FlatList
+                                style={{ flex: 1, backgroundColor: 'transparent' }}
+                                data={recipients}
+                                renderItem={renderReceipients}
+                            />
             }
         </View>
     )

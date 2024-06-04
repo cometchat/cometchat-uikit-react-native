@@ -53,38 +53,38 @@ export const PASSWORD_GROUP_COLOR = "rgb(247, 165, 0)";
 const wordBoundary = {
 	start: `(?:^|:|;|'|"|,|{|}|\\.|\\s|\\!|\\?|\\(|\\)|\\[|\\]|\\*)`,
 	end: `(?=$|:|;|'|"|,|{|}|\\.|\\s|\\!|\\?|\\(|\\)|\\[|\\]|\\*)`,
-  };
+};
 
 export const emailPattern =
-    wordBoundary.start +
-    `[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}` +
-    wordBoundary.end
+	wordBoundary.start +
+	`[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}` +
+	wordBoundary.end
 
 export const urlPattern =
-    wordBoundary.start +
-    `((https?://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?)` +
-    wordBoundary.end
+	wordBoundary.start +
+	`((https?://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?)` +
+	wordBoundary.end
 
 export const phoneNumPattern =
-    wordBoundary.start +
-    `(?:\\+?(\\d{1,3}))?([-. (]*(\\d{3})[-. )]*)?((\\d{3})[-. ]*(\\d{2,4})(?:[-.x ]*(\\d+))?)` +
-    wordBoundary.end
+	wordBoundary.start +
+	`(?:\\+?(\\d{1,3}))?([-. (]*(\\d{3})[-. )]*)?((\\d{3})[-. ]*(\\d{2,4})(?:[-.x ]*(\\d+))?)` +
+	wordBoundary.end
 
 
 export const MetadataConstants = {
-  liveReaction: "live_reaction",
-  file: "file",
-  extensions: {
-    thumbnailGeneration: "thumbnail-generation",
-    polls: "polls",
-    document: "document",
-    whiteboard: "whiteboard",
-    xssFilter: "xss-filter",
-    dataMasking: "data-masking",
-    profanityFilter: "profanity-filter",
-    reactions: "reactions",
-    linkPreview: "link-preview",
-  },
+	liveReaction: "live_reaction",
+	file: "file",
+	extensions: {
+		thumbnailGeneration: "thumbnail-generation",
+		polls: "polls",
+		document: "document",
+		whiteboard: "whiteboard",
+		xssFilter: "xss-filter",
+		dataMasking: "data-masking",
+		profanityFilter: "profanity-filter",
+		reactions: "reactions",
+		linkPreview: "link-preview",
+	},
 };
 
 export const GroupOptionConstants = {
@@ -106,7 +106,7 @@ export const GroupMemberOptionConstants = {
 	ban: "ban",
 	unban: "unban",
 	changeScope: "changeScope",
-	view:'viewMember',
+	view: 'viewMember',
 	addMembers: 'addMembers',
 	deleteGroup: 'deleteGroup',
 	leave: 'leave',
@@ -157,9 +157,9 @@ export const GroupMemberOptionChangeScope: string[] = [
 export const ONE_SECOND_IN_MS = 1000;
 
 export const PATTERN = [
-  1 * ONE_SECOND_IN_MS,
-  2 * ONE_SECOND_IN_MS,
-  3 * ONE_SECOND_IN_MS
+	1 * ONE_SECOND_IN_MS,
+	2 * ONE_SECOND_IN_MS,
+	3 * ONE_SECOND_IN_MS
 ];
 
 export const CallContstatnts = {
@@ -183,10 +183,11 @@ export const MessageCategoryConstants = {
 	custom: CometChat.CATEGORY_CUSTOM,
 	action: CometChat.CATEGORY_ACTION,
 	call: CometChat.CATEGORY_CALL,
+	interactive: CometChat.CATEGORY_INTERACTIVE,
 };
 
 export const DefaultActionSheetItems = {
-	takeAPhoto:  "takeAPhoto",
+	takeAPhoto: "takeAPhoto",
 	photoAndVideoLibrary: "photoAndVideoLibrary",
 	document: "photoAndVideoLibrary",
 	poll: "poll",
@@ -197,27 +198,30 @@ export const DefaultActionSheetItems = {
 
 
 export const MessageTypeConstants = {
-  text: CometChat.MESSAGE_TYPE.TEXT,
-  file: CometChat.MESSAGE_TYPE.FILE,
-  image: CometChat.MESSAGE_TYPE.IMAGE,
-  takePhoto: 'takePhoto',
-  audio: CometChat.MESSAGE_TYPE.AUDIO,
-  video: CometChat.MESSAGE_TYPE.VIDEO,
-  groupMember: CometChat.ACTION_TYPE.TYPE_GROUP_MEMBER,
-  messageEdited: CometChat.ACTION_TYPE.MESSAGE_EDITED,
-  messageDeleted: CometChat.ACTION_TYPE.MESSSAGE_DELETED,
-  poll: "extension_poll",
-  sticker: "extension_sticker",
-  document: "extension_document",
-  whiteboard: "extension_whiteboard",
-  meeting: "meeting",
-  location: "location",
-  groupActions:"groupActions"
+	text: CometChat.MESSAGE_TYPE.TEXT,
+	file: CometChat.MESSAGE_TYPE.FILE,
+	image: CometChat.MESSAGE_TYPE.IMAGE,
+	takePhoto: 'takePhoto',
+	audio: CometChat.MESSAGE_TYPE.AUDIO,
+	video: CometChat.MESSAGE_TYPE.VIDEO,
+	groupMember: CometChat.ACTION_TYPE.TYPE_GROUP_MEMBER,
+	messageEdited: CometChat.ACTION_TYPE.MESSAGE_EDITED,
+	messageDeleted: CometChat.ACTION_TYPE.MESSSAGE_DELETED,
+	poll: "extension_poll",
+	sticker: "extension_sticker",
+	document: "extension_document",
+	whiteboard: "extension_whiteboard",
+	meeting: "meeting",
+	location: "location",
+	groupActions: "groupActions",
+	form: "form",
+	card: "card",
+	customInteractive: "customInteractive",
 };
 
 export const ReceiverTypeConstants = {
-  user: CometChat.RECEIVER_TYPE.USER,
-  group: CometChat.RECEIVER_TYPE.GROUP,
+	user: CometChat.RECEIVER_TYPE.USER,
+	group: CometChat.RECEIVER_TYPE.GROUP,
 };
 
 export const UserStatusConstants = {
@@ -345,4 +349,34 @@ export const ComponentIds = {
 	VIEW_MEMBERS: 'ViewMembers',
 	BANNED_MEMBERS: 'BannedMembers',
 	TRANSFER_OWNERSHIP: 'TransferOwnership'
+}
+
+export enum ElementType {
+	label = "label",
+	text = "textInput",
+	dropdown = "dropdown",
+	checkbox = "checkbox",
+	radio = "radio",
+	button = "button",
+	singleSelect = "singleSelect",
+}
+
+export enum ButtonAction {
+	apiAction = "apiAction",
+	urlNavigation = "urlNavigation",
+	custom = "custom"
+}
+
+export enum HTTPSRequestMethods {
+	POST = "POST",
+	PUT = "PUT",
+	DELETE = "DELETE",
+	PATCH = "PATCH",
+}
+
+export enum goalType {
+	allOf = CometChat.GoalType.ALL_OF,
+	anyOf = CometChat.GoalType.ANY_OF,
+	anyAction = CometChat.GoalType.ANY_ACTION,
+	none = CometChat.GoalType.NONE
 }

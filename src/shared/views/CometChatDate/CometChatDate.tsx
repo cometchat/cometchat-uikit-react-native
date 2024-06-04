@@ -108,9 +108,8 @@ export const CometChatDate = (props: CometChatDateInterface) => {
 
   const getTimeFormat = () => {
     let timeString = date.getHours();
-    let postString = 'AM';
-    if (timeString >= 12) {
-      postString = 'PM';
+    let postString = timeString >= 12 ? 'PM' : 'AM';
+    if (timeString > 12) {
       timeString = timeString - 12;
     }
     let minutes: any = date.getMinutes();

@@ -14,7 +14,7 @@ export class CometChatConversationUtils {
         return options;
     }
 
-    static getLastMessage(conversation  : CometChat.Conversation): CometChat.BaseMessage {
+    static getLastMessage(conversation: CometChat.Conversation): CometChat.BaseMessage {
         let msg = conversation.getLastMessage();
         if (!msg) {
             return undefined;
@@ -36,12 +36,12 @@ export class CometChatConversationUtils {
 
 
 
-    static  getMessagePreview = ( lastMessage: CometChat.BaseMessage):string  => {
+    static getMessagePreview = (lastMessage: CometChat.BaseMessage): string => {
 
-        if (lastMessage!=undefined) {
+        if (lastMessage != undefined) {
 
             if (lastMessage.getDeletedAt() !== undefined) {
-               return  localize("THIS_MESSAGE_DELETED");
+                return localize("THIS_MESSAGE_DELETED");
             }
 
             let groupText = "", msgText = "";
@@ -66,8 +66,11 @@ export class CometChatConversationUtils {
             } else if (lastMessage.getCategory() == CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory) {
                 msgText = lastMessage.getType();
             } else if (lastMessage.getCategory() == CometChat.CATEGORY_ACTION as CometChat.MessageCategory) {
-                msgText =(lastMessage as CometChat.Action).getMessage();
-            } else {
+                msgText = (lastMessage as CometChat.Action).getMessage();
+            } else if (lastMessage.getCategory() === CometChat.CATEGORY_INTERACTIVE) {
+                msgText = lastMessage.getType() === "form" ? `${localize('FORM')} 📋` : `${localize('CARD')} 🪧`;
+            }
+            else {
                 msgText = lastMessage['metaData']?.pushNotification;
             }
             return (msgText)

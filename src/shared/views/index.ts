@@ -84,6 +84,8 @@ import {
   MediaRecorderStyleInterface,
   MediaRecorderStyle
 } from './CometChatMediaRecorder';
+import { CometChatFormBubble, CometChatFormBubbleInterface } from './CometChatFormBubble'
+import { CometChatCardBubble, CometChatCardBubbleInterface } from './CometChatCardBubble'
 
 export {
   CometChatMessageInputStyleInterface,
@@ -159,5 +161,9 @@ export {
   CometChatMediaRecorder,
   CometChatMediaRecorderInterface,
   MediaRecorderStyleInterface,
-  MediaRecorderStyle
+  MediaRecorderStyle,
+  CometChatFormBubble,
+  CometChatFormBubbleInterface,
+  CometChatCardBubble,
+  CometChatCardBubbleInterface
 };
