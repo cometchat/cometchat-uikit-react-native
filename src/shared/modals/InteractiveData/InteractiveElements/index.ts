@@ -8,3 +8,4 @@ export { OptionElement } from "./OptionElement";
 export { RadioButtonElement } from "./RadioButtonElement";
 export { SingleSelectElement } from "./SingleSelectElement";
 export { TextInputElement } from "./TextInputElement";
+export { DateTimeElement } from './DateTimeElement';

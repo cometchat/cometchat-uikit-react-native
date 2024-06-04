@@ -18,14 +18,13 @@ import { TextModerationExtension } from "../../extensions/TextModeration";
 import { ThumbnailGenerationExtension } from "../../extensions/ThumbnailGeneration";
 import { CometChatSoundManager } from "../utils";
 import { CometChatLocalize } from "../resources";
-import { CardMessage, CustomInteractiveMessage, FormMessage } from "../modals/InteractiveData";
+import { CardMessage, CustomInteractiveMessage, FormMessage, SchedulerMessage } from "../modals/InteractiveData";
 import { ListenerInitializer } from "../events/ListenerInitializer";
 import { AIConversationStarterExtension } from "../../AI/AIConversationStarter/AIConversationStarter";
 import { AIExtensionDataSource } from "../../AI/AIExtensionDataSource";
 import { AISmartRepliesExtension } from "../../AI/AISmartReplies/AISmartReplies";
 import { AIConversationSummaryExtension } from "../../AI/AIConversationSummary/AIConversationSummaryExtension";
 import { AIAssistBotExtension } from "../../AI/AIAssistBot/AIAssistBotExtension";
-import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
 import { permissionUtil } from "../utils/PermissionUtil";
 import {
     getUnixTimestamp,

@@ -86,6 +86,7 @@ import {
 import { CometChatFormBubble, CometChatFormBubbleInterface } from './CometChatFormBubble'
 import { CometChatCardBubble, CometChatCardBubbleInterface } from './CometChatCardBubble'
 import { CometChatSchedulerBubble, CometChatSchedulerBubbleInterface } from './CometChatSchedulerBubble'
+import { CometChatDateTimePicker, CometChatDateTimePickerInterface, DatePickerStyleInterface } from './CometChatDateTimePicker'
 
 import { CometChatReactions, CometChatReactionsInterface, ReactionsConfiguration, ReactionsConfigurationInterface, ReactionsStyle, ReactionsStyleInterface } from './CometChatReactions';
 import { CometChatReactionList, CometChatReactionListInterface, ReactionListStyle, ReactionListStyleInterface, ReactionListConfiguration, ReactionListConfigurationInterface } from './CometChatReactionList';
@@ -205,4 +206,7 @@ export {
   SuggestionItem,
   SuggestionListConfiguration,
   SuggestionListConfigurationInterface,
+  CometChatDateTimePicker,
+  CometChatDateTimePickerInterface,
+  DatePickerStyleInterface
 };

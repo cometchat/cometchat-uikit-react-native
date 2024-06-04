@@ -31,9 +31,11 @@ export const CometChatUsersWithMessages = (props: CometChatUsersWithMessagesInte
         messagesConfigurations,
         onError
     } = props;
-
-    const [showComponent, setShowComponent] = useState(ComponentNames.UserList);
-    const [selectedUser, setSelectedUser] = useState(undefined);
+    const [showComponent, setShowComponent] = useState(
+        user && user instanceof CometChat.User ? ComponentNames.Messages : ComponentNames.UserList);
+    const [selectedUser, setSelectedUser] = useState(
+        user && user instanceof CometChat.User ? user : undefined
+    );
     // const [showForwarding, setShowForwarding] = useState(false);
 
     const loggedInUser = useRef(null);

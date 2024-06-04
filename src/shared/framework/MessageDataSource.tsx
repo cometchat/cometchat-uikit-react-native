@@ -17,16 +17,14 @@ import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { ICONS } from "./resources";
 import { CometChatConversationUtils } from "../utils/conversationUtils";
 import { AIOptionsStyle } from "../../AI/AIOptionsStyle";
-import { CometChatFormBubble, CometChatCardBubble } from "../views";
-import { CardMessage, FormMessage } from "../modals/InteractiveData";
+import { CometChatFormBubble, CometChatCardBubble, CometChatSchedulerBubble } from "../views";
+import { CardMessage, FormMessage, SchedulerMessage } from "../modals/InteractiveData";
 import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
 import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
-import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
-import { CometChatSchedulerBubble, SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
+import { SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
 import { View } from "react-native";
 import { CommonUtils } from "../utils/CommonUtils";
-import { CometChatUIKit } from "../CometChatUiKit";
-import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, MentionTextStyle } from "../formatters";
+import { CometChatUIKit, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, MentionTextStyle } from "../..";
 import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../base/Types";
 
 function isAudioMessage(message: CometChat.BaseMessage): message is CometChat.MediaMessage {
@@ -599,6 +597,9 @@ export class MessageDataSource implements DataSource {
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getTextMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         });
     }
 
@@ -614,6 +615,9 @@ export class MessageDataSource implements DataSource {
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getFormMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         });
     }
 
@@ -629,6 +633,9 @@ export class MessageDataSource implements DataSource {
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getSchedulerMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         });
     }
 
@@ -644,6 +651,9 @@ export class MessageDataSource implements DataSource {
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getCardMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         });
     }
 
@@ -658,6 +668,9 @@ export class MessageDataSource implements DataSource {
                     return ChatConfigurator.dataSource.getAudioMessageContentView(message, alignment, theme);
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getAudioMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         })
     }
     getVideoMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
@@ -671,6 +684,9 @@ export class MessageDataSource implements DataSource {
                     return ChatConfigurator.dataSource.getVideoMessageContentView(message, alignment, theme);
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getVideoMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         })
     }
     getImageMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
@@ -684,6 +700,9 @@ export class MessageDataSource implements DataSource {
                     return ChatConfigurator.dataSource.getImageMessageContentView(message, alignment, theme);
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getImageMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         })
     }
     getFileMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
@@ -697,6 +716,9 @@ export class MessageDataSource implements DataSource {
                     return ChatConfigurator.dataSource.getFileMessageContentView(message, alignment, theme);
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getFileMessageOptions(loggedInuser, message, group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         });
     }
     getGroupActionTemplate(theme: CometChatTheme): CometChatMessageTemplate {

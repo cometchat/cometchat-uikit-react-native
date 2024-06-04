@@ -131,6 +131,7 @@ export const CometChatTransferOwnership = (
         }}
         selectionMode={'single'}
         onSelection={transferOwnership}
+        groupMemberStyle={transferOwnershipStyle}
         onBack={onBack}
         {...newProps}
       />

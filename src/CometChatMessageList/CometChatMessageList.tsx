@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useRef, useState, useImperativeHandle, useContext, useCallback, memo, useLayoutEffect } from "react";
-import { View, FlatList, Text, Image, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, NativeModules, ScrollView, Dimensions, Platform } from "react-native";
+import { View, FlatList, Text, Image, TouchableOpacity, ActivityIndicator, Modal, SafeAreaView, NativeModules, ScrollView, Dimensions, Platform, Keyboard } from "react-native";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { LeftArrowCurve, RightArrowCurve } from "./resources";
@@ -33,6 +33,7 @@ import { CometChatQuickReactions, QuickReactionsConfigurationInterface } from ".
 import { CometChatReactions, ReactionsConfigurationInterface } from "../shared/views/CometChatReactions";
 import { CommonUtils } from "../shared/utils/CommonUtils";
 import Clipboard from "@react-native-clipboard/clipboard";
+import { commonVars } from "../shared/base/vars";
 
 let templatesMap = new Map<string, CometChatMessageTemplate>();
 
@@ -229,6 +230,8 @@ export const CometChatMessageList = memo(forwardRef<
         }, []);
 
         const { theme } = useContext<CometChatContextType>(CometChatContext);
+        let Keyboard_Height = 0;
+        let scrollPos = 0;
 
         // creating style based on styles from users
         const _messageListStyle = useRef(new MessageListStyle({
@@ -808,6 +811,10 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         useEffect(() => {
+
+            const showSubscription = Keyboard.addListener('keyboardDidShow', (e) => onKeyboardVisibiltyChange(true, e?.endCoordinates?.height));
+            const hideSubscription = Keyboard.addListener('keyboardDidHide', () => onKeyboardVisibiltyChange(false));
+
             CometChatUIEventHandler.addUIListener(
                 uiEventListenerShow,
                 {
@@ -848,6 +855,8 @@ export const CometChatMessageList = memo(forwardRef<
                 });
 
             return () => {
+                showSubscription.remove();
+                hideSubscription.remove();
                 CometChatUIEventHandler.removeUIListener(uiEventListenerShow)
                 CometChatUIEventHandler.removeUIListener(uiEventListenerHide)
                 CometChatUIEventHandler.removeUIListener(uiEventListener);
@@ -1112,6 +1121,16 @@ export const CometChatMessageList = memo(forwardRef<
                 updateMessageReceipt,
             }
         });
+
+        const onKeyboardVisibiltyChange = (isVisible: boolean, keyboardHeight?: number | undefined) => {
+            if (isVisible) {
+                Keyboard_Height = keyboardHeight;
+                scrollPos = (currentScrollPosition.current.y + Keyboard_Height) - (commonVars.safeAreaInsets.top / 2);
+                messageListRef.current.scrollTo({ y: scrollPos, animated: false })
+            } else {
+                messageListRef.current.scrollTo({ y: scrollPos - Keyboard_Height + (commonVars.safeAreaInsets.top / 2), animated: false })
+            }
+        }
 
         const getMessageById = (messageId: string): CometChat.BaseMessage => {
             const message = messagesList.find((message) => message.getId() === messageId);
@@ -1603,7 +1622,7 @@ export const CometChatMessageList = memo(forwardRef<
                         alignment={isThreaded ? "left" : bubbleAlignment}
                         ContentView={hasTemplate.ContentView?.bind(this, message, bubbleAlignment)}
                         ThreadView={() => !isThreaded && !message.getDeletedBy() && getThreadView(message, bubbleAlignment)}
-                        BottomView={() => ChatConfigurator.dataSource.getBottomView(message, bubbleAlignment)} // Note please rewrite this
+                        BottomView={hasTemplate.BottomView && hasTemplate.BottomView?.bind(this, message, bubbleAlignment)}
                         StatusInfoView={() => getStatusInfoView(message, bubbleAlignment)}
                         style={getStyle(message)}
                     />
@@ -1771,7 +1790,7 @@ export const CometChatMessageList = memo(forwardRef<
 
         const getLoadingStateView = useCallback(() => {
             if (LoadingStateView)
-                return LoadingStateView;
+                return <LoadingStateView/>;
 
             return (
                 <View style={Style.msgContainerStyle}>

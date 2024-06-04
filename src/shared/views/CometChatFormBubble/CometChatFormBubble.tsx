@@ -10,7 +10,7 @@ import { CometChatContext } from "../../CometChatContext";
 // Style Components import
 import { FormBubbleStyle, FormBubbleStyleInterface } from "./FormBubbleStyle";
 
-import { APIAction, ButtonElement, CheckboxElement, DropdownElement, ElementEntity, FormMessage, LabelElement, OptionElement, RadioButtonElement, SingleSelectElement, TextInputElement, URLNavigationAction } from '../../modals/InteractiveData';
+import { APIAction, ButtonElement, CheckboxElement, DateTimeElement, DropdownElement, ElementEntity, FormMessage, LabelElement, OptionElement, RadioButtonElement, SingleSelectElement, TextInputElement, URLNavigationAction } from '../../modals/InteractiveData';
 import { ButtonAction, ElementType, HTTPSRequestMethods, goalType } from "../../constants/UIKitConstants";
 import CometChatDropdown from "../CometChatDropDown/CometChatDropDown";
 import { CometChatNetworkUtils } from "../../utils/NetworkUtils";
@@ -24,10 +24,8 @@ import { localize } from "../../resources";
 import { memo } from "react";
 import { ButtonStyle, CometChatButton } from "../CometChatButton";
 import CometChatLabel from "../CometChatLabel/CometChatLabel";
-import { DateTimeElement } from "../../modals/InteractiveData/InteractiveElements/DateTimeElement";
-import { CometChatDateTimePicker } from "../CometChatDateTimePicker";
-import { CometChatUIKit } from "../../CometChatUiKit";
-import { CometChatUiKitConstants } from "../..";
+import { CometChatUiKitConstants, CometChatUIKit } from "../..";
+import { CometChatDateTimePicker } from '../CometChatDateTimePicker'
 
 const WebView = NativeModules['WebViewManager'];
 const { TimeZoneCodeManager } = NativeModules;

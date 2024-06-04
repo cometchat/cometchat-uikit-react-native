@@ -162,6 +162,9 @@ export class CollaborativeWhiteboardExtensionDecorator extends DataSourceDecorat
             options: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group)=>
 
             ChatConfigurator.dataSource.getMessageOptions(loggedInUser, messageObject,group),
+            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+                return ChatConfigurator.dataSource.getBottomView(message, alignment);
+            }
         }));
 
         return templateList;

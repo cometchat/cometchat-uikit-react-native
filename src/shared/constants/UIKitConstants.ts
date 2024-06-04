@@ -128,8 +128,8 @@ export const ConversationOptionConstants = {
 };
 
 export const ConversationTypeConstants = {
-	users: "users",
-	groups: "groups",
+	user: "user",
+	group: "group",
 	both: "both",
 };
 

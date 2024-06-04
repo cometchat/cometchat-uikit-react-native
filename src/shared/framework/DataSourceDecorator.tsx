@@ -3,8 +3,7 @@ import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../ba
 import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from "../formatters";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { CometChatMessageOption, CometChatMessageTemplate } from "../modals";
-import { CardMessage, FormMessage } from "../modals/InteractiveData";
-import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
+import { CardMessage, FormMessage, SchedulerMessage } from "../modals/InteractiveData";
 import { CometChatTheme } from "../resources/CometChatTheme";
 import { VideoBubbleStyleInterface, ImageBubbleStyleInterface, AudioBubbleStyleInterface, FileBubbleStyleInterface } from "../views";
 import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";

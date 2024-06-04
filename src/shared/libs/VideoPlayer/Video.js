@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { StyleSheet, requireNativeComponent, NativeModules, View, Image, Platform, findNodeHandle } from 'react-native';
-import { ViewPropTypes, ImagePropTypes } from 'deprecated-react-native-prop-types';
+import { StyleSheet, requireNativeComponent, NativeModules, View, Image, Platform, ViewProps, ImageResizeMode } from 'react-native';
 import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
 import TextTrackType from './TextTrackType';
 import FilterType from './FilterType';
@@ -390,9 +389,9 @@ Video.propTypes = {
   }),
   minLoadRetryCount: PropTypes.number,
   maxBitRate: PropTypes.number,
-  resizeMode: PropTypes.string,
+  resizeMode: ImageResizeMode,
   poster: PropTypes.string,
-  posterResizeMode: ImagePropTypes.resizeMode,
+  posterResizeMode: ImageResizeMode,
   repeat: PropTypes.bool,
   automaticallyWaitsToMinimizeStalling: PropTypes.bool,
   allowsExternalPlayback: PropTypes.bool,
@@ -483,7 +482,7 @@ Video.propTypes = {
   translateX: PropTypes.number,
   translateY: PropTypes.number,
   rotation: PropTypes.number,
-  ...ViewPropTypes,
+  ...ViewProps,
 };
 
 const RCTVideo = requireNativeComponent('CCRCTVideo', Video, {

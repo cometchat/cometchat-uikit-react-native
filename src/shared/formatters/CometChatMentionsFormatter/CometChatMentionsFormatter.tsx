@@ -6,6 +6,7 @@ import { Text } from "react-native";
 import { CometChatUIEventHandler, CometChatUIEvents } from '../../events';
 import { localize } from '../../resources';
 import { SuggestionItem } from '../../views/CometChatSuggestionList';
+import { CometChatUIKit } from '../../CometChatUiKit';
 
 /**
  * Represents the CometChatMentionsFormatter class.
@@ -334,7 +335,9 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
           // Check if segment is a UID
           if (userRegistry.hasOwnProperty(segment)) {
 
-            let textStyle = (this.loggedInUser?.getUid() == segment) ? this.mentionsStyle.loggedInUserTextStyle : this.mentionsStyle.textStyle;
+            let _loggedInUser = this.loggedInUser || CometChatUIKit.loggedInUser;
+
+            let textStyle = (_loggedInUser?.getUid() == segment) ? this.mentionsStyle.loggedInUserTextStyle : this.mentionsStyle.textStyle;
             let onPressProp = this.temp ? { onPress: (event: any) => this.onMentionClick(event, segment) } : {};
 
             return (

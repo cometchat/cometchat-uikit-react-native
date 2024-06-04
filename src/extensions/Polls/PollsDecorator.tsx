@@ -21,11 +21,10 @@ import { ICONS as ICONS2 } from './resources';
 import { CometChatCreatePoll } from './Polls';
 import { PollsBubble } from './PollsBubble';
 import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from '../../shared/base/Types';
+import { CometChatUIKit } from '../../shared';
 
 export class PollsExtensionDecorator extends DataSourceDecorator {
   pollsConfiguration?: PollsConfigurationInterface;
-
-  loggedInUser: CometChat.User;
 
   constructor(
     dataSource: DataSource,
@@ -35,12 +34,6 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
     if (pollsConfiguration != undefined) {
       this.pollsConfiguration = pollsConfiguration;
     }
-
-    CometChat.getLoggedinUser()
-      .then((u) => {
-        this.loggedInUser = u;
-      })
-      .catch((err) => console.log(err));
   }
 
   isDeletedMessage(message: CometChat.BaseMessage): boolean {
@@ -88,22 +81,22 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
   ): CometChatMessageComposerActionInterface[] {
     let attachmentOptions: CometChatMessageComposerActionInterface[] =
       super.getAttachmentOptions(user, group, composerId);
-      if(composerId == undefined || (composerId as Map<any, any>).get("parentMessageId") == undefined)
-        attachmentOptions.push({
-          id: 'polls',
-          title: 'Polls',
-          iconUrl: ICONS2.DOCUMENT,
-          CustomView: (user, group, _id, pollsProps) => {
-            return (
-              <CometChatCreatePoll
-                user={user}
-                group={group}
-                {...pollsProps}
-                {...this.pollsConfiguration}
-              />
-            );
-          },
-        });
+    if (composerId == undefined || (composerId as Map<any, any>).get("parentMessageId") == undefined)
+      attachmentOptions.push({
+        id: 'polls',
+        title: 'Polls',
+        iconUrl: ICONS2.DOCUMENT,
+        CustomView: (user, group, _id, pollsProps) => {
+          return (
+            <CometChatCreatePoll
+              user={user}
+              group={group}
+              {...pollsProps}
+              {...this.pollsConfiguration}
+            />
+          );
+        },
+      });
     return attachmentOptions;
   }
 
@@ -135,6 +128,9 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
             messageObject,
             group
           ),
+          BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+              return ChatConfigurator.dataSource.getBottomView(message, alignment);
+          }
       })
     );
 
@@ -145,7 +141,8 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
     message: CometChat.BaseMessage,
     _alignment: MessageBubbleAlignmentType
   ) {
-    if (message && this.loggedInUser) {
+    let _loggedInUser = CometChatUIKit.loggedInUser;
+    if (message && _loggedInUser) {
       const metaData = getExtentionData(
         message,
         MetadataConstants.extensions?.polls
@@ -156,7 +153,7 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
           pollQuestion={message['customData']?.['question']}
           options={message['customData']?.['options']}
           pollId={message['customData']?.['id']}
-          loggedInUser={this.loggedInUser}
+          loggedInUser={_loggedInUser}
           // choosePoll
           senderUid={message['sender']?.['uid']}
           metadata={metaData}

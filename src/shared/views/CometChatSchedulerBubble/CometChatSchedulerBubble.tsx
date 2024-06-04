@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { CometChatContextType } from "../../base";
 import { CometChatContext } from "../../CometChatContext";
-import { SchedulerMessage } from "../../modals/InteractiveData/InteractiveMessage";
 import { SchedulerBubbleStyles } from "./styles";
 import { CometChatAvatar } from "../CometChatAvatar";
 import { styles } from "./styles";
@@ -18,10 +17,9 @@ import {
   DefaultTheme,
 } from "../../libs/CometChatCalendar";
 import { ICONS } from "../../assets/images";
-import { CometChatTimeSlotSelector } from "../CometChatTimeSlotSelector/CometChatTimeSlotSelector";
 import { CometChatButton } from "../CometChatButton";
 import icsToJson from "../../utils/icsToJson";
-import { APIAction, ButtonElement } from "../../modals";
+import { APIAction, ButtonElement, SchedulerMessage } from "../../modals";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatNetworkUtils } from "../../utils/NetworkUtils";
 import { HTTPSRequestMethods } from "../../constants/UIKitConstants";
@@ -37,8 +35,8 @@ import {
 } from "../../utils/SchedulerUtils";
 import CometChatQuickView from "../CometChatQuickView/CometChatQuickView";
 import { localize } from "../../resources";
-import { CometChatUIKit } from "../../CometChatUiKit";
-import { CometChatUiKitConstants } from "../..";
+import { CometChatUiKitConstants, CometChatUIKit } from "../..";
+import { CometChatTimeSlotSelector } from "../CometChatTimeSlotSelector";
 import { InteractiveMessageUtils } from "../../utils/InteractiveMessageUtils";
 
 const { TimeZoneCodeManager } = NativeModules;
