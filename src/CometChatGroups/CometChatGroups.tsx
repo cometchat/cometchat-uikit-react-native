@@ -200,6 +200,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     const {theme} = React.useContext<CometChatContextType>(CometChatContext);
 
     const groupListRef = useRef<CometChatListActionsInterface>(null);
+    const activeSwipeRows = React.useRef({});
 
     const [selecting, setSelecting] = useState(selectionMode != 'none' ? true : false);
     const [selectedGroups, setSelectedGroups] = useState([]);
@@ -535,6 +536,15 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
             onPress={groupClicked.bind(this, item)}
             onLongPress={groupLongPressed.bind(this, item)}
             options={() => options && options(item)}
+            activeSwipeRows={activeSwipeRows.current}
+            rowOpens={(id) => {
+                Object.keys(activeSwipeRows.current).forEach(key => {
+                    if(id !== key && activeSwipeRows.current[key]) {
+                        activeSwipeRows.current[key]?.current?.closeRow?.()
+                        delete activeSwipeRows.current[key]
+                    }
+                })
+            }}
         />
     };
 

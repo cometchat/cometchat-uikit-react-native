@@ -38,6 +38,7 @@ import { StatusIndicatorStyleInterface } from '../CometChatStatusIndicator';
 
 export interface CometChatListActionsInterface {
   updateList: (prop: any) => void;
+  updateAndMoveToFirst: (item: any) => void;
   addItemToList: (item: any, position?: number) => void;
   removeItemFromList: (itemId: string | number) => void;
   getListItem: (itemId: string | number) => void;
@@ -202,6 +203,8 @@ export const CometChatList = React.forwardRef<
   const [selectedItems, setSelectedItems] = useState({});
   const listHandlerRef = React.useRef(null);
   const initialRunRef = React.useRef(true);
+
+  const activeSwipeRows = React.useRef({});
 
   const [list, setList] = React.useState<any>([]);
   const [decoratorMessage, setDecoratorMessage] = React.useState(LOADING);
@@ -524,6 +527,15 @@ export const CometChatList = React.forwardRef<
         }
         avatarStyle={avatarStyle}
         options={() => options && options(item.value)}
+        activeSwipeRows={activeSwipeRows.current}
+        rowOpens={(id) => {
+            Object.keys(activeSwipeRows.current).forEach(key => {
+                if(id !== key && activeSwipeRows.current[key]) {
+                    activeSwipeRows.current[key]?.current?.closeRow?.()
+                    delete activeSwipeRows.current[key]
+                }
+            })
+        }}
         onPress={() => {
           onListItemPress(item);
         }}

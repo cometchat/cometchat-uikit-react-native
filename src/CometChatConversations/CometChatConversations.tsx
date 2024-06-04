@@ -284,6 +284,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     //context
     const { theme } = useContext<CometChatContextType>(CometChatContext);
+    const activeSwipeRows = React.useRef({});
 
     const conversationListRef = React.useRef<CometChatListActionsInterface>(null);
     const loggedInUser = React.useRef(null);
@@ -766,6 +767,16 @@ export const CometChatConversations = (props: ConversationInterface) => {
         return _defaultOptions
     }
 
+    const updateConversationLastMessage = (message) => {
+        try {
+            let conversation: CometChat.Conversation = conversationListRef.current?.getListItem(message.conversationId)
+            conversation.lastMessage = message
+            conversationListRef.current?.updateAndMoveToFirst(conversation);
+        } catch (error) {
+            onError && onError(error)
+        }
+    }
+
     React.useEffect(() => {
         CometChat.getLoggedinUser()
             .then(u => { loggedInUser.current = u })
@@ -964,14 +975,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     removeItemFromSelectionList(leftGroup['conversationId'])
                 },
                 ccGroupMemberKicked: ({ message, kickedFrom }: { message: CometChat.BaseMessage, kickedFrom: CometChat.Group }) => {
-                    CometChat.CometChatHelper.getConversationFromMessage(message)
-                        .then(conversation => {
-                            conversationListRef.current?.updateList(conversation);
-                        })
-                        .catch(e => {
-                            onError && onError(e);
-                        })
-
+                    updateConversationLastMessage(message)
                 },
                 ccGroupMemberBanned: ({ message }) => {
                     groupHandler(message);
@@ -989,11 +993,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                         })
                 },
                 ccGroupMemberAdded: ({ message }: { message: CometChat.BaseMessage }) => {
-                    CometChat.CometChatHelper.getConversationFromMessage(message)
-                        .then(conversation => {
-                            conversationListRef.current?.updateList(conversation);
-                        })
-                        .catch(e => onError && onError(e))
+                    updateConversationLastMessage(message)
                 }
             }
         )
@@ -1110,6 +1110,15 @@ export const CometChatConversations = (props: ConversationInterface) => {
             onPress={conversationClicked.bind(this, conversation)}
             onLongPress={conversationLongPressed.bind(this, conversation)}
             options={() => options ? options(conversation) : getDefaultOptions(conversation)}
+            activeSwipeRows={activeSwipeRows.current}
+            rowOpens={(id) => {
+                Object.keys(activeSwipeRows.current).forEach(key => {
+                    if(id !== key && activeSwipeRows.current[key]) {
+                        activeSwipeRows.current[key]?.current?.closeRow?.()
+                        delete activeSwipeRows.current[key]
+                    }
+                })
+            }}
         />
     }
 

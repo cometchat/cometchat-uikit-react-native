@@ -126,6 +126,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
   const [list, setList] = useState([]);
   const [listState, setListState] = useState<"loading" | "error" | "done">("loading");
 
+  const activeSwipeRows = React.useRef({});
   const loggedInUser = useRef(null);
   const callRequestBuilderRef = useRef(null);
 
@@ -262,6 +263,15 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
         }
         TailView={TailView ? () => <TailView call={item} /> : () => <DefaultTailView call={item} />}
         options={() => options && options(item)}
+        activeSwipeRows={activeSwipeRows.current}
+        rowOpens={(id) => {
+            Object.keys(activeSwipeRows.current).forEach(key => {
+                if(id !== key && activeSwipeRows.current[key]) {
+                    activeSwipeRows.current[key]?.current?.closeRow?.()
+                    delete activeSwipeRows.current[key]
+                }
+            })
+        }}
         onPress={() => onPress(item)}
         hideSeparator={hideSeperator}
         separatorColor={separatorColor}

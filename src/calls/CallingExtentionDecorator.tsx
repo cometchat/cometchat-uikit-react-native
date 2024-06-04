@@ -65,12 +65,14 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
     UserCallBubbleView = ({ message, theme }) => {
         if (this.isDeletedMessage(message))
             return null;
+
+        const callStatus = CallUtils.getCallStatus(message, this.loggedInUser);
         return <View style={{ justifyContent: "space-around", alignItems: "center" }}>
-            <View style={{ flexDirection: "row", alignSelf: "center", borderWidth: 1, borderStyle: "dotted", borderRadius: 8, padding: 4 }}>
-                <Image source={message['type'] == "audio" ? AudioIcon : VideoIcon} style={{ height: 16, width: 16, alignSelf: "center" }} />
-                <Text style={{ color: theme.palette.getAccent(), marginStart: 8 }}>
+            <View style={{ flexDirection: "row", alignSelf: "center", borderWidth: 1, borderStyle: "dotted", borderRadius: 8, padding: 4, borderColor: callStatus === localize('MISSED_CALL') ? theme.palette.getError() : undefined }}>
+                <Image source={message['type'] == "audio" ? AudioIcon : VideoIcon} style={{ height: 16, width: 16, alignSelf: "center", tintColor: callStatus === localize('MISSED_CALL') ? theme.palette.getError() : undefined }} />
+                <Text style={{ color: callStatus === localize('MISSED_CALL') ? theme.palette.getError() : theme.palette.getAccent(), marginStart: 8 }}>
                     {
-                        CallUtils.getCallStatus(message, this.loggedInUser)
+                        callStatus
                     }
                 </Text>
             </View>

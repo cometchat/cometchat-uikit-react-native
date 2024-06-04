@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 
 import {
   View,
@@ -46,6 +46,8 @@ export interface CometChatListItemInterface {
   headViewContainerStyle?: StyleProp<ViewStyle>;
   tailViewContainerStyle?: StyleProp<ViewStyle>;
   bodyViewContainerStyle?: StyleProp<ViewStyle>;
+  activeSwipeRows?: Object;
+  rowOpens?: (id: string | number) => void;
 }
 export const CometChatListItem = (props: CometChatListItemInterface) => {
   //state for translateX
@@ -71,8 +73,11 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
     bodyViewContainerStyle,
     onPress,
     onLongPress,
+    rowOpens,
+    activeSwipeRows
   } = props;
-
+  
+  const swipeRowRef = useRef(null)
   const defaultlistItemStyleProps = new ListItemStyle({
     backgroundColor: theme.palette.getBackgroundColor(),
     titleColor: theme.palette.getAccent(),
@@ -180,6 +185,8 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
   };
 
   const rowOpened = () => {
+    activeSwipeRows[id] = swipeRowRef
+    rowOpens && rowOpens(id)
     cancelClick = true;
   };
 
@@ -247,6 +254,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
 
   let WrapperComponent = swipeRowOptions.length ? SwipeRow : React.Fragment;
   let wrapperComponentProps = swipeRowOptions.length ? {
+    ref: swipeRowRef,
     key: id,
     onRowDidOpen: rowOpened,
     onRowDidClose: rowClosed,
@@ -313,4 +321,5 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
 CometChatListItem.defaultProps = {
   listItemStyle: new ListItemStyle({}),
   hideSeparator: true,
+  activeSwipeRows: {}
 };

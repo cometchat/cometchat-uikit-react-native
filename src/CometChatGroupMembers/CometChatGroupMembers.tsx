@@ -206,6 +206,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         ...groupScopeStyle
     });
 
+    const activeSwipeRows = React.useRef({});
     const groupMemberListenerId = 'groupMemberList_' + new Date().getTime();
     const groupRef = React.useRef(null);
     const itemRef = React.useRef(null);
@@ -281,7 +282,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 action.setMuid(String(getUnixTimestamp()));
                 action.setSender(loggedInUser.current);
                 action.setReceiver(group);
-
+                action.setConversationId(group['conversationId'])
                 CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberKicked, { message: action, kickedUser: user, kickedBy: loggedInUser.current, kickedFrom: group });
             })
             .catch((err) => {
@@ -351,6 +352,15 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             statusIndicatorStyle={_statusIndicatorStyle}
             TailView={TailView ? () => <TailView {...member} /> : ScopeChangeUI.bind(this, member, groupScopeStyle)}  //Note: should return prop to TailView
             options={() => (options && options(member)) || swipeOptions(member, (id) => kickUser(id, member), () => banUser(member))}  //Note: should have options 
+            activeSwipeRows={activeSwipeRows.current}
+            rowOpens={(id) => {
+                Object.keys(activeSwipeRows.current).forEach(key => {
+                    if(id !== key && activeSwipeRows.current[key]) {
+                        activeSwipeRows.current[key]?.current?.closeRow?.()
+                        delete activeSwipeRows.current[key]
+                    }
+                })
+            }}
         />
     }
 

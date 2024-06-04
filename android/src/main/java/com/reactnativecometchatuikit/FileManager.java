@@ -444,7 +444,7 @@ public class FileManager extends ReactContextBaseJavaModule {
         try {
             Intent shareIntent = new Intent();
             shareIntent.setAction(Intent.ACTION_SEND);
-            shareIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".provider", file));
+            shareIntent.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(context, context.getApplicationContext().getPackageName() + ".fileprovider", file));
             shareIntent.setType(mimeType);
             Intent intent = Intent.createChooser(shareIntent, "Share Message");
             context.startActivity(intent);
@@ -477,7 +477,7 @@ public class FileManager extends ReactContextBaseJavaModule {
                 Log.e("TAG", "prepare() failed");
             }
             audioRecorder.start();
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".provider", new File(fileName))) + "\"}");
+            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
             return true;
         } else {
             requestPermissions();
@@ -507,7 +507,7 @@ public class FileManager extends ReactContextBaseJavaModule {
             audioPlayer.prepare();
             audioPlayer.start();
             Log.e("TAG", "Playing Audio: " + fileName);
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".provider", new File(fileName))) + "\"}");
+            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
         } catch (IOException e) {
             Log.e("TAG", "prepare() failed");
         }
@@ -528,7 +528,7 @@ public class FileManager extends ReactContextBaseJavaModule {
         if (audioPlayer != null && audioPlayer.isPlaying()) {
             Log.e("TAG", "Trying to pause Audio: " + fileName);
             audioPlayer.pause();
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".provider", new File(fileName))) + "\"}");
+            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
             Log.e("TAG", "Paused Audio: " + fileName);
         }
     }
@@ -539,7 +539,7 @@ public class FileManager extends ReactContextBaseJavaModule {
             audioPlayer.stop();
             audioPlayer.release();
             audioPlayer = null;
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".provider", new File(fileName))) + "\"}");
+            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
         }
     }
 
@@ -547,7 +547,7 @@ public class FileManager extends ReactContextBaseJavaModule {
     public void releaseMediaResources(Callback callback) {
         if (audioRecorder != null) {
             pauseRecording();
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".provider", new File(fileName))) + "\"}");
+            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
         }
         if (audioPlayer != null && audioPlayer.isPlaying()) {
             stopPlaying(callback);

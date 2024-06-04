@@ -148,6 +148,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
   const [list, setList] = useState([]);
   const [listState, setListState] = useState<"loading" | "error" | "done">("loading");
   const [showOutgoingCallScreen, setShowOutgoingCallScreen] = useState(false);
+  const activeSwipeRows = React.useRef({});
 
   const loggedInUser = useRef(null);
   const callRequestBuilderRef = useRef(null);
@@ -389,6 +390,15 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
         TailView={TailView ? () => <TailView call={item} /> : () => <DeafultTailView call={item} />}
         avatarStyle={avatarStyle}
         options={() => options && options(item)}
+        activeSwipeRows={activeSwipeRows.current}
+        rowOpens={(id) => {
+            Object.keys(activeSwipeRows.current).forEach(key => {
+                if(id !== key && activeSwipeRows.current[key]) {
+                    activeSwipeRows.current[key]?.current?.closeRow?.()
+                    delete activeSwipeRows.current[key]
+                }
+            })
+        }}
         onPress={() => onPress(item)}
         hideSeparator={hideSeperator}
         separatorColor={separatorColor}
