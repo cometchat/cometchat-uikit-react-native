@@ -246,6 +246,7 @@ RCT_EXPORT_METHOD(startRecording:(RCTResponseSenderBlock)callback) {
                     [self setupRecorderWithResult:callback];
                     //                    callback(@[@"{\"success\": true}"]);
                 } else {
+                    callback(@[@"{\"granted\": false}"]);
                     // Failed to record
                 }
             });

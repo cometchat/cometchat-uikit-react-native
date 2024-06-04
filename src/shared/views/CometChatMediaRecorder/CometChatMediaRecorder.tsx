@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { CometChatContext, CometChatContextType, ImageType, localize } from "../..";
-import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert } from "react-native";
+import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert, Platform } from "react-native";
 import { Style } from "./style";
 import { ICONS } from '../../framework/resources';
 import { MediaRecorderStyle, MediaRecorderStyleInterface } from './MediaRecorderStyle';
@@ -58,7 +58,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
 
         return async () => {
             let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-            if (!microphonePermission) return;
+            if (!microphonePermission && Platform.OS === "android") return;
             NativeModules.FileManager.deleteFile((success) => console.log("Filepath delete", success));
             NativeModules.FileManager.releaseMediaResources((result) => { });
             clearInterval(timerIntervalId)
@@ -69,9 +69,24 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
 
     const recordingInitiator = async () => {
         let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-        if (microphonePermission) {
-            NativeModules.FileManager.startRecording((filepath) => { console.log("Filepath startRecording", filepath) });
-            startInterval();
+        if (microphonePermission || Platform.OS === "ios") {
+            NativeModules.FileManager.startRecording((filepath) => {
+                if (Platform.OS === "ios") {
+                    try {
+                        let resObj = JSON.parse(filepath);
+                        if (resObj?.granted === false) {
+                            Alert.alert(undefined, localize("MICROPHONE_PERMISSION"));
+                            onClose && onClose();
+                        } else {
+                            startInterval();
+                        }
+                    } catch (error) {
+                        Alert.alert(undefined, localize("MICROPHONE_PERMISSION"));
+                        onClose && onClose();
+                    }
+                }
+            });
+            Platform.OS === "android" && startInterval();
         } else {
             Alert.alert(undefined, localize("MICROPHONE_PERMISSION"));
             onClose && onClose();
