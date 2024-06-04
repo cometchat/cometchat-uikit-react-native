@@ -1,0 +1,31 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.reactnativecometchatuikit">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <application android:requestLegacyExternalStorage="true">
+        <activity
+            android:name="com.reactnativecometchatuikit.CometChatVideoPlayer"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name="com.reactnativecometchatuikit.CometChatImageViewer"
+            android:theme="@style/Theme.AppCompat" />
+        <activity
+            android:name="com.reactnativecometchatuikit.CometChatWebView"
+            android:theme="@style/Theme.AppCompat" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            tools:replace="android:authorities"
+            android:grantUriPermissions="true">
+            <meta-data
+                tools:replace="android:resource"
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
+
+    </application>
+
+</manifest>

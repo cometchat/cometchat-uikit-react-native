@@ -1,0 +1,44 @@
+{
+  "name": "example",
+  "description": "Example app for react-native-cometchat-ui-kit",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "pods": "pod-install --quiet"
+  },
+  "dependencies": {
+    "@babel/preset-flow": "^7.18.6",
+    "@cometchat-pro/react-native-calls": "3.1.0-beta1",
+    "@cometchat-pro/react-native-chat": "^3.0.12",
+    "@react-native-async-storage/async-storage": "^1.17.10",
+    "@react-native-community/cli-platform-android": "^8.0.5",
+    "@react-native-community/clipboard": "^1.5.1",
+    "@react-native-community/netinfo": "7.1.7",
+    "@react-navigation/native": "^5.8.10",
+    "@react-navigation/stack": "^5.12.8",
+    "prettier": "^2.7.1",
+    "prop-types": "^15.7.2",
+    "react": "17.0.2",
+    "react-native": "0.68.5",
+    "react-native-autolink": "^4.0.0",
+    "react-native-background-timer": "2.4.1",
+    "react-native-callstats": "3.73.7",
+    "react-native-elements": "^3.0.0-alpha.1",
+    "react-native-gesture-handler": "^1.9.0",
+    "react-native-keep-awake": "^4.0.0",
+    "react-native-safe-area-context": "^3.1.9",
+    "react-native-screens": "^3.10.1",
+    "react-native-webrtc": "^1.106.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@babel/runtime": "^7.18.9",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "metro-react-native-babel-preset": "^0.67.0",
+    "patch-package": "^6.4.7",
+    "postinstall-postinstall": "^2.1.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "jsx": "react-native",
+    "module": "ES6",
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": false,
+    "sourceMap": true,
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM","ES6"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "lib",
+    "declaration": true
+  },
+  "include": ["src", "imageresolver.d.ts"]
+}
