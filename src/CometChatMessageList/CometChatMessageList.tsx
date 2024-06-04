@@ -389,19 +389,19 @@ export const CometChatMessageList = forwardRef<
                 .fetchNext()
                 .then(newMessages => {
                     let cleanUpdatedList = [...updatedList];
-                    for (let i = 0; i < cleanUpdatedList.length; i++) {
+                    for (let i = (cleanUpdatedList.length - 1); i >= 0; i--) {
                         if (cleanUpdatedList[i].id == lastID.current) break;
-                        if (cleanUpdatedList[i].id == undefined)
+                        if (cleanUpdatedList[i].id == undefined || Number.isNaN(parseInt(cleanUpdatedList[i].id)))
                             cleanUpdatedList.splice(i, 1);
                     }
                     // console.log("newMessages", newMessages.length, JSON.stringify(newMessages))
-                    if (cleanUpdatedList?.length > 0 && cleanUpdatedList?.[0]?.["muid"]) {
-                        let localFileExists = newMessages.findIndex(msg => msg?.["muid"] == cleanUpdatedList?.[0]?.["muid"]);
+                    if (cleanUpdatedList?.length > 0 && cleanUpdatedList?.[cleanUpdatedList.length - 1]?.["muid"]) {
+                        let localFileExists = newMessages.findIndex(msg => msg?.["muid"] == cleanUpdatedList?.[cleanUpdatedList.length - 1]?.["muid"]);
                         if (localFileExists > -1) {
                             cleanUpdatedList.shift();
                         }
                     }
-                    let tmpList = [...newMessages.reverse(), ...cleanUpdatedList];
+                    let tmpList = [...cleanUpdatedList, ...newMessages.reverse()];
                     tmpList = tmpList.map((item: CometChat.BaseMessage, index) => {
                         if (item.getCategory() === MessageCategoryConstants.interactive) {
                             return InteractiveMessageUtils.convertInteractiveMessage(item);
@@ -570,7 +570,7 @@ export const CometChatMessageList = forwardRef<
         const deleteMessage = (message: CometChat.BaseMessage) => {
             CometChat.deleteMessage(message.getId().toString())
                 .then(res => {
-                    messageEdited(res, false);
+                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageDeleted, { message: res });
                     setShowMessageOptions([]);
                 })
                 .catch(rej => {

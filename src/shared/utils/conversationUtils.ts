@@ -66,6 +66,9 @@ export class CometChatConversationUtils {
             } else if (lastMessage.getCategory() == CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory) {
                 msgText = lastMessage.getType();
             } else if (lastMessage.getCategory() == CometChat.CATEGORY_ACTION as CometChat.MessageCategory) {
+                if ((lastMessage as CometChat.Action)?.getAction() === CometChat.ACTION_TYPE.MESSSAGE_DELETED) {
+                    return localize("THIS_MESSAGE_DELETED");
+                }
                 msgText = (lastMessage as CometChat.Action).getMessage();
             } else if (lastMessage.getCategory() === CometChat.CATEGORY_INTERACTIVE) {
                 msgText = lastMessage.getType() === "form" ? `${localize('FORM')} 📋` : `${localize('CARD')} 🪧`;
