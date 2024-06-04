@@ -55,10 +55,12 @@ export class CallUtils {
             callMessageText = `${localize('MISSED_CALL')}`;
           }
           break;
-        case CALL_BUSY:
         case CALL_REJECTED:
-          if (this.isInitiator(initiator, loggedInUser)) {
             callMessageText = `${localize('CALL_REJECTED')}`;
+          break;
+        case CALL_BUSY:
+          if (this.isInitiator(initiator, loggedInUser)) {
+            callMessageText = `${localize('CALL_BUSY')}`;
           } else {
             callMessageText = `${localize('MISSED_CALL')}`;
           }

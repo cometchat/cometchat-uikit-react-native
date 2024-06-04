@@ -92,6 +92,21 @@ export interface CometChatThreadedMessagesInterface {
    * @description Styling properties of the compone
    */
   threadedMessagesStyle: ThreadedMessagesStyleInterface;
+  /**
+   * Hide the MessageComposer
+   * @type {boolean}
+  */
+  hideMessageComposer?: boolean,
+  /**
+   * Override the default MessageComposerView
+   * @returns JSX.Element 
+  */
+  MessageComposerView?: ({ user, group, parentMessage }: { user?: CometChat.User, group?: CometChat.Group, parentMessage: CometChat.BaseMessage }) => JSX.Element,
+  /**
+   * Override the default MessageListView
+   * @returns JSX.Element 
+  */
+  MessageListView?: ({ user, group, parentMessage }: { user?: CometChat.User, group?: CometChat.Group, parentMessage: CometChat.BaseMessage }) => JSX.Element,
 }
 
 export interface ThreadedMessagesStyleInterface {
@@ -118,7 +133,10 @@ export const CometChatThreadedMessages = (
     messageComposerConfiguration,
     onClose,
     onError,
-    threadedMessagesStyle
+    threadedMessagesStyle,
+    hideMessageComposer,
+    MessageComposerView,
+    MessageListView
   } = props;
 
   const loggedInUser = useRef(null);
@@ -133,13 +151,13 @@ export const CometChatThreadedMessages = (
 
   let limit: number = 30;
 
-  const checkMessageBelongsToSameThread = (updatedMessage : CometChat.BaseMessage)=>{
+  const checkMessageBelongsToSameThread = (updatedMessage: CometChat.BaseMessage) => {
 
-    return (updatedMessage.getParentMessageId() == message.getId() );
+    return (updatedMessage.getParentMessageId() == message.getId());
   }
 
-  const checkAndUpdateRepliesCount = ( updatedMessage : CometChat.BaseMessage)=>{
-    if(checkMessageBelongsToSameThread(updatedMessage)){
+  const checkAndUpdateRepliesCount = (updatedMessage: CometChat.BaseMessage) => {
+    if (checkMessageBelongsToSameThread(updatedMessage)) {
       setReplyCount((prev) => prev + 1);
     }
   }
@@ -248,7 +266,7 @@ export const CometChatThreadedMessages = (
       />
       <View style={styles.msgBubbleContainer}>
         <ScrollView>
-        {BubbleView && BubbleView(message)}
+          {BubbleView && BubbleView(message)}
         </ScrollView>
       </View>
       {MessageActionView ? (
@@ -276,31 +294,38 @@ export const CometChatThreadedMessages = (
       )}
       <View style={{ flex: 1, paddingHorizontal: 8 }}>
         {(user !== null || group !== null) && (
-          <CometChatMessageList
-            messageRequestBuilder={new CometChat.MessagesRequestBuilder()
-              .setLimit(limit)
-              .setParentMessageId(message.getId())}
-            parentMessageId={message.getId().toString()}
-            user={user}
-            group={group}
-            onError={onError && onError}
-            {...messageListConfiguration}
-          />
+          MessageListView ?
+            <MessageListView user={user} group={group} parentMessage={message} /> :
+            <CometChatMessageList
+              messageRequestBuilder={new CometChat.MessagesRequestBuilder()
+                .setLimit(limit)
+                .setParentMessageId(message.getId())}
+              parentMessageId={message.getId().toString()}
+              user={user}
+              group={group}
+              onError={onError && onError}
+              {...messageListConfiguration}
+            />
         )}
       </View>
 
       <View style={styles.composerContainer}>
-        <CometChatMessageComposer
-          parentMessageId={message.getId()}
-          messageComposerStyle={{
-            borderRadius: 10,
-            // backgroundColor: theme.palette.getAccent100(),
-          }}
-          user={user}
-          group={group}
-          onError={onError && onError}
-          {...messageComposerConfiguration}
-        />
+        {hideMessageComposer ?
+          null :
+          MessageComposerView ?
+            <MessageComposerView group={group} user={user} parentMessage={message} /> :
+            <CometChatMessageComposer
+              parentMessageId={message.getId()}
+              messageComposerStyle={{
+                borderRadius: 10,
+                // backgroundColor: theme.palette.getAccent100(),
+              }}
+              user={user}
+              group={group}
+              onError={onError && onError}
+              {...messageComposerConfiguration}
+            />
+        }
       </View>
       {Platform.OS === 'ios' && (
         <View

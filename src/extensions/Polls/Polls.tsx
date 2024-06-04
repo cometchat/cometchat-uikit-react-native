@@ -13,7 +13,7 @@ import {
 import React, {
   useCallback,
   useContext,
-  useLayoutEffect,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -176,42 +176,31 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
 
   const [question, setQuestion] = React.useState('');
   const [error, setError] = React.useState('');
-  const [answersList, setAnswersList] = useState([]);
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState([]);
   const [kbOffset, setKbOffset] = React.useState(59);
   const [loader, setLoader] = React.useState(false);
   const loggedInUser = useRef(null);
-  const answersFinalValues = useRef([]);
 
-  const validate = () => {
-    let answersValues = [];
+  function validate() {
     if (!question) {
       setError(localize('INVALID_POLL_QUESTION'));
       return false;
-    }
-    if (answersList.length === 0) {
-      setError(localize('INVALID_POLL_OPTION'));
+    } else if (answers.length < 3 && !(answers.every(item => Boolean(item)))) {
+      setError(answerHelpText || localize('INVALID_POLL_OPTION'));
       return false;
+    } else {
+      setError('');
+      return true;
     }
-    for (const value of Object.values(answers)) {
-      if (value) answersValues.push(value);
-    }
-    if (answersValues.length === 0) {
-      setError(answerHelpText ?? localize('INVALID_POLL_OPTION'));
-      return false;
-    }
-    answersFinalValues.current = answersValues;
-    setError('');
-    return true;
   };
 
-  const polls = () => {
+  function polls() {
     if (!validate()) return;
     setLoader(true);
 
     CometChat.callExtension('polls', 'POST', 'v2/create', {
       question: question,
-      options: answersFinalValues.current,
+      options: answers.filter(item => item),
       receiver: user ? user['uid'] : group ? group['guid'] : '',
       receiverType: user ? 'user' : group ? 'group' : '',
     })
@@ -229,7 +218,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
       });
   };
 
-  const ErrorView = () => {
+  function ErrorView() {
     if (!error && error === '') return null;
 
     return (
@@ -281,107 +270,100 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
     );
   };
 
-  const handleAnswerTextChange = (text, index) => {
-    setAnswers((prev) => {
-      return { ...prev, [index]: text };
-    });
+  function handleAnswerTextChange(text, index) {
+    let existingAnswers = [...answers];
+    existingAnswers[index] = text;
+    setAnswers(existingAnswers);
   };
 
-  const handleAddAnswerRow = () => {
-    setAnswersList((prev) => [
-      ...prev,
-      { id: prev[prev.length - 1]['id'] + 1 },
-    ]);
+  function handleAddAnswerRow() {
+    let existingAnswers = [...answers];
+    existingAnswers.push("");
+    setAnswers(existingAnswers);
   };
 
-  const removeRow = (id) => {
-    setAnswersList((prev) => prev.filter((_) => _.id !== id));
+  function removeRow(id) {
+    setAnswers((prev) => prev.filter((_, index) => id !== index));
   };
 
-  const AnswersListItem = ({ item, index }) => {
+  function AnswersListItem({ item, index }: { item: string, index: number }) {
     return (
-      <>
-        <CometChatSwipeRow
-          id={item.id}
-          options={
-            defaultAnswers <= item.id
-              ? () => [
-                {
-                  id: item.id,
-                  icon: deleteIcon ?? ICONS.KICK,
-                  onPress: removeRow,
-                },
-              ]
-              : () => []
-          }
-        >
-          <View
-            style={{
-              backgroundColor:
-                createPollsStyle?.backgroundColor ??
-                theme.palette.getBackgroundColor(),
-            }}
-          >
-            <TextInput
-              value={answers[item.id]}
-              onChangeText={(text) => handleAnswerTextChange(text, item.id)}
-              placeholder={`${answerPlaceholderText} ${index + 1}`}
-              placeholderTextColor={theme.palette.getAccent600()}
-              style={[
-                styles.textInputAnswers,
-                {
-                  borderBottomColor: theme.palette.getAccent200(),
-                  color: theme.palette.getAccent(),
-                },
-                theme.typography.body,
-                answers[item.id]?.length > 0
-                  ? createPollsStyle.answersPlaceholderTextStyle
-                  : createPollsStyle.answersInputTextStyle,
-              ]}
-            />
-          </View>
-        </CometChatSwipeRow>
-      </>
-    );
-  };
-
-  const AddAnswer = () => {
-    return (
-      <>
-        <TouchableOpacity
-          onPress={handleAddAnswerRow}
+      <CometChatSwipeRow
+        id={index + answers.length}
+        options={
+          defaultAnswers <= index
+            ? () => [
+              {
+                id: index,
+                icon: deleteIcon ?? ICONS.KICK,
+                onPress: () => removeRow(index),
+              },
+            ]
+            : () => []
+        }
+      >
+        <View
           style={{
-            height: 56,
-            width: '100%',
-            justifyContent: 'center',
-            paddingHorizontal: 5,
+            backgroundColor:
+              createPollsStyle?.backgroundColor ??
+              theme.palette.getBackgroundColor(),
           }}
         >
-          <Text
+          <TextInput
+            value={item}
+            onChangeText={(text) => handleAnswerTextChange(text, index)}
+            placeholder={`${answerPlaceholderText} ${index + 1}`}
+            placeholderTextColor={theme.palette.getAccent600()}
             style={[
-              theme.typography.name,
+              styles.textInputAnswers,
               {
-                color: theme.palette.getPrimary(),
+                borderBottomColor: theme.palette.getAccent200(),
+                color: theme.palette.getAccent(),
               },
+              theme.typography.body,
+              item?.length > 0
+                ? createPollsStyle.answersPlaceholderTextStyle
+                : createPollsStyle.answersInputTextStyle,
             ]}
-          >
-            {addAnswerText ?? localize('ADD_ANOTHER_ANSWER')}
-          </Text>
-        </TouchableOpacity>
-        <ErrorView />
-      </>
+          />
+        </View>
+      </CometChatSwipeRow>
     );
   };
 
-  useLayoutEffect(() => {
-    let answerslist = [];
-    for (let index = 0; index < defaultAnswers; index++) {
-      answerslist.push({ id: index });
-    }
-    setAnswersList(answerslist);
+  function AddAnswer() {
+    return (
+      <TouchableOpacity
+        onPress={handleAddAnswerRow}
+        style={{
+          height: 56,
+          width: '100%',
+          justifyContent: 'center',
+          paddingHorizontal: 5,
+        }}
+      >
+        <Text
+          style={[
+            theme.typography.name,
+            {
+              color: theme.palette.getPrimary(),
+            },
+          ]}
+        >
+          {addAnswerText ?? localize('ADD_ANOTHER_ANSWER')}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  useEffect(() => {
+    let answerslist = new Array(defaultAnswers).fill("");
+    setAnswers(answerslist);
+
     CometChat.getLoggedinUser()
       .then((u) => (loggedInUser.current = u))
       .catch((e) => { });
+
     if (Platform.OS === "ios") {
       if (Number.isInteger(commonVars.safeAreaInsets.top)) {
         setKbOffset(commonVars.safeAreaInsets.top)
@@ -395,18 +377,16 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
         }
       })
     }
+
   }, []);
 
-  const getPollAnswers = useCallback(() => {
+  function getPollAnswers() {
     return (
-      answersList.map((item, index) => (
-        <React.Fragment key={item.id}>
-          <AnswersListItem item={item} index={index} />
-          {index === answersList.length - 1 && <AddAnswer />}
-        </React.Fragment>
+      answers.map((item: string, index: number) => (
+        AnswersListItem({ item, index })
       ))
     )
-  }, [answersList])
+  };
 
   return (
     <KeyboardAvoidingView
@@ -479,7 +459,8 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
         </View>
 
         {getPollAnswers()}
-
+        <AddAnswer />
+        <ErrorView />
       </ScrollView>
 
       {loader && <View style={{
@@ -490,10 +471,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
         justifyContent: "center",
         alignItems: "center",
       }}>
-        <ActivityIndicator
-          size="large"
-          color={theme.palette.getPrimary()}
-        />
+        <ActivityIndicator size="large" />
       </View>}
     </KeyboardAvoidingView>
   );

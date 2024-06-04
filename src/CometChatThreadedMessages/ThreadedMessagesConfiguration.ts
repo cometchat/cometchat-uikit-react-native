@@ -20,6 +20,21 @@ export class ThreadedMessagesConfiguration {
   messageListConfiguration?: MessageListConfigurationInterface;
   onClose?: () => void;
   onError?: (error: CometChat.CometChatException) => void;
+  /**
+   * Hide the MessageComposer
+   * @type {boolean}
+  */
+  hideMessageComposer?: boolean;
+  /**
+   * Override the default MessageComposerView
+   * @returns JSX.Element 
+  */
+  MessageComposerView?: ({ user, group, parentMessage }: { user?: CometChat.User, group?: CometChat.Group, parentMessage: CometChat.BaseMessage }) => JSX.Element;
+  /**
+   * Override the default MessageListView
+   * @returns JSX.Element 
+  */
+  MessageListView?: ({ user, group, parentMessage }: { user?: CometChat.User, group?: CometChat.Group, parentMessage: CometChat.BaseMessage }) => JSX.Element;
   constructor(props: ThreadedMessagesConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {

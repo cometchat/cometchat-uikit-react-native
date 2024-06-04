@@ -84,6 +84,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
   const callSessionId = useRef<string>(null);
   const callListener = useRef(null);
   const callSettings = useRef(null);
+  const isCallEnded = useRef<null | string>(undefined);
 
   const {
     backgroundColor,
@@ -114,7 +115,8 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
       CometChat.endCall((call as CometChat.Call).getSessionId())
         .then(() => {
           (call as CometChat.Call).setStatus("ended");
-          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+          !isCallEnded.current && CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+          isCallEnded.current = true;
         })
         .catch(err => {
           console.log("Error", err);
@@ -174,14 +176,16 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
           CometChat.clearActiveCall()
           setCallConnected(false);
           call.setStatus("ended");
-          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+          !isCallEnded.current && CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+          isCallEnded.current = true;
         }
       },
       onCallEndButtonPressed: () => {
         if (!checkIfDefualtCall(call)) {
           setCallConnected(false);
           call.setStatus("ended");
-          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+          !isCallEnded.current && CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
+          isCallEnded.current = true;
         } else {
           endCallIfRequired();
         }

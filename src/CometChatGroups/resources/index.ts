@@ -7,6 +7,7 @@ import loadingIcon from "./spineer.png"
 import rightTickIcon from "./rightTick.png";
 import closeIcon from "./close.png";
 import moreIcon from "./more.png";
+import checkIcon from './check.png';
 
 export  {
     backIcon,
@@ -17,5 +18,6 @@ export  {
     loadingIcon,
     rightTickIcon,
     closeIcon,
-    moreIcon
+    moreIcon,
+    checkIcon
 }

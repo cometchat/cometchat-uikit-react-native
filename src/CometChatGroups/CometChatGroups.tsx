@@ -5,7 +5,7 @@ import { Text, View } from "react-native";
 import {
     backIcon, searchIcon,
     passwordGroupIcon, privateGroupIcon,
-    rightTickIcon,
+    checkIcon,
 } from "./resources";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
@@ -197,7 +197,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     } = props;
 
     //context values
-    const {theme} = React.useContext<CometChatContextType>(CometChatContext);
+    const { theme } = React.useContext<CometChatContextType>(CometChatContext);
 
     const groupListRef = useRef<CometChatListActionsInterface>(null);
     const activeSwipeRows = React.useRef({});
@@ -235,7 +235,11 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         nameTextFont: theme?.typography.title1,
         ...avatarStyle
     });
-    const _statusIndicatorStyle = new StatusIndicatorStyle(statusIndicatorStyle || {});
+    const _statusIndicatorStyle = new StatusIndicatorStyle(statusIndicatorStyle || {
+        borderRadius: 10,
+        height: 15,
+        width: 15,
+    });
     const _listItemStyle = new ListItemStyle({
         backgroundColor: theme?.palette?.getBackgroundColor(),
         titleColor: theme?.palette.getAccent(),
@@ -454,13 +458,13 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         CometChatUIEventHandler.addGroupListener(
             uiEventListener,
             {
-                ccGroupCreated: ({group}) => {
-                    groupListRef.current.addItemToList(group,0);
+                ccGroupCreated: ({ group }) => {
+                    groupListRef.current.addItemToList(group, 0);
                 },
-                ccGroupDeleted: ({group}) => {
+                ccGroupDeleted: ({ group }) => {
                     groupListRef.current?.removeItemFromList(group.guid);
                 },
-                ccGroupLeft: ({leftGroup}) => {
+                ccGroupLeft: ({ leftGroup }) => {
                     leftGroup['hasJoined'] = false;
                     leftGroup['membersCount'] = leftGroup['membersCount'] - 1;
                     console.log(leftGroup);
@@ -470,7 +474,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         groupListRef.current?.updateList(leftGroup);
                     }
                 },
-                ccGroupMemberKicked: ({group}) => {
+                ccGroupMemberKicked: ({ group }) => {
                     if (group['type'] == CometChat.GROUP_TYPE.PRIVATE) {
                         groupListRef.current?.removeItemFromList(group.getGuid());
                     } else {
@@ -478,13 +482,13 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         groupListRef.current?.updateList(group);
                     }
                 },
-                ccOwnershipChanged: ({group}) => {
+                ccOwnershipChanged: ({ group }) => {
                     groupListRef.current?.updateList(group);
                 },
-                ccGroupMemberAdded: ({userAddedIn}: {userAddedIn: CometChat.Group}) => {
+                ccGroupMemberAdded: ({ userAddedIn }: { userAddedIn: CometChat.Group }) => {
                     groupListRef.current?.updateList(userAddedIn);
                 },
-                ccGroupMemberJoined: ({joinedGroup}: {joinedGroup: CometChat.Group}) => {
+                ccGroupMemberJoined: ({ joinedGroup }: { joinedGroup: CometChat.Group }) => {
                     joinedGroup['membersCount'] = joinedGroup['membersCount'] + 1;
                     joinedGroup['scope'] = "participant";
                     joinedGroup['hasJoined'] = true;
@@ -498,7 +502,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         }
     }, []);
 
-    const GroupItemView = ({item}) => {
+    const GroupItemView = ({ item }) => {
         //custom view check
         if (ListItemView)
             return ListItemView(item);
@@ -516,7 +520,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         if (selecting) {
             let index: number = selectedGroups.findIndex((value) => value.guid == item.guid);
             if (index >= 0) {
-                image = rightTickIcon;
+                image = checkIcon;
                 backgroundColor = theme?.palette?.getBackgroundColor();
             }
         }
@@ -526,7 +530,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
             avatarName={name}
             avatarURL={icon}
             hideSeparator={hideSeperator}
-            SubtitleView={() => SubtitleView && SubtitleView(item) || <Text style={{color: theme.palette.getAccent600()}}>{membersCount} <Text>{localize("MEMBERS")}</Text></Text>}
+            SubtitleView={() => SubtitleView && SubtitleView(item) || <Text style={{ color: theme.palette.getAccent600() }}>{membersCount} <Text>{localize("MEMBERS")}</Text></Text>}
             title={name}
             statusIndicatorIcon={image}
             statusIndicatorColor={backgroundColor}
@@ -539,7 +543,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
             activeSwipeRows={activeSwipeRows.current}
             rowOpens={(id) => {
                 Object.keys(activeSwipeRows.current).forEach(key => {
-                    if(id !== key && activeSwipeRows.current[key]) {
+                    if (id !== key && activeSwipeRows.current[key]) {
                         activeSwipeRows.current[key]?.current?.closeRow?.()
                         delete activeSwipeRows.current[key]
                     }
@@ -556,7 +560,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     }
 
     return (
-        <View style={[Style.container, {backgroundColor: _groupsStyle.backgroundColor}]}>
+        <View style={[Style.container, { backgroundColor: _groupsStyle.backgroundColor }]}>
             <CometChatList
                 title={title}
                 LoadingStateView={LoadingStateView}
@@ -566,7 +570,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                 ListItemView={GroupItemView}
                 EmptyStateView={EmptyView}
                 ErrorStateView={ErrorView}
-                requestBuilder={ groupsRequestBuilder || new CometChat.GroupsRequestBuilder()
+                requestBuilder={groupsRequestBuilder || new CometChat.GroupsRequestBuilder()
                     .setLimit(30)
                     .setSearchKeyword("")}
                 searchRequestBuilder={searchRequestBuilder}
@@ -581,7 +585,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                 hideSubmitIcon={hideSubmitIcon}
                 onError={onError}
                 onBack={onBack}
-                listStyle={{..._groupsStyle, background: _groupsStyle.backgroundColor}}
+                listStyle={{ ..._groupsStyle, background: _groupsStyle.backgroundColor }}
                 statusIndicatorStyle={_statusIndicatorStyle}
                 avatarStyle={_avatarStyle}
                 listItemStyle={_listItemStyle}
@@ -605,7 +609,7 @@ CometChatGroups.defaultProps = {
     options: undefined,
     hideSeperator: false,
     backButtonIcon: backIcon,
-    selectionMode: "multiple",
+    selectionMode: "none",
     onSelection: undefined,
     EmptyStateView: undefined,
     emptyStateText: undefined,

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, ScrollView } from 'react-native'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
-import { AvatarStyleInterface, CometChatContext, CometChatDate, CometChatListItem, CometChatMessageTemplate, CometChatReceipt, CometChatUIEventHandler, ImageType, ListItemStyleInterface, StatusIndicatorStyleInterface, localize } from '../shared'
+import { AvatarStyleInterface, ChatConfigurator, CometChatContext, CometChatDate, CometChatListItem, CometChatMessageTemplate, CometChatUIEventHandler, ImageType, ListItemStyleInterface, StatusIndicatorStyleInterface, localize } from '../shared'
 import { MessageInformationStyleInterface } from './MessageInformationStyle'
 import { MessageUtils } from '../shared/utils/MessageUtils'
 import { Style } from "./styles";
@@ -42,6 +42,8 @@ export interface CometChatMessageInformationInterface {
     LoadingStateView?: () => JSX.Element,
 }
 
+let templatesMap = new Map<string, CometChatMessageTemplate>();
+
 export const CometChatMessageInformation = (props: CometChatMessageInformationInterface) => {
     const {
         title = localize('INFORMATION'),
@@ -71,6 +73,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
     const { theme } = useContext(CometChatContext);
     const [recipients, setRecipients] = useState<Array<Recipient>>([]);
     const [listState, setListState] = useState<"loading" | "error" | "done">("loading");
+    const [templateLoading, setTemplateLoading] = useState(true);
 
     const {
         height,
@@ -190,6 +193,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
     }
 
     useEffect(() => {
+        loadTemplates()
         //add listener for message delivery
         CometChatUIEventHandler.addMessageListener(
             listenerId,
@@ -234,6 +238,15 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         )
     }
 
+    const loadTemplates = () => {
+        let templates: CometChatMessageTemplate[] = ChatConfigurator.dataSource.getAllMessageTemplates(theme);
+        templates.forEach(template => {
+            if (templatesMap.get(`${template.category}_${template.type}`)) return
+            templatesMap.set(`${template.category}_${template.type}`, template);
+        });
+        setTemplateLoading(false)
+    }
+    
     return (
         <View style={[
             {
@@ -268,14 +281,16 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
             <View style={Style.msgBubbleContainer}>
                 <ScrollView>
                     {
-                        BubbleView ?
-                            BubbleView(message) :
-                            MessageUtils.getMessageView({
-                                message,
-                                template,
-                                alignment: "right",
-                                theme
-                            })
+                        templateLoading
+                            ? <LoadingView />
+                            : BubbleView
+                                ? BubbleView(message)
+                                : MessageUtils.getMessageView({
+                                    message,
+                                    template: template ? template : templatesMap.get(`${message.category}_${message.type}`),
+                                    alignment: "right",
+                                    theme
+                                })
                     }
                 </ScrollView>
             </View>
