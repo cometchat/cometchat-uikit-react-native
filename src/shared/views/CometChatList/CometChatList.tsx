@@ -42,6 +42,7 @@ export interface CometChatListActionsInterface {
   removeItemFromList: (itemId: string | number) => void;
   getListItem: (itemId: string | number) => void;
   getSelectedItems: () => Array<any>,
+  getAllListItems: () => Array<any>,
 }
 
 export interface CometChatListStylesInterface {
@@ -176,6 +177,7 @@ export const CometChatList = React.forwardRef<
       getListItem,
       updateAndMoveToFirst,
       getSelectedItems,
+      getAllListItems,
     };
   });
 
@@ -316,7 +318,7 @@ export const CometChatList = React.forwardRef<
 
   /**
    * This will move item to first location if item doesn't exits then add it to first location.
-   * @param item 
+   * @param item
    */
   const updateAndMoveToFirst = (item: any) => {
     let newList = [...list];
@@ -358,6 +360,13 @@ export const CometChatList = React.forwardRef<
 
   const getListItem = (itemId: string | number): any => {
     return list.find((item: any) => item[listItemKey] == itemId);
+  };
+
+  /**
+   * get all list items
+   */
+  const getAllListItems = (): any => {
+    return list;
   };
 
   /**

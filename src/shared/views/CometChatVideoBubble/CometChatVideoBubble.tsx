@@ -8,7 +8,7 @@ import { Style } from "./style";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatVideoPlayer } from "../CometChatVideoPlayer";
 
-const { VideoManager, FileManager } = NativeModules;
+const { FileManager } = NativeModules;
 const eventEmitter = new NativeEventEmitter(FileManager);
 let statusListener: EmitterSubscription;
 export interface CometChatVideoBubbleInterface {

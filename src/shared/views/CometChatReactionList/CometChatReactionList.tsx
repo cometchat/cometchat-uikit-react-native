@@ -6,17 +6,17 @@ import { CometChatListItem, ListItemStyleInterface } from '../CometChatListItem'
 import { CometChatContext } from '../../CometChatContext';
 import { CometChatUIEventHandler, MessageEvents } from '../../events';
 import { messageStatus } from '../../utils/CometChatMessageHelper';
-import { ReactionListStyle, ReactionListStyleInterface } from './ReactionsListStyle';
+import { ReactionListStyle, ReactionListStyleInterface } from './ReactionListStyle';
 import { localize } from '../../resources';
 import { ImageType } from '../../base';
 import { LoadingIcon } from './resources';
 import { CommonUtils } from '../../utils/CommonUtils';
 
-export interface CometChatReactionsListInterface {
+export interface CometChatReactionListInterface {
     messageObject: CometChat.BaseMessage;
     onPress?: (messageReaction: CometChat.Reaction, messageObject: CometChat.BaseMessage) => void;
     reactionRequestBuilder?: CometChat.ReactionsRequestBuilder;
-    reactionsListStyle?: ReactionListStyleInterface;
+    reactionListStyle?: ReactionListStyleInterface;
     avatarStyle?: AvatarStyleInterface;
     listItemStyle?: ListItemStyleInterface;
     selectedReaction?: string;
@@ -26,11 +26,11 @@ export interface CometChatReactionsListInterface {
     LoadingStateView?: () => JSX.Element;
 }
 
-export const CometChatReactionsList = (props: CometChatReactionsListInterface) => {
+export const CometChatReactionList = (props: CometChatReactionListInterface) => {
 
     const {
         messageObject, onPress, reactionRequestBuilder, avatarStyle,
-        listItemStyle, selectedReaction, reactionsListStyle,
+        listItemStyle, selectedReaction, reactionListStyle,
         ErrorStateView,
         errorStateText,
         loadingIconURL,
@@ -50,18 +50,18 @@ export const CometChatReactionsList = (props: CometChatReactionsListInterface) =
     let reactionListMap: Record<string, CometChat.Reaction[]> = useRef({});
 
     const _style = new ReactionListStyle({
-        subtitleColor: reactionsListStyle?.subtitleColor || theme.palette.getAccent600(),
-        subtitleFont: reactionsListStyle?.subtitleFont || theme.typography.subtitle2,
-        activeEmojiBackgroundColor: reactionsListStyle?.activeEmojiBackgroundColor || theme.palette.getAccent100(),
-        sliderEmojiCountColor: reactionsListStyle?.sliderEmojiCountColor || theme.palette.getAccent700(),
-        tailViewFont: reactionsListStyle?.tailViewFont || theme.typography.title1,
-        sliderEmojiCountFont: reactionsListStyle?.sliderEmojiCountFont || theme.typography.subtitle1,
-        sliderEmojiFont: reactionsListStyle?.sliderEmojiFont || theme.typography.subtitle1,
-        errorTextColor: reactionsListStyle?.errorTextColor || theme?.palette?.getError(),
-        errorTextFont: reactionsListStyle?.errorTextFont || theme?.typography?.subtitle1,
-        loadingTint: reactionsListStyle?.loadingTint || theme?.palette.getAccent700(),
-        separatorColor: reactionsListStyle?.separatorColor || theme.palette.getAccent100(),
-        ...reactionsListStyle,
+        subtitleColor: reactionListStyle?.subtitleColor || theme.palette.getAccent600(),
+        subtitleFont: reactionListStyle?.subtitleFont || theme.typography.subtitle2,
+        activeEmojiBackgroundColor: reactionListStyle?.activeEmojiBackgroundColor || theme.palette.getAccent100(),
+        sliderEmojiCountColor: reactionListStyle?.sliderEmojiCountColor || theme.palette.getAccent700(),
+        tailViewFont: reactionListStyle?.tailViewFont || theme.typography.title1,
+        sliderEmojiCountFont: reactionListStyle?.sliderEmojiCountFont || theme.typography.subtitle1,
+        sliderEmojiFont: reactionListStyle?.sliderEmojiFont || theme.typography.subtitle1,
+        errorTextColor: reactionListStyle?.errorTextColor || theme?.palette?.getError(),
+        errorTextFont: reactionListStyle?.errorTextFont || theme?.typography?.subtitle1,
+        loadingTint: reactionListStyle?.loadingTint || theme?.palette.getAccent700(),
+        separatorColor: reactionListStyle?.separatorColor || theme.palette.getAccent100(),
+        ...reactionListStyle,
     });
 
     const {

@@ -29,6 +29,10 @@ export const Style = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center"
     },
+    column: {
+        width: "100%",
+        flexDirection: 'column'
+    },
     row: {
         flexDirection: 'row'
     },
@@ -36,7 +40,7 @@ export const Style = StyleSheet.create({
         fontWeight: 'bold'
     },
     subtitleTextStyle: {
-        maxWidth: "80%",
+        width: "95%",
         color: "rgba(20, 20, 20, 0.58)",
     },
     startNewConversationBtnStyle: {

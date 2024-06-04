@@ -2,6 +2,7 @@ package com.reactnativecometchatuikit;
 
 import static android.os.Environment.DIRECTORY_DOCUMENTS;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
@@ -14,6 +15,9 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -27,6 +31,7 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -47,6 +52,7 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -73,6 +79,8 @@ public class FileManager extends ReactContextBaseJavaModule {
     private ReactApplicationContext mReactContext;
     private static final int READ_REQUEST_CODE = 100;
     private static final int CAPTURE_STILL_IMAGE = 101;
+    private static final int REQUEST_LAUNCH_CAMERA = 1;
+    private static int IMAGE_QUALITY = 20;
 
     private Callback callback;
 
@@ -82,6 +90,7 @@ public class FileManager extends ReactContextBaseJavaModule {
     private static final String FIELD_NAME = "name";
     private static final String FIELD_TYPE = "type";
     private static final String FIELD_SIZE = "size";
+    private File cameraFile;
 
     FileManager(ReactApplicationContext context) {
         super(context);
@@ -108,6 +117,70 @@ public class FileManager extends ReactContextBaseJavaModule {
             }
             if (requestCode == CAPTURE_STILL_IMAGE) {
                 saveImageFromCameraAndReturn(resultCode, data, callback);
+            }
+            if (requestCode == REQUEST_LAUNCH_CAMERA) {
+                if (resultCode == Activity.RESULT_OK) {
+                    if (cameraFile != null && cameraFile.exists()) {
+                        // Compress the image
+                        try {
+                            Bitmap bitmap = BitmapFactory.decodeFile(cameraFile.getAbsolutePath());
+                            ExifInterface exif = new ExifInterface(cameraFile.getAbsolutePath());
+                            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                            Log.i(TAG, "onActivityResult: orientation" + orientation);
+                            int rotationAngle = 0;
+                            if (orientation == ExifInterface.ORIENTATION_ROTATE_90) {
+                                rotationAngle = 90;
+                            }
+                            else if (orientation == ExifInterface.ORIENTATION_ROTATE_180) {
+                                rotationAngle = 180;
+                            }
+                            else if (orientation == ExifInterface.ORIENTATION_ROTATE_270) {
+                                rotationAngle = 270;
+                            }
+
+                            // Create a new matrix for rotation
+                            Matrix matrix = new Matrix();
+                            if (rotationAngle != 0) {
+                                matrix.setRotate(rotationAngle);
+                                // Rotate the bitmap
+                                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                            }
+                            FileOutputStream out = new FileOutputStream(cameraFile);
+
+                            // The quality parameter can be adjusted to decrease image quality (100 means no compression)
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, IMAGE_QUALITY, out); // Compress to 50% quality
+                            out.flush();
+                            out.close();
+                            bitmap.recycle();
+                        } catch (Exception e) {
+                            WritableMap errorMap = new WritableNativeMap();
+                            errorMap.putString("error", "Image compression error: " + e.getMessage());
+                            callback.invoke(errorMap);
+                            return;
+                        }
+
+                        // Prepare the image details to return to React Native
+                        WritableMap imageMap = new WritableNativeMap();
+                        Uri fileUri = Uri.fromFile(cameraFile);
+                        imageMap.putString("uri", fileUri.toString());
+                        imageMap.putString("path", cameraFile.getAbsolutePath());
+                        imageMap.putDouble("size", cameraFile.length());
+                        imageMap.putString("name", cameraFile.getName());
+                        String fileExtension = MimeTypeMap.getFileExtensionFromUrl(fileUri.toString());
+                        String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExtension.toLowerCase());
+                        imageMap.putString("type", mimeType != null ? mimeType : "image/jpeg");
+
+                        callback.invoke(imageMap);
+                    } else {
+                        WritableMap errorMap = new WritableNativeMap();
+                        errorMap.putString("error", "Image file does not exist.");
+                        callback.invoke(errorMap);
+                    }
+                } else {
+                    WritableMap errorMap = new WritableNativeMap();
+                    errorMap.putString("error", "Camera activity did not return RESULT_OK.");
+                    callback.invoke(errorMap);
+                }
             }
         }
 
@@ -496,16 +569,61 @@ public class FileManager extends ReactContextBaseJavaModule {
         }
     }
 
-    @ReactMethod
-    public void openCamera(String fileType, Callback callback) {
+     @ReactMethod
+     public void openCamera(String fileType, Integer imageQuality, final Callback callback) {
+         IMAGE_QUALITY = imageQuality;
+         final Activity currentActivity = getCurrentActivity();
+         if (currentActivity == null) {
+             WritableMap errorMap = new WritableNativeMap();
+             errorMap.putString("error", "Activity doesn't exist");
+             callback.invoke(errorMap);
+             return;
+         }
+
+         // Check and request permissions if needed, then proceed with camera launch
+         if (ContextCompat.checkSelfPermission(currentActivity, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+             ActivityCompat.requestPermissions(currentActivity, new String[] {Manifest.permission.CAMERA}, REQUEST_LAUNCH_CAMERA);
+         } else {
+             launchCameraIntent(currentActivity, callback);
+         }
+     }
+
+    private void launchCameraIntent(Activity currentActivity, Callback callback) {
+        this.callback = callback;
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         try {
-            this.callback = callback;
-            Intent camera_intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE_SECURE);
-            mReactContext.startActivityForResult(camera_intent,CAPTURE_STILL_IMAGE, Bundle.EMPTY);
-        } catch (Exception ex) {
-            Log.e(TAG, "openCamera: " + ex.getMessage() );
+            cameraFile = createImageFile(); // Use the global variable here
+            if (cameraFile != null) {
+                Uri photoURI = FileProvider.getUriForFile(currentActivity,
+                        currentActivity.getApplicationContext().getPackageName() + ".fileprovider",
+                        cameraFile);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                currentActivity.startActivityForResult(cameraIntent, REQUEST_LAUNCH_CAMERA);
+            } else {
+                WritableMap errorMap = new WritableNativeMap();
+                errorMap.putString("error", "Could not create image file");
+                callback.invoke(errorMap);
+            }
+        } catch (Exception e) {
+            WritableMap errorMap = new WritableNativeMap();
+            errorMap.putString("error", "Failed to launch camera: " + e.getMessage());
+            callback.invoke(errorMap);
         }
     }
+
+    private File createImageFile() throws IOException {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getCurrentActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpeg",         /* suffix */
+                storageDir      /* directory */
+        );
+        return image;
+    }
+
 
     @ReactMethod
     public void openFileChooser(String fileType, Callback callback) {

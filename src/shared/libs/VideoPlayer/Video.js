@@ -76,9 +76,6 @@ export default class Video extends Component {
     this.setNativeProps({ fullscreen: false });
   };
 
-  save = async (options) => {
-    return await NativeModules.VideoManager.save(options, findNodeHandle(this._root));
-  }
 
   restoreUserInterfaceForPictureInPictureStopCompleted = (restored) => {
     this.setNativeProps({ restoreUserInterfaceForPIPStopCompletionHandler: restored });
@@ -234,26 +231,6 @@ export default class Video extends Component {
     }
   };
 
-  _onGetLicense = (event) => {
-    if (this.props.drm && this.props.drm.getLicense instanceof Function) {
-      const data = event.nativeEvent;
-      if (data && data.spcBase64) {
-        const getLicenseOverride = this.props.drm.getLicense(data.spcBase64, data.contentId, data.licenseUrl);
-        const getLicensePromise = Promise.resolve(getLicenseOverride); // Handles both scenarios, getLicenseOverride being a promise and not.
-        getLicensePromise.then((result => {
-          if (result !== undefined) {
-            NativeModules.VideoManager.setLicenseResult(result, findNodeHandle(this._root));
-          } else {
-            NativeModules.VideoManager.setLicenseError && NativeModules.VideoManager.setLicenseError('Empty license result', findNodeHandle(this._root));
-          }
-        })).catch((error) => {
-          NativeModules.VideoManager.setLicenseError && NativeModules.VideoManager.setLicenseError(error, findNodeHandle(this._root));
-        });
-      } else {
-        NativeModules.VideoManager.setLicenseError && NativeModules.VideoManager.setLicenseError("No spc received", findNodeHandle(this._root));
-      }
-    }
-  }
   getViewManagerConfig = viewManagerName => {
     if (!NativeModules.UIManager.getViewManagerConfig) {
       return NativeModules.UIManager[viewManagerName];
@@ -326,7 +303,6 @@ export default class Video extends Component {
       onPlaybackRateChange: this._onPlaybackRateChange,
       onAudioFocusChanged: this._onAudioFocusChanged,
       onAudioBecomingNoisy: this._onAudioBecomingNoisy,
-      onGetLicense: nativeProps.drm && nativeProps.drm.getLicense && this._onGetLicense,
       onPictureInPictureStatusChanged: this._onPictureInPictureStatusChanged,
       onRestoreUserInterfaceForPictureInPictureStop: this._onRestoreUserInterfaceForPictureInPictureStop,
     });

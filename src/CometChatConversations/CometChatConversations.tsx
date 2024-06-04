@@ -8,6 +8,7 @@ import {
     CometChatConfirmDialog,
     CometChatConfirmDialogStyleInterface,
     CometChatContext,
+    CometChatListActionsInterface,
     localize
 } from "../shared";
 import { Style } from "./style";
@@ -267,7 +268,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     //context
     const { theme } = useContext<CometChatContextType>(CometChatContext);
 
-    const conversationListRef = React.useRef(null);
+    const conversationListRef = React.useRef<CometChatListActionsInterface>(null);
     const loggedInUser = React.useRef(null);
     const [confirmDelete, setConfirmDelete] = React.useState(undefined);
     const [selecting, setSelecting] = React.useState(false);
@@ -363,24 +364,38 @@ export const CometChatConversations = (props: ConversationInterface) => {
         }
     }
 
+
+    const getConversationRefFromTypingIndicator = (typingIndicator : CometChat.TypingIndicator)=> {
+            let  list =  conversationListRef.current.getAllListItems();
+            return list.find((item: CometChat.Conversation) => {
+                return (
+                    (typingIndicator.getReceiverType()== ReceiverTypeConstants.user&&
+                         item.getConversationType() == ReceiverTypeConstants.user
+                    &&  (item.getConversationWith() as CometChat.User).getUid() == typingIndicator.getSender().getUid() )
+                    ||  (typingIndicator.getReceiverType() == ReceiverTypeConstants.group && item.getConversationType() == ReceiverTypeConstants.group
+                    &&  (item.getConversationWith() as CometChat.Group).getGuid() == typingIndicator.getReceiverId() )
+                    )})
+    }
+
     /**
      * Listener callback for typing event
      * @param  {...any} args
      */
     const typingEventHandler = (...args) => {
-        // console.log("typing event", args[1], args[0].receiverId);
-        let conversation = conversationListRef.current.getListItem(`${args[0]['receiverType']}_${args[0]['receiverId']}`);
-        // console.log("typing event", conversation);
-        let isTyping = args[1];
-        let newConversation = conversation
-        if (isTyping && newConversation?.['lastMessage']?.["typing"]) {
-            newConversation['lastMessage']["typing"] = args[0]?.receiverType === 'group' ?
-                `${args[0].sender.name} : ${localize("IS_TYPING")}` :
-                localize("IS_TYPING");
-        } else {
-            delete newConversation['lastMessage']['typing'];
+        let conversation: CometChat.Conversation = getConversationRefFromTypingIndicator(args[0]);
+        if(conversation){
+            let isTyping = args[1];
+            let newConversation = conversation
+            if (isTyping && !newConversation?.['lastMessage']?.["typing"]) {
+                newConversation['lastMessage']["typing"] = args[0]?.receiverType === 'group' ?
+                    `${args[0].sender.name} ${localize("IS_TYPING")}` :
+                    localize("IS_TYPING");
+            } else {
+                delete newConversation['lastMessage']['typing'];
+            }
+            conversationListRef.current.updateList(newConversation);
         }
-        conversationListRef.current.updateList(conversation);
+
     }
 
       /**
@@ -392,7 +407,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
       const checkAndUpdateLastMessage = (newMessage: CometChat.BaseMessage) => {
         CometChat.CometChatHelper.getConversationFromMessage(newMessage)
         .then(conversation => {
-            let conver = conversationListRef.current.getListItem(conversation.getConversationId())
+            let conver: any = conversationListRef.current.getListItem(conversation.getConversationId())
             if (!conver) return;
            let lastMessageId = conver['lastMessage']['id']
             if (lastMessageId == newMessage['id']) {
@@ -536,7 +551,6 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
     const removeItemFromSelectionList = (id) => {
-        //remove from selected list if list is in selecting mode.
         if (selecting) {
             let index = selectedConversation.find(member => member['uid'] == id);
             if (index > -1) {
@@ -561,7 +575,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     const getMessagePreview = (conversations: CometChat.Conversation, uid) => {
 
-        let lastMessage: CometChat.BaseMessage = conversations['lastMessage'];
+        let lastMessage: CometChat.BaseMessage = conversations.getLastMessage();
         if (!lastMessage) return null;
         let messageText: string ;
         if(lastMessage.getDeletedAt() !== undefined){
@@ -570,16 +584,18 @@ export const CometChatConversations = (props: ConversationInterface) => {
             messageText = ChatConfigurator.getDataSource().getLastConversationMessage(conversations);
         }
         let groupText = "";
-        if (lastMessage['receiverType'] == 'group') {
-            if (lastMessage['receiverId'] == uid) {
-                groupText = "you: "
+        if (lastMessage.getReceiverType() == ReceiverTypeConstants.group) {
+            if (lastMessage.getSender().getUid() == uid) {
+                groupText = localize("YOU")+ ": "
             } else {
-                groupText = lastMessage['sender']['name'] + ": "
+                groupText = lastMessage.getSender().getName() + ": "
             }
         }
 
+        messageText = messageText?.trim();
         return (
-            <Text numberOfLines={1} ellipsizeMode={"tail"} style={[Style.subtitleTextStyle, { color: theme.palette.getAccent600() }]}>
+            <Text numberOfLines={1} ellipsizeMode={"tail"} style={[Style.subtitleTextStyle, { color: theme.palette.getAccent600(), fontSize : theme.typography.subtitle1.fontSize,
+                fontWeight : theme.typography.subtitle1.fontWeight  }]}>
                 {groupText + messageText}
             </Text>
         )
@@ -589,14 +605,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
         conversations: CometChat.Conversation,
         typingText: string
     }) => {
-
         const lastMessage = params['conversations']['lastMessage'];
         if (!lastMessage) return null;
         let readReceipt;
-
-        if (!disableTyping && params.typingText) {
+        if ( params.typingText) {
             return <View style={Style.row}>
-                <Text>{params.typingText}</Text>
+                <Text numberOfLines={1} ellipsizeMode={"tail"}  style={[Style.subtitleTextStyle, { color: theme.palette.getPrimary() ,
+                    fontSize : theme.typography.subtitle1.fontSize , fontWeight : theme.typography.subtitle1.fontWeight   }]} >{params.typingText}</Text>
             </View>
         }
 
@@ -618,13 +633,21 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 />;
         }
 
+        let threadView;
 
+        if(lastMessage?.getParentMessageId()){
+            threadView = <Text numberOfLines={1}   style={[Style.subtitleTextStyle, { color: theme.palette.getAccent600() }]} >{localize("IN_A_THREAD")}</Text>
+        }
 
         return (
-            <View style={Style.row}>
-                {readReceipt}
-                {getMessagePreview(params['conversations'], loggedInUser.current?.uid)}
+            <View style={Style.column}>
+                {threadView}
+                <View style={Style.row}>
+                    {readReceipt}
+                    {getMessagePreview(params['conversations'], loggedInUser.current?.uid)}
+                </View>
             </View>
+
         )
     }
 

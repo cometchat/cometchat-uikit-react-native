@@ -161,6 +161,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
       paddingHorizontal: props.style?.paddingHorizontal
     }),
     ...props.style,
+    listItemTitleFont: {...theme.typography.subtitle1, ...(props.style.listItemTitleFont ?? {})},
   };
 
   const [listMode, setListMode] = React.useState(true);

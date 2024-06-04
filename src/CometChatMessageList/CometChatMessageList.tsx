@@ -29,7 +29,7 @@ import { CometChatMessageInformation } from "../CometChatMessageInformation/Come
 import { MessageInformationConfigurationInterface } from "../CometChatMessageInformation";
 import { InteractiveMessageUtils } from "../shared/utils/InteractiveMessageUtils";
 import { CometChatEmojiKeyboard, EmojiKeyboardStyle } from "../shared/views/CometChatEmojiKeyboard";
-import { CometChatReactionsList, ReactionsListConfigurationInterface } from "../shared/views/CometChatReactionsList";
+import { CometChatReactionList, ReactionListConfigurationInterface } from "../shared/views/CometChatReactionList";
 import { CometChatQuickReactions, QuickReactionsConfigurationInterface } from "../shared/views/CometChatQuickReactions";
 import { CometChatReactions, ReactionsConfigurationInterface } from "../shared/views/CometChatReactions";
 import { CommonUtils } from "../shared/utils/CommonUtils";
@@ -87,9 +87,9 @@ export interface CometChatMessageListProps {
      */
     reactionsConfiguration?: ReactionsConfigurationInterface,
     /**
-     * Message Reaction List Configuration @ReactionsListConfigurationInterface
+     * Message Reaction List Configuration @ReactionListConfigurationInterface
      */
-    reactionsListConfiguration?: ReactionsListConfigurationInterface,
+    reactionListConfiguration?: ReactionListConfigurationInterface,
     /**
      * Quick Reaction Configuration @QuickReactionsConfigurationInterface
      */
@@ -160,7 +160,7 @@ export const CometChatMessageList = memo(forwardRef<
             hideActionSheetHeader,
             reactionsConfiguration,
             disableReactions,
-            reactionsListConfiguration,
+            reactionListConfiguration,
             quickReactionConfiguration,
             emojiKeyboardStyle,
         } = props;
@@ -287,7 +287,7 @@ export const CometChatMessageList = memo(forwardRef<
         const [ongoingCallView, setOngoingCallView] = useState(null);
         const [selectedMessage, setSelectedMessage] = useState(null);
         const [showEmojiKeyboard, setShowEmojiKeyboard] = useState(false);
-        const [showReactionsList, setShowReactionsList] = useState(false);
+        const [showReactionList, setShowReactionList] = useState(false);
         const [selectedEmoji, setSelectedEmoji] = useState(null);
         // const [forwarding, setForwarding] = useState(false);
 
@@ -1017,7 +1017,7 @@ export const CometChatMessageList = memo(forwardRef<
 
         useEffect(() => {
             if (selectedEmoji) {
-                setShowReactionsList(true);
+                setShowReactionList(true);
             }
         }, [selectedEmoji])
 
@@ -1516,8 +1516,8 @@ export const CometChatMessageList = memo(forwardRef<
                     <CometChatMessageBubble
                         id={`${message.getId()}`}
                         LeadingView={() => !isThreaded && getLeadingView(message)}
-                        HeaderView={() => !isThreaded && getHeaderView(message)}
-                        FooterView={() => (disableReactions || isThreaded) ? null : getFooterView(message, bubbleAlignment)}
+                        HeaderView={hasTemplate.HeaderView ? hasTemplate.HeaderView?.bind(this, message, bubbleAlignment) : () => !isThreaded && getHeaderView(message)}
+                        FooterView={hasTemplate.FooterView ? hasTemplate.FooterView?.bind(this, message, bubbleAlignment) : () => (disableReactions || isThreaded) ? null : getFooterView(message, bubbleAlignment)}
                         alignment={isThreaded ? "left" : bubbleAlignment}
                         ContentView={hasTemplate.ContentView?.bind(this, message, bubbleAlignment)}
                         ThreadView={() => !isThreaded && getThreadView(message, bubbleAlignment)}
@@ -1929,26 +1929,26 @@ export const CometChatMessageList = memo(forwardRef<
                 </CometChatBottomSheet>
 
                 <CometChatBottomSheet
-                    isOpen={showReactionsList}
+                    isOpen={showReactionList}
                     onClose={() => {
-                        setShowReactionsList(false);
+                        setShowReactionList(false);
                         setSelectedEmoji(null);
                     }}
                     sliderMaxHeight={Dimensions.get('window').height * 0.5}
                     sliderMinHeight={Dimensions.get('window').height * 0.5}
                 >
-                    <CometChatReactionsList
+                    <CometChatReactionList
                         messageObject={selectedMessage}
                         selectedReaction={selectedEmoji}
-                        {...reactionsListConfiguration}
+                        {...reactionListConfiguration}
                         onPress={(messageReaction: CometChat.Reaction, messageObject: CometChat.BaseMessage) => {
-                            if (reactionsListConfiguration?.onPress) {
-                                reactionsListConfiguration.onPress(messageReaction, messageObject);
+                            if (reactionListConfiguration?.onPress) {
+                                reactionListConfiguration.onPress(messageReaction, messageObject);
                                 return;
                             }
                             reactToMessage(messageReaction?.getReaction(), messageObject);
                             if (messageObject?.getReactions()?.length === 1 && messageObject?.getReactions()?.[0]?.['count'] == 1) {
-                                setShowReactionsList(false);
+                                setShowReactionList(false);
                                 setSelectedEmoji(null);
                             }
                         }}

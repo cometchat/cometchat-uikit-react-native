@@ -22,7 +22,7 @@ import {
 import { DateStyleInterface } from '../shared/views/CometChatDate/DateStyle';
 import { ActionSheetStylesInterface } from '../shared/views/CometChatActionSheet/ActionSheetStyle';
 import { ReactionsConfigurationInterface } from '../shared/views/CometChatReactions';
-import { ReactionsListConfigurationInterface } from '../shared/views/CometChatReactionsList';
+import { ReactionListConfigurationInterface } from '../shared/views/CometChatReactionList';
 import { QuickReactionsConfigurationInterface } from '../shared/views/CometChatQuickReactions';
 import { EmojiKeyboardStyle } from '../shared/views/CometChatEmojiKeyboard';
 
@@ -82,9 +82,9 @@ export interface MessageListConfigurationInterface {
    */
   reactionsConfiguration?: ReactionsConfigurationInterface;
   /**
-   * Message Reaction List Configuration @ReactionsListConfigurationInterface
+   * Message Reaction List Configuration @ReactionListConfigurationInterface
    */
-  reactionsListConfiguration?: ReactionsListConfigurationInterface;
+  reactionListConfiguration?: ReactionListConfigurationInterface;
   /**
    * Quick Reaction Configuration @QuickReactionsConfigurationInterface
    */
@@ -155,9 +155,9 @@ export class MessageListConfiguration
    */
   reactionsConfiguration?: ReactionsConfigurationInterface;
   /**
-   * Message Reaction List Configuration @ReactionsListConfigurationInterface
+   * Message Reaction List Configuration @ReactionListConfigurationInterface
    */
-  reactionsListConfiguration?: ReactionsListConfigurationInterface;
+  reactionListConfiguration?: ReactionListConfigurationInterface;
   /**
    * Quick Reaction Configuration @QuickReactionsConfigurationInterface
    */

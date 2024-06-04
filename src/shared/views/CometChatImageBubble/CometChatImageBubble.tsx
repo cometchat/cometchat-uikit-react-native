@@ -1,7 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { View, Image, NativeModules, Platform, NativeEventEmitter, EmitterSubscription } from "react-native";
 import { ImageType } from "../../base";
 import { ImageBubbleStyle, ImageBubbleStyleInterface } from "./ImageBubbleStyle";
+import { ImageViewerModal } from "../CometChatImageViewerModal";
+import { ICONS } from "./assets";
+import { isHttpUrl } from "../../utils/NetworkUtils";
 
 const { FileManager, ImageManager } = NativeModules;
 const eventEmitter = new NativeEventEmitter(FileManager);
@@ -49,6 +52,8 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
 
     const _style = new ImageBubbleStyle(style || {});
     const [isOpening, setOpening] = useState(false);
+    const [downloaded, setDownloaded] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
     const url = useRef("");
 
     const {
@@ -107,7 +112,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         const endTime = Date.now();
         const pressDuration = endTime - pressTime.current;
         if (pressDuration < 500) {
-            openImage();
+            setIsVisible(true)
         }
     };
 
@@ -115,23 +120,64 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
     //     pressTime.current = null
     // }
 
+    useLayoutEffect(() => {
+        if(isHttpUrl(thumbnailUrl?.uri ?? imageUrl?.uri)) {
+            Image.prefetch(thumbnailUrl?.uri ?? imageUrl?.uri).then((res) => {
+              setDownloaded(res);
+            });
+        } else {
+            setDownloaded(true);
+        }
+    }, []);
+
     return (
-        <View
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            // onTouchMove={onTouchMove}
-        >
-            <Image
-                resizeMode={resizeMode || "cover"}
-                loadingIndicatorSource={placeHolderImage}
-                source={thumbnailUrl ?? imageUrl} style={{
-                    height, width,
-                    aspectRatio,
-                    backgroundColor,
-                    borderRadius,
-                    ...border
+        <>
+            {
+                isVisible &&
+                <ImageViewerModal imageUrl={imageUrl} isVisible={isVisible} onClose={()=>{
+                    setIsVisible(false)
+                }}/>
+            }
+            <View
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                // onTouchMove={onTouchMove}
+                style={{
+                    justifyContent:'center',
+                    alignItems: 'center',
+                    height, 
+                    width
                 }}
-            />
-        </View>
+            >
+                {
+                    !downloaded 
+                    ? <View>
+                            <Image
+                                resizeMode={"contain"}
+                                source={ICONS.Spinner} 
+                                style={{
+                                    height: 20,
+                                    width: 20,
+                                    backgroundColor,
+                                }}
+                            />
+                        </View>
+                    : <Image
+                            resizeMode={resizeMode || "cover"}
+                            loadingIndicatorSource={ICONS.Spinner}
+                            source={thumbnailUrl ?? imageUrl} 
+                            style={{
+                                height,
+                                width,
+                                aspectRatio,
+                                backgroundColor,
+                                borderRadius,
+                                ...border
+                            }}
+                        />
+                }
+              
+            </View>
+        </>
     )
 }

@@ -21,7 +21,6 @@ public class CometchatUiKitPackage implements ReactPackage {
         modules.add(new CometChatSoundModule(reactContext));
         modules.add(new SoundPlayer(reactContext));
         modules.add(new FileManager(reactContext));
-        modules.add(new VideoManager(reactContext));
         modules.add(new ImageManager(reactContext));
         modules.add(new WebViewManager(reactContext));
         modules.add(new TimeZoneCodeManager(reactContext));

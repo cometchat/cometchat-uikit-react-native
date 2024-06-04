@@ -132,10 +132,20 @@ export const CometChatThreadedMessages = (
 
   let limit: number = 30;
 
+  const checkMessageBelongsToSameThread = (updatedMessage : CometChat.BaseMessage)=>{
+
+    return (updatedMessage.getParentMessageId() == message.getId() );
+  }
+
+  const checkAndUpdateRepliesCount = ( updatedMessage : CometChat.BaseMessage)=>{
+    if(checkMessageBelongsToSameThread(updatedMessage)){
+      setReplyCount((prev) => prev + 1);
+    }
+  }
+
   const ccMessageSentFunc = ({ message: msg, status }) => {
     if (status === messageStatus.success) {
-      if (message.getId() == msg.parentMessageId)
-        setReplyCount((prev) => prev + 1);
+      checkAndUpdateRepliesCount(msg)
       if (message.getId() == msg.id) setMessage(message);
     }
   };
@@ -150,12 +160,35 @@ export const CometChatThreadedMessages = (
     if (message.getId() == msg.id) setMessage(message);
   };
 
+
+
   useEffect(() => {
     CometChatUIEventHandler.addMessageListener(uiEventId, {
       ccMessageSent: (item) => ccMessageSentFunc(item),
       ccMessageEdited: (item) => ccMessageEditedFunc(item),
       ccMessageDeleted: (item) => ccMessageDeletedFunc(item),
       ccMessageRead: (item) => ccMessageReadFunc(item),
+      onTextMessageReceived: (textMessage) => {
+        checkAndUpdateRepliesCount(textMessage)
+      },
+      onMediaMessageReceived: (mediaMessage) => {
+        checkAndUpdateRepliesCount(mediaMessage)
+      },
+      onCustomMessageReceived: (customMessage) => {
+        checkAndUpdateRepliesCount(customMessage)
+      },
+      onFormMessageReceived: (formMessage) => {
+        checkAndUpdateRepliesCount(formMessage)
+      },
+      onCardMessageReceived: (cardMessage) => {
+        checkAndUpdateRepliesCount(cardMessage)
+      },
+      onSchedulerMessageReceived: (schedulerMessage) => {
+        checkAndUpdateRepliesCount(schedulerMessage)
+      },
+      onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
+        checkAndUpdateRepliesCount(customInteractiveMessage)
+      }
     });
 
     return () => {

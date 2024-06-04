@@ -21,7 +21,7 @@ export const Back = ({
       <Image 
         source={backIcon ? backIcon : require('../../assets/img/back.png')}
         resizeMode='contain'
-        style={backIconColor ? { tintColor: backIconColor } : {}}
+        style={{ tintColor: backIconColor ? backIconColor : '#fff', height: 25, width:25 }}
       />
     </Control>
   );

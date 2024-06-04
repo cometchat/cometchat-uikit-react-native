@@ -218,7 +218,7 @@ const LiveReaction = (props: any) => {
 let recordedTime = 0, timerIntervalId = null;
 
 export interface MessageComposerStyleInterface extends BaseStyle {
-  attachIcontint?: string;
+  attachIconTint?: string;
   sendIconTint?: string;
   inputBackground?: string;
   inputBorder?: BorderStyleInterface;
@@ -234,6 +234,12 @@ export interface MessageComposerStyleInterface extends BaseStyle {
   actionSheetLayoutModeIconTint?: string;
   actionSheetCancelButtonIconTint?: string;
 }
+type Enumerate<N extends number, Acc extends number[] = []> = Acc['length'] extends N
+  ? Acc[number]
+  : Enumerate<N, [...Acc, Acc['length']]>
+
+type IntRange<F extends number, T extends number> = Exclude<Enumerate<T>, Enumerate<F>>
+
 export interface CometChatMessageComposerInterface {
   /**
    *
@@ -508,6 +514,11 @@ export interface CometChatMessageComposerInterface {
    * To override keyboardAvoidingViewProps.
    */
   keyboardAvoidingViewProps?: KeyboardAvoidingViewProps
+  /**
+   * To manually manage image quality taken from the camera (100 means no compression).
+   * @default 20
+   */
+  imageQuality?: IntRange<1, 100>
 }
 export const CometChatMessageComposer = React.forwardRef(
   (props: CometChatMessageComposerInterface, ref) => {
@@ -551,7 +562,8 @@ export const CometChatMessageComposer = React.forwardRef(
       submitIconUrl,
       AIIconURL,
       aiOptionsStyle,
-      keyboardAvoidingViewProps
+      keyboardAvoidingViewProps,
+      imageQuality = 20
     } = props;
 
     const defaultAttachmentOptions =
@@ -622,28 +634,45 @@ export const CometChatMessageComposer = React.forwardRef(
       }
     };
 
+    const cameraCallback = async (cameraImage: any) => {
+      if (CheckPropertyExists(cameraImage, 'error')) {
+        return;
+      }
+      const { name, uri, type } = cameraImage;
+      let file = {
+        name,
+        type,
+        uri,
+      };
+      sendMediaMessage(
+        chatWithId.current,
+        file,
+        MessageTypeConstants.image,
+        chatWith.current
+      );
+    }
+    
     const fileInputHandler = async (fileType: string) => {
       if (fileType === MessageTypeConstants.takePhoto) {
         if (!(await permissionUtilIOS.startResourceBasedTask(["camera"]))) {
           return;
         }
-        FileManager.openCamera(fileType, async (cameraImage: any) => {
-          if (CheckPropertyExists(cameraImage, 'error')) {
-            return;
-          }
-          const { name, uri, type } = cameraImage;
-          let file = {
-            name,
-            type,
-            uri,
-          };
-          sendMediaMessage(
-            chatWithId.current,
-            file,
-            MessageTypeConstants.image,
-            chatWith.current
+        let quality = imageQuality
+        if(isNaN(imageQuality) || imageQuality < 1 || imageQuality > 100) {
+          quality = 20
+        }
+        if(Platform.OS === "android") {
+          FileManager.openCamera(
+            fileType, 
+            Math.round(quality),
+            cameraCallback
           );
-        });
+        } else {
+          FileManager.openCamera(
+            fileType, 
+            cameraCallback
+          );
+        }
       }
         else if (Platform.OS === 'ios' && fileType === MessageTypeConstants.video) {
           NativeModules.VideoPickerModule.pickVideo(((file) => {
@@ -1045,8 +1074,8 @@ export const CometChatMessageComposer = React.forwardRef(
             height: 23,
             width: 23,
             resizeMode: 'contain',
-            tintColor: messageComposerStyle.attachIcontint
-              ? messageComposerStyle.attachIcontint
+            tintColor: messageComposerStyle.attachIconTint
+              ? messageComposerStyle.attachIconTint
               : theme.palette.getAccent(),
           }}
         />
@@ -1330,6 +1359,10 @@ export const CometChatMessageComposer = React.forwardRef(
                       messageComposerStyle.actionSheetSeparatorTint,
                   }
                   : {}),
+                  layoutModeIconTint: messageComposerStyle.actionSheetLayoutModeIconTint,
+                  titleColor: messageComposerStyle.actionSheetTitleColor,
+                  listItemIconTint: messageComposerStyle.attachIconTint,
+                  listItemTitleFont: messageComposerStyle.actionSheetTitleFont
               }}
               cometChatBottomSheetStyle={
                 messageComposerStyle.actionSheetCancelButtonIconTint

@@ -11,7 +11,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 
 public class ImageManager extends ReactContextBaseJavaModule {
-    public static final String TAG = "VideoManager";
+    public static final String TAG = "ImageManager";
 
     ImageManager(ReactApplicationContext context) {
         super(context);

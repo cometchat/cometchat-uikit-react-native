@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, Linking, Image, Alert } from 'react-native'
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, TouchableOpacity, Linking, Image, Alert, Platform } from 'react-native'
 import { LinkPreviewBubbleStyle, LinkPreviewBubbleStyleInterface } from './LInkPreviewBubbleStyle';
 import { localize } from '../../shared/resources/CometChatLocalize';
 import { DefaultLinkPreview } from "./resources";
@@ -30,20 +30,53 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
 
     const [imageSource, setImageSource] = useState({ uri: image.startsWith("https:") ? image : `https:${image.split("http:")[1]}` });
 
+
+    const pressTime = useRef(0);
+
+    const handleTouchStart = () => {
+        pressTime.current = Date.now();
+    };
+
+    const handleTouchEnd = () => {
+        if (pressTime.current === null && Platform.OS === "ios") return;
+        const endTime = Date.now();
+        const pressDuration = endTime - pressTime.current;
+        if (pressDuration < 500) {
+            onPress ? onPress() : (Linking.canOpenURL(link) && Linking.openURL(link)) || Alert.alert(localize("SOMETHING_WRONG"))
+        }
+    };
+
+    const onTouchMove = () => {
+        if (Platform.OS === "ios") {
+            pressTime.current = null;
+        }
+    }
+
+
     return (
-        <TouchableOpacity style={{
-            backgroundColor: _style.backgroundColor,
-            borderRadius: 8,
-        }}
-            onPress={() => onPress ? onPress() : (Linking.canOpenURL(link) && Linking.openURL(link)) || Alert.alert(localize("SOMETHING_WRONG"))}
-        >
-            <Image
-                source={imageSource }
-                style={{ height: 100, width: "100%", alignSelf: "center" }}
-                onError={(err) => {
-                    setImageSource(DefaultLinkPreview)
+        <View>
+
+            <View
+                style={{
+                    backgroundColor: _style.backgroundColor,
+                    borderRadius: 8,
                 }}
-            />
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                onTouchMove={onTouchMove}
+            >
+
+                <Image
+                    source={imageSource}
+                    style={{ height: 100, width: "100%", alignSelf: "center" }}
+                    onError={(err) => {
+                        setImageSource(DefaultLinkPreview)
+                    }}
+                />
+
+
+            </View>
+
             <View style={{ margin: 8 }}>
                 <Text
                     style={{
@@ -68,6 +101,9 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
                     ChildView && <ChildView />
                 }
             </View>
-        </TouchableOpacity>
+
+
+        </View>
+
     )
 }

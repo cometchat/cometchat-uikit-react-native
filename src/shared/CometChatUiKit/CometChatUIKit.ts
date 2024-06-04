@@ -51,6 +51,7 @@ export class CometChatUIKit {
             () => {
                 CometChat.setSource("uikit-v4", Platform.OS, "react-native")
                 ListenerInitializer.attachListeners();
+                this.enableExtensions();
                 if (Platform.OS === "ios") {
                     permissionUtilIOS.init().then(res => {
                         if (res !== true) {
@@ -113,8 +114,6 @@ export class CometChatUIKit {
         let user = await CometChat.getLoggedinUser().catch((e) => Promise.reject(e))
         if (user == null) {
             Promise.reject(new CometChat.CometChatException({ code: "NOT_FOUND", message: "Login user not found" }));
-        } else {
-            this.enableExtensions()
         }
         return user;
     }
@@ -123,12 +122,10 @@ export class CometChatUIKit {
         if (CometChatUIKit.checkAuthSettings(Promise.reject)) null
         if (uid) {
             let user = await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch(e => Promise.reject(e));
-            this.enableExtensions()
             return user;
         }
         if (authToken) {
             let user = await CometChat.login(authToken).catch(e => Promise.reject(e));
-            this.enableExtensions()
             return user;
         }
         return Promise.reject(new CometChat.CometChatException({ code: "INVALID_LOGIN_ATTEMPT", message: "Provide uid or authToken" }));
