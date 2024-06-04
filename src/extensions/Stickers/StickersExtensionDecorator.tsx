@@ -49,7 +49,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
   }
 
   getStickerBubble(message: CometChat.CustomMessage, alignment: MessageBubbleAlignmentType) {
-    let url = message?.['data']?.['customData']?.['stickerUrl'];
+    let url = message?.['data']?.['customData']?.['sticker_url'];
     return <CometChatStickerBubble
       url={url}
       name=""

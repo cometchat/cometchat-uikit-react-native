@@ -37,7 +37,12 @@ export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterfac
 
   const theme = new CometChatTheme(props?.theme || {});
   const sendStickerMessage = (stickerItem) => {
-    props?.onPress(stickerItem);
+    if(stickerItem && typeof stickerItem === 'object')
+      props?.onPress({
+        ...stickerItem,
+        sticker_url: stickerItem?.stickerUrl,
+        sticker_name: stickerItem?.stickerSetName
+      });
   };
 
   const onStickerSetClicked = (sectionItem) => {
