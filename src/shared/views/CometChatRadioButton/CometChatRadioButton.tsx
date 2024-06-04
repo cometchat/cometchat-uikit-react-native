@@ -40,10 +40,10 @@ const CometChatRadioButton = (props: CometChatRadioButtonInterface) => {
     } = _style;
 
     return (
-        <View style={{ marginVertical: 10 }}>
-            <Text style={[titleFont, { color: titleColor }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+        <View style={{ marginBottom: 12 }}>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
             {data.getOptions().map((option, index) => (
-                <View key={index} style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
+                <View key={index} style={{ flexDirection: "row", alignItems: "center", marginVertical: 1.5 }}>
                     <TouchableOpacity style={{
                         height: 20, width: 20, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: selectedOption !== option.getValue() ? inactiveBackgroundColor : undefined,
                         borderWidth: selectedOption === option.getValue() ? borderWidth + 1 : borderWidth, borderColor: showError ? theme.palette.getError() : borderColor, marginRight: 5,

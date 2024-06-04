@@ -28,6 +28,7 @@ type MessageUIEvents = {
     onTransientMessageReceived?: Function,
     onFormMessageReceived?: Function,
     onCardMessageReceived?: Function,
+    onSchedulerMessageReceived?: Function,
     onCustomInteractiveMessageReceived?: Function,
     onInteractionGoalCompleted?: Function,
 
@@ -54,6 +55,7 @@ export class MessageUIEventListener {
     onTransientMessageReceived?: Function = undefined;
     onFormMessageReceived?: Function = undefined;
     onCardMessageReceived?: Function = undefined;
+    onSchedulerMessageReceived?: Function = undefined;
     onCustomInteractiveMessageReceived?: Function = undefined;
     onInteractionGoalCompleted?: Function = undefined;
     // ccMessageForwarded?:Function =  undefined;
@@ -78,6 +80,7 @@ export class MessageUIEventListener {
         onTransientMessageReceived,
         onFormMessageReceived,
         onCardMessageReceived,
+        onSchedulerMessageReceived,
         onCustomInteractiveMessageReceived,
         onInteractionGoalCompleted,
         // ccMessageForwarded,
@@ -103,6 +106,7 @@ export class MessageUIEventListener {
         if (!isFalsy(onTransientMessageReceived)) this.onTransientMessageReceived = onTransientMessageReceived;
         if (!isFalsy(onFormMessageReceived)) this.onFormMessageReceived = onFormMessageReceived;
         if (!isFalsy(onCardMessageReceived)) this.onCardMessageReceived = onCardMessageReceived;
+        if (!isFalsy(onSchedulerMessageReceived)) this.onSchedulerMessageReceived = onSchedulerMessageReceived;
         if (!isFalsy(onCustomInteractiveMessageReceived)) this.onCustomInteractiveMessageReceived = onCustomInteractiveMessageReceived;
         if (!isFalsy(onInteractionGoalCompleted)) this.onInteractionGoalCompleted = onInteractionGoalCompleted;
 

@@ -38,6 +38,7 @@ import {
   DropdownElement,
   ElementEntity,
   FormMessage,
+  SchedulerMessage,
   LabelElement,
   OptionElement,
   RadioButtonElement,
@@ -136,7 +137,9 @@ import {
   CometChatFormBubble,
   CometChatFormBubbleInterface,
   CometChatCardBubble,
-  CometChatCardBubbleInterface
+  CometChatCardBubbleInterface,
+  CometChatSchedulerBubble,
+  CometChatSchedulerBubbleInterface 
 } from './views';
 
 import {
@@ -289,6 +292,8 @@ export {
   CometChatFormBubbleInterface,
   CometChatCardBubble,
   CometChatCardBubbleInterface,
+  CometChatSchedulerBubble, 
+  CometChatSchedulerBubbleInterface, 
   APIAction,
   ActionEntity,
   BaseInputElement,
@@ -301,6 +306,7 @@ export {
   DropdownElement,
   ElementEntity,
   FormMessage,
+  SchedulerMessage,
   LabelElement,
   OptionElement,
   RadioButtonElement,

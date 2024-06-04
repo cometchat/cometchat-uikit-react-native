@@ -743,6 +743,9 @@ export const CometChatMessageList = forwardRef<
                     onCardMessageReceived: (cardMessage) => {
                         newMessage(cardMessage);
                     },
+                    onSchedulerMessageReceived: (schedulerMessage) => {
+                        newMessage(schedulerMessage);
+                    },
                     onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
                         newMessage(customInteractiveMessage);
                     },
@@ -1221,7 +1224,7 @@ export const CometChatMessageList = forwardRef<
 
                 let bubbleAlignment: MessageBubbleAlignmentType = getAlignment(message);
 
-                return <TouchableOpacity onLongPress={() => showOptions ? openOptionsForMessage(message, hasTemplate) : undefined} >
+                return <TouchableOpacity activeOpacity={1} onLongPress={() => showOptions ? openOptionsForMessage(message, hasTemplate) : undefined} >
                     <CometChatMessageBubble
                         id={`${message.getId()}`}
                         LeadingView={() => !isThreaded && getLeadingView(message)}

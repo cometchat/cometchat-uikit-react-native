@@ -267,6 +267,9 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
       onCardMessageReceived: (cardMessage) => {
         this.closeIfMessageReceived(cardMessage)
       },
+      onSchedulerMessageReceived: (schedulerMessage) => {
+        this.closeIfMessageReceived(schedulerMessage)
+      },
       onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
         this.closeIfMessageReceived(customInteractiveMessage)
       }

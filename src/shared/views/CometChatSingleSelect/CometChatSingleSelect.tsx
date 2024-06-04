@@ -21,7 +21,7 @@ const CometChatSingleSelect = (props: CometChatSingleSelectInterface) => {
         titleFont: theme.typography.subtitle1,
         titleColor: theme.palette.getAccent(),
         border: { borderWidth: 1, borderColor: theme.palette.getAccent200() },
-        optionFont: theme.typography.title2,
+        optionFont: theme.typography.subtitle1,
         optionColorActive: theme.palette.getAccent900(),
         optionColorInactive: theme.palette.getAccent300(),
         ...style,
@@ -37,9 +37,9 @@ const CometChatSingleSelect = (props: CometChatSingleSelectInterface) => {
     } = _style;
 
     return (
-        <View style={{ marginVertical: 10 }}>
-            <Text style={[titleFont, { color: titleColor }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
-            <View style={{ flex: 1, flexDirection: "row", marginTop: 3, flexWrap: "wrap" }}>
+        <View style={{ marginBottom: 12 }}>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap" }}>
                 {data.getOptions().map((option, index) => (
                     <TouchableOpacity style={{
                         width: data.getOptions().length > 2 ? "100%" : "50%",

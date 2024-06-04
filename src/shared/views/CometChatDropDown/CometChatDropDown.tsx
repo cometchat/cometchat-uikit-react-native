@@ -65,7 +65,7 @@ const CometChatDropdown = (props: CometChatButtonInterface) => {
 
     return (
         <View style={{ ...styles.defaultDropdownStyle, ...dropdownStyle }}>
-            <Text style={[titleFont, { color: titleColor }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
 
             <View style={{ position: "relative" }}>
                 <TouchableOpacity onPress={onDropDownToggle} style={[styles.dropdownButton, { borderColor: showError ? theme.palette.getError() : border.borderColor, borderWidth: border.borderWidth }]}>
@@ -100,13 +100,13 @@ const styles = StyleSheet.create({
     defaultDropdownStyle: {
         // position: "relative",
         zIndex: 1,
-        marginVertical: 10,
+        marginBottom: 12,
         // Your default dropdown style here
     },
     dropdownButton: {
         borderWidth: 1, flexDirection: "row",
         justifyContent: "space-between", height: 35,
-        alignItems: "center", paddingHorizontal: 8, marginTop: 5,
+        alignItems: "center", paddingHorizontal: 8, 
         // Your dropdown button style here
     },
     dropdownArrow: {

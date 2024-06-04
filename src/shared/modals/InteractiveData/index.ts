@@ -3,7 +3,8 @@
 export {
     FormMessage,
     CustomInteractiveMessage,
-    CardMessage
+    CardMessage,
+    SchedulerMessage
 } from "./InteractiveMessage";
 export {
     URLNavigationAction,

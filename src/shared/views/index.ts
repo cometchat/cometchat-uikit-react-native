@@ -86,6 +86,7 @@ import {
 } from './CometChatMediaRecorder';
 import { CometChatFormBubble, CometChatFormBubbleInterface } from './CometChatFormBubble'
 import { CometChatCardBubble, CometChatCardBubbleInterface } from './CometChatCardBubble'
+import { CometChatSchedulerBubble, CometChatSchedulerBubbleInterface } from './CometChatSchedulerBubble'
 
 export {
   CometChatMessageInputStyleInterface,
@@ -165,5 +166,7 @@ export {
   CometChatFormBubble,
   CometChatFormBubbleInterface,
   CometChatCardBubble,
-  CometChatCardBubbleInterface
+  CometChatCardBubbleInterface,
+  CometChatSchedulerBubble, 
+  CometChatSchedulerBubbleInterface 
 };

@@ -20,6 +20,7 @@ export enum MessageEvents {
     onTransientMessageReceived = "onTransientMessageReceived",
     onFormMessageReceived = "onFormMessageReceived",
     onCardMessageReceived = "onCardMessageReceived",
+    onSchedulerMessageReceived = "onSchedulerMessageReceived",
     onInteractionGoalCompleted = "onInteractionGoalCompleted",
     onCustomInteractiveMessageReceived = "onCustomInteractiveMessageReceived",
 }

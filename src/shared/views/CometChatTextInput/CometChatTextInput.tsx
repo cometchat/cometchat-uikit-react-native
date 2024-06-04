@@ -46,16 +46,16 @@ const CometChatTextInput = (props: CometChatTextInputInterface) => {
     }
 
     return (
-        <View style={{ marginBottom: 10 }}>
-            <Text style={[titleFont, { color: titleColor }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+        <View style={{ marginBottom: 12 }}>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
             <TextInput
                 // autoFocus={true}
                 value={value}
                 autoCorrect={false}
                 onChangeText={_onChange}
                 style={{
-                    borderColor: showError ? theme.palette.getError() : borderColor, paddingHorizontal: 5, paddingVertical: 8,
-                    borderWidth: borderWidth, borderRadius: 5, marginTop: 5,
+                    borderColor: showError ? theme.palette.getError() : borderColor, paddingHorizontal: 8, paddingVertical: 4.8,
+                    borderWidth: borderWidth, borderRadius: 5
                 }}
                 placeholder={data.getPlaceholder()}
                 placeholderTextColor={placeholderColor}

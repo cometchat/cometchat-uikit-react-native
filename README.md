@@ -16,7 +16,7 @@
 
 ## Table of contents
 - [About the project](#about-the-project)
-  - [Built With](#built-with)
+  - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
   - [Dependencies](#dependencies)
 - [Versioning](#versioning)
@@ -29,13 +29,12 @@
 ## About the project
 CometChat React Native UIKit provides pre-built user interface kit that developers can use to quickly integrate a reliable & fully featured chat experience into an existing or a new mobile app.<br />
 
-### Built With
-- react: 17.0.2
-- react native: 0.68.5
-- Android Studio 2021.3 dolphin
-- Xcode 14.1
-- Android 9, API 28 and above
-- iOS 12.0 
+### Prerequisites
+- compileSdkVersion >= 33
+- @react-native-community/datetimepicker
+- @react-native-community/async-storage
+- @cometchat/chat-sdk-react-native
+- @react-native-community/clipboard
 
 ## Getting Started
 To set up React Native Chat UIKit and utilize CometChat for your chat functionality, you'll need to follow these steps:
@@ -47,6 +46,7 @@ To set up React Native Chat UIKit and utilize CometChat for your chat functional
 
 ### Dependencies
 To utilize the React Native Chat UIKit in your React native project, you need to include the necessary dependencies in your  file. <br />
+ @react-native-community/datetimepicker <br/>
  @react-native-community/async-storage <br/>
  @cometchat/chat-sdk-react-native <br/>
  @react-native-community/clipboard <br />

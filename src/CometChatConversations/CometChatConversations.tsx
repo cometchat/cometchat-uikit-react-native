@@ -373,7 +373,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
         let isTyping = args[1];
         let newConversation = conversation
         if (isTyping && newConversation?.['lastMessage']?.["typing"]) {
-            newConversation['lastMessage']["typing"] = args[0].receiverType === 'group' ?
+            newConversation['lastMessage']["typing"] = args[0]?.receiverType === 'group' ?
                 `${args[0].sender.name} : ${localize("IS_TYPING")}` :
                 localize("IS_TYPING");
         } else {
@@ -835,6 +835,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 },
                 onCardMessageReceived: (cardMessage) => {
                     messageEventHandler(cardMessage);
+                    !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+                },
+                onSchedulerMessageReceived: (schedulerMessage) => {
+                    messageEventHandler(schedulerMessage);
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onCustomInteractiveMessageReceived: (customInteractiveMessage) => {

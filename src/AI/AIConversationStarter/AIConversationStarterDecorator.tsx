@@ -197,6 +197,9 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
         onCardMessageReceived: (cardMessage) => {
           this.closeIfMessageReceived(cardMessage)
         },
+        onSchedulerMessageReceived: (schedulerMessage) => {
+          this.closeIfMessageReceived(schedulerMessage)
+        },
         onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
           this.closeIfMessageReceived(customInteractiveMessage)
         }

@@ -1,6 +1,7 @@
 import { BaseInputElement, BaseInteractiveElement, LabelElement } from "../InteractiveElements";
 
 import { ElementType } from "../../../constants/UIKitConstants";
+import { DateTimeElement } from "../InteractiveElements/DateTimeElement";
 
 /**
  * Represents the base input for a dynamic form element.
@@ -52,7 +53,9 @@ export class ElementEntity {
             case ElementType.button:
                 return BaseInteractiveElement.fromJSON(json);
             case ElementType.label:
-                return LabelElement.fromJSON(json);
+                return LabelElement.fromJSON(json); 
+            case ElementType.dateTime:
+                return DateTimeElement.fromJSON(json);
             default:
                 return LabelElement.fromJSON({
                     elementId: "1",

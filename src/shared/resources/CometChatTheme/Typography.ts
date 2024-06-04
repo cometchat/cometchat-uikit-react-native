@@ -35,11 +35,17 @@ class Typography {
   fontWeightSemibold: "600"
   fontWeightBold: "700"
   heading: FontStyle
+  heading2: FontStyle
+  heading3: FontStyle
   name: FontStyle
   title1: FontStyle
   title2: FontStyle
   subtitle1: FontStyle
   subtitle2: FontStyle
+  subtitle3: FontStyle
+  subtitle4: FontStyle
+  subtitle5: FontStyle
+  subtitle6: FontStyle
   text1: FontStyle
   text2: FontStyle
   caption1: FontStyle
@@ -56,6 +62,18 @@ class Typography {
       fontFamily: fontFamily,
       fontWeight: fontWeightBold,
       fontSize: 22,
+    }),
+
+    heading2 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightBold,
+      fontSize: 20,
+    }),
+
+    heading3 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightBold,
+      fontSize: 18,
     }),
 
     name = new FontStyle({
@@ -86,6 +104,30 @@ class Typography {
       fontFamily: fontFamily,
       fontWeight: fontWeightRegular,
       fontSize: 13,
+    }),
+
+    subtitle3 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightRegular,
+      fontSize: 12,
+    }),
+    
+    subtitle4 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightRegular,
+      fontSize: 11,
+    }),
+
+    subtitle5 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightRegular,
+      fontSize: 10,
+    }),
+
+    subtitle6 = new FontStyle({
+      fontFamily: fontFamily,
+      fontWeight: fontWeightRegular,
+      fontSize: 9,
     }),
 
     text1 = new FontStyle({
@@ -123,11 +165,18 @@ class Typography {
     this.fontWeightSemibold = fontWeightSemibold;
     this.fontWeightBold = fontWeightBold;
     this.heading = new FontStyle(heading);
+    this.heading2 = new FontStyle(heading2);
+    this.heading3 = new FontStyle(heading3);
     this.name = new FontStyle(name);
     this.title1 = new FontStyle(title1);
     this.title2 = new FontStyle(title2);
     this.subtitle1 = new FontStyle(subtitle1);
     this.subtitle2 = new FontStyle(subtitle2);
+    this.subtitle2 = new FontStyle(subtitle2);
+    this.subtitle3 = new FontStyle(subtitle3);
+    this.subtitle4 = new FontStyle(subtitle4);
+    this.subtitle5 = new FontStyle(subtitle5);
+    this.subtitle6 = new FontStyle(subtitle6);
     this.text1 = new FontStyle(text1);
     this.text2 = new FontStyle(text2);
     this.caption1 = new FontStyle(caption1);
@@ -162,6 +211,26 @@ class Typography {
 
     if (headingFont && headingFont.fontWeight) {
       this.heading.fontWeight = headingFont.fontWeight;
+    }
+  }
+
+  setHeading2(headingFont) {
+    if (headingFont && headingFont.fontSize) {
+      this.heading2.fontSize = headingFont.fontSize;
+    }
+
+    if (headingFont && headingFont.fontWeight) {
+      this.heading2.fontWeight = headingFont.fontWeight;
+    }
+  }
+
+  setHeading3(headingFont) {
+    if (headingFont && headingFont.fontSize) {
+      this.heading3.fontSize = headingFont.fontSize;
+    }
+
+    if (headingFont && headingFont.fontWeight) {
+      this.heading3.fontWeight = headingFont.fontWeight;
     }
   }
 
@@ -212,6 +281,46 @@ class Typography {
 
     if (subtitleFont && subtitleFont.fontWeight) {
       this.subtitle2.fontWeight = subtitleFont.fontWeight;
+    }
+  }
+
+  setSubtitle3(subtitleFont) {
+    if (subtitleFont && subtitleFont.fontSize) {
+      this.subtitle3.fontSize = subtitleFont.fontSize;
+    }
+
+    if (subtitleFont && subtitleFont.fontWeight) {
+      this.subtitle3.fontWeight = subtitleFont.fontWeight;
+    }
+  }
+
+  setSubtitle4(subtitleFont) {
+    if (subtitleFont && subtitleFont.fontSize) {
+      this.subtitle4.fontSize = subtitleFont.fontSize;
+    }
+
+    if (subtitleFont && subtitleFont.fontWeight) {
+      this.subtitle4.fontWeight = subtitleFont.fontWeight;
+    }
+  }
+
+  setSubtitle5(subtitleFont) {
+    if (subtitleFont && subtitleFont.fontSize) {
+      this.subtitle5.fontSize = subtitleFont.fontSize;
+    }
+
+    if (subtitleFont && subtitleFont.fontWeight) {
+      this.subtitle5.fontWeight = subtitleFont.fontWeight;
+    }
+  }
+
+  setSubtitle6(subtitleFont) {
+    if (subtitleFont && subtitleFont.fontSize) {
+      this.subtitle6.fontSize = subtitleFont.fontSize;
+    }
+
+    if (subtitleFont && subtitleFont.fontWeight) {
+      this.subtitle6.fontWeight = subtitleFont.fontWeight;
     }
   }
 

@@ -60,6 +60,9 @@ export class ListenerInitializer {
                     case MessageTypeConstants.card:
                         CometChatUIEventHandler.emitMessageEvent(MessageEvents.onCardMessageReceived, message);
                         break;
+                    case MessageTypeConstants.scheduler:
+                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onSchedulerMessageReceived, message);
+                        break;
                     default:
                         CometChatUIEventHandler.emitMessageEvent(MessageEvents.onCustomInteractiveMessageReceived, message);
                         break;

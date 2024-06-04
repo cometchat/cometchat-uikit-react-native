@@ -1,5 +1,9 @@
-import React, { useContext, useEffect, useRef, useCallback } from "react";
-import { View, Text, NativeModules } from "react-native";
+import React, { useContext, useEffect, useState, useRef, useCallback } from "react";
+import {
+  View,
+  Text,
+  NativeModules,
+} from "react-native";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatContext } from "../../CometChatContext";
 
@@ -20,8 +24,14 @@ import { localize } from "../../resources";
 import { memo } from "react";
 import { ButtonStyle, CometChatButton } from "../CometChatButton";
 import CometChatLabel from "../CometChatLabel/CometChatLabel";
+import { DateTimeElement } from "../../modals/InteractiveData/InteractiveElements/DateTimeElement";
+import { CometChatDateTimePicker } from "../CometChatDateTimePicker";
+import { CometChatUIKit } from "../../CometChatUiKit";
+import { CometChatUiKitConstants } from "../..";
 
 const WebView = NativeModules['WebViewManager'];
+const { TimeZoneCodeManager } = NativeModules;
+
 export interface CometChatFormBubbleInterface {
     message: FormMessage,  // Expect JSON object
     style?: FormBubbleStyleInterface,
@@ -47,10 +57,11 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
     const [interactionGoal, setInteractionGoal] = React.useState<CometChat.InteractionGoal>(undefined);
     const [loaderButton, setLoaderButton] = React.useState<string>("");
     const [loggedInUser, setLoggedInUser] = React.useState<CometChat.User>(null);
+    const currentTimeZoneRef = useRef("");
 
     const _style = new FormBubbleStyle({
         wrapperPadding: 3,
-        titleFont: theme.typography.heading,
+        titleFont: {...theme.typography.heading2, fontWeight: '400'},
         titleColor: theme.palette.getAccent(),
         goalCompletionTextColor: theme.palette.getAccent600(),
         backgroundColor: theme.palette.getBackgroundColor(),
@@ -87,6 +98,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         radioButtonStyle,
         singleSelectStyle,
         textInputStyle,
+        datePickerStyle
         // Extract style properties
     } = _style;
 
@@ -99,6 +111,9 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                 console.log("Error while getting loggedInUser");
                 setLoggedInUser(null);
             });
+        TimeZoneCodeManager.getCurrentTimeZone((timeZone) => {
+            currentTimeZoneRef.current = timeZone;
+        });
         setInteractedElements(message.getInteractions() || []);
         setInteractionGoal(message.getInteractionGoal() || undefined);
         let formFields = {};
@@ -240,7 +255,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         }
 
         return (
-            <View style={{ opacity: isDisabled() ? .7 : 1, marginVertical: 5 }}>
+            <View style={{ opacity: isDisabled() ? .7 : 1, marginVertical: 8 }}>
                 <CometChatButton
                     onPress={isDisabled() ? () => { } : onClick}
                     text={data.getButtonText()}
@@ -260,6 +275,25 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
             />
         );
     }
+
+    const _renderDateTimePicker = (data: DateTimeElement) => {
+        !data.getOptional() && allRequiredFields.push(data.getElementId());
+
+        function onChange(time: string) {
+            setBodyData({ ...bodyData, [data.getElementId()]: time });
+            if (time) {
+                removeFromRequiredList(data.getElementId());
+            }
+        }
+        return (
+            <CometChatDateTimePicker 
+                data={data}
+                style={datePickerStyle} 
+                showError={currentRequiredFields.includes(data.getElementId())}
+                onChange={onChange}
+            />
+        );
+    };
 
     const renderField = (field: ElementEntity) => {
 
@@ -285,6 +319,9 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
             case ElementType.button:
                 // Render button
                 return _renderButton(field as ButtonElement);
+            case ElementType.dateTime:
+                // Render dateTimepicker
+                return _renderDateTimePicker(field as DateTimeElement);
 
             // Handle other cases
             default:
@@ -310,7 +347,18 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         }
     }
 
-    function _handleButtonClick(action: ButtonElement["action"], elementId: string, isSubmitElement?: boolean) {
+    async function _handleButtonClick(action: ButtonElement["action"], elementId: string, isSubmitElement?: boolean) {
+        let conversation = await CometChat.CometChatHelper.getConversationFromMessage(
+            message
+          ).then(
+            (conversation) => {
+              return conversation;
+            },
+            (error) => {
+              console.log("Error while converting message object", error);
+              return undefined;
+            }
+          );
         if (isSubmitElement && onSubmitClick) {
             const dataKey = (action as APIAction)?.getDataKey() || "CometChatData"
             let payload: any = (action as APIAction).getPayload() || {}
@@ -324,17 +372,36 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         switch (action.getActionType()) {
             case ButtonAction.apiAction:
                 if (filledRequiredFields()) {
-                    const dataKey = (action as APIAction)?.getDataKey() || "CometChatData"
-                    let payload: any = (action as APIAction).getPayload() || {}
-                    if (!(typeof payload === "object")) {
-                        payload = {}
-                    }
-                    payload[dataKey] = { ...bodyData };
+                    let uiKitSettings = CometChatUIKit.uiKitSettings;
+                    let body = {
+                        appID: uiKitSettings.appId,
+                        trigger: "ui_message_interacted",
+                        region: uiKitSettings.region,
+                        payload: {},
+                        data: {},
+                    };
+                    let payload: any = (action as APIAction).getPayload() || {};
+                    body.payload = payload;
+            
+                    body.data = {
+                        messageId: message.id,
+                        conversationId: conversation.conversationId,
+                        receiver: message.getSender().getUid(),
+                        messageType: CometChatUiKitConstants.MessageTypeConstants.form,
+                        messageCategory:
+                            CometChatUiKitConstants.MessageCategoryConstants.interactive,
+                        receiverType: message?.getReceiverType(),
+                        interactedBy: loggedInUser.uid,
+                        interactionTimezoneCode: currentTimeZoneRef.current,
+                        sender: loggedInUser.uid,
+                        formData: bodyData
+                    };
+
                     setLoaderButton(elementId)
                     CometChatNetworkUtils.fetcher({
                         url: action.getURL(),
                         method: (action as APIAction).getMethod() || HTTPSRequestMethods.POST,
-                        body: { ...payload, cometchatSenderUid: loggedInUser?.['uid'] || "" },
+                        body,
                         headers: (action as APIAction).getHeaders(),
                     })
                         .then((response) => {
@@ -442,18 +509,32 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
             :
             <View style={{
                 backgroundColor: backgroundColor,
-                padding: 10, borderRadius: borderRadius, ...border
+                 borderRadius: borderRadius, ...border
             }}>
-                {Boolean(message.getTitle()) && <Text
-                    style={[{ marginBottom: 15, marginTop: 10, color: titleColor }, titleFont]}
-                >{message.getTitle()}</Text>}
-
-                {
-                    message.getFormFields().map((item) => {
-                        return renderField(item)
-                    })
-                }
-                {message.getSubmitElement() && _renderButton(message.getSubmitElement() as ButtonElement, true)}
+                    {Boolean(message.getTitle()) && 
+                        <View style={{
+                            padding: 15,
+                            borderBottomWidth: 0.6,
+                            borderBottomColor: theme.palette.getAccent200(),
+                        }}>
+                            <Text
+                                style={[
+                                    {
+                                        color: titleColor,
+                                    },
+                                    titleFont,
+                                ]}
+                            >{message.getTitle()}</Text>
+                        </View>
+                    }
+                <View style={{padding: 12}}>
+                    {
+                        message.getFormFields().map((item) => {
+                            return renderField(item)
+                        })
+                    }
+                    {message.getSubmitElement() && _renderButton(message.getSubmitElement() as ButtonElement, true)}
+                </View>
             </View>
         }
     </View>

@@ -1,6 +1,7 @@
 import { localize } from "../resources/CometChatLocalize";
 import { CometChatOptions } from "../modals/CometChatOptions";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
+import { MessageTypeConstants } from "../constants/UIKitConstants";
 
 export class CometChatConversationUtils {
 
@@ -71,7 +72,13 @@ export class CometChatConversationUtils {
                 }
                 msgText = (lastMessage as CometChat.Action).getMessage();
             } else if (lastMessage.getCategory() === CometChat.CATEGORY_INTERACTIVE) {
-                msgText = lastMessage.getType() === "form" ? `${localize('FORM')} 📋` : `${localize('CARD')} 🪧`;
+                msgText = lastMessage.getType() === "form" 
+                    ? `${localize('FORM')} 📋` 
+                    : lastMessage.getType() === MessageTypeConstants.scheduler 
+                    ? (lastMessage?.interactiveData?.title ? 
+                        `🗓️ ${lastMessage?.interactiveData?.title}` 
+                        : `🗓️ ${localize('MEET_WITH')} ${lastMessage?.getSender()?.getName()}`)
+                    : `${localize('CARD')} 🪧`;
             }
             else {
                 msgText = lastMessage['metaData']?.pushNotification;

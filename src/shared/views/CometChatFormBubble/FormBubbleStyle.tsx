@@ -1,6 +1,7 @@
 import { BaseStyle, FontStyle } from "../../base";
 import { ButtonStyleInterface } from "../CometChatButton";
 import { CheckBoxStyleInterface } from "../CometChatCheckBox/CheckBoxStyle";
+import { DatePickerStyleInterface } from "../CometChatDateTimePicker";
 import { DropDownStyleInterface } from "../CometChatDropDown/DropDownStyle";
 import { LabelStyleInterface } from "../CometChatLabel/LabelStyle";
 import { QuickViewStyleInterface } from "../CometChatQuickView/QuickViewStyle";
@@ -17,6 +18,7 @@ export interface FormBubbleStyleInterface extends BaseStyle {
     goalCompletionTextFont?: FontStyle;
     goalCompletionTextColor?: string;
     textInputStyle?: TextInputStyleInterface;
+    datePickerStyle?: DatePickerStyleInterface;
     quickViewStyle?: QuickViewStyleInterface;
     radioButtonStyle?: RadioButtonStyleInterface;
     checkboxStyle?: CheckBoxStyleInterface;
@@ -35,6 +37,7 @@ export class FormBubbleStyle extends BaseStyle {
     goalCompletionTextFont?: FontStyle;
     goalCompletionTextColor?: string;
     textInputStyle?: TextInputStyleInterface;
+    datePickerStyle?: DatePickerStyleInterface;
     quickViewStyle?: QuickViewStyleInterface;
     radioButtonStyle?: RadioButtonStyleInterface;
     checkboxStyle?: CheckBoxStyleInterface;
@@ -57,6 +60,7 @@ export class FormBubbleStyle extends BaseStyle {
         goalCompletionTextFont,
         goalCompletionTextColor,
         textInputStyle,
+        datePickerStyle,
         quickViewStyle,
         radioButtonStyle,
         checkboxStyle,
@@ -80,6 +84,7 @@ export class FormBubbleStyle extends BaseStyle {
         this.goalCompletionTextFont = goalCompletionTextFont;
         this.goalCompletionTextColor = goalCompletionTextColor;
         this.textInputStyle = textInputStyle;
+        this.datePickerStyle = datePickerStyle;
         this.quickViewStyle = quickViewStyle;
         this.radioButtonStyle = radioButtonStyle;
         this.checkboxStyle = checkboxStyle;

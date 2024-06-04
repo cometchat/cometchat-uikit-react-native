@@ -21,6 +21,8 @@ import { CometChatFormBubble, CometChatCardBubble } from "../views";
 import { CardMessage, FormMessage } from "../modals/InteractiveData";
 import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
 import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
+import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
+import { CometChatSchedulerBubble, SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
 
 function isAudioMessage(message: CometChat.BaseMessage): message is CometChat.MediaMessage {
     return message.getCategory() == CometChat.CATEGORY_MESSAGE &&
@@ -146,6 +148,13 @@ export class MessageDataSource implements DataSource {
     }
 
     getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+        let optionsList: Array<CometChatMessageOption> = [];
+        if (!isDeletedMessage(messageObject))
+            optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
+        return optionsList;
+    }
+
+    getSchedulerMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
@@ -311,6 +320,15 @@ export class MessageDataSource implements DataSource {
             style={style}
         />
     }
+
+    getSchedulerMessageBubble(message: SchedulerMessage, theme: CometChatTheme, style?: SchedulerBubbleStyles, onScheduleClick?: (data: any) => void): JSX.Element {
+        return <CometChatSchedulerBubble 
+            schedulerMessage={message}
+            onScheduleClick={onScheduleClick}
+            style={style}
+        />
+    }
+
     getCardMessageBubble(message: CardMessage, theme: CometChatTheme, style?: CardBubbleStyle, onSubmitClick?: (data: any) => void): JSX.Element {
         return <CometChatCardBubble
             message={message}
@@ -355,6 +373,9 @@ export class MessageDataSource implements DataSource {
     }
     getFormMessageContentView(message: FormMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         return ChatConfigurator.dataSource.getFormMessageBubble(message, theme);
+    }
+    getSchedulerMessageContentView(message: SchedulerMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
+        return ChatConfigurator.dataSource.getSchedulerMessageBubble(message, theme);
     }
     getCardMessageContentView(message: CardMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element {
         return ChatConfigurator.dataSource.getCardMessageBubble(message, theme);
@@ -435,6 +456,21 @@ export class MessageDataSource implements DataSource {
                 }
             },
             options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getFormMessageOptions(loggedInuser, message, group),
+        });
+    }
+
+    getSchedulerMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+        return new CometChatMessageTemplate({
+            type: MessageTypeConstants.scheduler,
+            category: MessageCategoryConstants.interactive,
+            ContentView: (message: CometChat.BaseMessage, _alignment: MessageBubbleAlignmentType) => {
+                if (isDeletedMessage(message)) {
+                    return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
+                } else {
+                    return ChatConfigurator.dataSource.getSchedulerMessageContentView(message, _alignment, theme);
+                }
+            },
+            options: (loggedInuser, message, group) => ChatConfigurator.dataSource.getSchedulerMessageOptions(loggedInuser, message, group),
         });
     }
 
@@ -520,6 +556,7 @@ export class MessageDataSource implements DataSource {
         return [
             ChatConfigurator.dataSource.getTextMessageTemplate(theme),
             ChatConfigurator.dataSource.getFormMessageTemplate(theme),
+            ChatConfigurator.dataSource.getSchedulerMessageTemplate(theme),
             ChatConfigurator.dataSource.getCardMessageTemplate(theme),
             ChatConfigurator.dataSource.getAudioMessageTemplate(theme),
             ChatConfigurator.dataSource.getVideoMessageTemplate(theme),
@@ -556,6 +593,9 @@ export class MessageDataSource implements DataSource {
             case MessageTypeConstants.form:
                 template = ChatConfigurator.dataSource.getFormMessageTemplate(theme)
                 break;
+            case MessageTypeConstants.scheduler:
+                template = ChatConfigurator.dataSource.getSchedulerMessageTemplate(theme)
+                break;
             case MessageTypeConstants.card:
                 template = ChatConfigurator.dataSource.getCardMessageTemplate(theme)
                 break;
@@ -573,7 +613,8 @@ export class MessageDataSource implements DataSource {
             MessageTypeConstants.groupActions,
             MessageTypeConstants.groupMember,
             MessageTypeConstants.form,
-            MessageTypeConstants.card
+            MessageTypeConstants.card,
+            MessageTypeConstants.scheduler
         ];
     }
     getAllMessageCategories(): string[] {

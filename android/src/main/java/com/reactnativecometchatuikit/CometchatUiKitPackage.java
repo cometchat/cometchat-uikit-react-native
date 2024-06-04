@@ -23,6 +23,7 @@ public class CometchatUiKitPackage implements ReactPackage {
         modules.add(new VideoManager(reactContext));
         modules.add(new ImageManager(reactContext));
         modules.add(new WebViewManager(reactContext));
+        modules.add(new TimeZoneCodeManager(reactContext));
         return modules;
     }
 

@@ -45,12 +45,12 @@ const CometChatCheckBox = (props: CometChatCheckBoxInterface) => {
         return selectedOptions.find((selectedOption) => selectedOption === option.getValue()) ? true : false;
     }
     return (
-        <View style={{ marginVertical: 10 }}>
+        <View style={{ marginBottom: 12 }}>
 
-            <Text style={[titleFont, { color: titleColor }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
 
             {data.getOptions().map((option, index) => (
-                <View key={index} style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
+                <View key={index} style={{ flexDirection: "row", alignItems: "center", marginVertical: 1 }}>
                     <TouchableOpacity style={{
                         height: 20, width: 20, backgroundColor: _checkSelectedOption(option) ? activeBackgroundColor : inactiveBackgroundColor,
                         borderRadius: 5, marginRight: 5, alignItems: "center", justifyContent: "center",

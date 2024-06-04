@@ -26,6 +26,7 @@ import { AIExtensionDataSource } from "../../AI/AIExtensionDataSource";
 import { AISmartRepliesExtension } from "../../AI/AISmartReplies/AISmartReplies";
 import { AIConversationSummaryExtension } from "../../AI/AIConversationSummary/AIConversationSummaryExtension";
 import { AIAssistBotExtension } from "../../AI/AIAssistBot/AIAssistBotExtension";
+import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
 
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
@@ -36,7 +37,6 @@ export class CometChatUIKit {
         CometChatUIKit.uiKitSettings = {
             ...uiKitSettings
         };
-        console.log(uiKitSettings?.overrideAdminHost, uiKitSettings.overrideClientHost)
         var appSetting = new CometChat.AppSettingsBuilder()
             .subscribePresenceForAllUsers()
             .autoEstablishSocketConnection(uiKitSettings.autoEstablishSocketConnection)
@@ -241,6 +241,37 @@ export class CometChatUIKit {
                 .catch(err => {
                     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
                     reject(err);
+                });
+        });
+    }
+
+
+    /**
+   * Sends a Scheduler message and emits events based on the message status.
+   * @param message - The Scheduler message to be sent.
+   * @param disableLocalEvents - A boolean indicating whether to disable local events or not. Default value is false.
+   */
+    static sendSchedulerMessage(message: SchedulerMessage, disableLocalEvents: boolean = false): Promise<CometChat.TextMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            if (!disableLocalEvents) {
+                CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            }
+
+            CometChat.sendInteractiveMessage(message)
+                .then((message: CometChat.BaseMessage) => {
+                    console.log("message sent successfully", message.getSentAt())
+                    if (!disableLocalEvents) {
+                        CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
+                    }
+                    resolve(message);
+                })
+                .catch((error: CometChat.CometChatException) => {
+                    console.log("error while sending message", { error })
+                    message.setMetadata({ error });
+                    // if (!disableLocalEvents) {
+                    //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    // }
+                    reject(error);
                 });
         });
     }

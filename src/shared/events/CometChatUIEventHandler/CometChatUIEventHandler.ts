@@ -166,6 +166,9 @@ export class CometChatUIEventHandler {
                 case listener._eventListener.onCardMessageReceived?.name:
                     listener._eventListener.onCardMessageReceived(param);
                     break
+                case listener._eventListener.onSchedulerMessageReceived?.name:
+                    listener._eventListener.onSchedulerMessageReceived(param);
+                    break
                 case listener._eventListener.onCustomInteractiveMessageReceived?.name:
                     listener._eventListener.onCustomInteractiveMessageReceived(param);
                     break
