@@ -21,7 +21,7 @@ export interface MessagesConfigurationInterface {
     disableSoundForMessages?: boolean,
     customSoundForIncomingMessage?: string,
     customSoundForOutgoingMessage?: string,
-    messageStyle?: MessageStyleInterface,
+    messagesStyle?: MessageStyleInterface,
     AuxilaryAppBarOptions?: (props:{user?: CometChat.User, group?: CometChat.Group}) => JSX.Element
 }
 
@@ -41,7 +41,7 @@ export class MessagesConfiguration implements MessagesConfigurationInterface {
     disableSoundForMessages?: boolean
     customSoundForIncomingMessage?: string
     customSoundForOutgoingMessage?: string
-    messageStyle?: MessageStyleInterface
+    messagesStyle?: MessageStyleInterface
     AuxilaryAppBarOptions?: (props:{user?: CometChat.User, group?: CometChat.Group}) => JSX.Element
 
     constructor(props: MessagesConfigurationInterface) {

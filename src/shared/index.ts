@@ -24,6 +24,8 @@ import {
   CometChatMessageTemplate,
   CometChatDetailsTemplate,
   CometChatDetailsOption,
+  CometChatCallLogDetailsTemplate,
+  CometChatCallLogDetailsOption,
   APIAction,
   ActionEntity,
   BaseInputElement,
@@ -214,6 +216,8 @@ export {
   CometChatMessageTemplate,
   CometChatDetailsTemplate,
   CometChatDetailsOption,
+  CometChatCallLogDetailsTemplate,
+  CometChatCallLogDetailsOption,
   //
   CometChatLocalize,
   localize,

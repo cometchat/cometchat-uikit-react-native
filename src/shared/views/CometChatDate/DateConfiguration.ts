@@ -7,6 +7,7 @@ import { DateStyle, DateStyleInterface } from './DateStyle';
 export class DateConfiguration {
   pattern?: string;
   style?: DateConfigurationStyle;
+  dateAlignment?: "auto" | "left" | "right" | "center" | "justify" | undefined;
   /**
    * @param {Object} param0
    * @field pattern - pattern in which time should be displayed. One of ["timeFormat","dayDateFormat","dayDateTimeFormat"]
@@ -15,9 +16,11 @@ export class DateConfiguration {
   constructor({
     style = new DateStyle({}),
     pattern = 'timeFormat',
+    dateAlignment,
   }: DateConfigurationInterface) {
     this.pattern = pattern;
     this.style = style;
+    this.dateAlignment = dateAlignment;
   }
 }
 
@@ -25,4 +28,5 @@ type DateConfigurationStyle = DateStyleInterface;
 export interface DateConfigurationInterface {
   pattern?: string;
   style?: DateConfigurationStyle;
+  dateAlignment?: "auto" | "left" | "right" | "center" | "justify" | undefined;
 }

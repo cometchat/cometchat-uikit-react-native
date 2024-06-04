@@ -38,11 +38,12 @@ const OptionListView = ({
           paddingHorizontal: 10,
           borderRadius: cornerRadius || 0,
           backgroundColor: backgroundColor || theme.palette.getAccent50(),
+          justifyContent: !iconUrl ? 'center' : undefined,
         },
       ]}
       onPress={onPress}
     >
-      <Image
+      {Boolean(iconUrl) && <Image
         source={iconUrl}
         style={[
           Style.listItemImageStyle,
@@ -57,7 +58,7 @@ const OptionListView = ({
               listItemIconBorderRadius || style?.listItemIconBorderRadius || 0,
           },
         ]}
-      />
+      />}
       <Text
         style={[
           {
@@ -145,6 +146,7 @@ interface CometChatActionSheetInterface {
   hideLayoutMode: boolean;
   actions: ActionItemInterface[];
   style: ActionSheetStyles;
+  hideHeader?: boolean;
 }
 export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
@@ -155,6 +157,8 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
       listItemTitleColor: theme.palette.getAccent(),
       titleColor: theme.palette.getAccent(),
       titleFont: theme.typography.name,
+      backgroundColor: props.style?.backgroundColor,
+      paddingHorizontal: props.style?.paddingHorizontal
     }),
     ...props.style,
   };
@@ -166,7 +170,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
 
   const _render = ({ item }) => {
     return (
-      <OptionListView key={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} style={style} />
+      <OptionListView key={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} backgroundColor={style.listItemBackground} style={style} />
     );
   };
   const _renderGrid = ({ item }) => (
@@ -188,7 +192,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
                 style={{
                   height: 1,
                   backgroundColor:
-                    props.style?.actionSheetSeparatorTint ||
+                    props.style?.actionSheetSeparatorTint || props.style?.optionsSeparatorTint ||
                     theme.palette.getAccent200(),
                 }}
               />
@@ -238,12 +242,12 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
           width: style?.width,
           backgroundColor: style?.backgroundColor || 'transparent',
           borderRadius: style?.borderRadius,
-          paddingHorizontal: 10,
+          paddingHorizontal: style?.paddingHorizontal ?? 10,
         },
         style?.border,
       ]}
     >
-      <View style={Style.headerStyle}>
+      {!props.hideHeader && <View style={Style.headerStyle}>
         <Text
           style={[
             Style.titleStyle,
@@ -259,7 +263,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
           {props.title}
         </Text>
         {getLayoutModeIcon()}
-      </View>
+      </View>}
       {getList()}
     </View>
   );

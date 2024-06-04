@@ -33,7 +33,7 @@ export interface AIConfigurations {
 
 
   export enum State {
-    loading,
-    error,
-    empty
+    loading = "loading",
+    error = "error",
+    empty = "empty",
   }

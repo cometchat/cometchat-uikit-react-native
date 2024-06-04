@@ -131,10 +131,10 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
     }
 
     const checkActiveCallAndDoAction = () => {
-    
-            setDisableButton(true);
-           
-            return true;
+
+        setDisableButton(true);
+
+        return true;
     }
 
     const makeCall = (type) => {
@@ -164,17 +164,16 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
                 })
                 customMessage.setCustomData(customData);
                 CometChatUIKit.sendCustomMessage(
-                    customMessage,
-                    (res) => {
+                    customMessage)
+                    .then((res) => {
                         outGoingCall.current = res as CometChat.CustomMessage
                         setShowOutgoingCallScreen(true);
                         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccOutgoingCall, { call: res });
-                    },
-                    (rej) => {
+                    })
+                    .catch((rej) => {
                         console.log("custom msg error", rej);
                         onError && onError(rej);
-                    }
-                );
+                    });
             } else {
                 var receiverType = user ? CometChat.RECEIVER_TYPE.USER : group ? CometChat.RECEIVER_TYPE.GROUP : undefined
                 if (!receiverID || !receiverType)

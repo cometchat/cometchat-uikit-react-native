@@ -24,7 +24,7 @@ const validateDetailOptions = ({ loggedInUser, group, optionId }) => {
   let isValid = validateGroupMemberOptions(
     loggedInUser.uid === group.owner
       ? GroupMemberScope.owner
-      : GroupMemberScope.participant,
+      : group.scope,
     group.scope,
     optionId
   );

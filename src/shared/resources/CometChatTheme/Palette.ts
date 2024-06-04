@@ -98,6 +98,7 @@ class PaletteItem {
  * @param {String} mode
  * @param {Object} backgroundColor
  * @param {Object} primary
+ * @param {Object} primary40
  * @param {Object} secondary
  * @param {Object} error
  * @param {Object} success
@@ -118,6 +119,7 @@ class Palette {
   mode: string
   backgroundColor: PaletteItem
   primary: PaletteItem
+  primary40: PaletteItem
   secondary: PaletteItem
   error: PaletteItem
   success: PaletteItem
@@ -141,6 +143,10 @@ class Palette {
     primary = new PaletteItem({
       [modes.light]: 'rgb(51, 153, 255)',
       [modes.dark]: 'rgb(51, 153, 255)',
+    }),
+    primary40 = new PaletteItem({
+      [modes.light]: 'rgba(51, 153, 255, .04)',
+      [modes.dark]: 'rgba(51, 153, 255, .04)',
     }),
     secondary = new PaletteItem({
       [modes.light]: 'rgba(248, 248, 248, 0.92)',
@@ -202,6 +208,7 @@ class Palette {
     this.mode = mode;
     this.backgroundColor = backgroundColor;
     this.primary = primary;
+    this.primary40 = primary40;
     this.secondary = secondary;
     this.error = error;
     this.success = success;
@@ -263,6 +270,9 @@ class Palette {
   getPrimary = () => {
     return this.primary[this.mode];
   };
+  getPrimary40 = () => {
+    return this.primary40[this.mode];
+  }
   getSecondary = () => {
     return this.secondary[this.mode];
   };
@@ -284,6 +294,12 @@ class Palette {
   setPrimary(colorset) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.primary = colorset;
+    }
+  }
+
+  setPrimary40(colorset) {
+    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+      this.primary40 = colorset;
     }
   }
 

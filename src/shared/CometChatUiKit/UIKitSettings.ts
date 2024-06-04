@@ -1,4 +1,4 @@
-import { AIEnabler } from "../../AI/AIEnabler"
+import { AIExtensionDataSource } from "../../AI/AIExtensionDataSource"
 import { ExtensionsDataSource } from "../framework"
 
 export type UIKitSettings = {
@@ -12,7 +12,7 @@ export type UIKitSettings = {
     deviceToken?: string,
     googleApiKey?: string,
     disableCalling?: boolean,
-    aiFeatures?:AIEnabler,
+    aiFeatures?:AIExtensionDataSource[],
     extensions?:ExtensionsDataSource[]
 }
 

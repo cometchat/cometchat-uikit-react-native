@@ -74,7 +74,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
     const { theme } = useContext(CometChatContext);
 
     //calcualted styles and configurations
-    const _messageStyles = new MessageStyle({
+    const _messagesStyles = new MessageStyle({
         backgroundColor: theme.palette.getBackgroundColor(),
         ...messagesStyle
     });
@@ -210,10 +210,8 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
         return (
             <View style={Style.appBarStyle}>
                 {
-                    ChatConfigurator.dataSource.getAuxiliaryHeaderAppbarOptions(user, group, theme)
-                }
-                {
-                    AuxilaryAppBarOptions && <AuxilaryAppBarOptions group={groupObject} user={userObject} />
+                    AuxilaryAppBarOptions ? <AuxilaryAppBarOptions group={groupObject} user={userObject} />
+                        : ChatConfigurator.dataSource.getAuxiliaryHeaderAppbarOptions(user, group, theme)
                 }
                 {
                     !hideDetails && (
@@ -235,17 +233,10 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
         width,
         border,
         borderRadius
-    } = _messageStyles;
+    } = _messagesStyles;
 
     return <View style={[
         Style.container,
-        showComponent == ComponentNames.Details ||
-            showComponent == ComponentNames.Thread
-            ? {}
-            : {
-                paddingStart: 8,
-                paddingEnd: 8
-            },
         { backgroundColor, height, width, ...border, borderRadius }
     ]
     }>

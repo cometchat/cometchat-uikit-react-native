@@ -49,6 +49,7 @@ import { CometChatContextType } from '../shared/base/Types';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 import { CometChatMessageComposerActionInterface } from '../shared/helper/types';
 import { CometChatMediaRecorder, MediaRecorderStyle } from '../shared/views/CometChatMediaRecorder';
+import { AIOptionsStyle } from '../AI/AIOptionsStyle';
 const { FileManager } = NativeModules;
 
 const uiEventListenerShow = 'uiEvent_show_' + new Date().getTime();
@@ -170,6 +171,35 @@ const RecordAudio = (props: any) => {
         deleteIconUrl={deleteIconUrl}
         stopIconUrl={stopIconUrl}
         submitIconUrl={submitIconUrl}
+      />
+    </CometChatBottomSheet>
+  ) : null;
+}
+
+const AIOptions = (props: any) => {
+  const {
+    aiStyle,
+    shouldShow = false,
+    onClose = () => { },
+    cometChatBottomSheetStyle = { backgroundColor: aiStyle.backgroundColor, paddingHorizontal: 0 },
+    sheetRef,
+    aiOptions,
+    ...otherProps
+  } = props;
+
+  return shouldShow ? (
+    <CometChatBottomSheet
+      ref={sheetRef}
+      onClose={onClose}
+      style={cometChatBottomSheetStyle}
+    >
+
+      <CometChatActionSheet
+        actions={aiOptions}
+        style={{ ...aiStyle, paddingHorizontal: 0 }}
+        {...otherProps}
+        onPress={props.onClick}
+        hideHeader={true}
       />
     </CometChatBottomSheet>
   ) : null;
@@ -464,6 +494,14 @@ export interface CometChatMessageComposerInterface {
    * @description callback(error)→ void
    */
   onError?: (error: any) => void;
+  /**
+  * AI Icon URL.
+  */
+  AIIconURL?: string;
+  /**
+   * AI Options Style.
+   */
+  aiOptionsStyle?: AIOptionsStyle;
 }
 export const CometChatMessageComposer = React.forwardRef(
   (props: CometChatMessageComposerInterface, ref) => {
@@ -505,20 +543,21 @@ export const CometChatMessageComposer = React.forwardRef(
       deleteIconUrl,
       stopIconUrl,
       submitIconUrl,
+      AIIconURL,
+      aiOptionsStyle
     } = props;
 
     const defaultAttachmentOptions =
       ChatConfigurator.dataSource.getAttachmentOptions(user, group, id);
 
     const composerIdMap = new Map().set('parentMessageId', parentMessageId);
-        const defaultAuxiliaryButtonOptions =
+    const defaultAuxiliaryButtonOptions =
       ChatConfigurator.getDataSource().getAuxiliaryOptions(
         user,
         group,
         composerIdMap,
         theme
       );
-      
 
     const loggedInUser = React.useRef<any>({});
     const chatWith = React.useRef<any>(null);
@@ -531,6 +570,9 @@ export const CometChatMessageComposer = React.forwardRef(
     const [showEmojiboard, setShowEmojiboard] = React.useState(false);
     const [showActionSheet, setShowActionSheet] = React.useState(false);
     const [showRecordAudio, setShowRecordAudio] = React.useState(false);
+    const [showAIOptions, setShowAIOptions] = React.useState(false);
+    const [AIOptionItems, setAIOptionItems] = React.useState([]);
+    const [rootAIOptionItems, setRootAIOptionItems] = React.useState([]);
     const [actionSheetItems, setActionSheetItems] = React.useState([]);
     const [messagePreview, setMessagePreview] = React.useState(null);
     const [CustomView, setCustomView] = React.useState(null);
@@ -539,6 +581,18 @@ export const CometChatMessageComposer = React.forwardRef(
     const [isVisible, setIsVisible] = React.useState(false);
 
     const bottomSheetRef = React.useRef<any>(null);
+
+    const AIStyles = new AIOptionsStyle({
+      //NEED TO ADD DEFAULT STYLE HERE
+      backgroundColor: theme.palette.getBackgroundColor(),
+      listItemBackground: theme.palette.getBackgroundColor(),
+      listItemTitleFont: theme.typography.subtitle1,
+      listItemTitleColor: theme.palette.getAccent(),
+      listItemBorderRadius: 0,
+      optionsSeparatorTint: theme.palette.getAccent200(),
+      borderRadius: 0,
+      ...aiOptionsStyle,
+    })
 
     let isTyping = null;
 
@@ -898,6 +952,10 @@ export const CometChatMessageComposer = React.forwardRef(
       );
     };
 
+    const shouldShowAIOptions = () => {
+      return AIOptionItems.length > 0;
+    }
+
     const AuxiliaryButtonViewElem = () => {
       if (AuxiliaryButtonView)
         return (
@@ -906,6 +964,7 @@ export const CometChatMessageComposer = React.forwardRef(
       else if (defaultAuxiliaryButtonOptions)
         return <View style={{ flexDirection: "row", alignItems: "center" }}>
           {defaultAuxiliaryButtonOptions}
+          {shouldShowAIOptions() && <AIOptionsButtonView />}
           {!hideVoiceRecording && <RecordAudioButtonView />}
         </View>;
 
@@ -974,6 +1033,16 @@ export const CometChatMessageComposer = React.forwardRef(
         image={voiceRecordingIconURL || ICONS.MICROPHONE}
         imageStyle={Style.imageStyle}
         onClick={() => setShowRecordAudio(true)}
+      />
+    }
+    const AIOptionsButtonView = () => {
+      return <ImageButton
+        image={AIIconURL || ICONS.AI}
+        imageStyle={Style.imageStyle}
+        onClick={() => {
+          setShowAIOptions(true)
+          setAIOptionItems(rootAIOptionItems)
+        }}
       />
     }
 
@@ -1059,7 +1128,32 @@ export const CometChatMessageComposer = React.forwardRef(
             };
           })
       );
+
+      const aiOptions = ChatConfigurator.dataSource.getAIOptions(user, group, theme, composerIdMap, AIStyles);
+      let newAiOptions = _getAIOptions(aiOptions);
+      setAIOptionItems(newAiOptions);
+      setRootAIOptionItems(newAiOptions);
     }, [user, group, id, parentMessageId]);
+
+    const _getAIOptions = (options) => {
+      let newOptions = [...options];
+      let newAiOptions = newOptions.map((item) => {
+        if (typeof item.onPress === 'function')
+          return {
+            ...item,
+            onPress: () => {
+              setShowAIOptions(false)
+              item.onPress(user)
+            },
+          };
+        return {
+          ...item,
+          onPress: () => { },
+        };
+      })
+      return newAiOptions;
+
+    }
 
     useEffect(() => {
       CometChatUIEventHandler.addMessageListener(editMessageListenerID, {
@@ -1067,13 +1161,22 @@ export const CometChatMessageComposer = React.forwardRef(
       });
       CometChatUIEventHandler.addUIListener(UiEventListenerID, {
         ccToggleBottomSheet: (item) => {
+          if (item?.bots) {
+            let newAiOptions = _getAIOptions(item.bots)
+            setAIOptionItems(newAiOptions);
+            setShowAIOptions(true)
+            return;
+          } else if (item?.botView) {
+            setCustomView(() => item.child);
+            return;
+          }
           setIsVisible(false);
           bottomSheetRef.current?.togglePanel();
         },
-        ccComposeMessage: (text)=>{
+        ccComposeMessage: (text) => {
           setIsVisible(false);
           bottomSheetRef.current?.togglePanel();
-       
+
           setInputMessage(text?.text)
 
         }
@@ -1129,7 +1232,9 @@ export const CometChatMessageComposer = React.forwardRef(
 
     return (
       <>
+        {!isVisible && CustomView && <CustomView />}
         <Modal
+          animationType="slide"
           visible={isVisible}
           onRequestClose={() => {
             setIsVisible(false);
@@ -1147,7 +1252,6 @@ export const CometChatMessageComposer = React.forwardRef(
             style={[
               Style.container,
               {
-                backgroundColor: theme.palette.getAccent100(),
                 paddingTop: CustomViewHeader ? 0 : 8
               },
               messageComposerStyle,
@@ -1217,6 +1321,15 @@ export const CometChatMessageComposer = React.forwardRef(
               deleteIconUrl={deleteIconUrl}
               stopIconUrl={stopIconUrl}
               submitIconUrl={submitIconUrl}
+            />
+            <AIOptions
+              sheetRef={bottomSheetRef}
+              shouldShow={showAIOptions}
+              onClose={() => {
+                setShowAIOptions(false)
+              }}
+              aiOptions={AIOptionItems}
+              aiStyle={AIStyles}
             />
             {HeaderView ? (
               <HeaderView />

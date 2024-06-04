@@ -122,13 +122,12 @@ export const CometChatMessageInput = (
   } = props;
 
   return (
-    <View style={{ backgroundColor: 'transparent' }}>
+    <View style={{ backgroundColor: style.inputBackground ?? theme.palette.getAccent100(), marginHorizontal: 8, borderRadius: 8 }}>
       <TextInput
         ref={messageInputRef}
         style={[
           styles.textInput,
           {
-            backgroundColor: style.inputBackground ?? 'transparent',
             color: style.textColor ?? theme.palette.getAccent(),
             maxHeight: maxHeight ?? 25 * 3,
           },

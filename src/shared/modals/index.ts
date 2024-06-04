@@ -3,6 +3,8 @@ import { CometChatOptions } from './CometChatOptions';
 import { CometChatMessageTemplate } from './CometChatMessageTemplate';
 import { CometChatDetailsTemplate } from './CometChatDetailsTemplate';
 import { CometChatDetailsOption } from './CometChatDetailsOption';
+import { CometChatCallLogDetailsTemplate } from './CometChatCallLogDetailsTemplate';
+import { CometChatCallLogDetailsOption } from './CometChatCallLogDetailsOptions';
 import { APIAction, ActionEntity, BaseInputElement, BaseInteractiveElement, ButtonElement, CardMessage, CheckboxElement, CustomAction, CustomInteractiveMessage, DropdownElement, ElementEntity, FormMessage, LabelElement, OptionElement, RadioButtonElement, SingleSelectElement, TextInputElement, URLNavigationAction } from './InteractiveData'
 
 export {
@@ -28,5 +30,7 @@ export {
   RadioButtonElement,
   SingleSelectElement,
   TextInputElement,
-  URLNavigationAction
+  URLNavigationAction,
+  CometChatCallLogDetailsTemplate,
+  CometChatCallLogDetailsOption
 };

@@ -10,6 +10,7 @@ export interface ActionSheetStylesInterface extends BaseStyleInterface {
     listItemIconBackground?: string;
     listItemIconBorderRadius?: number;
     actionSheetSeparatorTint?: string;
+    paddingHorizontal?: number;
 }
 
 /**
@@ -26,6 +27,7 @@ export class ActionSheetStyles extends BaseStyle {
     listItemIconBackground: string;
     listItemIconBorderRadius: number;
     actionSheetSeparatorTint: string;
+    paddingHorizontal?: number;
     /**
      * @param {object} param0 
      * @param {any} width
@@ -56,6 +58,7 @@ export class ActionSheetStyles extends BaseStyle {
         listItemIconBorderRadius = 0,
         listItemTitleFont = new FontStyle({fontSize: 17, fontWeight: "400"}),
         listItemTitleColor = "",
+        paddingHorizontal,
     }: ActionSheetStylesInterface) {
         super({
             width,
@@ -72,5 +75,6 @@ export class ActionSheetStyles extends BaseStyle {
         this.listItemTitleColor = listItemTitleColor;
         this.listItemIconBackground = listItemIconBackground;
         this.listItemIconBorderRadius = listItemIconBorderRadius;
+        this.paddingHorizontal = paddingHorizontal;
     }
 }

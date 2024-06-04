@@ -114,11 +114,9 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     textMessage.setSentAt(getUnixTimestamp());
     textMessage.setMuid(String(getUnixTimestamp()));
 
-    CometChatUIKit.sendTextMessage(
-      textMessage,
-      () => {},
-      () => {}
-    );
+    CometChatUIKit.sendTextMessage(textMessage)
+      .then(() => {})
+      .catch(() => {})
   };
 
   onCloseRepliesPannel = () => {

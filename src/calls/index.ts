@@ -20,6 +20,13 @@ import {
 import { CallingPackage } from "./CallingPackage";
 import { CallUIEvents } from "./CallEvents";
 
+import { CallLogsWithDetailsConfigurationInterface, CometChatCallLogsWithDetails } from './CometChatCallLogsWithDetails'
+import { CallLogsConfiguration, CallLogsConfigurationInterface, CallLogsStyle, CallLogsStyleInterface, CometChatCallLogs, CometChatCallLogsConfigurationInterface } from './CometChatCallLogs'
+import { CometChatCallLogDetails, CometChatCallLogDetailsConfigurationInterface, CallLogDetailsConfiguration, CallLogDetailsConfigurationInterface, CallLogDetailsStyle, CallLogDetailsStyleInterface } from './CometChatCallLogDetails'
+import { CallLogHistoryConfiguration, CallLogHistoryConfigurationInterface, CallLogHistoryStyle, CallLogHistoryStyleInterface, CometChatCallLogHistory, CometChatCallLogHistoryInterface } from './CometChatCallLogHistory'
+import { CallLogParticipantsConfiguration, CallLogParticipantsConfigurationInterface, CallParticipantsStyle, CallParticipantsStyleInterface, CometChatCallLogParticipantsConfigurationInterface, CometChatParticipants } from './CometChatCallLogParticipants'
+import { CallLogRecordingsConfiguration, CallLogRecordingsConfigurationInterface, CallRecordingsStyle, CallRecordingsStyleInterface, CometChatCallLogRecordingsConfigurationInterface, CometChatRecordings } from './CometChatCallLogRecordings'
+
 export {
     CallUIEvents,
     CallingPackage,
@@ -35,5 +42,37 @@ export {
     CometChatIncomingCall,
     CometChatOngoingCall,
     CometChatOutgoingCall,
-    CometChatCallBubble
+    CometChatCallBubble,
+    CometChatCallLogsWithDetails,
+    CallLogsWithDetailsConfigurationInterface,
+    CometChatCallLogs,
+    CallLogsConfiguration,
+    CallLogsConfigurationInterface,
+    CallLogsStyle,
+    CallLogsStyleInterface,
+    CometChatCallLogsConfigurationInterface,
+    CometChatCallLogDetails,
+    CometChatCallLogDetailsConfigurationInterface,
+    CallLogDetailsConfiguration,
+    CallLogDetailsConfigurationInterface,
+    CallLogDetailsStyle,
+    CallLogDetailsStyleInterface,
+    CometChatCallLogHistory,
+    CallLogHistoryConfiguration,
+    CallLogHistoryConfigurationInterface,
+    CallLogHistoryStyle,
+    CallLogHistoryStyleInterface,
+    CometChatCallLogHistoryInterface,
+    CometChatParticipants,
+    CallLogParticipantsConfiguration,
+    CallLogParticipantsConfigurationInterface,
+    CallParticipantsStyle,
+    CallParticipantsStyleInterface,
+    CometChatCallLogParticipantsConfigurationInterface,
+    CometChatRecordings,
+    CallLogRecordingsConfiguration,
+    CallLogRecordingsConfigurationInterface,
+    CallRecordingsStyle,
+    CallRecordingsStyleInterface,
+    CometChatCallLogRecordingsConfigurationInterface
 }

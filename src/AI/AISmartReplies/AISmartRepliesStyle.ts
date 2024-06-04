@@ -5,7 +5,7 @@ export class AISmartRepliesStyle extends AIButtonsStyle {
     buttonTextColor?:string;
     buttonTextFont?:FontStyleInterface;
     buttonBorder?:BorderStyleInterface;
-    buttonBorderRadius?:string;
+    buttonBorderRadius?:number;
     buttonHeight?:string;
     buttonWidth?:string;
     buttonBackgroundColor?:string;

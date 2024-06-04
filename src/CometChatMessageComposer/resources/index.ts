@@ -6,6 +6,7 @@ import IMAGE from './image.png'
 import CLOSE from './close.png';
 import STICKER from "./stickers.png";
 import MICROPHONE from "./microphone.png";
+import AI from './ai.png'
 
 export const ICONS ={
     HEART,
@@ -16,4 +17,5 @@ export const ICONS ={
     CLOSE,
     STICKER,
     MICROPHONE,
+    AI
 }

@@ -39,6 +39,7 @@ export interface CometChatListItemInterface {
   options?: () => CometChatOptions[];
   TailView?: React.FC;
   hideSeparator?: boolean;
+  separatorColor?: string;
   listItemStyle?: ListItemStyle;
   onPress?: Function;
   onLongPress?: Function;
@@ -64,6 +65,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
     options,
     TailView,
     hideSeparator,
+    separatorColor,
     headViewContainerStyle,
     tailViewContainerStyle,
     bodyViewContainerStyle,
@@ -221,7 +223,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
               typeof item.icon === 'string' ? { uri: item.icon } : item.icon
             }
           />
-          {item.title && item.title.length && (
+          {Boolean(item.title) && item.title.length > 0 && (
             <Text
               style={[
                 Style.optionTitleStyle,
@@ -236,14 +238,26 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
     );
   };
 
+  let ListComponent = ((onPress && typeof onPress == 'function') || (onLongPress && typeof onLongPress == 'function')) ? TouchableOpacity : View;
+  let listComponentProps = ((onPress && typeof onPress == 'function') || (onLongPress && typeof onLongPress == 'function')) ? {
+    activeOpacity: 1,
+    onPress: clickHandler,
+    onLongPress: longPressHandler
+  } : {};
+
+  let WrapperComponent = swipeRowOptions.length ? SwipeRow : React.Fragment;
+  let wrapperComponentProps = swipeRowOptions.length ? {
+    key: id,
+    onRowDidOpen: rowOpened,
+    onRowDidClose: rowClosed,
+    disableRightSwipe: true,
+    disableLeftSwipe: !swipeRowOptions.length,
+    rightOpenValue: 0 - translate
+  } : {};
+
   return (
-    <SwipeRow
-      key={id}
-      onRowDidOpen={rowOpened}
-      onRowDidClose={rowClosed}
-      disableRightSwipe={true}
-      disableLeftSwipe={!swipeRowOptions.length}
-      rightOpenValue={0 - translate}
+    <WrapperComponent
+      {...wrapperComponentProps}
     >
       <View
         style={[
@@ -264,10 +278,8 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
           )}
         </View>
       </View>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={clickHandler}
-        onLongPress={longPressHandler}
+      <ListComponent
+        {...listComponentProps}
         style={[
           Style.container,
           {
@@ -280,21 +292,21 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
           },
         ]}
       >
-        {(avatarURL || avatarName) && <AvatarView />}
+        {Boolean(avatarURL || avatarName) && <AvatarView />}
         <View
           style={[
             Style.rightContainerStyle,
-            { borderBottomWidth: hideSeparator ? 0 : 1 },
+            { borderBottomWidth: hideSeparator ? 0 : 1, borderBottomColor: separatorColor || undefined },
           ]}
         >
           <View style={[Style.middleViewStyle, bodyViewContainerStyle ?? {}]}>
-            {title && <TitleView />}
-            {SubtitleView && <SubtitleView />}
+            {Boolean(title) && <TitleView />}
+            {Boolean(SubtitleView) && <SubtitleView />}
           </View>
-          {TailView && <TailViewFc />}
+          {Boolean(TailView) && <TailViewFc />}
         </View>
-      </TouchableOpacity>
-    </SwipeRow>
+      </ListComponent>
+    </WrapperComponent>
   );
 };
 

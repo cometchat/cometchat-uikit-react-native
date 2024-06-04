@@ -16,6 +16,7 @@ import { ChatConfigurator } from "./ChatConfigurator";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { ICONS } from "./resources";
 import { CometChatConversationUtils } from "../utils/conversationUtils";
+import { AIOptionsStyle } from "../../AI/AIOptionsStyle";
 import { CometChatFormBubble, CometChatCardBubble } from "../views";
 import { CardMessage, FormMessage } from "../modals/InteractiveData";
 import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
@@ -692,7 +693,9 @@ export class MessageDataSource implements DataSource {
         return null;
     }
 
-
+    getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: Map<String, any>, AIOptionsStyle?: AIOptionsStyle) {
+        return [];
+    }
 
     getLastConversationMessage(conversation: CometChat.Conversation): string {
         return CometChatConversationUtils.getMessagePreview(conversation.getLastMessage());

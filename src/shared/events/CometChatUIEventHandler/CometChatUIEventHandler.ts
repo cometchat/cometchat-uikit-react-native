@@ -10,7 +10,7 @@ import {
     PanelListener,
     UserListener,
     UserUIEventListener,
-    UIEventListener, 
+    UIEventListener,
     UIListener
 } from "./Listener";
 

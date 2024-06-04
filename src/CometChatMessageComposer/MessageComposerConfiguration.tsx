@@ -7,6 +7,7 @@ import {
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { MediaRecorderStyle } from '../shared/views/CometChatMediaRecorder';
+import { AIOptionsStyle } from '../AI/AIOptionsStyle';
 export interface MessageComposerConfigurationInterface
   extends Omit<
     CometChatMessageComposerInterface,
@@ -72,6 +73,8 @@ export class MessageComposerConfiguration {
       composerId: string | number;
     }) => JSX.Element;
   text?: string;
+  AIIconURL?: string;
+  AIOptionsStyle?: AIOptionsStyle;
   constructor(props: MessageComposerConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {

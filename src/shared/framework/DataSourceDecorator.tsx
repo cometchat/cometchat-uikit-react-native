@@ -1,3 +1,4 @@
+import { AIOptionsStyle } from "../../AI/AIOptionsStyle";
 import { MessageBubbleAlignmentType } from "../constants/UIKitConstants";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { CometChatMessageOption, CometChatMessageTemplate } from "../modals";
@@ -195,5 +196,9 @@ export class DataSourceDecorator implements DataSource {
 
    getAuxiliaryHeaderAppbarOptions(user?: CometChat.User, group?: CometChat.Group, theme?: CometChatTheme) {
       return this.dataSource.getAuxiliaryHeaderAppbarOptions(user, group, theme);
+   }
+
+   getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: Map<String, any>, AIOptionsStyle?: AIOptionsStyle): (CometChatMessageComposerActionInterface | CometChatMessageOption)[] {
+       return this.dataSource.getAIOptions(user, group, theme, id, AIOptionsStyle);
    }
 }

@@ -1,17 +1,10 @@
-import  {CometChat} from '@cometchat/chat-sdk-react-native'
 import { AISmartRepliesStyle } from './AISmartRepliesStyle';
-import { loadingIcon, errorIcon, emptyIcon } from '../resources';
-export class AISmartRepliesConfiguration {
-    onClick?:(user?:CometChat.User,group?:CometChat.Group)=>Promise<Object>;
-    smartRepliesStyle?:AISmartRepliesStyle;
+import { AIBaseConfiguration } from '../AIBaseConfiguration';
+export class AISmartRepliesConfiguration extends AIBaseConfiguration {
     customView?:(response:Object,closeBottomsheet?:()=>void) => Promise<Object>;
-    ErrorStateView?: (e?: CometChat.CometChatException) => JSX.Element;
-    EmptyStateView?: () => JSX.Element;
-    LoadingStateView?: () => JSX.Element;
-    loadingIconURL?:string = loadingIcon;
-    errorIconURL?:string = errorIcon;
-    emptyIconURL?:string = emptyIcon;
+    smartRepliesStyle?:AISmartRepliesStyle;
     constructor(props: Partial<AISmartRepliesConfiguration>) {
+      super({});
       Object.assign(this, props);
     }
   }

@@ -1,11 +1,8 @@
-import React from 'react';
 import { StyleSheet } from 'react-native';
 
 export const Style = StyleSheet.create({
   container: {
-    borderRadius: 8,
-    paddingTop: 8,
-    marginTop: 10,
+    paddingVertical: 8,
   },
   padding: {
     paddingStart: 8,

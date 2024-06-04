@@ -7,7 +7,7 @@ import {
   PanResponder,
   TouchableOpacity,
   View,
-  Modal,
+  Modal, ScrollView, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Styles } from './style';
 import { CometChatContext } from '../../CometChatContext';
@@ -26,9 +26,12 @@ export interface CometChatBottomSheetInterface {
     shadowColor?: string;
     backgroundColor?: string;
     lineColor?: string;
+    lineHeight?: number,
+    paddingHorizontal?: number,
+    borderRadius?: number,
   };
 }
-const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface,ref) => {
+const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, ref) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
   const {
     sliderMaxHeight,
@@ -98,62 +101,68 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface,re
       BackHandler.removeEventListener('hardwareBackPress', _onBackPress);
     };
   }, []);
-  
+
   return (
     <Modal
       transparent={true}
       visible={isOpen}
       onRequestClose={() => togglePanel()}
     >
-      <View style={Styles.wrapperStyle}>
-        <View
-          style={Styles.greyWrapperStyle}
-          onStartShouldSetResponder={() => togglePanel()}
-        />
-        <Animated.View
-          onLayout={_setSize}
-          {..._parentPanResponder?.panHandlers}
-          style={{
-            ...Styles.containerStyle,
-            backgroundColor:
-              style?.backgroundColor ?? theme.palette.getBackgroundColor(),
-            shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
-            maxHeight: sliderMaxHeight,
-            transform: [
-              { translateY: panelHeightValue },
-              { scale: isOpen ? 1 : 0 },
-            ],
-          }}
-        >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={Styles.wrapperStyle}>
           <View
-            style={Styles.outerContentStyle}
-            {..._childPanResponder?.panHandlers}
+            style={Styles.greyWrapperStyle}
+            onStartShouldSetResponder={() => togglePanel()}
+          />
+          <Animated.View
+            onLayout={_setSize}
+            {..._parentPanResponder?.panHandlers}
+            style={{
+              ...Styles.containerStyle,
+              backgroundColor:
+                style?.backgroundColor ?? theme.palette.getBackgroundColor(),
+              shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
+              maxHeight: sliderMaxHeight,
+              transform: [
+                { translateY: panelHeightValue },
+                { scale: isOpen ? 1 : 0 },
+              ],
+              paddingHorizontal: style?.paddingHorizontal || 5,
+              borderTopLeftRadius: style?.borderRadius || 30,
+              borderTopRightRadius: style?.borderRadius || 30,
+            }}
           >
-            <TouchableOpacity
-              onPress={togglePanel.bind(this)}
-              activeOpacity={1}
-              style={{ height: 30 }}
+            <View
+              style={Styles.outerContentStyle}
+              {..._childPanResponder?.panHandlers}
             >
-              <View style={Styles.lineContainerStyle}>
-                <View
-                  style={[
-                    Styles.lineStyle,
-                    {
-                      backgroundColor:
-                        style?.lineColor ?? theme.palette.getAccent200(),
-                    },
-                  ]}
-                />
+              <TouchableOpacity
+                onPress={togglePanel.bind(this)}
+                activeOpacity={1}
+                style={{ height: style.lineHeight || 30 }}
+              >
+                <View style={Styles.lineContainerStyle}>
+                  <View
+                    style={[
+                      Styles.lineStyle,
+                      {
+                        backgroundColor:
+                          style?.lineColor ?? theme.palette.getAccent200(),
+                      },
+                    ]}
+                  />
+                </View>
+              </TouchableOpacity>
+              <View style={Styles.innerContentStyle}>
+                {typeof children === 'function'
+                  ? children(_handleScrollEndDrag)
+                  : children}
               </View>
-            </TouchableOpacity>
-            <View style={Styles.innerContentStyle}>
-              {typeof children === 'function'
-                ? children(_handleScrollEndDrag)
-                : children}
             </View>
-          </View>
-        </Animated.View>
-      </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 });

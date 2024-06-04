@@ -8,6 +8,8 @@ import { AudioBubbleStyleInterface } from "../views/CometChatAudioBubble";
 import { FileBubbleStyleInterface } from "../views/CometChatFileBubble";
 import { ImageBubbleStyleInterface } from "../views/CometChatImageBubble";
 import { VideoBubbleStyleInterface } from "../views/CometChatVideoBubble";
+import { CometChatMessageComposerActionInterface } from "../helper/types";
+import { AIOptionsStyle } from "../../AI/AIOptionsStyle";
 import { CardMessage, FormMessage } from "../modals/InteractiveData";
 import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
 import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
@@ -80,4 +82,6 @@ export interface DataSource {
     getLastConversationMessage(conversation  : CometChat.Conversation): string
     
     getAuxiliaryHeaderAppbarOptions(user?: CometChat.User, group?: CometChat.Group, theme?: CometChatTheme): JSX.Element
+
+    getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: Map<String, any>, AIOptionsStyle?: AIOptionsStyle): Array<(CometChatMessageComposerActionInterface | CometChatMessageOption)> 
 }

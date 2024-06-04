@@ -1,12 +1,17 @@
-import { ExtensionsDataSource } from "../shared/framework/ExtensionsDataSource";
-import { AIEnablerConfiguration } from "./configuration";
+import { CometChat } from "@cometchat/chat-sdk-react-native";
 
-export abstract class AIExtensionDataSource extends ExtensionsDataSource {
-   getConfiguration():any{
-    
-   };
-   setConfiguration(config?:AIEnablerConfiguration):void{
-    
-   };
+abstract class AIExtensionDataSource {
+  abstract addExtension(): void;
+  abstract getExtensionId(): string;
+
+  enable(): void {
+    CometChat.isAIFeatureEnabled(this.getExtensionId()).then(
+      (enabled: Boolean) => {
+        if (enabled) this.addExtension();
+      }
+    );
+  }
 
 }
+
+export { AIExtensionDataSource };

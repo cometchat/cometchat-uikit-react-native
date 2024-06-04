@@ -14,6 +14,7 @@ import {
 import React from 'react';
 import { CometChatTheme } from '../../shared/resources/CometChatTheme';
 import { ThumbnailGenerationConfigurationInterface } from './ThumbnailGenerationExtension';
+import { Empty } from './resources';
 
 export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
   thumbnailGenerationConfiguration?: ThumbnailGenerationConfigurationInterface;
@@ -41,16 +42,17 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
       ExtensionConstants.thumbnailGeneration
     );
     if (thumbnailData == undefined) {
-      image = { uri: message?.data?.url };
+      image = message.getType() === "image" ? message?.data?.url : Empty;  //default image for type video
     } else {
       let attachmentData = thumbnailData['attachments'];
       if (attachmentData.length == 1) {
         let dataObj = attachmentData[0];
 
         if (!dataObj['error']) {
-          image = { uri: dataObj['data']['thumbnails']['url_small'] };
+          let imageLink = dataObj?.['data']?.['thumbnails']?.['url_small'];
+          image = imageLink ? { uri: dataObj['data']['thumbnails']['url_small'] } : Empty; //if imageLink is empty or does not exist then load default image
         } else {
-          image = { uri: null };
+          image = Empty; //default image
         }
       }
     }

@@ -21,12 +21,15 @@ import { CometChatSoundManager } from "../utils";
 import { CometChatLocalize } from "../resources";
 import { CardMessage, CustomInteractiveMessage, FormMessage } from "../modals/InteractiveData";
 import { ListenerInitializer } from "../events/ListenerInitializer";
-import { AIEnabler } from "../../AI/AIEnabler";
 import { AIConversationStarterExtension } from "../../AI/AIConversationStarter/AIConversationStarter";
+import { AIExtensionDataSource } from "../../AI/AIExtensionDataSource";
+import { AISmartRepliesExtension } from "../../AI/AISmartReplies/AISmartReplies";
+import { AIConversationSummaryExtension } from "../../AI/AIConversationSummary/AIConversationSummaryExtension";
+import { AIAssistBotExtension } from "../../AI/AIAssistBot/AIAssistBotExtension";
 
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
-    static aiFeatures: AIEnabler
+    static aiFeatures:AIExtensionDataSource[]
     static init(uiKitSettings: UIKitSettings): Promise<boolean> {
 
         //perform sdk init taking values from uiKitSettings
@@ -40,8 +43,6 @@ export class CometChatUIKit {
             .overrideAdminHost(uiKitSettings?.overrideAdminHost)
             .overrideClientHost(uiKitSettings?.overrideClientHost)
             .setRegion(uiKitSettings.region)
-            .overrideAdminHost(uiKitSettings.overrideAdminHost)
-            .overrideClientHost(uiKitSettings.overrideClientHost)
 
 
         appSetting.subscriptionType = uiKitSettings.subscriptionType;
@@ -68,6 +69,13 @@ export class CometChatUIKit {
         new PollsExtension(),
         new ReactionsExtension(),
         new ImageModerationExtension()
+    ]  
+    
+    static defaultAIFeatures: AIExtensionDataSource[] = [
+        new AISmartRepliesExtension(),
+        new AIConversationStarterExtension(),
+        new AIConversationSummaryExtension(),
+        new AIAssistBotExtension()
     ]
 
     private static enableExtensions() {
@@ -78,18 +86,18 @@ export class CometChatUIKit {
                 new CallingExtension().enable();
         }
         let extensionList: ExtensionsDataSource[] = this.uiKitSettings?.extensions || this.defaultExtensions;
+        let aiFeaturesList: AIExtensionDataSource[] = this.uiKitSettings?.aiFeatures || this.defaultAIFeatures;
 
-        if (extensionList.length > 0) {
-            extensionList.forEach((extension: ExtensionsDataSource) => {
-                extension?.enable();
-            });
-        }
-        if (this.uiKitSettings.aiFeatures) {
-            this.uiKitSettings.aiFeatures?.enable()
-        }
-        else {
-            new AIEnabler().enable()
-        }
+            if (extensionList.length > 0) {
+                extensionList.forEach((extension: ExtensionsDataSource) => {
+                    extension?.enable();
+                });
+            }
+            if(aiFeaturesList.length > 0){
+                aiFeaturesList.forEach((aiFeatures: AIExtensionDataSource) => {
+                    aiFeatures.enable();
+                })
+            }
 
 
     }
@@ -166,68 +174,75 @@ export class CometChatUIKit {
 
     //---------- Helper methods to send messages ----------
     ///[sendCustomMessage] used to send a custom message
-    static sendCustomMessage(message: CometChat.CustomMessage, onSuccess?: (msg: CometChat.CustomMessage | CometChat.BaseMessage) => void, onError?: (msg: CometChat.CometChatException) => void): void {
-        CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
-        CometChat.sendCustomMessage(message)
-            .then(customMessage => {
-                CometChatUIKitHelper.onMessageSent(customMessage, messageStatus.success);
-                onSuccess && onSuccess(customMessage);
-            })
-            .catch(err => {
-                CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
-                onError && onError(err);
-            })
+    static sendCustomMessage(message: CometChat.CustomMessage): Promise<CometChat.CustomMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            CometChat.sendCustomMessage(message)
+                .then(customMessage => {
+                    CometChatUIKitHelper.onMessageSent(customMessage, messageStatus.success);
+                    resolve(customMessage);
+                })
+                .catch(err => {
+                    CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    reject(err);
+                });
+        });
     }
 
     ///[sendMediaMessage] used to send a media message
-    static sendMediaMessage(message: CometChat.MediaMessage, onSuccess?: (msg: CometChat.MediaMessage | CometChat.BaseMessage) => void, onError?: (msg: CometChat.CometChatException) => void): void {
-        let hasAttachment;
-        try {
-            hasAttachment = message.getAttachment();
-        } catch (error) {
-            console.log("no attachment found");
-        }
-        if (hasAttachment == undefined) {
-            let file = message['files'][0];
-            if (file == undefined) {
-                onError && onError(new CometChat.CometChatException({
-                    code: "Invalid Media message object",
-                    message: "file object not found."
-                }))
+    static sendMediaMessage(message: CometChat.MediaMessage): Promise<CometChat.MediaMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            let hasAttachment;
+            try {
+                hasAttachment = message.getAttachment();
+            } catch (error) {
+                console.log("no attachment found");
             }
-            let attachmentObject: CometChat.Attachment = new CometChat.Attachment(file);
-            attachmentObject.setName(file['name']);
-            attachmentObject.setExtension((file['name'].lastIndexOf('.') + 1).toString());
-            attachmentObject.setMimeType(file['type']);
-            attachmentObject.setSize(0);
-            attachmentObject.setUrl(file['uri']);
-            message.setAttachment(attachmentObject);
-        }
+            if (hasAttachment == undefined) {
+                let file = message['files'][0];
+                if (file == undefined) {
+                    reject(new CometChat.CometChatException({
+                        code: "Invalid Media message object",
+                        message: "file object not found."
+                    }));
+                }
 
-        CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
-        CometChat.sendMediaMessage(message)
-            .then(mediaMessage => {
-                CometChatUIKitHelper.onMessageSent(mediaMessage, messageStatus.success);
-                onSuccess && onSuccess(mediaMessage);
-            })
-            .catch(err => {
-                CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
-                onError && onError(err);
-            })
+                let attachmentObject: CometChat.Attachment = new CometChat.Attachment(file);
+                attachmentObject.setName(file['name']);
+                attachmentObject.setExtension((file['name'].lastIndexOf('.') + 1).toString());
+                attachmentObject.setMimeType(file['type']);
+                attachmentObject.setSize(0);
+                attachmentObject.setUrl(file['uri']);
+                message.setAttachment(attachmentObject);
+            }
+
+            CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            CometChat.sendMediaMessage(message)
+                .then(mediaMessage => {
+                    CometChatUIKitHelper.onMessageSent(mediaMessage, messageStatus.success);
+                    resolve(mediaMessage);
+                })
+                .catch(err => {
+                    CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    reject(err);
+                });
+        });
     }
 
     ///[sendTextMessage] used to send a text message
-    static sendTextMessage(message: CometChat.TextMessage, onSuccess?: (msg: CometChat.TextMessage | CometChat.BaseMessage) => void, onError?: (msg: CometChat.CometChatException) => void): void {
-        CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
-        CometChat.sendMessage(message)
-            .then(textMessage => {
-                CometChatUIKitHelper.onMessageSent(textMessage, messageStatus.success);
-                onSuccess && onSuccess(textMessage);
-            })
-            .catch(err => {
-                CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
-                onError && onError(err);
-            })
+    static sendTextMessage(message: CometChat.TextMessage): Promise<CometChat.TextMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            CometChat.sendMessage(message)
+                .then(textMessage => {
+                    CometChatUIKitHelper.onMessageSent(textMessage, messageStatus.success);
+                    resolve(textMessage);
+                })
+                .catch(err => {
+                    CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    reject(err);
+                });
+        });
     }
 
     /**
@@ -235,26 +250,29 @@ export class CometChatUIKit {
    * @param message - The FormMessage message to be sent.
    * @param disableLocalEvents - A boolean indicating whether to disable local events or not. Default value is false.
    */
-    static sendFormMessage(message: FormMessage, disableLocalEvents: boolean = false, onSuccess?: (msg: CometChat.TextMessage | CometChat.BaseMessage) => void, onError?: (msg: CometChat.CometChatException) => void) {
-        if (!disableLocalEvents) {
-            CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
-        }
-        CometChat.sendInteractiveMessage(message)
-            .then((message: CometChat.BaseMessage) => {
-                console.log("message sent successfully", message.getSentAt())
-                if (!disableLocalEvents) {
-                    CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
-                }
-                onSuccess && onSuccess(message);
-            })
-            .catch((error: CometChat.CometChatException) => {
-                console.log("error while sending message", { error })
-                message.setMetadata({ error });
-                // if (!disableLocalEvents) {
-                //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
-                // }
-                onError && onError(error);
-            });
+    static sendFormMessage(message: FormMessage, disableLocalEvents: boolean = false): Promise<CometChat.TextMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            if (!disableLocalEvents) {
+                CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            }
+
+            CometChat.sendInteractiveMessage(message)
+                .then((message: CometChat.BaseMessage) => {
+                    console.log("message sent successfully", message.getSentAt())
+                    if (!disableLocalEvents) {
+                        CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
+                    }
+                    resolve(message);
+                })
+                .catch((error: CometChat.CometChatException) => {
+                    console.log("error while sending message", { error })
+                    message.setMetadata({ error });
+                    // if (!disableLocalEvents) {
+                    //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    // }
+                    reject(error);
+                });
+        });
     }
 
     /**
@@ -262,27 +280,30 @@ export class CometChatUIKit {
    * @param message - The Card message to be sent.
    * @param disableLocalEvents - A boolean indicating whether to disable local events or not. Default value is false.
    */
-    static sendCardMessage(message: CardMessage, disableLocalEvents: boolean = false, onSuccess?: (msg: CometChat.TextMessage | CometChat.BaseMessage) => void, onError?: (msg: CometChat.CometChatException) => void) {
-        if (!disableLocalEvents) {
-            CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
-        }
-        console.log("message", JSON.stringify(message))
-        CometChat.sendInteractiveMessage(message)
-            .then((message: CometChat.BaseMessage) => {
-                console.log("message sent successfully", message.getSentAt())
-                if (!disableLocalEvents) {
-                    CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
-                }
-                onSuccess && onSuccess(message);
-            })
-            .catch((error: CometChat.CometChatException) => {
-                console.log("error while sending message", { error })
-                message.setMetadata({ error });
-                // if (!disableLocalEvents) {
-                //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
-                // }
-                onError && onError(error);
-            });
+    static sendCardMessage(message: CardMessage, disableLocalEvents: boolean = false): Promise<CometChat.TextMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            if (!disableLocalEvents) {
+                CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            }
+            console.log("message", JSON.stringify(message));
+
+            CometChat.sendInteractiveMessage(message)
+                .then((message: CometChat.BaseMessage) => {
+                    console.log("message sent successfully", message.getSentAt())
+                    if (!disableLocalEvents) {
+                        CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
+                    }
+                    resolve(message);
+                })
+                .catch((error: CometChat.CometChatException) => {
+                    console.log("error while sending message", { error })
+                    message.setMetadata({ error });
+                    // if (!disableLocalEvents) {
+                    //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    // }
+                    reject(error);
+                });
+        });
     }
 
     /**
@@ -290,26 +311,29 @@ export class CometChatUIKit {
    * @param message - The Custom Interactive message to be sent.
    * @param disableLocalEvents - A boolean indicating whether to disable local events or not. Default value is false.
    */
-    static sendCustomInteractiveMessage(message: CustomInteractiveMessage, disableLocalEvents: boolean = false, onSuccess?: (msg: CometChat.TextMessage | CometChat.BaseMessage) => void, onError?: (msg: CometChat.CometChatException) => void) {
-        if (!disableLocalEvents) {
-            CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
-        }
-        CometChat.sendInteractiveMessage(message)
-            .then((message: CometChat.BaseMessage) => {
-                console.log("message sent successfully", message.getSentAt())
-                if (!disableLocalEvents) {
-                    CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
-                }
-                onSuccess && onSuccess(message);
-            })
-            .catch((error: CometChat.CometChatException) => {
-                console.log("error while sending message", { error })
-                message.setMetadata({ error });
-                // if (!disableLocalEvents) {
-                //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
-                // }
-                onError && onError(error);
-            });
+    static sendCustomInteractiveMessage(message: CustomInteractiveMessage, disableLocalEvents: boolean = false): Promise<CometChat.TextMessage | CometChat.BaseMessage> {
+        return new Promise((resolve, reject) => {
+            if (!disableLocalEvents) {
+                CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+            }
+
+            CometChat.sendInteractiveMessage(message)
+                .then((message: CometChat.BaseMessage) => {
+                    console.log("message sent successfully", message.getSentAt())
+                    if (!disableLocalEvents) {
+                        CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
+                    }
+                    resolve(message);
+                })
+                .catch((error: CometChat.CometChatException) => {
+                    console.log("error while sending message", { error })
+                    message.setMetadata({ error });
+                    // if (!disableLocalEvents) {
+                    //     CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                    // }
+                    reject(error);
+                });
+        });
     }
 
     static getDataSource() {

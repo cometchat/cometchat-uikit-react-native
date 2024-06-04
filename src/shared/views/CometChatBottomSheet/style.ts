@@ -22,8 +22,6 @@ export const Styles = StyleSheet.create({
     shadowRadius: 7.49,
     elevation: 12,
     paddingHorizontal: 5,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
     position: 'absolute',
     bottom: 0,
     right: 0,

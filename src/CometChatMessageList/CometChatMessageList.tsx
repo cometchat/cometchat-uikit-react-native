@@ -308,16 +308,16 @@ export const CometChatMessageList = forwardRef<
                 .then(msgs => {
                     let reversed = msgs.reverse();
                     if (messagesList.length === 0 && msgs?.length > 0) {
-                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0],user:user,group:group,theme:theme,parentMessageId:parentMessageId });
+                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0], user: user, group: group, theme: theme, parentMessageId: parentMessageId });
                         if (conversationId.current == null)
                             conversationId.current = reversed[0].getConversationId();
-      
-                    }
-                    else if(messagesList.length === 0   && !props?.parentMessageId){
-                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0],user:user,group:group,theme:theme,parentMessageId:parentMessageId });
 
                     }
-                
+                    else if (messagesList.length === 0 && !props?.parentMessageId) {
+                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, { message: reversed[0], user: user, group: group, theme: theme, parentMessageId: parentMessageId });
+
+                    }
+
                     for (let index = 0; index < reversed.length; index++) {
                         const message: CometChat.BaseMessage = reversed[index];
                         if (message && !disableReceipt && !message.hasOwnProperty("readAt") && loggedInUser.current.getUid() != message['sender']['uid']) {
@@ -925,6 +925,7 @@ export const CometChatMessageList = forwardRef<
                                 style={messageBubbleDateStyle}
                                 pattern={"timeFormat"}
                                 customDateString={datePattern && datePattern(item)}
+                                dateAlignment="center"
                             />
                     }
                 </View>
@@ -954,6 +955,7 @@ export const CometChatMessageList = forwardRef<
                     style={messageBubbleDateStyle}
                     pattern={"timeFormat"}
                     customDateString={datePattern && datePattern(item)}
+                    dateAlignment="center"
                 />
                 {
                     !disableReceipt && isSender ?
@@ -1101,7 +1103,7 @@ export const CometChatMessageList = forwardRef<
         //                     textMessage.setMuid(`${getUnixTimestamp()}`);
         //                     textMessage['_composedAt'] = getUnixTimestamp();
         //                     textMessage.setReceiverType(receiverType);
-        //                     CometChatUIKit.sendTextMessage(textMessage, resolve, reject)
+        //                     CometChatUIKit.sendTextMessage(textMessage).then(resolve).catch(reject)
         //                     break;
         //                 case MessageTypeConstants.image:
         //                 case MessageTypeConstants.video:
@@ -1126,7 +1128,7 @@ export const CometChatMessageList = forwardRef<
 
         //                     mediaMessage.setData(messageToForward.current['data']);
 
-        //                     CometChatUIKit.sendMediaMessage(mediaMessage, resolve, reject)
+        //                     CometChatUIKit.sendMediaMessage(mediaMessage).then(resolve).catch(reject);
         //                     break;
         //                 default:
         //                     break;
@@ -1239,7 +1241,7 @@ export const CometChatMessageList = forwardRef<
 
         const RenderMessageItem = ({ item, index }) => {
             let seperatorView = null;
-            const previousMessageDate = messagesList[index + 1] ? new Date(getSentAtTimestamp(messagesList[index + 1])) : null;
+            const previousMessageDate = messagesList[index - 1] ? new Date(getSentAtTimestamp(messagesList[index - 1])) : null;
             const currentMessageDate = new Date(getSentAtTimestamp(item));
 
             const currentDate = isNaN(currentMessageDate.getDate()) ? undefined : `${currentMessageDate.getDate()}-${currentMessageDate.getMonth()}-${currentMessageDate.getFullYear()}`;
@@ -1254,6 +1256,7 @@ export const CometChatMessageList = forwardRef<
                             pattern={"dayDateFormat"}
                             style={_dateSeperatorStyle}
                             customDateString={dateSeperatorPattern ? dateSeperatorPattern(item['sentAt']) : undefined}
+                            dateAlignment="center"
                         />
                     </View>
                 )
@@ -1261,8 +1264,8 @@ export const CometChatMessageList = forwardRef<
             lastMessageDate.current = getSentAtTimestamp(item);
 
             return <React.Fragment key={index}>
-                <MessageView message={item} />
                 {seperatorView}
+                <MessageView message={item} />
             </React.Fragment>
         };
 
@@ -1273,20 +1276,22 @@ export const CometChatMessageList = forwardRef<
         const getEmptyTextView = useCallback(() => {
             if (EmptyStateView)
                 return <EmptyStateView />
-            return undefined;
-            // return (
-            //     <View style={Style.msgContainerStyle}>
-            //         <Text
-            //             style={[
-            //                 Style.msgTxtStyle, {
-            //                     ...(messageListStyle?.emptyStateTextFont),
-            //                     color: messageListStyle?.emptyStateTextColor
-            //                 }]}
-            //         >
-            //             {emptyStateText}
-            //         </Text>
-            //     </View >
-            // )
+            return (
+                <>
+                <View style={Style.msgContainerStyle}>
+                    <Text
+                        style={[
+                            Style.msgTxtStyle, {
+                                ...(messageListStyle?.emptyStateTextFont),
+                                color: messageListStyle?.emptyStateTextColor
+                            }]}
+                    >
+                        {emptyStateText}
+                    </Text>
+                </View >
+                {CustomListHeader && <CustomListHeader />}
+                </>
+            )
         }, [])
 
         const getErrorStateView = useCallback(() => {
@@ -1353,7 +1358,10 @@ export const CometChatMessageList = forwardRef<
         } = _messageListStyle;
 
         return (
-            <View style={{ height, width, backgroundColor, borderRadius, ...border }}>
+            <View style={{
+                height, width, backgroundColor, borderRadius, ...border,
+                paddingStart: 8, paddingEnd: 8, 
+            }}>
                 {
                     listState == "loading" && messagesList.length == 0 ?
                         getLoadingStateView() :
@@ -1410,6 +1418,7 @@ export const CometChatMessageList = forwardRef<
                                                 )}
                                             </ScrollView>
                                         </SafeAreaView>
+                                        {CustomListHeader && <CustomListHeader />}
                                         {
                                             FooterView && <View style={[Style.stickyHeaderFooterStyle, { bottom: 0 }]}>
                                                 <FooterView

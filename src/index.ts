@@ -295,6 +295,38 @@ import {
   CometChatOutgoingCall,
   CometChatCallBubble,
   CallingExtensionDecorator,
+  CometChatCallLogsWithDetails,
+  CallLogsWithDetailsConfigurationInterface,
+  CometChatCallLogs,
+  CallLogsConfiguration,
+  CallLogsConfigurationInterface,
+  CallLogsStyle,
+  CallLogsStyleInterface,
+  CometChatCallLogsConfigurationInterface,
+  CometChatCallLogDetails,
+  CometChatCallLogDetailsConfigurationInterface,
+  CallLogDetailsConfiguration,
+  CallLogDetailsConfigurationInterface,
+  CallLogDetailsStyle,
+  CallLogDetailsStyleInterface,
+  CometChatCallLogHistory,
+  CallLogHistoryConfiguration,
+  CallLogHistoryConfigurationInterface,
+  CallLogHistoryStyle,
+  CallLogHistoryStyleInterface,
+  CometChatCallLogHistoryInterface,
+  CometChatParticipants,
+  CallLogParticipantsConfiguration,
+  CallLogParticipantsConfigurationInterface,
+  CallParticipantsStyle,
+  CallParticipantsStyleInterface,
+  CometChatCallLogParticipantsConfigurationInterface,
+  CometChatRecordings,
+  CallLogRecordingsConfiguration,
+  CallLogRecordingsConfigurationInterface,
+  CallRecordingsStyle,
+  CallRecordingsStyleInterface,
+  CometChatCallLogRecordingsConfigurationInterface
 } from "./calls";
 
 import {
@@ -599,7 +631,43 @@ export {
   RadioButtonElement,
   SingleSelectElement,
   TextInputElement,
-  URLNavigationAction
+  URLNavigationAction,
+
+  /*Call Logs */
+  CometChatCallLogsWithDetails,
+  CallLogsWithDetailsConfigurationInterface,
+  CometChatCallLogs,
+  CallLogsConfiguration,
+  CallLogsConfigurationInterface,
+  CallLogsStyle,
+  CallLogsStyleInterface,
+  CometChatCallLogsConfigurationInterface,
+  CometChatCallLogDetails,
+  CometChatCallLogDetailsConfigurationInterface,
+  CallLogDetailsConfiguration,
+  CallLogDetailsConfigurationInterface,
+  CallLogDetailsStyle,
+  CallLogDetailsStyleInterface,
+  CometChatCallLogHistory,
+  CallLogHistoryConfiguration,
+  CallLogHistoryConfigurationInterface,
+  CallLogHistoryStyle,
+  CallLogHistoryStyleInterface,
+  CometChatCallLogHistoryInterface,
+  CometChatParticipants,
+  CallLogParticipantsConfiguration,
+  CallLogParticipantsConfigurationInterface,
+  CallParticipantsStyle,
+  CallParticipantsStyleInterface,
+  CometChatCallLogParticipantsConfigurationInterface,
+  CometChatRecordings,
+  CallLogRecordingsConfiguration,
+  CallLogRecordingsConfigurationInterface,
+  CallRecordingsStyle,
+  CallRecordingsStyleInterface,
+  CometChatCallLogRecordingsConfigurationInterface
+  /*Call Logs */
+  
 };
 
 // AI
@@ -607,12 +675,19 @@ export { AIConversationStarterExtension } from './AI/AIConversationStarter/AICon
 export { AIConversationStarterDecorator } from './AI/AIConversationStarter/AIConversationStarterDecorator'
 export { AIConversationStarterStyle } from './AI/AIConversationStarter/AIConversationStarterStyle'
 export { AIConversationStarterConfiguration } from './AI/AIConversationStarter/configuration'
-export { AIEnabler } from './AI/AIEnabler'
-export { AIEnablerDecorator } from './AI/AIEnablerDecorator'
 export { AIExtensionDataSource } from './AI/AIExtensionDataSource'
 export { AISmartRepliesExtension } from './AI/AISmartReplies/AISmartReplies'
 export { AISmartRepliesExtensionDecorator } from './AI/AISmartReplies/AISmartRepliesDecorator'
 export { AISmartRepliesStyle } from './AI/AISmartReplies/AISmartRepliesStyle'
 export { AISmartRepliesConfiguration } from './AI/AISmartReplies/configuration'
 export { CardStyle, CardViewStyle } from './AI/CardViewStyle'
-export { AIEnablerConfiguration } from './AI/configuration'
+export { AIBaseConfiguration } from './AI/AIBaseConfiguration'
+export { AIAssistBotConfiguration } from './AI/AIAssistBot/configuration'
+export { AIAssistBotDecorator } from './AI/AIAssistBot/AIAssistBotDecorator'
+export { AIAssistBotExtension } from './AI/AIAssistBot/AIAssistBotExtension'
+export { AIAssistBotStyle, AIBotMessageBubbleStyle, AISenderMessageBubbleStyle } from './AI/AIAssistBot/AIAssistBotStyle'
+export { AIConversationSummaryDecorator } from './AI/AIConversationSummary/AIConversationSummaryDecorator'
+export { AIConversationSummaryExtension } from './AI/AIConversationSummary/AIConversationSummaryExtension'
+export { AIConversationSummaryStyle } from './AI/AIConversationSummary/AIConversationSummaryStyle'
+export { AIConversationSummaryConfiguration } from './AI/AIConversationSummary/configuration'
+export { AIBaseStyle } from './AI/AIBaseStyle'
