@@ -51,7 +51,7 @@ class CometChatLocalize {
      * Needs to be called at the start of the application in order to set the language
      * @param {Object} - language & resources
      */
-    static init = ({ language, resources }) => {
+    static init = ({ language, resources } : { language?: string, resources?: Record<string, any> }) => {
         if (language) {
             this.locale = language;
         } else {

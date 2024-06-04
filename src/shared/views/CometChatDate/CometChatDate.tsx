@@ -28,7 +28,7 @@ const monthNames = [
 const weekNames = [
   'Sunday',
   'Monday',
-  'Tuseday',
+  'Tuesday',
   'Wednesday',
   'Thursday',
   'Friday',

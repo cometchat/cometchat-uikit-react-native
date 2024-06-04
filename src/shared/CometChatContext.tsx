@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { CometChatContextType } from './base/Types';
 import { CometChatTheme } from './resources/CometChatTheme';
 import { CometChatLocalize } from './resources/CometChatLocalize';
@@ -30,6 +30,10 @@ export const CometChatContextProvider = (props) => {
   const applyTheme = (theme: CometChatTheme) => {
     setTheme(theme);
   }
+
+  useEffect(() => {
+    CometChatLocalize.init({})
+  }, [])
 
   return (
     <CometChatContext.Provider value={{theme, changeThemeMode, changeLocalise, applyTheme}}>
