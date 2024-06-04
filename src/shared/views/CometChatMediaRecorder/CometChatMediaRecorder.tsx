@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
-import { CometChatContext, CometChatContextType, ImageType } from "../..";
-import { View, TouchableOpacity, Text, Image, NativeModules, FlatList } from "react-native";
+import { CometChatContext, CometChatContextType, ImageType, localize } from "../..";
+import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert } from "react-native";
 import { Style } from "./style";
 import { ICONS } from '../../framework/resources';
 import { MediaRecorderStyle, MediaRecorderStyleInterface } from './MediaRecorderStyle';
@@ -54,9 +54,11 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     } = _style;
 
     useEffect(() => {
-        NativeModules.FileManager.startRecording((filepath) => { console.log("Filepath startRecording", filepath) });
-        startInterval();
-        return () => {
+        recordingInitiator();
+
+        return async () => {
+            let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+            if (!microphonePermission) return;
             NativeModules.FileManager.deleteFile((success) => console.log("Filepath delete", success));
             NativeModules.FileManager.releaseMediaResources((result) => { });
             clearInterval(timerIntervalId)
@@ -64,6 +66,18 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
             recordedPlaying && setRecordedPlaying(false);
         }
     }, [])
+
+    const recordingInitiator = async () => {
+        let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+        if (microphonePermission) {
+            NativeModules.FileManager.startRecording((filepath) => { console.log("Filepath startRecording", filepath) });
+            startInterval();
+        } else {
+            Alert.alert(undefined, localize("MICROPHONE_PERMISSION"));
+            onClose && onClose();
+            return null;
+        }
+    }
 
     const startInterval = () => {
         timerIntervalId = setInterval(timer, 1000);

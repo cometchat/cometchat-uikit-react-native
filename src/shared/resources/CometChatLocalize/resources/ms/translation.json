@@ -287,5 +287,6 @@
 	"NO_RECORDINGS":"Tiada Rakaman",
 	"CALL_LOGS":"Log Panggilan",
 	"CANCELLED_AUDIO_CALL":"Panggilan audio yang dibatalkan",
-	"CANCELLED_VIDEO_CALL":"Panggilan video dibatalkan"
+	"CANCELLED_VIDEO_CALL":"Panggilan video dibatalkan",
+	"MICROPHONE_PERMISSION":"Kami menggunakan mikrofon untuk merakam dan berkongsi mesej audio. Pergi ke tetapan untuk membolehkan akses mikrofon"
 }

@@ -287,5 +287,6 @@
 	"NO_RECORDINGS":"Inga inspelningar",
 	"CALL_LOGS":"Samtalsloggar",
 	"CANCELLED_AUDIO_CALL":"Avbrutet ljudsamtal",
-	"CANCELLED_VIDEO_CALL":"Avbrutet videosamtal"
+	"CANCELLED_VIDEO_CALL":"Avbrutet videosamtal",
+	"MICROPHONE_PERMISSION":"Vi använder mikrofon för att spela in och dela ljudmeddelanden. Gå till inställningar för att aktivera mikrofonåtkomst"
 }

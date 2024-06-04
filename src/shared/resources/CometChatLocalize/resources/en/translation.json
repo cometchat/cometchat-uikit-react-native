@@ -287,5 +287,6 @@
   "NO_RECORDINGS":"No Recordings",
   "CALL_LOGS":"Call Logs",
   "CANCELLED_AUDIO_CALL":"Cancelled audio call",
-  "CANCELLED_VIDEO_CALL":"Cancelled video call"
+  "CANCELLED_VIDEO_CALL":"Cancelled video call",
+  "MICROPHONE_PERMISSION": "We use microphone to record and share audio messages. Go to settings to enable microphone access"
 }

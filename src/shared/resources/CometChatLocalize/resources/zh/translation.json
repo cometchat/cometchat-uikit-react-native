@@ -288,5 +288,6 @@
 	"NO_RECORDINGS":"没有录音",
 	"CALL_LOGS":"通话记录",
 	"CANCELLED_AUDIO_CALL":"语音通话已取消",
-	"CANCELLED_VIDEO_CALL":"视频通话取消"
+	"CANCELLED_VIDEO_CALL":"视频通话取消",
+	"MICROPHONE_PERMISSION":"我们使用麦克风录制和共享音频信息。进入设置以启用麦克风访问权限"
 }

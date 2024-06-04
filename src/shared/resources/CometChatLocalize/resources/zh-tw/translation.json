@@ -287,5 +287,6 @@
 	"NO_RECORDINGS":"沒有錄音",
 	"CALL_LOGS":"通話記錄",
 	"CANCELLED_AUDIO_CALL":"已取消音訊通話",
-	"CANCELLED_VIDEO_CALL":"已取消視頻通話"
+	"CANCELLED_VIDEO_CALL":"已取消視頻通話",
+	"MICROPHONE_PERMISSION":"我們使用麥克風錄製和共享音頻消息。前往設定以啟用麥克風存取"
 }

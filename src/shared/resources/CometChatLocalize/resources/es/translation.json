@@ -287,5 +287,6 @@
 	"NO_RECORDINGS":"Sin grabaciones",
 	"CALL_LOGS":"Registros de llamadas",
 	"CANCELLED_AUDIO_CALL":"Llamada de audio cancelada",
-	"CANCELLED_VIDEO_CALL":"Videollamada cancelada"
+	"CANCELLED_VIDEO_CALL":"Videollamada cancelada",
+	"MICROPHONE_PERMISSION":"Usamos el micrófono para grabar y compartir mensajes de audio. Ve a la configuración para habilitar el acceso al micrófono"
 }

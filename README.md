@@ -11,7 +11,7 @@
 
 [![Platform](https://img.shields.io/badge/Platform-ReactNative-brightgreen.svg)](#)
 [![Platform](https://img.shields.io/badge/Language-TypeScript-yellowgreen.svg)](#)
-![Version](https://shields.io/badge/version-v4.1.2-orange)
+![Version](https://shields.io/badge/version-v4.1.3-orange)
 ![Twitter Follow](https://img.shields.io/twitter/follow/cometchat?style=social)
 
 ## Table of contents

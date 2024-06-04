@@ -287,5 +287,6 @@
 	"NO_RECORDINGS":"Keine Aufzeichnungen",
 	"CALL_LOGS":"Anruflisten",
 	"CANCELLED_AUDIO_CALL":"Abgebrochener Audioanruf",
-	"CANCELLED_VIDEO_CALL":"Videoanruf abgesagt"
+	"CANCELLED_VIDEO_CALL":"Videoanruf abgesagt",
+	"MICROPHONE_PERMISSION":"Wir verwenden ein Mikrofon, um Audionachrichten aufzunehmen und zu teilen. Gehen Sie zu den Einstellungen, um den Mikrofonzugriff zu aktivieren"
 }

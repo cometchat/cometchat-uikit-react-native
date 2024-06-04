@@ -287,5 +287,6 @@
 	"NO_RECORDINGS":"Aucun enregistrement",
 	"CALL_LOGS":"Journaux d'appels",
 	"CANCELLED_AUDIO_CALL":"Appel audio annulé",
-	"CANCELLED_VIDEO_CALL":"Appel vidéo annulé"
+	"CANCELLED_VIDEO_CALL":"Appel vidéo annulé",
+	"MICROPHONE_PERMISSION":"Nous utilisons un microphone pour enregistrer et partager des messages audio. Accédez aux paramètres pour activer l'accès au microphone"
 }
