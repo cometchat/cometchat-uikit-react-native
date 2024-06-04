@@ -5,7 +5,7 @@ import { localize } from "../../shared/resources";
 import { CometChatBottomSheet} from "../../shared/views";
 import { ChatConfigurator, DataSource, DataSourceDecorator } from "../../shared/framework";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
-import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType, MessageCategoryConstants } from "../../shared/constants/UIKitConstants";
+import { MessageCategoryConstants } from "../../shared/constants/UIKitConstants";
 import { ExtensionTypeConstants } from "../ExtensionConstants";
 import { Image, Keyboard, TouchableOpacity } from "react-native";
 import { CometChatStickerBubble } from "./StickersBubble";
@@ -14,6 +14,7 @@ import { StickerIcon } from "./resources";
 import { CometChatStickerKeyboard } from "./CometChatStickerKeyboard";
 import { CometChatUIKit } from "../../shared/CometChatUiKit/CometChatUIKit";
 import { isKeyboardVisible } from "../../shared/helper/useKeyboard";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
 
 export class StickersExtensionDecorator extends DataSourceDecorator {
 

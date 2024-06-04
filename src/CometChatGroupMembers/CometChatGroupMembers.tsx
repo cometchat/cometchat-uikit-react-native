@@ -184,7 +184,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         nameTextFont: theme?.typography.title1,
         ...avatarStyle
     });
-    const _statusIndicatorStyle = new StatusIndicatorStyle(statusIndicatorStyle || { 
+    const _statusIndicatorStyle = new StatusIndicatorStyle(statusIndicatorStyle || {
         borderRadius: 10,
         height: 15,
         width: 15,
@@ -234,7 +234,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 tmpSelectedMembers.splice(index, 1);
                 setSelectedMembers(tmpSelectedMembers);
             }
-}
+        }
     }
 
     const banUser = (user) => {
@@ -292,6 +292,10 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
     }
 
     const itemPress = (item) => {
+        if (onItemPress) {
+            onItemPress(item);
+            return;
+        }
         if (!selecting) return;
 
         if (selectionMode == "single")
@@ -302,6 +306,10 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
     }
 
     const itemLongPress = (item) => {
+        if (onItemLongPress) {
+            onItemLongPress(item);
+            return;
+        }
         if (!selecting) setSelecting(true);
 
         if (selectionMode == "single") {
@@ -355,7 +363,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             activeSwipeRows={activeSwipeRows.current}
             rowOpens={(id) => {
                 Object.keys(activeSwipeRows.current).forEach(key => {
-                    if(id !== key && activeSwipeRows.current[key]) {
+                    if (id !== key && activeSwipeRows.current[key]) {
                         activeSwipeRows.current[key]?.current?.closeRow?.()
                         delete activeSwipeRows.current[key]
                     }

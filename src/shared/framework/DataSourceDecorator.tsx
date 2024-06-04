@@ -1,5 +1,5 @@
 import { AIOptionsStyle } from "../../AI/AIOptionsStyle";
-import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../base/Types";
 import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from "../formatters";
 import { CometChatMessageComposerActionInterface } from "../helper/types";
 import { CometChatMessageOption, CometChatMessageTemplate } from "../modals";

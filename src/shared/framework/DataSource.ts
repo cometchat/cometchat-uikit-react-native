@@ -1,6 +1,5 @@
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../constants/UIKitConstants";
 import { CometChatMessageOption } from "../modals/CometChatMessageOption";
 import { CometChatMessageTemplate } from "../modals/CometChatMessageTemplate";
 import { CometChatTheme } from "../resources/CometChatTheme";
@@ -16,19 +15,20 @@ import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
 import { SchedulerMessage } from "../modals/InteractiveData/InteractiveMessage";
 import { SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
 import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from "../formatters";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../base/Types";
 
 export interface DataSource {
     //message options based on types
-    getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getSchedulerMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getVideoMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getImageMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getFileMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
-    getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): Array<CometChatMessageOption>
+    getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getSchedulerMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getVideoMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getImageMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getFileMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
+    getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): Array<CometChatMessageOption>
 
 
     //views

@@ -1,7 +1,7 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 // @ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { MessageBubbleAlignmentType , MetadataConstants, MessageCategoryConstants , MessageTypeConstants,ReceiverTypeConstants, AdditionalBubbleStylingParams } from "../../shared/constants/UIKitConstants";
+import { MetadataConstants, MessageCategoryConstants , MessageTypeConstants,ReceiverTypeConstants } from "../../shared/constants/UIKitConstants";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
 import { ExtensionConstants } from "../ExtensionConstants";
 import { ExtensionTypeConstants } from "../ExtensionConstants";
@@ -21,6 +21,7 @@ import {
     WHITEBOARDICON,COLLABORATIVEWHITEBOARDICON
 } from "./resources";
 import { CometChatUIEventHandler } from "../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
 
 export class CollaborativeWhiteboardExtensionDecorator extends DataSourceDecorator {
 

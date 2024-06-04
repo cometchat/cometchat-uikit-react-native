@@ -2,10 +2,8 @@ import { DataSource, DataSourceDecorator } from '../../shared/framework';
 // @ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
-  MessageBubbleAlignmentType,
   MetadataConstants,
   MessageCategoryConstants,
-  AdditionalBubbleStylingParams,
 } from '../../shared/constants/UIKitConstants';
 import { CometChatTheme } from '../../shared/resources/CometChatTheme';
 import { ExtensionTypeConstants } from '../ExtensionConstants';
@@ -22,6 +20,7 @@ import { View, Text } from 'react-native';
 import { ICONS as ICONS2 } from './resources';
 import { CometChatCreatePoll } from './Polls';
 import { PollsBubble } from './PollsBubble';
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from '../../shared/base/Types';
 
 export class PollsExtensionDecorator extends DataSourceDecorator {
   pollsConfiguration?: PollsConfigurationInterface;

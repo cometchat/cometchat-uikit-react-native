@@ -276,11 +276,6 @@ export const ViewAlignment = {
 	messageListTop: "messageListTop",
 	messageListBottom: "messageListBottom"
 }
-export type MessageListAlignmentType = "standard" | "leftAligned"
-
-export type MessageBubbleAlignmentType = "left" | "right" | "center"
-
-export type MessageTimeAlignmentType = "top" | "bottom"
 
 export const MessageStatusConstants = Object.freeze({
 	inprogress: "inprogress",
@@ -384,8 +379,3 @@ export enum goalType {
 	anyAction = CometChat.GoalType.ANY_ACTION,
 	none = CometChat.GoalType.NONE
 }
-
-export type AdditionalBubbleStylingParams = {
-	textFormatters?: CometChatTextFormatter[],
-	disableMentions?: boolean
- }

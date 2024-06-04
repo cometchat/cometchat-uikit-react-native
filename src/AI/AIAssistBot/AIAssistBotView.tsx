@@ -8,8 +8,9 @@ import { ICONS } from '../../shared/framework/resources';
 import { ICONS as MessageIcons } from '../../shared/assets/images';
 import { getUnixTimestamp } from '../../shared/utils/CometChatMessageHelper';
 import { CometChatMessageBubble } from '../../shared/views/CometChatMessageBubble';
-import { MessageBubbleAlignmentType, ReceiverTypeConstants } from '../../shared/constants/UIKitConstants';
+import { ReceiverTypeConstants } from '../../shared/constants/UIKitConstants';
 import { AIBotMessageBubbleStyle, AISenderMessageBubbleStyle } from './AIAssistBotStyle';
+import { MessageBubbleAlignmentType } from '../../shared/base/Types';
 
 interface AIAssistBotViewProps {
     title: string;

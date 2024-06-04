@@ -15,6 +15,11 @@ import {
   //Constants
   CometChatTabAlignment,
   ConversationType,
+  AdditionalBubbleStylingParams,
+  MessageTimeAlignmentType,
+  MessageListAlignmentType,
+  MessageBubbleAlignmentType,
+  SelectionMode,
   DatePattern,
   CometChatUiKitConstants,
 
@@ -503,6 +508,11 @@ export {
   CometChatContextType,
   CometChatTabAlignment,
   ConversationType,
+  AdditionalBubbleStylingParams,
+  MessageBubbleAlignmentType,
+  MessageListAlignmentType,
+  MessageTimeAlignmentType,
+  SelectionMode,
   DataSourceDecorator,
   DatePattern,
   ExtensionsDataSource,

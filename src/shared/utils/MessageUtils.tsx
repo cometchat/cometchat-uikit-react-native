@@ -1,10 +1,11 @@
 import React from "react";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { MessageBubbleAlignmentType, MessageTypeConstants } from "../constants/UIKitConstants";
+import { MessageTypeConstants } from "../constants/UIKitConstants";
 import { CometChatMessageBubble } from "../views/CometChatMessageBubble";
 import { CometChatTheme } from "../resources";
 import { ChatConfigurator } from "../framework";
 import { CometChatMessageTemplate } from "../modals";
+import { MessageBubbleAlignmentType } from "../base/Types";
 
 type MessageViewType = {
     message: CometChat.BaseMessage,

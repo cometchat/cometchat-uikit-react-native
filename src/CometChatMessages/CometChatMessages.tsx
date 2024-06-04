@@ -306,7 +306,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                             group={groupObject}
                             emptyStateText={localize("NO_MESSAGES_FOUND")}
                             errorStateText={localize("SOMETHING_WRONG")}
-                            dateSeperatorPattern={_listConfiguration.dateSeperatorPattern}
+                            dateSeparatorPattern={_listConfiguration.dateSeparatorPattern}
                             disableSoundForMessages={disableSoundForMessages}
                             onThreadRepliesPress={(msg, view) => {
                                 threadedMessageInfo.current = { message: msg, view }

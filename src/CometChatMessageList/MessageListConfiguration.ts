@@ -3,10 +3,6 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { AvatarStyleInterface, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, ImageType } from '../shared';
 import { DateStyle } from '../shared';
 import { AvatarStyle } from '../shared';
-import {
-  MessageListAlignmentType,
-  MessageTimeAlignmentType,
-} from '../shared/constants/UIKitConstants';
 import { MessageBubbleStyle } from '../shared/views/CometChatMessageBubble/MessageBubbleStyle';
 import {
   MessageListStyle,
@@ -14,7 +10,7 @@ import {
 } from './MessageListStyle';
 import { ActionSheetStyles } from '../shared';
 import { CometChatMessageTemplate } from '../shared/modals/CometChatMessageTemplate';
-import { DatePattern } from '../shared/base/Types';
+import { DatePattern, MessageListAlignmentType, MessageTimeAlignmentType } from '../shared/base/Types';
 import {
   MessageStyle,
   MessageStyleInterface,
@@ -67,7 +63,7 @@ export interface MessageListConfigurationInterface {
     group?: CometChat.Group;
     id?: { uid?: string; guid?: string; parentMessageId?: string };
   }) => JSX.Element;
-  dateSeperatorPattern?: (message: number) => DatePattern;
+  dateSeparatorPattern?: (message: number) => DatePattern;
   avatarStyle?: AvatarStyleInterface;
   dateSeperatorStyle?: DateStyleInterface;
   wrapperMessageBubbleStyle?: MessageStyleInterface;
@@ -151,7 +147,7 @@ export class MessageListConfiguration
   actionSheetStyle: ActionSheetStylesInterface;
   messageListStyle: MessageListStyleInterface;
   disableReceipt: boolean;
-  dateSeperatorPattern: (item: number) => DatePattern;
+  dateSeparatorPattern: (item: number) => DatePattern;
   /**
    * Hides the header of the action sheet
    */

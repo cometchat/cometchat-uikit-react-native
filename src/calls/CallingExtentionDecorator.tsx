@@ -6,7 +6,7 @@ import { localize } from "../shared/resources/CometChatLocalize";
 import { DataSource, DataSourceDecorator } from "../shared/framework";
 import { CometChatTheme } from "../shared/resources/CometChatTheme";
 import { CallingConfiguration } from "./CallingConfiguration";
-import { AdditionalBubbleStylingParams, CallContstatnts, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../shared/constants/UIKitConstants";
+import { CallContstatnts, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../shared/constants/UIKitConstants";
 import { CometChatCallBubble } from "./CometChatCallBubble";
 import { AudioIcon } from "./resources";
 import { VideoIcon } from "./resources";
@@ -17,6 +17,7 @@ import { CallUtils } from "./CallUtils";
 import { CometChatUIEventHandler } from "../shared";
 import { CallUIEvents } from "./CallEvents";
 import { permissionUtil } from "../shared/utils/PermissionUtil";
+import { AdditionalBubbleStylingParams } from "../shared/base/Types";
 
 const CometChatCalls = CallingPackage.CometChatCalls;
 

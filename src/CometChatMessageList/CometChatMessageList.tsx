@@ -9,7 +9,7 @@ import { AvatarStyle, AvatarStyleInterface } from "../shared";
 import { CometChatAvatar, CometChatDate, CometChatReceipt, DateStyle } from "../shared";
 import { MessageListStyle, MessageListStyleInterface } from "./MessageListStyle";
 import { CometChatMessageBubble } from "../shared/views/CometChatMessageBubble";
-import { CallTypeConstants, MessageBubbleAlignmentType, MessageCategoryConstants, MessageListAlignmentType, MessageOptionConstants, MessageStatusConstants, MessageTimeAlignmentType, MessageTypeConstants, ReceiverTypeConstants, ViewAlignment } from "../shared/constants/UIKitConstants";
+import { CallTypeConstants, MessageCategoryConstants, MessageOptionConstants, MessageStatusConstants, MessageTypeConstants, ReceiverTypeConstants, ViewAlignment } from "../shared/constants/UIKitConstants";
 import { localize } from "../shared";
 import { downArrowIcon } from "./resources";
 import { Style } from "./style";
@@ -20,7 +20,7 @@ import { ChatConfigurator } from "../shared/framework/ChatConfigurator";
 import { CometChatActionSheet, ActionSheetStyles, CometChatBottomSheet } from "../shared";
 import { getUnixTimestamp, messageStatus } from "../shared/utils/CometChatMessageHelper";
 import { DateStyleInterface } from "../shared/views/CometChatDate/DateStyle";
-import { CometChatContextType } from "../shared/base/Types";
+import { CometChatContextType, MessageBubbleAlignmentType, MessageListAlignmentType, MessageTimeAlignmentType } from "../shared/base/Types";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { ActionSheetStylesInterface } from "../shared/views/CometChatActionSheet/ActionSheetStyle";
 import { CometChatMessageInformation } from "../CometChatMessageInformation/CometChatMessageInformation";
@@ -60,7 +60,7 @@ export interface CometChatMessageListProps {
     showAvatar?: boolean,
     datePattern?: (message: CometChat.BaseMessage) => "timeFormat" | "dayDateFormat" | "dayDateTimeFormat",
     timeStampAlignment?: MessageTimeAlignmentType,
-    dateSeperatorPattern?: (date: number) => string,
+    dateSeparatorPattern?: (date: number) => string,
     templates?: Array<CometChatMessageTemplate>,
     messageRequestBuilder?: CometChat.MessagesRequestBuilder,
     newMessageIndicatorText?: string,
@@ -146,7 +146,7 @@ export const CometChatMessageList = memo(forwardRef<
             showAvatar = true,
             datePattern,
             timeStampAlignment = "bottom",
-            dateSeperatorPattern,
+            dateSeparatorPattern,
             templates = [],
             messageRequestBuilder,
             newMessageIndicatorText,
@@ -202,26 +202,27 @@ export const CometChatMessageList = memo(forwardRef<
             let _updatedCustomRequestBuilder = _defaultRequestBuilder;
             if (messageRequestBuilder) {
                 _updatedCustomRequestBuilder = messageRequestBuilder;
-            }
-            _updatedCustomRequestBuilder.hideReplies(true);
-            if (user)
-                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setUID(user["uid"])
-            if (group)
-                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setGUID(group["guid"])
-            if (parentMessageId)
-                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setParentMessageId(parseInt(parentMessageId));
-            let types = [], categories = [];
-            if (templates.length) {
-                types = templates.map(template => template.type);
-                categories = templates.map(template => template.category);
-            }
-            else {
-                types = ChatConfigurator.dataSource.getAllMessageTypes();
-                categories = ChatConfigurator.dataSource.getAllMessageCategories();
-            }
+            } else {
+                _updatedCustomRequestBuilder.hideReplies(true);
+                if (user)
+                    _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setUID(user["uid"])
+                if (group)
+                    _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setGUID(group["guid"])
+                if (parentMessageId)
+                    _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setParentMessageId(parseInt(parentMessageId));
+                let types = [], categories = [];
+                if (templates.length) {
+                    types = templates.map(template => template.type);
+                    categories = templates.map(template => template.category);
+                }
+                else {
+                    types = ChatConfigurator.dataSource.getAllMessageTypes();
+                    categories = ChatConfigurator.dataSource.getAllMessageCategories();
+                }
 
-            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setTypes(types);
-            _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setCategories(categories);
+                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setTypes(types);
+                _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setCategories(categories);
+            }
 
             msgRequestBuilder.current = _updatedCustomRequestBuilder;
 
@@ -1712,7 +1713,7 @@ export const CometChatMessageList = memo(forwardRef<
                             timeStamp={getSentAtTimestamp(item)}
                             pattern={"dayDateFormat"}
                             style={_dateSeperatorStyle}
-                            customDateString={dateSeperatorPattern ? dateSeperatorPattern(item['sentAt']) : undefined}
+                            customDateString={dateSeparatorPattern ? dateSeparatorPattern(item['sentAt']) : undefined}
                             dateAlignment="center"
                         />
                     </View>

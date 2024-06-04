@@ -1,7 +1,7 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 // @ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { MessageBubbleAlignmentType , MetadataConstants, MessageCategoryConstants, ReceiverTypeConstants, AdditionalBubbleStylingParams } from "../../shared/constants/UIKitConstants";
+import { MetadataConstants, MessageCategoryConstants, ReceiverTypeConstants } from "../../shared/constants/UIKitConstants";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
 import { ExtensionConstants, ExtensionTypeConstants } from "../ExtensionConstants";
 import { getExtentionData } from "../ExtensionModerator";
@@ -20,6 +20,7 @@ import {
     DOCUMENTICON,DOCUMENTICON2X
 } from "./resources";
 import { CometChatUIEventHandler } from "../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
 
 export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator {
 

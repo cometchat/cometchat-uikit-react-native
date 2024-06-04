@@ -91,7 +91,7 @@ export interface CometChatThreadedMessagesInterface {
    * @type {ThreadedMessagesStyleInterface}
    * @description Styling properties of the compone
    */
-  threadedMessagesStyle: ThreadedMessagesStyleInterface;
+  threadedMessagesStyle?: ThreadedMessagesStyleInterface;
   /**
    * Hide the MessageComposer
    * @type {boolean}

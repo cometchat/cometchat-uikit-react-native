@@ -11,8 +11,6 @@ import { CometChatMessageOption } from "../../shared/modals";
 import React from 'react';
 import { CometChatTheme } from '../../shared/resources/CometChatTheme';
 import {
-  AdditionalBubbleStylingParams,
-  MessageBubbleAlignmentType,
   MessageOptionConstants,
 } from '../../shared/constants/UIKitConstants';
 import { MessageTranslationBubble } from './MessageTranslationBubble';
@@ -23,6 +21,7 @@ import { messageStatus } from '../../shared/utils/CometChatMessageHelper';
 import { ICONS } from './resources';
 import { CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, MentionTextStyle } from '../../shared';
 import { CommonUtils } from '../../shared/utils/CommonUtils';
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from '../../shared/base/Types';
 export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
   messageTranslationConfiguration?: MessageTranslationConfigurationInterface;
 

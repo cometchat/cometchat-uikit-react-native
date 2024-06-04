@@ -5,7 +5,7 @@ import { Styles } from './style';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { ReactionsStyle, ReactionsStyleInterface } from './ReactionsStyle';
-import { MessageBubbleAlignmentType } from '../../constants/UIKitConstants';
+import { MessageBubbleAlignmentType } from '../../base/Types';
 
 export interface CometChatReactionsInterface {
   messageObject?: CometChat.BaseMessage;

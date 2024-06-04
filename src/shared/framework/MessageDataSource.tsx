@@ -1,7 +1,7 @@
 import React from "react";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { AdditionalBubbleStylingParams, CometChatMessageTypes, GroupMemberScope, MessageBubbleAlignmentType, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../constants/UIKitConstants";
+import { CometChatMessageTypes, GroupMemberScope, MessageCategoryConstants, MessageOptionConstants, MessageTypeConstants } from "../constants/UIKitConstants";
 import { CometChatMessageOption } from "../modals/CometChatMessageOption";
 import { CometChatMessageTemplate } from "../modals/CometChatMessageTemplate";
 import { DataSource } from "./DataSource";
@@ -27,6 +27,7 @@ import { View } from "react-native";
 import { CommonUtils } from "../utils/CommonUtils";
 import { CometChatUIKit } from "../CometChatUiKit";
 import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, MentionTextStyle } from "../formatters";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../base/Types";
 
 function isAudioMessage(message: CometChat.BaseMessage): message is CometChat.MediaMessage {
     return message.getCategory() == CometChat.CATEGORY_MESSAGE &&
@@ -134,7 +135,7 @@ export class MessageDataSource implements DataSource {
         return loggedInUser.getUid() == message?.getSender()?.getUid();
     }
 
-    getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getTextMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
 
         let messageOptionList: CometChatMessageOption[] = [];
 
@@ -143,81 +144,81 @@ export class MessageDataSource implements DataSource {
             return messageOptionList;
 
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.replyInThread)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.replyInThread, group)) {
             messageOptionList.push(this.getReplyInThreadOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.shareMessage)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.shareMessage, group)) {
             messageOptionList.push(this.getShareOption());
         }
 
         messageOptionList.push(this.getCopyOption());
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.editMessage)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.editMessage, group)) {
             messageOptionList.push(this.getEditOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.messageInformation)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.messageInformation, group)) {
             messageOptionList.push(this.getInformationOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.deleteMessage)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.deleteMessage, group)) {
             messageOptionList.push(this.getDeleteOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.sendMessagePrivately)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.sendMessagePrivately, group)) {
             messageOptionList.push(this.getPrivateMessageOption());
         }
 
         return messageOptionList;
     }
 
-    getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
 
-    getSchedulerMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getSchedulerMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
 
-    getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
 
-    getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
-    getVideoMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getVideoMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList
     }
-    getImageMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getImageMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
-    getFileMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getFileMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (!isDeletedMessage(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
-    getMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
         if (isDeletedMessage(messageObject))
             return optionsList;
@@ -242,9 +243,9 @@ export class MessageDataSource implements DataSource {
             }
 
         }
-        else if(messageObject.getCategory() == MessageCategoryConstants.custom){
+        else if (messageObject.getCategory() == MessageCategoryConstants.custom) {
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
-        }else if(messageObject.getCategory() == MessageCategoryConstants.interactive){
+        } else if (messageObject.getCategory() == MessageCategoryConstants.interactive) {
             let type: string = messageObject.getType();
             switch (type) {
                 case MessageTypeConstants.form:
@@ -262,9 +263,9 @@ export class MessageDataSource implements DataSource {
     }
 
 
-    private validateOption(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group | null, optionId: string): boolean {
+    private validateOption(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, optionId: string, group?: CometChat.Group | null): boolean {
 
-        if (MessageOptionConstants.replyInThread === optionId &&(!messageObject.parentMessageId|| messageObject.parentMessageId === 0)) {
+        if (MessageOptionConstants.replyInThread === optionId && (!messageObject.parentMessageId || messageObject.parentMessageId === 0)) {
             return true;
         }
 
@@ -282,7 +283,7 @@ export class MessageDataSource implements DataSource {
             return true;
         }
 
-        let memberIsNotParticipant: boolean = group  && (group.owner === loggedInUser.uid || group.scope !== GroupMemberScope.participant);
+        let memberIsNotParticipant: boolean = group && (group.owner === loggedInUser.uid || group.scope !== GroupMemberScope.participant);
 
         if (MessageOptionConstants.deleteMessage === optionId && (isSentByMe || memberIsNotParticipant)) {
             return true;
@@ -297,35 +298,35 @@ export class MessageDataSource implements DataSource {
         }
 
         if (MessageOptionConstants.sendMessagePrivately === optionId && group
-             &&  loggedInUser.getUid() != messageObject.getSender()?.getUid()) {
+            && loggedInUser.getUid() != messageObject.getSender()?.getUid()) {
             return true;
         }
 
         return false;
     }
 
-    getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group): CometChatMessageOption[] {
+    getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let messageOptionList: CometChatMessageOption[] = [];
 
         if (isDeletedMessage(messageObject)) return messageOptionList;
 
-        if( this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.replyInThread) ) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.replyInThread, group)) {
             messageOptionList.push(this.getReplyInThreadOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject,group, MessageOptionConstants.shareMessage)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.shareMessage, group)) {
             messageOptionList.push(this.getShareOption());
         }
 
-        if(this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.messageInformation)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.messageInformation, group)) {
             messageOptionList.push(this.getInformationOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject,  group, MessageOptionConstants.deleteMessage)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.deleteMessage, group)) {
             messageOptionList.push(this.getDeleteOption());
         }
 
-        if (this.validateOption(loggedInUser, messageObject, group, MessageOptionConstants.sendMessagePrivately)) {
+        if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.sendMessagePrivately, group)) {
             messageOptionList.push(this.getPrivateMessageOption());
         }
 

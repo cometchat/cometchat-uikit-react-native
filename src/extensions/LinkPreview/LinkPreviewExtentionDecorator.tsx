@@ -3,11 +3,11 @@ import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 import { LinkPreviewConfigurationInterface } from "./LinkPreviewConfiguration";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
-import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/constants/UIKitConstants";
 import { getExtentionData } from "../ExtensionModerator";
 import { ExtensionConstants } from "../ExtensionConstants";
 import { LinkPreviewBubble } from "./LinkPreviewBubble";
 import { CometChatTextBubble } from "../../shared";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
 
 export class LinkPreviewExtentionDecorator extends DataSourceDecorator {
     linkPreviewConfiguration?: LinkPreviewConfigurationInterface

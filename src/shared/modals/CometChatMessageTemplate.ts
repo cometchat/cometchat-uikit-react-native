@@ -1,6 +1,6 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { MessageBubbleAlignmentType } from "../constants/UIKitConstants";
 import { CometChatMessageOption } from "./CometChatMessageOption";
+import { MessageBubbleAlignmentType } from "../base/Types";
 
 /**
  * Represents the interface for a message template.
@@ -62,7 +62,7 @@ interface MessageTemplateInterface {
      * @param group - The group.
      * @returns The array of CometChatMessageOption.
      */
-    options?: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group) => CometChatMessageOption[],
+    options?: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group) => CometChatMessageOption[],
 }
 
 /**
@@ -83,20 +83,20 @@ export class CometChatMessageTemplate implements MessageTemplateInterface {
      * @param alignment - The alignment of the message bubble.
      * @returns The JSX element representing the content view.
      */
-    ContentView: (messageObject: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => JSX.Element;
+    ContentView?: (messageObject: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => JSX.Element;
     /**
      * The bubble view of the message template.
      * @param messageObject - The message object.
      * @returns The JSX element representing the bubble view.
      */
-    BubbleView: (messageObject: CometChat.BaseMessage) => JSX.Element;
+    BubbleView?: (messageObject: CometChat.BaseMessage) => JSX.Element;
     /**
      * The header view of the message template.
      * @param messageObject - The message object.
      * @param alignment - The alignment of the message bubble.
      * @returns The JSX element representing the header view.
      */
-    HeaderView: (messageObject: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => JSX.Element;
+    HeaderView?: (messageObject: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => JSX.Element;
     /**
      * The status info view of the message template for DateTime and Receipt.
      * @param messageObject - The message object.
@@ -110,7 +110,7 @@ export class CometChatMessageTemplate implements MessageTemplateInterface {
      * @param alignment - The alignment of the message bubble.
      * @returns The JSX element representing the footer view.
      */
-    FooterView: (messageObject: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => JSX.Element;
+    FooterView?: (messageObject: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => JSX.Element;
     /**
      * The options of the message template.
      * @param loggedInUser - The logged in user.
@@ -118,7 +118,7 @@ export class CometChatMessageTemplate implements MessageTemplateInterface {
      * @param group - The group.
      * @returns The array of CometChatMessageOption.
      */
-    options: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group) => CometChatMessageOption[];
+    options?: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group) => CometChatMessageOption[];
 
     /**
      * Constructs a new instance of the CometChatMessageTemplate class.

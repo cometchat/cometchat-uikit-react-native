@@ -61,18 +61,18 @@ export interface ModalDetailsStyleInterface {
 }
 
 export interface DetailsStyleInterface {
-  width: string;
-  height: string;
-  backgroundColor: string;
-  border: BorderStyleInterface;
-  borderRadius: number;
-  titleFont: FontStyleInterface;
-  titleColor: string;
-  backIconTint: string;
-  closeIconTint: string;
-  onlineStatusColor: string;
-  privateGroupIconBackground: string;
-  protectedGroupIconBackground: string;
+  width?: string;
+  height?: string;
+  backgroundColor?: string;
+  border?: BorderStyleInterface;
+  borderRadius?: number;
+  titleFont?: FontStyleInterface;
+  titleColor?: string;
+  backIconTint?: string;
+  closeIconTint?: string;
+  onlineStatusColor?: string;
+  privateGroupIconBackground?: string;
+  protectedGroupIconBackground?: string;
 }
 
 export interface CometChatDetailsInterface {

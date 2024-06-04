@@ -277,7 +277,7 @@ export const CometChatList = React.forwardRef<
     return () => {
       CometChat.removeConnectionListener(connectionListenerId);
     }
-  });
+  }, []);
 
   useEffect(() => {
     if (initialRunRef.current === true) {

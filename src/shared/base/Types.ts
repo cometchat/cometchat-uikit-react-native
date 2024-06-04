@@ -1,5 +1,6 @@
 import { ImageURISource } from "react-native";
 import { CometChatTheme } from "../resources/CometChatTheme";
+import { CometChatTextFormatter } from "../formatters";
 
 export type ImageType = ImageURISource // {uri: string} | number;
 
@@ -19,3 +20,14 @@ export type CometChatContextType = {
 };
 
 export type CometChatTabAlignment = "top" | "bottom";
+
+export type MessageListAlignmentType = "standard" | "leftAligned";
+
+export type MessageBubbleAlignmentType = "left" | "right" | "center"
+
+export type MessageTimeAlignmentType = "top" | "bottom";
+
+export type AdditionalBubbleStylingParams = {
+	textFormatters?: CometChatTextFormatter[],
+	disableMentions?: boolean
+ }

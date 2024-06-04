@@ -13,6 +13,11 @@ import {
   CometChatContextType,
   CometChatTabAlignment,
   ConversationType,
+  AdditionalBubbleStylingParams,
+  MessageBubbleAlignmentType,
+  MessageListAlignmentType,
+  MessageTimeAlignmentType,
+  SelectionMode,
   DatePattern,
   MessageReceipt
 } from './base';
@@ -225,6 +230,11 @@ export {
   CometChatContextType,
   CometChatTabAlignment,
   ConversationType,
+  AdditionalBubbleStylingParams,
+  MessageBubbleAlignmentType,
+  MessageListAlignmentType,
+  MessageTimeAlignmentType,
+  SelectionMode,
   DatePattern,
   MessageReceipt,
   CometChatUIKit,

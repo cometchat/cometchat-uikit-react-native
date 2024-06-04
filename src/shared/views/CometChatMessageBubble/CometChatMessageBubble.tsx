@@ -2,9 +2,9 @@ import React, { useContext } from "react";
 import { View } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, BaseStyleInterface } from "../../base";
-import { MessageBubbleAlignmentType } from "../../constants/UIKitConstants";
 import { MessageBubbleStyle } from "./MessageBubbleStyle";
 import { memo } from "react";
+import { MessageBubbleAlignmentType } from "../../base/Types";
 
 export interface CometChatMessageBubbleInterface {
     /**

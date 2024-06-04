@@ -1,12 +1,12 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/constants/UIKitConstants";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
 import { ExtensionConstants } from "../ExtensionConstants";
 import { getExtentionData } from "../ExtensionModerator";
 import { TextModerationConfigurationInterface } from "./TextModerationConfiguration";
 
 import { MessageTypeConstants, MessageCategoryConstants } from "../../shared/constants/UIKitConstants";
+import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
 
 export class TextModerationExtensionDecorator extends DataSourceDecorator {
 

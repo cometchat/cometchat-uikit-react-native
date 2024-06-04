@@ -9,6 +9,11 @@ import {
   ConversationType,
   DatePattern,
   MessageReceipt,
+  SelectionMode,
+  MessageListAlignmentType,
+  MessageBubbleAlignmentType,
+  AdditionalBubbleStylingParams,
+  MessageTimeAlignmentType
 } from "./Types";
 export {
   CometChatContextType,
@@ -24,5 +29,10 @@ export {
   FontStyleInterface,
   ShadowStyle,
   ShadowStyleInterface,
-  ImageType
+  ImageType,
+  SelectionMode,
+  MessageListAlignmentType,
+  AdditionalBubbleStylingParams,
+  MessageBubbleAlignmentType,
+  MessageTimeAlignmentType
 };
