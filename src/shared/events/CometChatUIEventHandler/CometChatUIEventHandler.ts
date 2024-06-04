@@ -72,6 +72,9 @@ export class CometChatUIEventHandler {
                 case listener._eventListener.ccCallInitiated?.name:
                     listener._eventListener.ccCallInitiated(param);
                     break;
+                case listener._eventListener.ccShowOngoingCall?.name:
+                    listener._eventListener.ccShowOngoingCall(param);
+                    break;
             }
         });
     }

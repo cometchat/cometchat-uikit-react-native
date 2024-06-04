@@ -1232,7 +1232,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
     return (
       <>
-        {!isVisible && CustomView && <CustomView />}
+        {!isVisible && typeof CustomView === "function" && <CustomView />}
         <Modal
           animationType="slide"
           visible={isVisible}

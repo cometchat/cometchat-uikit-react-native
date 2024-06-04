@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Modal, Text, View, Image } from "react-native";
+import React from "react";
+import { Modal, Text, View, Image, Platform } from "react-native";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatMessageTemplate } from "../shared/modals";
 import { localize } from "../shared/resources/CometChatLocalize";
@@ -14,6 +14,8 @@ import { CometChatCallButtons } from "./CometChatCallButtons";
 import { CometChatOngoingCall } from "./CometChatOngoingCall";
 import { CallingPackage } from "./CallingPackage";
 import { CallUtils } from "./CallUtils";
+import { CometChatUIEventHandler } from "../shared";
+import { CallUIEvents } from "./CallEvents";
 
 const CometChatCalls = CallingPackage.CometChatCalls;
 
@@ -25,12 +27,12 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
     constructor(props: { dataSource: DataSource, configuration: CallingConfiguration }) {
         super(props.dataSource);
         CometChat.getLoggedinUser()
-        .then(user => {
-            this.loggedInUser = user;
-        })
-        .catch(err => {
-            console.log("unable to get logged in user.");
-        })
+            .then(user => {
+                this.loggedInUser = user;
+            })
+            .catch(err => {
+                console.log("unable to get logged in user.");
+            })
         if (props.configuration) {
             this.configuration = props.configuration;
         }
@@ -63,13 +65,13 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         if (this.isDeletedMessage(message))
             return null;
         return <View style={{ justifyContent: "space-around", alignItems: "center" }}>
-            <View style={{flexDirection: "row", alignSelf: "center", borderWidth: 1, borderStyle: "dotted", borderRadius: 8, padding: 4}}>
-            <Image source={message['type'] == "audio" ? AudioIcon : VideoIcon} style={{height: 16, width: 16, alignSelf: "center"}} />
-            <Text style={{ color: theme.palette.getAccent(), marginStart: 8 }}>
-                {
-                    CallUtils.getCallStatus(message, this.loggedInUser)
-                }
-            </Text>
+            <View style={{ flexDirection: "row", alignSelf: "center", borderWidth: 1, borderStyle: "dotted", borderRadius: 8, padding: 4 }}>
+                <Image source={message['type'] == "audio" ? AudioIcon : VideoIcon} style={{ height: 16, width: 16, alignSelf: "center" }} />
+                <Text style={{ color: theme.palette.getAccent(), marginStart: 8 }}>
+                    {
+                        CallUtils.getCallStatus(message, this.loggedInUser)
+                    }
+                </Text>
             </View>
         </View>
     }
@@ -86,7 +88,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
             }
         });
     }
-    
+
     getUserVideoCallTemplates = (theme) => {
         return new CometChatMessageTemplate({
             category: MessageCategoryConstants.call,
@@ -103,28 +105,16 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
     GroupCallBubbleView = (props: { message: CometChat.BaseMessage, theme: CometChatTheme, alignment: string }) => {
         const { message, theme, alignment } = props;
 
-        const [joinCall, setJoinCall] = useState(false);
-        const callListener = useRef(undefined);
-
         if (this.isDeletedMessage(message))
             return null
-        useEffect(() => {
-            callListener.current = new CometChatCalls.OngoingCallListener({
-                onCallEnded: () => {
-                    setJoinCall(false);
-                },
-                onCallEndButtonPressed: () => {
-                  setJoinCall(false);
-              },
-            })
-        }, []);
+
         return (
             <View>
                 <CometChatCallBubble
                     buttonText={localize("JOIN")}
                     title={alignment == "right" ? localize("YOU_INITIATED_GROUP_CALL") : `${message['sender']['name']} ${localize("INITIATED_GROUP_CALL")}`}
                     icon={VideoIcon}
-                    onClick={() => setJoinCall(true)}
+                    onClick={() => this.startDirectCall(message['customData']['sessionId'], theme)}
                     style={{
                         backgroundColor: alignment == "left" ? "transparent" : theme.palette.getPrimary(),
                         titleColor: alignment == "left" ? theme.palette.getAccent() : theme.palette.getSecondary(),
@@ -133,23 +123,44 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
                         buttonTextColor: alignment == "left" ? theme.palette.getPrimary() : theme.palette.getPrimary(),
                     }}
                 />
-                {
-                    joinCall &&
-                    <Modal>
-                        <CometChatOngoingCall
-                            sessionID={message['customData']['sessionId']}
-                            callSettingsBuilder={
-                                new CometChatCalls.CallSettingsBuilder()
-                                    .setCallEventListener(callListener.current)
-                            }
-                            onError={(e) => {
-                                setJoinCall(false);
-                            }}
-                        />
-                    </Modal>
-                }
             </View>
         )
+    }
+
+    startDirectCall(sessionId: string, theme?: CometChatTheme) {
+
+        const callSettingsBuilder = new CometChatCalls.CallSettingsBuilder()
+            .setCallEventListener(
+                new CometChatCalls.OngoingCallListener({
+                    onCallEndButtonPressed: () => {
+                        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccShowOngoingCall, {
+                            child: null,
+                        })
+                    },
+                    onError: (error) => {
+                        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccShowOngoingCall, {
+                            child: null,
+                        })
+                    }
+                })
+            );
+
+        const ongoingCallScreen = (
+            <Modal>
+                <CometChatOngoingCall
+                    sessionID={sessionId}
+                    callSettingsBuilder={callSettingsBuilder}
+                    onError={(e) => {
+                        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccShowOngoingCall, {
+                            child: null,
+                        });
+                    }}
+                />
+            </Modal>
+        );
+        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccShowOngoingCall, {
+            child: ongoingCallScreen,
+        });
     }
 
     getAuxiliaryHeaderAppbarOptions(user, group, theme: CometChatTheme) {

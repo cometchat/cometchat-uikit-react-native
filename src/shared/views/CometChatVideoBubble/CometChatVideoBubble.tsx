@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { View, Image, ImageBackground, NativeModules, Platform, NativeEventEmitter, EmitterSubscription } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { ImageType } from "../../base/Types";
@@ -48,7 +48,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         onPress,
     } = props;
 
-    const {theme} = useContext<CometChatContextType>(CometChatContext);
+    const { theme } = useContext<CometChatContextType>(CometChatContext);
     const [isOpening, setOpening] = useState(false);
 
     const _style = new VideoBubbleStyle({
@@ -69,7 +69,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
 
 
     const getFileName = (url) => {
-        return (url.substring(url.lastIndexOf("/") + 1, url.length)).replace(" ","_");
+        return (url.substring(url.lastIndexOf("/") + 1, url.length)).replace(" ", "_");
     }
 
     const playVideo = () => {
@@ -82,9 +82,11 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
             return;
         }
 
+        if (!videoUrl) return;
+
         Platform.OS == 'ios' ?
-            FileManager.openFile(videoUrl, getFileName(videoUrl), (s) => {}) :
-            VideoManager.openVideo(videoUrl, (s) => {});
+            FileManager.openFile(videoUrl, getFileName(videoUrl), (s) => { }) :
+            VideoManager.openVideo(videoUrl, (s) => { });
 
     }
 

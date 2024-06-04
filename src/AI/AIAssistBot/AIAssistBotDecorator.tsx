@@ -49,8 +49,8 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
     override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] {
         this.user = user!;
         this.group = group!;
-        if (!id?.parentMessageId) {
-            const numberOfBots = this.bots?.length;
+        const numberOfBots = this.bots?.length;
+        if (!id?.parentMessageId && numberOfBots > 0) {
             const titleName = numberOfBots > 1 ? localize("COMETCHAT_ASK_AI_BOT") : `${localize("COMETCHAT_ASK_BOT")} ${this.bots[0]?.getName()}`;
             const messageComposerActions: CometChatMessageComposerActionInterface[] = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
             let newAction = {

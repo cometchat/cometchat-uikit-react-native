@@ -6,4 +6,5 @@ export const CallUIEvents = {
     ccCallEnded: "ccCallEnded",
     ccCallJoined: "ccCallJoined",
     ccOutgoingCall: "ccOutgoingCall",
+    ccShowOngoingCall: "ccShowOngoingCall",
 }

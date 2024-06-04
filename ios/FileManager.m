@@ -95,7 +95,7 @@ RCT_EXPORT_METHOD(checkAndDownload:(NSString *) urlToDownload name:(NSString *) 
 RCT_EXPORT_METHOD(openFile:(NSString *) url name:(NSString *) fileName myCallback:(RCTResponseSenderBlock)callback) {
     //new way
     @try {
-        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDownloadsDirectory, NSUserDomainMask, YES);
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
         NSString *documentsDirectory = [paths objectAtIndex:0];
         NSString *filepath = [NSString stringWithFormat:@"%@/%@", documentsDirectory, fileName];
         if ([[NSFileManager defaultManager] fileExistsAtPath: filepath isDirectory:false]) {

@@ -15,7 +15,7 @@ export class CometChatConversationUtils {
     }
 
     static getLastMessage(conversation: CometChat.Conversation): CometChat.BaseMessage {
-        let msg = conversation.getLastMessage();
+        let msg = conversation?.getLastMessage && conversation?.getLastMessage();
         if (!msg) {
             return undefined;
         }

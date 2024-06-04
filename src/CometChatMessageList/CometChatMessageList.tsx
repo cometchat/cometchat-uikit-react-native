@@ -133,6 +133,7 @@ export const CometChatMessageList = forwardRef<
         const callListenerId = "call_" + new Date().getTime();
         const groupListenerId = "group_" + new Date().getTime();
         const uiEventListener = "uiEvent_" + new Date().getTime();
+        const callEventListener = 'callEvent_' + new Date().getTime();
         const uiEventListenerShow = "uiEvent_show_" + new Date().getTime();
         const uiEventListenerHide = "uiEvent_hide_" + new Date().getTime();
         const connectionListenerId = 'connectionListener_' + new Date().getTime();
@@ -242,6 +243,7 @@ export const CometChatMessageList = forwardRef<
         const [ExtensionsComponent, setExtensionsComponent] = useState(null);
         const [CustomListHeader, setCustomListHeader] = useState(null);
         const [messageInfo, setMessageInfo] = useState(false);
+        const [ongoingCallView, setOngoingCallView] = useState(null);
         // const [forwarding, setForwarding] = useState(false);
 
         const infoObject = useRef<CometChat.BaseMessage>();
@@ -274,14 +276,12 @@ export const CometChatMessageList = forwardRef<
         }
 
         const markUnreadMessageAsRead = () => {
-            if (messagesList[messagesList.length - 1].getReceiverType() == ReceiverTypeConstants.user) {
-                for (let index = 0; index < unreadCount; index++) {
-                    const message = messagesList[messagesList.length - (index + 1)];
-                    if (index == 0)
-                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message });
-                    CometChat.markAsRead(message);
-                    setUnreadCount(0);
-                }
+            for (let index = 0; index < unreadCount; index++) {
+                const message = messagesList[messagesList.length - (index + 1)];
+                if (index == 0)
+                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message });
+                CometChat.markAsRead(message);
+                setUnreadCount(0);
             }
         }
 
@@ -637,6 +637,12 @@ export const CometChatMessageList = forwardRef<
                     bottomSheetRef.current?.togglePanel()
                 },
             });
+            CometChatUIEventHandler.addCallListener(callEventListener, {
+                ccShowOngoingCall: (CometChatOngoingComponent) => {
+                    //show ongoing call
+                    setOngoingCallView(CometChatOngoingComponent?.child);
+                },
+            });
             CometChat.getLoggedinUser()
                 .then(u => {
                     loggedInUser.current = u;
@@ -654,6 +660,7 @@ export const CometChatMessageList = forwardRef<
                 CometChatUIEventHandler.removeUIListener(uiEventListenerShow)
                 CometChatUIEventHandler.removeUIListener(uiEventListenerHide)
                 CometChatUIEventHandler.removeUIListener(uiEventListener);
+                CometChatUIEventHandler.removeCallListener(callEventListener);
                 onBack && onBack();
             }
         }, [])
@@ -846,15 +853,15 @@ export const CometChatMessageList = forwardRef<
                     },
                     onDisconnected: () => {
                         console.log("ConnectionListener => On Disconnected");
-                        if (!messagesList[0].id) {
-                            for (let i = 0; i < messagesList.length; i++) {
+                        if (!messagesList[messagesList.length - 1].id) {
+                            for (let i = (messagesList.length - 1); i >= 0; i--) {
                                 if (messagesList[i].id) {
                                     lastID.current = messagesList[i].id;
                                     break;
                                 }
                             }
                         } else {
-                            lastID.current = messagesList[0].id;
+                            lastID.current = messagesList[messagesList.length - 1].id;
                         }
                     }
                 })
@@ -1278,18 +1285,18 @@ export const CometChatMessageList = forwardRef<
                 return <EmptyStateView />
             return (
                 <>
-                <View style={Style.msgContainerStyle}>
-                    <Text
-                        style={[
-                            Style.msgTxtStyle, {
-                                ...(messageListStyle?.emptyStateTextFont),
-                                color: messageListStyle?.emptyStateTextColor
-                            }]}
-                    >
-                        {emptyStateText}
-                    </Text>
-                </View >
-                {CustomListHeader && <CustomListHeader />}
+                    <View style={Style.msgContainerStyle}>
+                        <Text
+                            style={[
+                                Style.msgTxtStyle, {
+                                    ...(messageListStyle?.emptyStateTextFont),
+                                    color: messageListStyle?.emptyStateTextColor
+                                }]}
+                        >
+                            {emptyStateText}
+                        </Text>
+                    </View >
+                    {CustomListHeader && <CustomListHeader />}
                 </>
             )
         }, [])
@@ -1360,7 +1367,7 @@ export const CometChatMessageList = forwardRef<
         return (
             <View style={{
                 height, width, backgroundColor, borderRadius, ...border,
-                paddingStart: 8, paddingEnd: 8, 
+                paddingStart: 8, paddingEnd: 8,
             }}>
                 {
                     listState == "loading" && messagesList.length == 0 ?
@@ -1419,6 +1426,7 @@ export const CometChatMessageList = forwardRef<
                                             </ScrollView>
                                         </SafeAreaView>
                                         {CustomListHeader && <CustomListHeader />}
+                                        {ongoingCallView}
                                         {
                                             FooterView && <View style={[Style.stickyHeaderFooterStyle, { bottom: 0 }]}>
                                                 <FooterView
