@@ -11,11 +11,11 @@ import DateTimePickerModal from "../../libs/datePickerModal";
 import { ICONS } from "../../assets/images";
 import { CometChatContextType } from "../../base";
 import { CometChatContext } from "../../CometChatContext";
-import { DateTimeElement } from "../../modals/InteractiveData/InteractiveElements/DateTimeElement";
 import { DateTime } from "../../libs/luxon/src/luxon";
 import { convertToATimeZone } from "../../utils/SchedulerUtils";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./DateTimePickerStyle";
+import { DateTimeElement } from "../../modals";
 
 export interface CometChatDateTimePickerInterface {
   style: object;

@@ -414,7 +414,7 @@ export const CometChatMessageHeader = (
       {!hideBackIcon && <BackButton />}
       <View style={{ flex: 1 }}>
         {ListItemView ? (
-          <ListItemView />
+          <ListItemView user={user} group={group}/>
         ) : (
           <CometChatListItem
             id={user ? user.getUid() : groupObj ? groupObj.getGuid() : undefined}

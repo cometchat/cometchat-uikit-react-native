@@ -52,6 +52,7 @@ export const MessageUtils = {
             id={`${message.getId()}`}
             alignment={alignment}
             ContentView={template?.ContentView?.bind(this, message, alignment) || MessageContentView.bind(this, message, alignment, theme)}
+            BottomView={template?.BottomView && template?.BottomView?.bind(this, message, alignment)}
             style={{backgroundColor: theme?.palette?.getPrimary()}}
     />;
     }

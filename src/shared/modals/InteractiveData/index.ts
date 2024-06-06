@@ -22,6 +22,7 @@ export {
     TextInputElement,
     BaseInputElement,
     BaseInteractiveElement,
+    DateTimeElement,
 } from "./InteractiveElements";
 export {
     ActionEntity,

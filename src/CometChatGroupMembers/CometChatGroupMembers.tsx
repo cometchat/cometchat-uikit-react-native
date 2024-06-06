@@ -333,7 +333,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
 
     const ItemView = ({ item: member, ...props }) => {
         if (ListItemView)
-            return <ListItemView {...member} />
+            return ListItemView(member);
 
         let image, backgroundColor
         if (selecting) {

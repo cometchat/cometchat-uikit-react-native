@@ -1,7 +1,6 @@
-import { BaseInputElement, BaseInteractiveElement, LabelElement } from "../InteractiveElements";
+import { BaseInputElement, BaseInteractiveElement, LabelElement, DateTimeElement } from "../InteractiveElements";
 
 import { ElementType } from "../../../constants/UIKitConstants";
-import { DateTimeElement } from "../InteractiveElements/DateTimeElement";
 
 /**
  * Represents the base input for a dynamic form element.

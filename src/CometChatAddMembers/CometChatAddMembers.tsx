@@ -23,7 +23,7 @@ export interface CometChatAddMembersInterface
 
 export const CometChatAddMembers = (props: CometChatAddMembersInterface) => {
   const userListenerId = 'userlist_' + new Date().getTime();
-  const { group, ...newProps } = props;
+  const { group, addMembersStyle, ...newProps } = props;
   const userRef = useRef<CometChatUsersActionsInterface>(null);
   const loggedInUser = useRef(null);
   const addMembersToGroup = (res: any) => {
@@ -93,6 +93,7 @@ export const CometChatAddMembers = (props: CometChatAddMembersInterface) => {
         title={localize('ADD_MEMBERS')}
         showBackButton
         selectionMode="multiple"
+        usersStyle={addMembersStyle}
         {...newProps}
       />
     </View>

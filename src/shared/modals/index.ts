@@ -5,7 +5,7 @@ import { CometChatDetailsTemplate } from './CometChatDetailsTemplate';
 import { CometChatDetailsOption } from './CometChatDetailsOption';
 import { CometChatCallLogDetailsTemplate } from './CometChatCallLogDetailsTemplate';
 import { CometChatCallLogDetailsOption } from './CometChatCallLogDetailsOptions';
-import { APIAction, ActionEntity, BaseInputElement, BaseInteractiveElement, ButtonElement, CardMessage, CheckboxElement, CustomAction, CustomInteractiveMessage, DropdownElement, ElementEntity, FormMessage, LabelElement, OptionElement, RadioButtonElement, SingleSelectElement, TextInputElement, URLNavigationAction, SchedulerMessage } from './InteractiveData'
+import { APIAction, ActionEntity, BaseInputElement, BaseInteractiveElement, ButtonElement, CardMessage, CheckboxElement, CustomAction, CustomInteractiveMessage, DropdownElement, ElementEntity, FormMessage, LabelElement, OptionElement, RadioButtonElement, SingleSelectElement, TextInputElement, URLNavigationAction, SchedulerMessage, DateTimeElement } from './InteractiveData'
 
 export {
   CometChatOptions,
@@ -33,5 +33,6 @@ export {
   URLNavigationAction,
   CometChatCallLogDetailsTemplate,
   CometChatCallLogDetailsOption,
-  SchedulerMessage
+  SchedulerMessage,
+  DateTimeElement
 };

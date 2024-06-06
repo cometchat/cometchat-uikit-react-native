@@ -25,7 +25,7 @@ export abstract class CometChatTextFormatter {
   /**
    * List of searched data.
    */
-  protected searchData = [];
+  protected searchData: Array<SuggestionItem> = [];
 
   /**
    * The user in context.

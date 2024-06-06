@@ -884,7 +884,11 @@ export const CometChatMessageComposer = React.forwardRef(
       setMentionsSearchData([]);
       plainTextInput.current = ""
 
-      onSendButtonPress && onSendButtonPress(textMessage);
+      if (onSendButtonPress) {
+        onSendButtonPress(textMessage);
+        return;
+      }
+
       if (finalTextInput.trim().length == 0) {
         return;
       }
@@ -1788,7 +1792,7 @@ export const CometChatMessageComposer = React.forwardRef(
         <KeyboardAvoidingView
           key={id}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.select({ios: kbOffset})}
+          keyboardVerticalOffset={Platform.select({ ios: kbOffset })}
           {...keyboardAvoidingViewProps}
         >
           <View

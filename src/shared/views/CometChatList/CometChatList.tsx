@@ -2,6 +2,7 @@ import React, {
   useContext,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
 } from 'react';
 
@@ -97,7 +98,7 @@ export interface CometChatListProps {
   hideError?: boolean;
   onItemPress?: (user: any) => void;
   onItemLongPress?: (user: any) => void;
-  onError?: (error: any) => void;
+  onError?: (error: CometChat.CometChatException) => void;
   onBack?: Function;
   selectionIcon?: ImageType;
   listItemKey: 'uid' | 'guid' | 'conversationId';
@@ -197,6 +198,22 @@ export const CometChatList = React.forwardRef<
             : ''
           : ''
   );
+  const searchInputRef = useRef(
+    requestBuilder && searchRequestBuilder
+    ? searchRequestBuilder.searchKeyword
+      ? searchRequestBuilder.searchKeyword
+      : ''
+    : requestBuilder
+      ? requestBuilder.searchKeyword
+        ? requestBuilder.searchKeyword
+        : ''
+      : searchRequestBuilder
+        ? searchRequestBuilder.searchKeyword
+          ? searchRequestBuilder.searchKeyword
+          : ''
+        : ''
+  );
+  
   const [shouldSelect, setShouldSelect] = React.useState(
     selectionMode !== 'none' ? true : false
   );
@@ -211,20 +228,21 @@ export const CometChatList = React.forwardRef<
 
   const searchHandler = (searchText: string) => {
     setSearchInput(searchText);
-    if (searchRequestBuilder) {
-      listHandlerRef.current = searchRequestBuilder
+    let _searchRequestBuilder = searchRequestBuilder || requestBuilder;
+    if (searchRequestBuilder && searchText) {
+      _searchRequestBuilder = searchRequestBuilder
         .setSearchKeyword(searchText ? searchText : '')
         .build();
     } else if (requestBuilder) {
-      listHandlerRef.current = requestBuilder
+      _searchRequestBuilder = requestBuilder
         .setSearchKeyword(searchText ? searchText : '')
         .build();
     }
-    getSearch();
+    getSearch(_searchRequestBuilder);
   };
 
-  const getSearch = () => {
-    getList(listHandlerRef.current)
+  const getSearch = (builder) => {
+    getList(builder)
       .then((newlist: any) => {
         setDecoratorMessage(NO_DATA_FOUND);
         setList(newlist);
@@ -252,9 +270,17 @@ export const CometChatList = React.forwardRef<
       new CometChat.ConnectionListener({
         onConnected: () => {
           console.log("ConnectionListener => On Connected");
-          listHandlerRef.current = requestBuilder.build();
+          if (requestBuilder) {
+            if (searchInputRef.current)
+              listHandlerRef.current = requestBuilder
+                .setSearchKeyword(searchInputRef.current)
+                .build();
+            else listHandlerRef.current = requestBuilder.build();
+          }
           getList(listHandlerRef.current)
             .then((newlist: any) => {
+              console.log('new list -->> ',newlist);
+              
               setDecoratorMessage(NO_DATA_FOUND);
               setList(newlist);
             })
@@ -279,15 +305,10 @@ export const CometChatList = React.forwardRef<
     }
   }, []);
 
+    
   useEffect(() => {
     if (initialRunRef.current === true) {
-      if (searchRequestBuilder) {
-        if (searchInput)
-          listHandlerRef.current = searchRequestBuilder
-            .setSearchKeyword(searchInput)
-            .build();
-        else listHandlerRef.current = searchRequestBuilder.build();
-      } else if (requestBuilder) {
+      if (requestBuilder) {
         if (searchInput)
           listHandlerRef.current = requestBuilder
             .setSearchKeyword(searchInput)
@@ -302,6 +323,10 @@ export const CometChatList = React.forwardRef<
   useEffect(() => {
     setShouldSelect(selectionMode !== 'none' ? true : false);
   }, [selectionMode]);
+
+  useEffect(() => {
+    searchInputRef.current = searchInput
+  }, [searchInput]);
 
   /**
    * Updates the list of users to be displayed
@@ -562,6 +587,8 @@ export const CometChatList = React.forwardRef<
       lastCall = setTimeout(() => {
         props?.fetchNext().then((listItems: any) => {
           resolve(listItems);
+        }).catch((error) => {
+          reject(error)
         });
       }, 500);
       lastReject = reject;

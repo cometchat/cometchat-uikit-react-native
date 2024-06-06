@@ -180,6 +180,10 @@ import {
   SuggestionListConfiguration,
   SuggestionListConfigurationInterface,
   SuggestionItem,
+  DateTimeElement,
+  CometChatDateTimePicker,
+  CometChatDateTimePickerInterface,
+  DatePickerStyleInterface,
 } from './shared';
 
 import {
@@ -747,8 +751,13 @@ export {
   CometChatSuggestionListInterface,
   SuggestionItem,
   SuggestionListConfiguration,
-  SuggestionListConfigurationInterface
+  SuggestionListConfigurationInterface,
   /* Text Formatters */
+
+  DateTimeElement,
+  CometChatDateTimePicker,
+  CometChatDateTimePickerInterface,
+  DatePickerStyleInterface,
   
 };
 
