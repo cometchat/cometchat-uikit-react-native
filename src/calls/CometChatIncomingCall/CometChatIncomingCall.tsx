@@ -195,7 +195,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
       }
     },
     onError: (error) => {
-        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailled, { error });
+        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { error });
         onError && onError(error);
       }
     });

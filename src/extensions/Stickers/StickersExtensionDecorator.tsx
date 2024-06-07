@@ -91,6 +91,8 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
       customMessage.setMuid(new Date().getTime().toString());
       customMessage.setSender(loggedInUser.current);
       customMessage.setReceiver(user || group);
+      customMessage.shouldUpdateConversation(true);
+      customMessage.setMetadata({ incrementUnreadCount: true });
       CometChatUIKit.sendCustomMessage(customMessage).then((res) => null).catch(err => null);
     }
 

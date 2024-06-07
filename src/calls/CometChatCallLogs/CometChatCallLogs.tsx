@@ -293,7 +293,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
         },
         error => {
           console.log("Call initialization failed with exception:", error);
-          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailled, { call });
+          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { call });
           onError && onError(error);
         }
       );

@@ -28,12 +28,13 @@ import { AIAssistBotExtension } from "../../AI/AIAssistBot/AIAssistBotExtension"
 import { permissionUtil } from "../utils/PermissionUtil";
 import {
     getUnixTimestamp,
-  } from '../../shared/utils/CometChatMessageHelper';
+} from '../../shared/utils/CometChatMessageHelper';
 
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
     static aiFeatures: AIExtensionDataSource[]
     static loggedInUser: null | CometChat.User = null;
+    static conversationUpdateSettings : CometChat.ConversationUpdateSettings = new CometChat.ConversationUpdateSettings();
     private static loginListenerID: string = ``;
     private static isLoginListenerAttached: boolean = false;
     static init(uiKitSettings: UIKitSettings): Promise<boolean> {
@@ -43,7 +44,6 @@ export class CometChatUIKit {
             ...uiKitSettings
         };
         var appSetting = new CometChat.AppSettingsBuilder()
-            .subscribePresenceForAllUsers()
             .autoEstablishSocketConnection(uiKitSettings.autoEstablishSocketConnection)
             .overrideAdminHost(uiKitSettings?.overrideAdminHost)
             .overrideClientHost(uiKitSettings?.overrideClientHost)
@@ -51,6 +51,10 @@ export class CometChatUIKit {
 
 
         appSetting.subscriptionType = uiKitSettings.subscriptionType;
+
+        if (appSetting.subscriptionType === "ROLES" && Array.isArray(uiKitSettings.roles) && uiKitSettings.roles.length > 0) {
+            appSetting.roles = uiKitSettings.roles;
+        }
 
         CometChatUIKit.attachListener();
 
@@ -66,6 +70,10 @@ export class CometChatUIKit {
                         if (user) {
                             this.enableExtensions();
                         }
+                        CometChat.getConversationUpdateSettings()
+                        .then((conversationUpdateSettings: CometChat.ConversationUpdateSettings) => {
+                            CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
+                        })
                     })
                     .catch(error => {
                         // CometChatUIKit.setLoggedInUser(null);
@@ -114,6 +122,10 @@ export class CometChatUIKit {
             new CometChat.LoginListener({
                 onLoggedIn: (user: CometChat.User) => {
                     CometChatUIKit.setLoggedInUser(user);
+                    CometChat.getConversationUpdateSettings()
+                    .then((conversationUpdateSettings: CometChat.ConversationUpdateSettings) => {
+                        CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
+                    })
                 },
                 onLoggedOut: () => {
                     CometChatUIKit.removeLoggedInUser();
@@ -152,7 +164,7 @@ export class CometChatUIKit {
         if (CometChatUIKit.checkAuthSettings(Promise.reject)) null
         let user = await CometChat.getLoggedinUser().catch((e) => Promise.reject(e))
         if (user == null) {
-            throw(new CometChat.CometChatException({ code: "NOT_FOUND", message: "Login user not found" }));
+            throw (new CometChat.CometChatException({ code: "NOT_FOUND", message: "Login user not found" }));
         } else {
             this.enableExtensions()
         }
@@ -161,6 +173,14 @@ export class CometChatUIKit {
 
     private static setLoggedInUser(user: CometChat.User | null) {
         this.loggedInUser = user;
+    }
+
+    private static setConversationUpdateSettings(conversationUpdateSettings: CometChat.ConversationUpdateSettings) {
+        this.conversationUpdateSettings = conversationUpdateSettings;
+    }
+
+    static getConversationUpdateSettings(): CometChat.ConversationUpdateSettings {
+        return this.conversationUpdateSettings
     }
 
     private static removeLoggedInUser() {
@@ -179,7 +199,8 @@ export class CometChatUIKit {
         if (CometChatUIKit.checkAuthSettings(Promise.reject)) null
         if (uid) {
             let user = await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch(e => Promise.reject(e));
-            CometChatUIKit.setLoggedInUser(user)
+            CometChatUIKit.setLoggedInUser(user);
+            CometChatUIKit.setConversationUpdateSettings(await CometChat.getConversationUpdateSettings());
             this.enableExtensions()
             return user;
         }
@@ -244,7 +265,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message.getSender()){
+            if (!message.getSender()) {
                 message.setSender(this.loggedInUser);
             }
 
@@ -273,7 +294,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message.getSender()){
+            if (!message.getSender()) {
                 message.setSender(this.loggedInUser);
             }
 
@@ -325,7 +346,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message?.getSender()){
+            if (!message?.getSender()) {
                 message.setSender(this.loggedInUser);
             }
 
@@ -358,7 +379,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message.getSender()){
+            if (!message.getSender()) {
                 message.setSender(this.loggedInUser);
             }
             if (!disableLocalEvents) {
@@ -395,7 +416,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message.getSender()){
+            if (!message.getSender()) {
                 message.setSender(this.loggedInUser);
             }
 
@@ -434,7 +455,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message.getSender()){
+            if (!message.getSender()) {
                 message.setSender(this.loggedInUser);
             }
             if (!disableLocalEvents) {
@@ -473,7 +494,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestamp()));
             }
 
-            if(!message.getSender()){
+            if (!message.getSender()) {
                 message.setSender(this.loggedInUser);
             }
 

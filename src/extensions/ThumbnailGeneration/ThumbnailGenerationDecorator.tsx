@@ -45,7 +45,7 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
       image = message.getType() === "image" ? message?.data?.url : Empty;  //default image for type video
     } else {
       let attachmentData = thumbnailData['attachments'];
-      if (attachmentData.length == 1) {
+      if (attachmentData.length) {
         let dataObj = attachmentData[0];
 
         if (!dataObj['error']) {

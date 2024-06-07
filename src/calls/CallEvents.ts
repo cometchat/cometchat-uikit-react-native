@@ -1,5 +1,5 @@
 export const CallUIEvents = {
-    ccCallFailled : "ccCallFailled",
+    ccCallFailed : "ccCallFailed",
     ccCallInitiated : "ccCallInitiated",
     ccCallRejected: "ccCallRejected",
     ccCallAccepted: "ccCallAccepted",

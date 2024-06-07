@@ -1,6 +1,6 @@
 import { AvatarStyleInterface, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter, ListItemStyleInterface, localize } from "../shared";
 import { ImageType } from "../shared";
-import { DatePattern,SelectionMode } from "../shared/base/Types";
+import { DatePattern, SelectionMode } from "../shared/base/Types";
 import { CometChatOptions } from "../shared";
 // import { ConversationListConfiguration } from "../CometChatConversationList/ConversationListConfiguration";
 import { ConversationsStyleInterface } from "./ConversationsStyle";
@@ -176,7 +176,9 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
         this.backButtonIcon = backButtonIcon;
         this.showBackButton = showBackButton;
         this.selectionMode = selectionMode;
-        this.onSelection = onSelection;
+        if (onSelection) {
+            this.onSelection = onSelection;
+        }
         this.selectedConversations = selectedConversations;
         this.searchBoxIcon = searchBoxIcon;
         this.hideSearch = hideSearch;
@@ -185,10 +187,18 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
         this.LoadingStateView = LoadingStateView;
         this.conversationsRequestBuilder = conversationsRequestBuilder;
         this.SubtitleView = SubtitleView;
-        this.onItemPress = onItemPress;
-        this.onItemLongPress = onItemLongPress;
-        this.onError = onError;
-        this.onBack = onBack;
+        if (onItemPress) {
+            this.onItemPress = onItemPress;
+        }
+        if (onItemLongPress) {
+            this.onItemLongPress = onItemLongPress;
+        }
+        if (onError) {
+            this.onError = onError;
+        }
+        if (onBack) {
+            this.onBack = onBack;
+        }
         this.statusIndicatorStyle = statusIndicatorStyle
         this.avatarStyle = avatarStyle
         this.receiptStyle = receiptStyle

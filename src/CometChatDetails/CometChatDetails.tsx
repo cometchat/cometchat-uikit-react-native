@@ -747,19 +747,23 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
   };
 
   useEffect(() => {
-    listners.addListener.userListener({
-      userStatusListenerId,
-      handleUserStatus,
-    });
-    listners.addListener.groupListener({
-      groupListenerId,
-      handleGroupListener,
-    });
+    if(user) {
+      listners.addListener.userListener({
+        userStatusListenerId,
+        handleUserStatus,
+      });
+    } 
+    if(group) {
+      listners.addListener.groupListener({
+        groupListenerId,
+        handleGroupListener,
+      });
+    }
     return () => {
       listners.removeListner.removeUserListener({ userStatusListenerId });
       listners.removeListner.removeGroupListener({ groupListenerId });
     };
-  }, []);
+  }, [user, group]);
 
   const handleGroupMemberKicked = ({
     message,

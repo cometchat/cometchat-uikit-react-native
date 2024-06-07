@@ -27,6 +27,9 @@ export interface CometChatBannedMembersInterface
   bannedMemberStyle?: CometChatListStylesInterface;
   unbanIcon?: ImageType;
   title?: string;
+  onSelection?: (list: CometChat.User[]) => void;
+  onItemPress?: (user: CometChat.User) => void;
+  onItemLongPress?: (user: CometChat.User) => void;
   /**
    *
    *

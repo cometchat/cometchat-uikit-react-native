@@ -59,7 +59,13 @@ export interface CometChatMessageListProps {
     errorIcon?: ImageType,
     alignment?: MessageListAlignmentType,
     showAvatar?: boolean,
-    datePattern?: (message: CometChat.BaseMessage) => "timeFormat" | "dayDateFormat" | "dayDateTimeFormat",
+    /**
+     * This function returns a string for custom date representation based on the provided message object.
+     * 
+     * @param baseMessage - The message object.
+     * @returns The string for custom date representation.
+     */
+    datePattern?: (message: CometChat.BaseMessage) => string,
     timeStampAlignment?: MessageTimeAlignmentType,
     dateSeparatorPattern?: (date: number) => string,
     templates?: Array<CometChatMessageTemplate>,
@@ -1123,12 +1129,14 @@ export const CometChatMessageList = memo(forwardRef<
         });
 
         const onKeyboardVisibiltyChange = (isVisible: boolean, keyboardHeight?: number | undefined) => {
-            if (isVisible) {
-                Keyboard_Height = keyboardHeight;
-                scrollPos = (currentScrollPosition.current.y + Keyboard_Height) - (commonVars.safeAreaInsets.top / 2);
-                messageListRef.current.scrollTo({ y: scrollPos, animated: false })
-            } else {
-                messageListRef.current.scrollTo({ y: scrollPos - Keyboard_Height + (commonVars.safeAreaInsets.top / 2), animated: false })
+            if (messageListRef.current) {
+                if (isVisible) {
+                    Keyboard_Height = keyboardHeight;
+                    scrollPos = (currentScrollPosition.current.y + Keyboard_Height) - (commonVars.safeAreaInsets.top / 2);
+                    messageListRef.current.scrollTo({ y: scrollPos, animated: false })
+                } else {
+                    messageListRef.current.scrollTo({ y: scrollPos - Keyboard_Height + (commonVars.safeAreaInsets.top / 2), animated: false })
+                }
             }
         }
 
@@ -1623,7 +1631,7 @@ export const CometChatMessageList = memo(forwardRef<
                         ContentView={hasTemplate.ContentView?.bind(this, message, bubbleAlignment)}
                         ThreadView={() => !isThreaded && !message.getDeletedBy() && getThreadView(message, bubbleAlignment)}
                         BottomView={hasTemplate.BottomView && hasTemplate.BottomView?.bind(this, message, bubbleAlignment)}
-                        StatusInfoView={() => getStatusInfoView(message, bubbleAlignment)}
+                        StatusInfoView={hasTemplate.StatusInfoView ? hasTemplate.StatusInfoView?.bind(this, message, bubbleAlignment) : () => getStatusInfoView(message, bubbleAlignment)}
                         style={getStyle(message)}
                     />
                 </TouchableOpacity>
@@ -1790,7 +1798,7 @@ export const CometChatMessageList = memo(forwardRef<
 
         const getLoadingStateView = useCallback(() => {
             if (LoadingStateView)
-                return <LoadingStateView/>;
+                return <LoadingStateView />;
 
             return (
                 <View style={Style.msgContainerStyle}>

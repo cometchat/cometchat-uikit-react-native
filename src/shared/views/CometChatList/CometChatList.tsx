@@ -537,9 +537,9 @@ export const CometChatList = React.forwardRef<
           Object.keys(selectedItems).includes(item.value[listItemKey]) && ICONS.CHECK
         }
         SubtitleView={
-          SubtitleView ? () => <SubtitleView {...item.value} /> : null
+          SubtitleView ? () => SubtitleView(item.value) : null
         }
-        TailView={TailView ? () => <TailView {...item.value} /> : null}
+        TailView={TailView ? () => TailView(item.value) : null}
         statusIndicatorStyle={
           selectedItems[item.value[listItemKey]] === true
             ? {

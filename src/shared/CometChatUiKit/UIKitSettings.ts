@@ -4,8 +4,8 @@ import { ExtensionsDataSource } from "../framework"
 export type UIKitSettings = {
     appId: string,
     region: string,
-    authKey: string,
-    subscriptionType?: string,
+    authKey?: string,
+    subscriptionType?: "NONE" | "ALL_USERS" | "ROLES" | "FRIENDS",
     autoEstablishSocketConnection?: boolean,
     overrideAdminHost?: string,
     overrideClientHost?: string,
@@ -13,7 +13,8 @@ export type UIKitSettings = {
     googleApiKey?: string,
     disableCalling?: boolean,
     aiFeatures?:AIExtensionDataSource[],
-    extensions?:ExtensionsDataSource[]
+    extensions?:ExtensionsDataSource[],
+    roles?: string[]
 }
 
 export function UIKitSettings({
@@ -28,7 +29,8 @@ export function UIKitSettings({
     googleApiKey,
     disableCalling,
     aiFeatures,
-    extensions
+    extensions,
+    roles
 }: UIKitSettings): UIKitSettings {
     return {
         appId,
@@ -42,6 +44,7 @@ export function UIKitSettings({
         googleApiKey,
         disableCalling,
         aiFeatures,
-        extensions
+        extensions,
+        roles
     }
 }

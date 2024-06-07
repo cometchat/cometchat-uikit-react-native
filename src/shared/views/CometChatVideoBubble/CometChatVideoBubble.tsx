@@ -167,7 +167,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
                 volumeIcon={playerVolumeIcon}
                 volumeIconColor={style.playerVolumeIconColor}
             />
-            <ImageBackground source={(typeof thumbnailUrl === "object" ? thumbnailUrl?.uri : thumbnailUrl) || placeholderImage || defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" }}>
+            <ImageBackground source={(typeof thumbnailUrl === "object" ? { uri: thumbnailUrl?.uri } : thumbnailUrl) || placeholderImage || defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" }}>
                 <View
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}

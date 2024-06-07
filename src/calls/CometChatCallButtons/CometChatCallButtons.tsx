@@ -163,6 +163,8 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
                     "incrementUnreadCount": true,
                     "pushNotification": MessageTypeConstants.meeting,
                 })
+                customMessage.shouldUpdateConversation(true);
+                customMessage.setMetadata({ incrementUnreadCount: true });
                 customMessage.setCustomData(customData);
                 CometChatUIKit.sendCustomMessage(
                     customMessage)
@@ -191,7 +193,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
                     },
                     error => {
                         console.log("Call initialization failed with exception:", error);
-                        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailled, { call });
+                        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { call });
                         onError && onError(error);
                     }
                 );

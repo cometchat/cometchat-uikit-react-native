@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Alert, TouchableOpacity, Image, Modal } from "react-native";
 import { kickIcon, banIcon, downArrowIcon, checkIcon } from "./resources";
 import { CometChatOptions } from "../shared/modals/CometChatOptions";
-import { AvatarStyle, AvatarStyleInterface, CometChatContext, ListItemStyle, ListItemStyleInterface, StatusIndicatorStyle } from "../shared";
+import { AvatarStyle, AvatarStyleInterface, CometChatContext, CometChatUiKitConstants, ListItemStyle, ListItemStyleInterface, StatusIndicatorStyle } from "../shared";
 import { GroupMembersStyle, GroupMembersStyleInterface } from "./GroupMemberStyle";
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
@@ -331,6 +331,22 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         return;
     }
 
+    function getStatusIndicatorColor(
+        groupMember: CometChat.GroupMember
+      ): string | null {
+        if (
+         props.disableUsersPresence ||
+          groupMember.getStatus() === CometChatUiKitConstants.UserStatusConstants.offline
+        ) {
+          return null;
+        }
+        return (
+          groupMemberStyle?.onlineStatusColor ||
+          theme.palette.getSuccess() ||
+          null
+        );
+      }
+
     const ItemView = ({ item: member, ...props }) => {
         if (ListItemView)
             return ListItemView(member);
@@ -351,7 +367,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             onLongPress={itemLongPress.bind(this, member)}
             SubtitleView={SubtitleView ? () => <SubtitleView {...member} /> : null}  //Note: should return prop to SubtitleView
             statusIndicatorIcon={image}
-            statusIndicatorColor={backgroundColor}
+            statusIndicatorColor={getStatusIndicatorColor(member)}
             title={member.uid == loggedInUser.current.uid ? "You" : member.name}
             avatarName={member.name}
             avatarURL={member.avatar}

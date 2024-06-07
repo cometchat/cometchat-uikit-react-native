@@ -163,7 +163,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
     );
 
     CometChatUIEventHandler.addCallListener(listenerId, {
-      ccCallFailled: () => {
+      ccCallFailed: () => {
         setCallConnected(false);
       }
     });
@@ -197,7 +197,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
         endCallIfRequired();
       },
       onError: (error) => {
-        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailled, { error });
+        CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { error });
       }
     });
 

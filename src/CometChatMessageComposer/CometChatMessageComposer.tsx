@@ -875,6 +875,7 @@ export const CometChatMessageComposer = React.forwardRef(
       textMessage.setReceiver(chatWith.current);
       textMessage.setText(finalTextInput);
       textMessage.setMuid(String(getUnixTimestamp()));
+      textMessage.setSentAt(getUnixTimestamp());
       parentMessageId && textMessage.setParentMessageId(parentMessageId as number);
 
       allFormatters.current.forEach(item => {
@@ -985,6 +986,7 @@ export const CometChatMessageComposer = React.forwardRef(
       mediaMessage['_id'] = '_' + Math.random().toString(36).substr(2, 9);
       mediaMessage.setId(mediaMessage['_id']);
       mediaMessage.setMuid(String(getUnixTimestamp()));
+      mediaMessage.setSentAt(getUnixTimestamp());
       mediaMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -1009,6 +1011,7 @@ export const CometChatMessageComposer = React.forwardRef(
       localMessage['_id'] = '_' + Math.random().toString(36).substr(2, 9);
       localMessage.setId(localMessage['_id']);
       localMessage.setMuid(String(getUnixTimestamp()));
+      localMessage.setSentAt(getUnixTimestamp());
       localMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -1253,11 +1256,13 @@ export const CometChatMessageComposer = React.forwardRef(
         mentionsFormatter.setUser(user);
         mentionsFormatter.setGroup(group);
 
-        _formatter.push(mentionsFormatter)
+        _formatter.unshift(mentionsFormatter)
       }
 
       _formatter.forEach((formatter) => {
         formatter.setComposerId(id);
+        formatter.setUser(user);
+        formatter.setGroup(group);
         let trackingCharacter = formatter.getTrackingCharacter();
         trackingCharacters.current.push(trackingCharacter);
 

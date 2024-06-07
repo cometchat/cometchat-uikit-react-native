@@ -5,12 +5,24 @@ import { CometChat } from "@cometchat/chat-sdk-react-native";
 
 export interface GroupMemberConfigurationInterface {
     SubtitleView?: (groupMember: CometChat.GroupMember) => JSX.Element,
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.10 due to newer property 'disableUsersPresence'. It will be removed in subsequent versions.
+    */
     disableUserPresence?: boolean,
+    disableUsersPresence?: boolean,
     ListItemView?: (groupMember: CometChat.GroupMember) => JSX.Element,
     AppBarOptions?: () => JSX.Element,
     options?: (groupMember: CometChat.GroupMember) => CometChatOptions[],
     hideSeperator?: boolean,
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.10 due to newer property 'searchPlaceholderText'. It will be removed in subsequent versions.
+    */
     searchPlaceHolder?: string,
+    searchPlaceholderText?: string,
     backButtonIcon?: ImageType,
     showBackButton?: boolean,
     selectionMode?: "none" | "single" | "multiple",
@@ -35,12 +47,24 @@ export interface GroupMemberConfigurationInterface {
 
 export class GroupMemberConfiguration implements GroupMemberConfigurationInterface {
     SubtitleView?: (groupMember: CometChat.GroupMember) => JSX.Element;
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.10 due to newer property 'disableUsersPresence'. It will be removed in subsequent versions.
+    */
     disableUserPresence?: boolean;
+    disableUsersPresence?: boolean;
     ListItemView?: (groupMember: CometChat.GroupMember) => JSX.Element;
     AppBarOptions?: () => JSX.Element;
     options?: (groupMember: CometChat.GroupMember) => CometChatOptions[];
     hideSeperator?: boolean;
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.10 due to newer property 'searchPlaceholderText'. It will be removed in subsequent versions.
+    */
     searchPlaceHolder?: string;
+    searchPlaceholderText?: string;
     backButtonIcon?: ImageType;
     showBackButton?: boolean;
     selectionMode?: "none" | "single" | "multiple";
@@ -64,12 +88,12 @@ export class GroupMemberConfiguration implements GroupMemberConfigurationInterfa
 
     constructor(params: GroupMemberConfigurationInterface) {
         this.SubtitleView = params.SubtitleView;
-        this.disableUserPresence = params.disableUserPresence;
+        this.disableUsersPresence = [false, true].includes(params.disableUsersPresence) ? params.disableUsersPresence : params.disableUserPresence;
         this.ListItemView = params.ListItemView;
         this.AppBarOptions = params.AppBarOptions;
         this.options = params.options;
         this.hideSeperator = params.hideSeperator;
-        this.searchPlaceHolder = params.searchPlaceHolder;
+        this.searchPlaceholderText = params.searchPlaceholderText ?? params.searchPlaceHolder;
         this.backButtonIcon = params.backButtonIcon;
         this.showBackButton = params.showBackButton;
         this.selectionMode = params.selectionMode;

@@ -135,7 +135,7 @@ type CallUIEvents = {
     ccOutgoingCallCancelled?: Function,
     ccCallEnded?: Function,
     ccCallInitiated?: Function,
-    ccCallFailled?: Function,
+    ccCallFailed?: Function,
     ccShowOngoingCall?: (CometChatOngoingComponent) => void,
 }
 
@@ -166,7 +166,7 @@ export class CallUIEventListener {
     ccCallRejected?: Function = undefined;
     ccCallEnded?: Function = undefined;
     ccOutgoingCallCancelled?: Function = undefined;
-    ccCallFailled?: Function = undefined;
+    ccCallFailed?: Function = undefined;
     ccCallInitiated?: Function = undefined;
     ccShowOngoingCall?: (CometChatOngoingComponent) => void;
 
@@ -180,11 +180,11 @@ export class CallUIEventListener {
         ccCallRejected,
         ccCallEnded,
         ccOutgoingCallCancelled,
-        ccCallFailled,
+        ccCallFailed,
         ccCallInitiated,
         ccShowOngoingCall,
     }: CallUIEvents) {
-        if (!isFalsy(ccCallFailled)) this.ccCallFailled = ccCallFailled;
+        if (!isFalsy(ccCallFailed)) this.ccCallFailed = ccCallFailed;
         if (!isFalsy(ccCallInitiated)) this.ccCallInitiated = ccCallInitiated;
         if (!isFalsy(ccOutgoingCall)) this.ccOutgoingCall = ccOutgoingCall;
         if (!isFalsy(ccCallAccepted)) this.ccCallAccepted = ccCallAccepted;

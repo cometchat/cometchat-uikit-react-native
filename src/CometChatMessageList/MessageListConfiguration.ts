@@ -36,7 +36,13 @@ export interface MessageListConfigurationInterface {
   errorIcon?: ImageType;
   alignment?: MessageListAlignmentType;
   showAvatar?: boolean;
-  datePattern?: (baseMessage: CometChat.BaseMessage) => DatePattern;
+  /**
+   * This function returns a string for custom date representation based on the provided message object.
+   * 
+   * @param baseMessage - The message object.
+   * @returns The string for custom date representation.
+   */
+  datePattern?: (baseMessage: CometChat.BaseMessage) => string;
   timestampAlignment?: MessageTimeAlignmentType;
   templates?: CometChatMessageTemplate[];
   messageRequestBuilder?: CometChat.MessagesRequestBuilder;
@@ -114,7 +120,13 @@ export class MessageListConfiguration
   errorIcon: ImageType;
   alignment: MessageListAlignmentType;
   showAvatar: boolean;
-  datePattern: (baseMessage: any) => DatePattern;
+  /**
+   * This function returns a string for custom date representation based on the provided message object.
+   * 
+   * @param baseMessage - The message object.
+   * @returns The string for custom date representation.
+   */
+  datePattern: (baseMessage: CometChat.BaseMessage) => string;
   timestampAlignment: MessageTimeAlignmentType;
   templates: CometChatMessageTemplate[];
   messageRequestBuilder: CometChat.MessagesRequestBuilder;
