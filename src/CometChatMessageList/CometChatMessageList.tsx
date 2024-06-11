@@ -209,6 +209,10 @@ export const CometChatMessageList = memo(forwardRef<
             let _updatedCustomRequestBuilder = _defaultRequestBuilder;
             if (messageRequestBuilder) {
                 _updatedCustomRequestBuilder = messageRequestBuilder;
+                if (user)
+                    _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setUID(user["uid"])
+                if (group)
+                    _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setGUID(group["guid"])
             } else {
                 _updatedCustomRequestBuilder.hideReplies(true);
                 if (user)
@@ -801,6 +805,8 @@ export const CometChatMessageList = memo(forwardRef<
                 tmpMsg['readAt'] = receipt['readAt'];
             }
             tmpMsg['updatedAt'] = receipt['timestamp'];
+
+            tmpList[index] = CommonUtils.clone(tmpMsg);
 
             messagesContentListRef.current = tmpList;
             setMessagesList(tmpList);

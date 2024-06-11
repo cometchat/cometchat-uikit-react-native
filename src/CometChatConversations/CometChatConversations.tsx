@@ -260,10 +260,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
         AppBarOption,
         options,
         hideSeparator = true,
-        hideSubmitIcon = true,
+        hideSubmitIcon = false,
         backButtonIcon,
         showBackButton = false,
-        selectionMode = "multiple",
+        selectionMode = "single",
         onSelection,
         title = localize("CHATS"),
         emptyStateText,
@@ -290,7 +290,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     const conversationListRef = React.useRef<CometChatListActionsInterface>(null);
     const loggedInUser = React.useRef(null);
     const [confirmDelete, setConfirmDelete] = React.useState(undefined);
-    const [selecting, setSelecting] = React.useState(false);
+    const [selecting, setSelecting] = React.useState(selectionMode === 'none' ? false : true);
     const [selectedConversation, setSelectedConversations] = React.useState([]);
     const onMemberAddedToGroupDebounceTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1089,6 +1089,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
         CometChatUIEventHandler.addGroupListener(
             groupListenerId,
             {
+                ccGroupCreated: ({ group }) => {
+                    CometChat.getConversation(group.getGuid(), CometChatUiKitConstants.ConversationTypeConstants.group).then(
+                        conversation => {
+                            conversationListRef.current?.addItemToList(conversation, 0);
+                        }
+                    )
+                },
                 ccGroupDeleted: ({ group }) => {
                     conversationListRef.current?.removeItemFromList(group['conversationId']);
                     removeItemFromSelectionList(group['conversationId'])

@@ -5,7 +5,7 @@ import { CometChatMessageBubble } from "../views/CometChatMessageBubble";
 import { CometChatTheme } from "../resources";
 import { ChatConfigurator } from "../framework";
 import { CometChatMessageTemplate } from "../modals";
-import { MessageBubbleAlignmentType } from "../base/Types";
+import { BaseStyle, MessageBubbleAlignmentType } from "../base";
 
 type MessageViewType = {
     message: CometChat.BaseMessage,
@@ -14,9 +14,9 @@ type MessageViewType = {
     theme?: CometChatTheme,
 }
 
-const MessageContentView = (props:{message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme}) => {
+const MessageContentView = (props: { message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme }) => {
     const {
-        message, 
+        message,
         alignment,
         theme
     } = props;
@@ -48,12 +48,21 @@ export const MessageUtils = {
             alignment,
             theme,
         } = params
+
+        const getStyle = (item: CometChat.BaseMessage) => {
+            let _style: BaseStyle = {};
+
+            _style.backgroundColor = (alignment !== "left" && (item.getType() === MessageTypeConstants.text || item.getType() === MessageTypeConstants.meeting)) ? theme?.palette.getPrimary() : theme?.palette.getAccent50();
+
+            return _style;
+        };
+
         return <CometChatMessageBubble
             id={`${message.getId()}`}
             alignment={alignment}
             ContentView={template?.ContentView?.bind(this, message, alignment) || MessageContentView.bind(this, message, alignment, theme)}
             BottomView={template?.BottomView && template?.BottomView?.bind(this, message, alignment)}
-            style={{backgroundColor: theme?.palette?.getPrimary()}}
-    />;
+            style={getStyle(message)}
+        />;
     }
 }
