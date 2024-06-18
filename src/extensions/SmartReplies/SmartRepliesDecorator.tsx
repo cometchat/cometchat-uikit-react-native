@@ -12,6 +12,7 @@ import { CometChatUIEvents, MessageEvents } from '../../shared/events';
 import { SmartRepliesView } from './SmartRepliesView';
 import {
   getUnixTimestamp,
+  getUnixTimestampInMilliseconds,
 } from '../../shared/utils/CometChatMessageHelper';
 import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 import { CometChatUIKit } from '../../shared/CometChatUiKit/CometChatUIKit';
@@ -118,7 +119,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     textMessage.setSender(this.loggedInUser);
     textMessage.setText(smartReply);
     textMessage.setSentAt(getUnixTimestamp());
-    textMessage.setMuid(String(getUnixTimestamp()));
+    textMessage.setMuid(String(getUnixTimestampInMilliseconds()));
 
     CometChatUIKit.sendTextMessage(textMessage)
       .then(() => {})

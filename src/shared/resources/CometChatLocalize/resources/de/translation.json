@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"Privat chatten",
   "MESSAGE_PRIVATELY":"Private Nachricht",
   "TRANSLATE":"Übersetzen",
-  "EDIT":"Bearbeiten"
+  "EDIT":"Bearbeiten",
+  "MICROPHONE_PERMISSION":"Um eine Sprachnachricht aufzunehmen, benötigen wir Zugriff auf Ihr Mikrofon. Tippe auf Einstellungen und schalte das Mikrofon ein.",
+  "CAMERA_PERMISSION":"Wir haben keinen Zugriff auf Ihre Kamera. Um den Zugriff zu aktivieren, tippen Sie auf Einstellungen und schalten Sie die Kamera ein."
 }

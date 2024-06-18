@@ -6,7 +6,7 @@ import { CometChatBottomSheet, CometChatContext, CometChatContextType, CometChat
 import { CloseIcon } from './resources';
 import { ICONS } from '../../shared/framework/resources';
 import { ICONS as MessageIcons } from '../../shared/assets/images';
-import { getUnixTimestamp } from '../../shared/utils/CometChatMessageHelper';
+import { getUnixTimestamp, getUnixTimestampInMilliseconds } from '../../shared/utils/CometChatMessageHelper';
 import { CometChatMessageBubble } from '../../shared/views/CometChatMessageBubble';
 import { ReceiverTypeConstants } from '../../shared/constants/UIKitConstants';
 import { AIBotMessageBubbleStyle, AISenderMessageBubbleStyle } from './AIAssistBotStyle';
@@ -63,7 +63,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
             ReceiverTypeConstants.user
         );
         message.setSentAt(getUnixTimestamp());
-        message.setMuid(String(getUnixTimestamp()));
+        message.setMuid(String(getUnixTimestampInMilliseconds()));
         message.setSender(bot);
 
         let newMessages = [...messages];
@@ -87,7 +87,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
 
         let newMessages = [...messages];
 
-        const MUID = String(getUnixTimestamp());
+        const MUID = String(getUnixTimestampInMilliseconds());
         const message = new CometChat.TextMessage(
             bot.getUid(),
             question,
@@ -109,7 +109,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
                     ReceiverTypeConstants.user
                 );
                 message.setSentAt(getUnixTimestamp());
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
                 message.setSender(bot);
                 message.setStatus(undefined);
 

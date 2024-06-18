@@ -121,7 +121,7 @@ class PermissionUtilIOS {
       }
     }
     if (allResourcesAllowed === false) {
-      Alert.alert(localize('RESOURCE_PERMISSION_REQUIRED'), undefined, [
+      Alert.alert(undefined, localize('CAMERA_PERMISSION'), [
         {
           style: 'cancel',
           text: localize('CANCEL'),

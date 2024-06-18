@@ -147,6 +147,13 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         }
     }
 
+    function getImage(imageUrl: ImageType) {
+        if (typeof imageUrl === "object" && imageUrl.uri) {
+            return { uri: imageUrl.uri };
+        }
+        return imageUrl;
+    }
+
     return (
         <>
             <CometChatVideoPlayer
@@ -167,7 +174,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
                 volumeIcon={playerVolumeIcon}
                 volumeIconColor={style.playerVolumeIconColor}
             />
-            <ImageBackground source={(typeof thumbnailUrl === "object" ? { uri: thumbnailUrl?.uri } : thumbnailUrl) || placeholderImage || defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" }}>
+            <ImageBackground source={getImage(thumbnailUrl) || getImage(placeholderImage) || defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" }}>
                 <View
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}

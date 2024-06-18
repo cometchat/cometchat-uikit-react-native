@@ -60,7 +60,7 @@ export class VideoBubbleStyle extends BaseStyle {
         width = 24,
         backgroundColor = "transparent",
         border = new BorderStyle({}),
-        borderRadius = 0,
+        borderRadius,
         playIconBackgroundColor = "rgba(20,20,20,0.4)",
         playIconTint = "white",
         playerLoadingIconColor = "white",

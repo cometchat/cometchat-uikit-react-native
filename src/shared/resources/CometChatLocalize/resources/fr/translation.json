@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"Discutez en privé",
   "MESSAGE_PRIVATELY":"Message privé",
   "TRANSLATE":"Traduire",
-  "EDIT":"Modifier"
+  "EDIT":"Modifier",
+  "MICROPHONE_PERMISSION":"Pour enregistrer un message vocal, nous avons besoin d'accéder à votre microphone. Appuyez sur Réglages et activez le microphone.",
+  "CAMERA_PERMISSION":"Nous n'avons pas accès à votre caméra. Pour activer l'accès, touchez Réglages et activez l'appareil photo."
 }

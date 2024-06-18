@@ -310,5 +310,7 @@
   "INFO":"Info",
   "MESSAGE_PRIVATELY":"Message Privately",
   "TRANSLATE":"Translate",
-  "EDIT":"Edit"
+  "EDIT":"Edit",
+  "MICROPHONE_PERMISSION":"To record a Voice Message, we need access to your microphone. Tap Settings and turn on Microphone.",
+  "CAMERA_PERMISSION":"We do not have access to your camera. To enable access, tap Settings and turn on Camera."
 }

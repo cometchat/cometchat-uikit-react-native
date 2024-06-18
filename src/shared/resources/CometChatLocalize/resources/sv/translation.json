@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"Chatta privat",
   "MESSAGE_PRIVATELY":"Meddelande privat",
   "TRANSLATE":"Översätt",
-  "EDIT":"Redigera"
+  "EDIT":"Redigera",
+  "MICROPHONE_PERMISSION":"För att spela in ett röstmeddelande behöver vi tillgång till din mikrofon. Tryck på Inställningar och slå på Mikrofon.",
+  "CAMERA_PERMISSION":"Vi har inte tillgång till din kamera. Aktivera åtkomst genom att trycka på Inställningar och slå på Kamera."
 }

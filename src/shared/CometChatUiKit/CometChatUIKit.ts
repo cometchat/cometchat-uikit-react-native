@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { UIKitSettings } from "./UIKitSettings";
 import { CometChatUIKitHelper } from "./CometChatUIKitHelper";
-import { messageStatus } from "../utils/CometChatMessageHelper";
+import { getUnixTimestampInMilliseconds, messageStatus } from "../utils/CometChatMessageHelper";
 import { CallingExtension } from "../../calls/CallingExtension";
 import { CallingPackage } from "../../calls/CallingPackage";
 import { StickersExtension } from "../../extensions/Stickers";
@@ -262,7 +262,7 @@ export class CometChatUIKit {
         return new Promise((resolve, reject) => {
 
             if (!message.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message.getSender()) {
@@ -291,7 +291,7 @@ export class CometChatUIKit {
 
 
             if (!message.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message.getSender()) {
@@ -343,7 +343,7 @@ export class CometChatUIKit {
 
 
             if (!message?.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message?.getSender()) {
@@ -376,7 +376,7 @@ export class CometChatUIKit {
         return new Promise((resolve, reject) => {
 
             if (!message.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message.getSender()) {
@@ -413,7 +413,7 @@ export class CometChatUIKit {
         return new Promise((resolve, reject) => {
 
             if (!message.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message.getSender()) {
@@ -452,7 +452,7 @@ export class CometChatUIKit {
         return new Promise((resolve, reject) => {
 
             if (!message.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message.getSender()) {
@@ -491,7 +491,7 @@ export class CometChatUIKit {
         return new Promise((resolve, reject) => {
 
             if (!message.getMuid()) {
-                message.setMuid(String(getUnixTimestamp()));
+                message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
             if (!message.getSender()) {

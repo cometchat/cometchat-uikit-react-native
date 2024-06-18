@@ -15,6 +15,7 @@ import { CometChatStickerKeyboard } from "./CometChatStickerKeyboard";
 import { CometChatUIKit } from "../../shared/CometChatUiKit/CometChatUIKit";
 import { isKeyboardVisible } from "../../shared/helper/useKeyboard";
 import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
+import { getUnixTimestampInMilliseconds } from "../../shared/utils/CometChatMessageHelper";
 
 export class StickersExtensionDecorator extends DataSourceDecorator {
 
@@ -88,7 +89,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
         );
       customMessage.setCategory(CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory);
       customMessage.setParentMessageId(parentId);
-      customMessage.setMuid(new Date().getTime().toString());
+      customMessage.setMuid(String(getUnixTimestampInMilliseconds()));
       customMessage.setSender(loggedInUser.current);
       customMessage.setReceiver(user || group);
       customMessage.shouldUpdateConversation(true);

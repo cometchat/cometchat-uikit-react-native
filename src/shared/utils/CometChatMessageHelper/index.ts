@@ -42,6 +42,10 @@ export const getUnixTimestamp = () => {
   return Math.round(+new Date() / 1000);
 };
 
+export const getUnixTimestampInMilliseconds = () => {
+  return Math.round(+new Date());
+}
+
 export const formatBytes = (bytes, decimals = 2) => {
   if (bytes === 0) return "0 Bytes";
 

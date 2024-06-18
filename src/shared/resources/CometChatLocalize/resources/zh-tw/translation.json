@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"私下聊天",
   "MESSAGE_PRIVATELY":"私下留言",
   "TRANSLATE":"翻譯",
-  "EDIT":"編輯"
+  "EDIT":"編輯",
+  "MICROPHONE_PERMISSION":"要錄製語音消息，我們需要訪問您的麥克風。點選設定，然後開啟麥克風。",
+  "CAMERA_PERMISSION":"我們無法訪問您的相機。若要啟用存取權，請點選設定並開啟「相機」。"
 }

@@ -119,7 +119,7 @@ export const CometChatUsers = React.forwardRef<
         },
       })
     );
-    return CometChat.removeUserListener(userListenerId);
+    return () => CometChat.removeUserListener(userListenerId);
   }, []);
 
   const handleccUserBlocked = ({ user }) => {
@@ -151,7 +151,7 @@ export const CometChatUsers = React.forwardRef<
     <View style={{ flex: 1, width: '100%', height: '100%' }}>
       <CometChatList
         listItemKey="uid"
-        ref={ref}
+        ref={userRef}
         title={'Users'}
         requestBuilder={usersRequestBuilder}
         listStyle={usersStyle}

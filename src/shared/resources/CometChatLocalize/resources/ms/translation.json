@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"Berbual Persendirian",
   "MESSAGE_PRIVATELY":"Mesej Persendirian",
   "TRANSLATE":"Terjemah",
-  "EDIT":"Sunting"
+  "EDIT":"Sunting",
+  "MICROPHONE_PERMISSION":"Untuk merakam Mesej Suara, kami memerlukan akses ke mikrofon anda. Ketik Tetapan dan hidupkan Mikrofon.",
+  "CAMERA_PERMISSION":"Kami tidak mempunyai akses kepada kamera anda. Untuk mendayakan akses, ketik Tetapan dan hidupkan Kamera."
 }

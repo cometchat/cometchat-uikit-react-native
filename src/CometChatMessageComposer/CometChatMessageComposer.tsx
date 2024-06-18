@@ -36,6 +36,7 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 
 import {
   getUnixTimestamp,
+  getUnixTimestampInMilliseconds,
   messageStatus,
 } from '../shared/utils/CometChatMessageHelper';
 import { CometChatSoundManager, ChatConfigurator } from '../shared';
@@ -874,7 +875,7 @@ export const CometChatMessageComposer = React.forwardRef(
       textMessage.setSender(loggedInUser.current);
       textMessage.setReceiver(chatWith.current);
       textMessage.setText(finalTextInput);
-      textMessage.setMuid(String(getUnixTimestamp()));
+      textMessage.setMuid(String(getUnixTimestampInMilliseconds()));
       textMessage.setSentAt(getUnixTimestamp());
       parentMessageId && textMessage.setParentMessageId(parentMessageId as number);
 
@@ -985,7 +986,7 @@ export const CometChatMessageComposer = React.forwardRef(
       mediaMessage['_composedAt'] = Date.now();
       mediaMessage['_id'] = '_' + Math.random().toString(36).substr(2, 9);
       mediaMessage.setId(mediaMessage['_id']);
-      mediaMessage.setMuid(String(getUnixTimestamp()));
+      mediaMessage.setMuid(String(getUnixTimestampInMilliseconds()));
       mediaMessage.setSentAt(getUnixTimestamp());
       mediaMessage.setData({
         type: messageType,
@@ -1010,7 +1011,7 @@ export const CometChatMessageComposer = React.forwardRef(
       localMessage['_composedAt'] = Date.now();
       localMessage['_id'] = '_' + Math.random().toString(36).substr(2, 9);
       localMessage.setId(localMessage['_id']);
-      localMessage.setMuid(String(getUnixTimestamp()));
+      localMessage.setMuid(String(getUnixTimestampInMilliseconds()));
       localMessage.setSentAt(getUnixTimestamp());
       localMessage.setData({
         type: messageType,

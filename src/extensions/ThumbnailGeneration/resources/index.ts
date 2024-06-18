@@ -1,5 +1,5 @@
-import Empty from './empty.png';
+import defaultThumbnail from "./default_image.png";
 
 export {
-    Empty
+    defaultThumbnail
 }

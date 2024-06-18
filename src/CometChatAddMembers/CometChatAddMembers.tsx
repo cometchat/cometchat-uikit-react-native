@@ -38,26 +38,36 @@ export const CometChatAddMembers = (props: CometChatAddMembersInterface) => {
 
     CometChat.addMembersToGroup(props.group['guid'], membersList, []).then(
       (response) => {
-        let action: CometChat.Action = new CometChat.Action(
-          group['guid'],
-          MessageTypeConstants.groupMember,
-          CometChat.RECEIVER_TYPE.GROUP,
-          CometChat.CATEGORY_ACTION as CometChat.MessageCategory
-        );
-        action.setConversationId(group['conversationId'])
-        action.setActionBy(loggedInUser.current);
-        action.setActionFor(group);
-        action.setSender(loggedInUser.current);
-        group['membersCount'] = group['membersCount'] + membersList.length; // increase members count
-        CometChatUIEventHandler.emitGroupEvent(
-          CometChatGroupsEvents.ccGroupMemberAdded,
-          {
-            addedBy: loggedInUser.current,
-            message: action,
-            usersAdded: membersList,
-            userAddedIn: group,
+        let addedUIDs = [];
+        Object.keys(response).forEach(key => {
+          if (response[key] === "success") {
+            addedUIDs.push(key)
           }
-        );
+        })
+        let addedMembers = membersList.filter(item => addedUIDs.includes(item.uid));
+        if (addedMembers.length) {
+          let action: CometChat.Action = new CometChat.Action(
+            group['guid'],
+            MessageTypeConstants.groupMember,
+            CometChat.RECEIVER_TYPE.GROUP,
+            CometChat.CATEGORY_ACTION as CometChat.MessageCategory
+          );
+          action.setConversationId(group['conversationId'])
+          action.setActionBy(loggedInUser.current);
+          action.setActionFor(group);
+          action.setSender(loggedInUser.current);
+          group['membersCount'] = group['membersCount'] + addedMembers.length; // increase members count
+          CometChatUIEventHandler.emitGroupEvent(
+            CometChatGroupsEvents.ccGroupMemberAdded,
+            {
+              addedBy: loggedInUser.current,
+              message: action,
+              usersAdded: addedMembers,
+              userAddedIn: group,
+            }
+          );
+        }
+        props.onBack && props.onBack();
       },
       (error) => {
         console.log('Something went wrong', error);
@@ -81,7 +91,7 @@ export const CometChatAddMembers = (props: CometChatAddMembersInterface) => {
     );
     CometChat.getLoggedinUser()
       .then((u) => (loggedInUser.current = u))
-      .catch((e) => {});
+      .catch((e) => { });
     return CometChat.removeUserListener(userListenerId);
   }, []);
 

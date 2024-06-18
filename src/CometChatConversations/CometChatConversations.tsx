@@ -368,15 +368,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
     const userEventHandler = (...args) => {
         const { uid, blockedByMe, status } = args[0];
         if (!blockedByMe) {
-            let item = conversationListRef.current.getListItem(`${uid}_user_${loggedInUser.current.uid}`);
+            let item: CometChat.Conversation = conversationListRef.current.getListItem(`${uid}_user_${loggedInUser.current.uid}`) || conversationListRef.current.getListItem(`${loggedInUser.current.uid}_user_${uid}`);
             if (item) {
-                let updatedConversation = {
-                    ...item,
-                    conversationWith: {
-                        ...item.conversationWith,
-                        status
-                    }
-                }
+                let updatedConversation = CommonUtils.clone(item);
+                updatedConversation.setConversationWith(args[0]);
                 console.log(JSON.stringify(updatedConversation));
                 conversationListRef.current.updateList(updatedConversation);
             }
@@ -645,7 +640,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     const getMessagePreview = (conversations: CometChat.Conversation, uid) => {
 
-        let lastMessage: CometChat.BaseMessage = conversations.getLastMessage();
+        let lastMessage: CometChat.BaseMessage = conversations?.getLastMessage && conversations.getLastMessage();
         if (!lastMessage) return null;
         let messageText: string;
         if (lastMessage.getDeletedAt() !== undefined) {

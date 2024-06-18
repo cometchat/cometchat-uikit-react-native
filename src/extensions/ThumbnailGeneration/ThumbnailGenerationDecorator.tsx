@@ -14,7 +14,7 @@ import {
 import React from 'react';
 import { CometChatTheme } from '../../shared/resources/CometChatTheme';
 import { ThumbnailGenerationConfigurationInterface } from './ThumbnailGenerationExtension';
-import { Empty } from './resources';
+import { defaultThumbnail } from './resources';
 
 export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
   thumbnailGenerationConfiguration?: ThumbnailGenerationConfigurationInterface;
@@ -42,7 +42,7 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
       ExtensionConstants.thumbnailGeneration
     );
     if (thumbnailData == undefined) {
-      image = message.getType() === "image" ? message?.data?.url : Empty;  //default image for type video
+      image = message.getType() === "image" ? { uri: message?.data?.url } : defaultThumbnail;  //default image for type video
     } else {
       let attachmentData = thumbnailData['attachments'];
       if (attachmentData.length) {
@@ -50,9 +50,9 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
 
         if (!dataObj['error']) {
           let imageLink = dataObj?.['data']?.['thumbnails']?.['url_small'];
-          image = imageLink ? { uri: dataObj['data']['thumbnails']['url_small'] } : Empty; //if imageLink is empty or does not exist then load default image
+          image = imageLink ? { uri: dataObj['data']['thumbnails']['url_small'] } : defaultThumbnail; //if imageLink is empty or does not exist then load default image
         } else {
-          image = Empty; //default image
+          image = defaultThumbnail; //default image
         }
       }
     }
@@ -97,8 +97,8 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     const image = this.checkThumbnail(message);
     return (
       <CometChatImageBubble
-        imageUrl={{ uri: imageUrl } ?? image}
-        thumbnailUrl={{ uri: message?.['data']?.['url'] }}
+        imageUrl={imageUrl ? { uri: imageUrl } : image}
+        thumbnailUrl={image}
         style={{
           height: 200,
           width: 200,

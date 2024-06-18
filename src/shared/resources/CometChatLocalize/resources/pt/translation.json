@@ -311,6 +311,7 @@
   "CHAT_PRIVATELY":"Converse de forma privada",
   "MESSAGE_PRIVATELY":"Mensagem privada",
   "TRANSLATE":"Traduza",
-  "EDIT":"Editar"
-
+  "EDIT":"Editar",
+  "MICROPHONE_PERMISSION":"Para gravar uma mensagem de voz, precisamos acessar seu microfone. Toque em Configurações e ative o microfone.",
+  "CAMERA_PERMISSION":"Não temos acesso à sua câmera. Para ativar o acesso, toque em Configurações e ative a Câmera."
 }

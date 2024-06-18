@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"Pokalbiai privačiai",
   "MESSAGE_PRIVATELY":"Pranešimas privačiai",
   "TRANSLATE":"Išversti",
-  "EDIT":"Redaguoti"
+  "EDIT":"Redaguoti",
+  "MICROPHONE_PERMISSION":"Per registrare un messaggio vocale, abbiamo bisogno di accedere al tuo microfono. Tocca Impostazioni e attiva il microfono.",
+  "CAMERA_PERMISSION":"Non abbiamo accesso alla tua fotocamera. Per abilitare l'accesso, tocca Impostazioni e attiva Fotocamera."
 }

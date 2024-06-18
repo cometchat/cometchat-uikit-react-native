@@ -15,7 +15,7 @@ import { localize } from "../shared";
 import { Style } from "./style";
 import { GroupScopeStyle, GroupScopeStyleInterface } from "./GroupScopeStyle";
 import { CometChatGroupsEvents } from "../shared/events";
-import { getUnixTimestamp } from "../shared/utils/CometChatMessageHelper";
+import { getUnixTimestamp, getUnixTimestampInMilliseconds } from "../shared/utils/CometChatMessageHelper";
 import { CometChatContextType } from "../shared/base/Types";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { StatusIndicatorStyleInterface } from "../shared/views/CometChatStatusIndicator/StatusIndicatorStyle";
@@ -249,7 +249,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 action.setActionFor(group);
                 action.setMessage(`${loggedInUser.current.name} banned ${user.name}`);
                 action.setSentAt(getUnixTimestamp());
-                action.setMuid(String(getUnixTimestamp()));
+                action.setMuid(String(getUnixTimestampInMilliseconds()));
                 action.setSender(loggedInUser.current);
                 action.setReceiver(group);
 
@@ -279,7 +279,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 action.setActionFor(group);
                 action.setMessage(`${loggedInUser.current.name} kicked ${user.name}`);
                 action.setSentAt(getUnixTimestamp());
-                action.setMuid(String(getUnixTimestamp()));
+                action.setMuid(String(getUnixTimestampInMilliseconds()));
                 action.setSender(loggedInUser.current);
                 action.setReceiver(group);
                 action.setConversationId(group['conversationId'])
@@ -336,7 +336,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
       ): string | null {
         if (
          props.disableUsersPresence ||
-          groupMember.getStatus() === CometChatUiKitConstants.UserStatusConstants.offline
+          (groupMember?.getStatus && groupMember.getStatus()) === CometChatUiKitConstants.UserStatusConstants.offline
         ) {
           return null;
         }
@@ -417,7 +417,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                     action.setActionFor(group);
                     action.setMessage(`${loggedInUser.current.name} made ${member.name} ${newScope}`);
                     action.setSentAt(getUnixTimestamp());
-                    action.setMuid(String(getUnixTimestamp()));
+                    action.setMuid(String(getUnixTimestampInMilliseconds()));
                     action.setSender(loggedInUser.current);
                     action.setReceiver(group);
                     CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberScopeChanged, { action, updatedUser: updatedMember, scopeChangedTo: newScope, scopeChangedFrom: member.scope, group });

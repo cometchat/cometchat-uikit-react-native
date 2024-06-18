@@ -311,5 +311,7 @@
   "CHAT_PRIVATELY":"私下聊天",
   "MESSAGE_PRIVATELY":"私下留言",
   "TRANSLATE":"翻译",
-  "EDIT":"编辑"
+  "EDIT":"编辑",
+  "MICROPHONE_PERMISSION":"要录制语音信息，我们需要访问您的麦克风。点击 “设置”，然后打开 “麦克风”。",
+  "CAMERA_PERMISSION":"我们无法访问您的相机。要启用访问权限，请点击 “设置”，然后打开 “相机”。"
 }

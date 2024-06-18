@@ -132,6 +132,13 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
     }, []);
 
+    function getImage(imageUrl: ImageType) {
+        if (typeof imageUrl === "object" && imageUrl.uri) {
+            return { uri: imageUrl.uri };
+        }
+        return imageUrl;
+    }
+
     return (
         <>
             {
@@ -156,7 +163,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
                     ? <View>
                             <Image
                                 resizeMode={"contain"}
-                                source={ICONS.Spinner} 
+                                source={getImage(placeHolderImage) || ICONS.Spinner} 
                                 style={{
                                     height: 20,
                                     width: 20,
@@ -166,8 +173,8 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
                         </View>
                     : <Image
                             resizeMode={resizeMode || "cover"}
-                            loadingIndicatorSource={ICONS.Spinner}
-                            source={thumbnailUrl ?? imageUrl} 
+                            loadingIndicatorSource={getImage(placeHolderImage) || ICONS.Spinner}
+                            source={getImage(thumbnailUrl) || getImage(imageUrl)} 
                             style={{
                                 height,
                                 width,

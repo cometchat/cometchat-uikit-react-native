@@ -13,6 +13,7 @@ import { CallUIEvents } from '../CallEvents'
 import { CometChatOutgoingCall } from '../CometChatOutgoingCall'
 import { CometChatUIKit } from '../../shared/CometChatUiKit/CometChatUIKit'
 import { permissionUtil } from '../../shared/utils/PermissionUtil'
+import { getUnixTimestampInMilliseconds } from '../../shared/utils/CometChatMessageHelper'
 
 const listenerId = "callEventListener_" + new Date().getTime();
 
@@ -155,7 +156,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
                     customData
                 );
                 customMessage.setCategory(CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory);
-                customMessage.setMuid(new Date().getTime().toString());
+                customMessage.setMuid(String(getUnixTimestampInMilliseconds()));
                 customMessage.setSender(loggedInUser.current);
                 customMessage.setReceiver(group);
                 customMessage.setMetadata({

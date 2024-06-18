@@ -311,5 +311,7 @@
 "CHAT_PRIVATELY":"Privát csevegés",
 "MESSAGE_PRIVATELY":"Privát üzenet",
 "TRANSLATE":"Fordítás",
-"EDIT":"Szerkesztés"
+"EDIT":"Szerkesztés",
+"MICROPHONE_PERMISSION":"Hangüzenet rögzítéséhez hozzáférésre van szükségünk a mikrofonjához. Koppintson a Beállítások elemre, és kapcsolja be a Mikrofont.",
+"CAMERA_PERMISSION":"Nem férünk hozzá a kamerájához. A hozzáférés engedélyezéséhez érintse meg a Beállítások elemet, és kapcsolja be a Kamera lehetőséget."
 }

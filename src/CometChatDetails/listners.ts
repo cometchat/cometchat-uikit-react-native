@@ -1,8 +1,9 @@
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
-import { CometChatUIEvents } from '../shared/events';
-import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
-
+import { CometChatUIKit, CometChatUIEvents, CometChatUIEventHandler } from '../shared';
+const actionPerformedByMe = (message) => {
+  return message?.getActionBy && message?.getActionBy().getUid() === CometChatUIKit.loggedInUser.uid;
+}
 export const listners = {
   addListener: {
     userListener: ({ userStatusListenerId, handleUserStatus }) =>
@@ -25,23 +26,31 @@ export const listners = {
         new CometChat.GroupListener({
           onGroupMemberKicked: (message, kickedUser, kickedBy, kickedFrom) => {
             handleGroupListener(kickedFrom);
-            CometChatUIEventHandler.emitGroupEvent(
-              CometChatUIEvents.ccGroupMemberKicked,
-              {message,
-              kickedUser,
-              kickedBy,
-              kickedFrom}
-            );
+            if (actionPerformedByMe(message)) {
+              CometChatUIEventHandler.emitGroupEvent(
+                CometChatUIEvents.ccGroupMemberKicked,
+                {
+                  message,
+                  kickedUser,
+                  kickedBy,
+                  kickedFrom
+                }
+              );
+            }
           },
           onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
             handleGroupListener(bannedFrom);
-            CometChatUIEventHandler.emitGroupEvent(
-              CometChatUIEvents.ccGroupMemberBanned,
-              {message,
-              bannedUser,
-              bannedBy,
-              bannedFrom}
-            );
+            if (actionPerformedByMe(message)) {
+              CometChatUIEventHandler.emitGroupEvent(
+                CometChatUIEvents.ccGroupMemberBanned,
+                {
+                  message,
+                  bannedUser,
+                  bannedBy,
+                  bannedFrom
+                }
+              );
+            }
           },
           onMemberAddedToGroup: (
             message,
@@ -50,30 +59,42 @@ export const listners = {
             userAddedIn
           ) => {
             handleGroupListener(userAddedIn);
-            CometChatUIEventHandler.emitGroupEvent(
-              CometChatUIEvents.ccGroupMemberBanned,
-              {message,
-              userAdded,
-              userAddedBy,
-              userAddedIn}
-            );
+            if (actionPerformedByMe(message)) {
+              CometChatUIEventHandler.emitGroupEvent(
+                CometChatUIEvents.ccGroupMemberAdded,
+                {
+                  message,
+                  userAdded,
+                  userAddedBy,
+                  userAddedIn
+                }
+              );
+            }
           },
           onGroupMemberLeft: (message, leavingUser, group) => {
             handleGroupListener(group);
-            CometChatUIEventHandler.emitGroupEvent(
-              CometChatUIEvents.ccGroupMemberLeft,
-              {message,
-              leavingUser,
-              group}
-            );
+            if (actionPerformedByMe(message)) {
+              CometChatUIEventHandler.emitGroupEvent(
+                CometChatUIEvents.ccGroupMemberLeft,
+                {
+                  message,
+                  leavingUser,
+                  group
+                }
+              );
+            }
           },
           onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
             handleGroupListener(joinedGroup);
-            CometChatUIEventHandler.emitGroupEvent(
-              CometChatUIEvents.ccGroupMemberJoined,
-              {joinedUser,
-              joinedGroup}
-            );
+            if (actionPerformedByMe(message)) {
+              CometChatUIEventHandler.emitGroupEvent(
+                CometChatUIEvents.ccGroupMemberJoined,
+                {
+                  joinedUser,
+                  joinedGroup
+                }
+              );
+            }
           },
         })
       ),

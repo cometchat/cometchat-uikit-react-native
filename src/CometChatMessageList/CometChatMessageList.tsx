@@ -435,7 +435,6 @@ export const CometChatMessageList = memo(forwardRef<
             messagesRequest.build()
                 .fetchNext()
                 .then(updatedMessages => {
-                    if (!updatedMessages.length) return;
                     let tmpList = [...messagesList];
                     for (let i = 0; i < updatedMessages.length; i++) {
                         let condition = (msg) => msg.getId() == updatedMessages[i]?.actionOn.getId()
@@ -472,7 +471,7 @@ export const CometChatMessageList = memo(forwardRef<
                             cleanUpdatedList.shift();
                         }
                     }
-                    let tmpList = [...cleanUpdatedList, ...newMessages.reverse()];
+                    let tmpList = [...cleanUpdatedList, ...newMessages];
                     tmpList = tmpList.map((item: CometChat.BaseMessage, index) => {
                         if (item.getCategory() === MessageCategoryConstants.interactive) {
                             return InteractiveMessageUtils.convertInteractiveMessage(item);
@@ -489,10 +488,11 @@ export const CometChatMessageList = memo(forwardRef<
                     }
                     messagesContentListRef.current = tmpList;
                     setMessagesList(tmpList);
-                    markMessageAsRead(tmpList[0]);
+                    bottomHandler(tmpList[tmpList.length - 1], true);
                     if (newMessages.length === 30) {
                         getNewMessages(tmpList);
                     }
+                    newRequestBuilder.setMessageId(undefined)
                 })
                 .catch(e => console.log("error while fetching updated msgs", e))
         }
@@ -675,8 +675,8 @@ export const CometChatMessageList = memo(forwardRef<
             }
             if (checkSameConversation(baseMessage) || checkMessageInSameConversation(baseMessage) || messageToSameConversation(baseMessage)) {
                 //need to add
-                if (baseMessage.getParentMessageId()) {
-                    if (baseMessage.getParentMessageId() == parseInt(parentMessageId)) {
+                if (newMessage.getParentMessageId()) {
+                    if (newMessage.getParentMessageId() == parseInt(parentMessageId)) {
                         // add to list
                         messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
                         inProgressMessages.current = [...inProgressMessages.current, newMessage]
@@ -700,30 +700,40 @@ export const CometChatMessageList = memo(forwardRef<
                     inProgressMessages.current = [...inProgressMessages.current, newMessage]
                     setMessagesList(prev => [...prev, newMessage]);
                 }
-                // if scroll is not at bottom
-                if (!scrollToBottomOnNewMessages && currentScrollPosition.current.y && (Math.round(currentScrollPosition.current.y) <= currentScrollPosition.current.scrollViewHeight)) {
-                    if ((parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId)) || (!parentMessageId && !newMessage.parentMessageId && (baseMessage.getSender()?.getUid() || baseMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid'])) {
-                        scrollToBottom();
-                        return;
-                    }
-                    CometChat.markAsDelivered(newMessage);
-                    if (baseMessage?.getReceiverType() == ReceiverTypeConstants.user) {
-                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageDelivered, { message: newMessage });
-                    }
-                    if (isNearBottom()) {
-                        scrollToBottom();
-                    } else if ((!parentMessageId && !(newMessage.parentMessageId)) || (parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId))) {
-                        setUnreadCount(unreadCount + 1);
-                    }
-                } else {
+                bottomHandler(newMessage, isReceived);
+            }
+
+            playNotificationSound(newMessage);
+        }
+
+        const bottomHandler = (newMessage: CometChat.BaseMessage, isReceived?: boolean) => {
+
+            // if scroll is not at bottom
+            if (!scrollToBottomOnNewMessages && currentScrollPosition.current.y && (Math.round(currentScrollPosition.current.y) <= currentScrollPosition.current.scrollViewHeight)) {
+                if ((parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId)) || (!parentMessageId && !newMessage.parentMessageId && (newMessage.getSender()?.getUid() || newMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid'])) {
+                    scrollToBottom();
+                    return;
+                }
+                CometChat.markAsDelivered(newMessage);
+                if (newMessage?.getReceiverType() == ReceiverTypeConstants.user) {
+                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageDelivered, { message: newMessage });
+                }
+                if (isNearBottom()) {
                     scrollToBottom();
                     if (isReceived) {
                         markMessageAsRead(newMessage);
                         CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message: newMessage });
                     }
+                } else if ((!parentMessageId && !(newMessage.parentMessageId)) || (parentMessageId && newMessage.parentMessageId == parseInt(parentMessageId))) {
+                    setUnreadCount(unreadCount + 1);
+                }
+            } else {
+                scrollToBottom();
+                if (isReceived) {
+                    markMessageAsRead(newMessage);
+                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message: newMessage });
                 }
             }
-            playNotificationSound(newMessage);
         }
 
         const markParentMessageAsRead = (message: CometChat.BaseMessage) => {
@@ -790,23 +800,27 @@ export const CometChatMessageList = memo(forwardRef<
 
             if (index == -1) return;
 
-            let tmpList = [...messagesList];
+            let tmpList: Array<CometChat.BaseMessage> = [...messagesList];
 
-            let tmpMsg = tmpList[index];
-            if ((tmpMsg as CometChat.BaseMessage)?.getReceiverType() == ReceiverTypeConstants.group)
-                return;
-            if (tmpMsg.getCategory() === MessageCategoryConstants.interactive) {
-                tmpMsg = InteractiveMessageUtils.convertInteractiveMessage(tmpMsg);
-            }
-            if (receipt.hasOwnProperty('deliveredAt')) {
-                tmpMsg['deliveredAt'] = receipt['deliveredAt'];
-            }
-            if (receipt.hasOwnProperty('readAt')) {
-                tmpMsg['readAt'] = receipt['readAt'];
-            }
-            tmpMsg['updatedAt'] = receipt['timestamp'];
+            for (let i = index; i > 0; i--) {
 
-            tmpList[index] = CommonUtils.clone(tmpMsg);
+                if (tmpList[i]?.getReadAt && tmpList[i]?.getReadAt()) break;
+
+                let tmpMsg = tmpList[i];
+                if ((tmpMsg as CometChat.BaseMessage)?.getReceiverType() == ReceiverTypeConstants.group)
+                    return;
+                if (tmpMsg.getCategory() === MessageCategoryConstants.interactive) {
+                    tmpMsg = InteractiveMessageUtils.convertInteractiveMessage(tmpMsg);
+                }
+                if (receipt.getDeliveredAt) {
+                    tmpMsg.setDeliveredAt(receipt.getDeliveredAt());
+                }
+                if (receipt.getReadAt) {
+                    tmpMsg.setReadAt(receipt.getReadAt());
+                }
+
+                tmpList[i] = CommonUtils.clone(tmpMsg);
+            }
 
             messagesContentListRef.current = tmpList;
             setMessagesList(tmpList);
