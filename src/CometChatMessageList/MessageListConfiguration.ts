@@ -25,6 +25,7 @@ import { EmojiKeyboardStyle } from '../shared/views/CometChatEmojiKeyboard';
 export interface MessageListConfigurationInterface {
   ErrorStateView?: (e: CometChat.CometChatException) => JSX.Element;
   errorStateText?: String;
+  hideError?: boolean,
   EmptyStateView?: () => JSX.Element;
   emptyStateText?: String;
   LoadingStateView?: () => JSX.Element;
@@ -110,6 +111,7 @@ export class MessageListConfiguration
   implements MessageListConfigurationInterface {
   ErrorStateView: (e: CometChat.CometChatException) => JSX.Element;
   errorStateText?: String;
+  hideError?: boolean;
   EmptyStateView: () => JSX.Element;
   emptyStateText?: String;
   LoadingStateView: () => JSX.Element;

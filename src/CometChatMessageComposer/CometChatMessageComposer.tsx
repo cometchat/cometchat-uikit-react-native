@@ -42,6 +42,7 @@ import {
 import { CometChatSoundManager, ChatConfigurator } from '../shared';
 import {
   ConversationOptionConstants,
+  MentionsVisibility,
   MessageTypeConstants,
   MetadataConstants,
   ReceiverTypeConstants,
@@ -1496,7 +1497,14 @@ export const CometChatMessageComposer = React.forwardRef(
           setShowMentionList(true);
 
           let formatter = allFormatters.current.get(tracker);
-          formatter.search(searchString);
+          if (formatter instanceof CometChatMentionsFormatter) {
+            let shouldShowMentionList = (formatter.getVisibleIn() === MentionsVisibility.both) || (formatter.getVisibleIn() === MentionsVisibility.usersConversationOnly && user) || (formatter.getVisibleIn() === MentionsVisibility.groupsConversationOnly && group);
+            if (shouldShowMentionList) {
+              formatter.search(searchString);
+            }
+          } else {
+            formatter.search(searchString);
+          }
 
         } else {
           activeCharacter.current = "";

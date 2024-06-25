@@ -437,7 +437,7 @@ export const CometChatMessageHeader = (
             statusIndicatorColor={
               disableUsersPresence
                 ? 'transparent'
-                : user && user.getStatus() === "online"
+                : user && userStatus === UserStatusConstants.online
                   ? style.onlineStatusColor || theme.palette.getSuccess()
                   : 'transparent'
             }

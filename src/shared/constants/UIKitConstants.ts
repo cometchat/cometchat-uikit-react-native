@@ -228,7 +228,7 @@ export const ReceiverTypeConstants = {
 
 export const UserStatusConstants = {
 	online: CometChat.USER_STATUS.ONLINE,
-	offline: CometChat.USER_STATUS.ONLINE,
+	offline: CometChat.USER_STATUS.OFFLINE,
 	blocked: 'blocked',
 	unblocked: 'unblocked',
 };
@@ -378,4 +378,15 @@ export enum goalType {
 	anyOf = CometChat.GoalType.ANY_OF,
 	anyAction = CometChat.GoalType.ANY_ACTION,
 	none = CometChat.GoalType.NONE
+}
+
+export enum MentionsType {
+	users,
+	usersAndGroupMembers,
+}
+
+export enum MentionsVisibility {
+	both,
+	usersConversationOnly,
+	groupsConversationOnly,
 }

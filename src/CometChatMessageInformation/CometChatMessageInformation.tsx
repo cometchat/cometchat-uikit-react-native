@@ -246,7 +246,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         });
         setTemplateLoading(false)
     }
-    
+
     return (
         <View style={[
             {
@@ -306,11 +306,14 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                         <ErrorView /> :
                         recipients.length == 0 ?
                             <EmptyView /> :
-                            <FlatList
-                                style={{ flex: 1, backgroundColor: 'transparent' }}
-                                data={recipients}
-                                renderItem={renderReceipients}
-                            />
+                            <View style={{ minHeight: 0, maxHeight: "60%" }}>
+                                <FlatList
+                                    style={{ backgroundColor: 'transparent' }}
+                                    contentContainerStyle={{ paddingBottom: "20%" }}
+                                    data={recipients}
+                                    renderItem={renderReceipients}
+                                />
+                            </View>
             }
         </View>
     )

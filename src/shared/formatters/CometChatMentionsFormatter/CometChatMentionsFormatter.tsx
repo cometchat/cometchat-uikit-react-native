@@ -7,6 +7,7 @@ import { CometChatUIEventHandler, CometChatUIEvents } from '../../events';
 import { localize } from '../../resources';
 import { SuggestionItem } from '../../views/CometChatSuggestionList';
 import { CometChatUIKit } from '../../CometChatUiKit';
+import { MentionsType, MentionsVisibility } from '../../constants/UIKitConstants';
 
 /**
  * Represents the CometChatMentionsFormatter class.
@@ -49,6 +50,20 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
    * Limit of unique users to be added in the composer.
   */
   protected limit: number = 10;
+
+  /**
+   * visibleIn property to determine where the mentions should be visible.
+   * @type {MentionsVisibility}
+   * @default MentionsVisibility.both
+   */
+  protected visibleIn: MentionsVisibility = MentionsVisibility.both;
+
+  /**
+   * type property to determine the type of mention list.
+   * @type {MentionsType}
+   * @default MentionsType.usersAndGroupMembers
+   */
+  protected type: MentionsType = MentionsType.usersAndGroupMembers;
 
   /**
   * Initializes a new CometChatMentionsFormatter.
@@ -127,7 +142,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
 
   search(searchKey: string): void {
     if (this.shouldLoadLocalData(searchKey)) return;
-    let requestBuilder = this.customRequest || (this.group ? new CometChat.GroupMembersRequestBuilder(this.group.getGuid()) : new CometChat.UsersRequestBuilder());
+    let requestBuilder = this.customRequest || ((this.group && this.type === MentionsType.usersAndGroupMembers) ? new CometChat.GroupMembersRequestBuilder(this.group.getGuid()) : new CometChat.UsersRequestBuilder());
 
     this.searchRequest = requestBuilder.setLimit(10)
       .setSearchKeyword(searchKey)
@@ -374,6 +389,36 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
     } else {
       throw new Error(`Unsupported inputText type: ${typeof inputText}`);
     }
+  }
+
+  /**
+   * Sets the type of mention list.
+   * @param type - The type of mention list.
+   */
+  setType(type: MentionsType) {
+    this.type = type;
+  }
+
+  /**
+   * Sets the visibleIn property to determine where the mentions should be visible.
+   * @param visibleIn - The visibleIn property to set.
+   */
+  setVisibleIn(visibleIn: MentionsVisibility) {
+    this.visibleIn = visibleIn;
+  }
+
+  /**
+   * Retrieves the visibleIn property to determine where the mentions should be visible.
+   */
+  getVisibleIn() {
+    return this.visibleIn;
+  }
+
+  /**
+   * Retrieves the type of mention list.
+   */
+  getType() {
+    return this.type;
   }
 
   getErrorString() {

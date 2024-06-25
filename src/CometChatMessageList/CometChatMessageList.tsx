@@ -48,6 +48,7 @@ export interface CometChatMessageListProps {
     emptyStateText?: String,
     ErrorStateView?: (e: CometChat.CometChatException) => JSX.Element,
     errorStateText?: String,
+    hideError?: boolean,
     LoadingStateView?: () => JSX.Element,
     disableReceipt?: boolean,
     disableSoundForMessages?: boolean,
@@ -140,6 +141,7 @@ export const CometChatMessageList = memo(forwardRef<
             emptyStateText = localize("NO_MESSAGES_FOUND"),
             ErrorStateView,
             errorStateText = localize("SOMETHING_WRONG"),
+            hideError,
             LoadingStateView,
             disableReceipt = false,
             disableSoundForMessages,
@@ -1800,6 +1802,7 @@ export const CometChatMessageList = memo(forwardRef<
         }, [])
 
         const getErrorStateView = useCallback(() => {
+            if (hideError) return null;
             if (ErrorStateView)
                 return ErrorStateView(new CometChat.CometChatException({ message: "Something went wrong" }));
             return (

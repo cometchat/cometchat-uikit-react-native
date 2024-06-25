@@ -19,6 +19,7 @@ import { getUnixTimestamp, getUnixTimestampInMilliseconds } from "../shared/util
 import { CometChatContextType } from "../shared/base/Types";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { StatusIndicatorStyleInterface } from "../shared/views/CometChatStatusIndicator/StatusIndicatorStyle";
+import { CommonUtils } from "../shared/utils/CommonUtils";
 
 // Note: Omit all the unwanted props
 export interface CometChatGroupsMembersInterface extends
@@ -333,19 +334,19 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
 
     function getStatusIndicatorColor(
         groupMember: CometChat.GroupMember
-      ): string | null {
+    ): string | null {
         if (
-         props.disableUsersPresence ||
-          (groupMember?.getStatus && groupMember.getStatus()) === CometChatUiKitConstants.UserStatusConstants.offline
+            props.disableUsersPresence ||
+            (groupMember?.getStatus && groupMember.getStatus()) === CometChatUiKitConstants.UserStatusConstants.offline
         ) {
-          return null;
+            return null;
         }
         return (
-          groupMemberStyle?.onlineStatusColor ||
-          theme.palette.getSuccess() ||
-          null
+            groupMemberStyle?.onlineStatusColor ||
+            theme.palette.getSuccess() ||
+            null
         );
-      }
+    }
 
     const ItemView = ({ item: member, ...props }) => {
         if (ListItemView)
@@ -373,6 +374,8 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             avatarURL={member.avatar}
             listItemStyle={_listItemStyle}
             avatarStyle={_avatarStyle}
+            hideSeparator={hideSeparator}
+            separatorColor={_groupMemberStyle?.separatorColor}
             statusIndicatorStyle={_statusIndicatorStyle}
             TailView={TailView ? () => <TailView {...member} /> : ScopeChangeUI.bind(this, member, groupScopeStyle)}  //Note: should return prop to TailView
             options={() => (options && options(member)) || swipeOptions(member, (id) => kickUser(id, member), () => banUser(member))}  //Note: should have options 
@@ -395,7 +398,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         const {
             height = "100%",
             width = "100%",
-            backgroundColor = _groupMemberStyle.backgroundColor,
+            backgroundColor = _groupScopeStyle.backgroundColor,
             border = new BorderStyle({}),
             borderRadius = 4,
             titleTextFont = new FontStyle({ fontSize: 14 }),
@@ -572,12 +575,24 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             groupMemberListenerId,
             new CometChat.UserListener({
                 onUserOnline: (onlineUser: any) => {
+
+                    let item = groupRef.current.getListItem(onlineUser.uid);
+                    if (item) {
+                        let updatedConversation = CommonUtils.clone(item);
+                        updatedConversation.setStatus(onlineUser.status);
+                        groupRef.current.updateList(updatedConversation);
+                    }
+
                     /* when someuser/friend comes online, user will be received here */
-                    groupRef.current.updateUser(onlineUser);
                 },
                 onUserOffline: (offlineUser: any) => {
+                    let item = groupRef.current.getListItem(offlineUser.uid);
+                    if (item) {
+                        let updatedConversation = CommonUtils.clone(item);
+                        updatedConversation.setStatus(offlineUser.status);
+                        groupRef.current.updateList(updatedConversation);
+                    }
                     /* when someuser/friend went offline, user will be received here */
-                    groupRef.current.updateUser(offlineUser);
                 },
             })
         );

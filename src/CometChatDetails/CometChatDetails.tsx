@@ -39,6 +39,7 @@ import { CometChatGroupsMembers } from '../CometChatGroupMembers';
 import { CometChatContextType } from '../shared/base/Types';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 import { CometChatTransferOwnershipInterface } from '../CometChatTransferOwnership/CometChatTransferOwnership';
+import { CommonUtils } from '../shared/utils/CommonUtils';
 
 export interface ModalDetailsInterface {
   title: string;
@@ -737,8 +738,9 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
 
   const handleUserStatus = (user) => {
     setUserDetails((prev) => {
-      prev.setStatus(user.getStatus())
-      return prev;
+      const clonedUserDetails = CommonUtils.clone(prev);
+      clonedUserDetails.setStatus(user.getStatus());
+      return clonedUserDetails;
     });
   };
 

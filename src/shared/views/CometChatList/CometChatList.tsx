@@ -279,8 +279,6 @@ export const CometChatList = React.forwardRef<
           }
           getList(listHandlerRef.current)
             .then((newlist: any) => {
-              console.log('new list -->> ',newlist);
-              
               setDecoratorMessage(NO_DATA_FOUND);
               setList(newlist);
             })
