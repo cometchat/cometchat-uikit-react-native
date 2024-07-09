@@ -8,7 +8,6 @@ export const Style = StyleSheet.create({
     infoIconStyle: {
         height: 24,
         width: 24,
-        tintColor: 'rgb(51,155,255)'
     },
     appBarStyle: {
         flexDirection: "row",

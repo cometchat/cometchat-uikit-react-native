@@ -372,7 +372,6 @@ export const CometChatConversations = (props: ConversationInterface) => {
             if (item) {
                 let updatedConversation = CommonUtils.clone(item);
                 updatedConversation.setConversationWith(args[0]);
-                console.log(JSON.stringify(updatedConversation));
                 conversationListRef.current.updateList(updatedConversation);
             }
         }
@@ -438,40 +437,40 @@ export const CometChatConversations = (props: ConversationInterface) => {
      * 
      *  @param newMessage message object
      */
-    const shouldUpdateLastMessageAndUnreadCount = (message : CometChat.BaseMessage) => {
+    const shouldUpdateLastMessageAndUnreadCount = (message: CometChat.BaseMessage) => {
 
         /****Start: Should Threaded Messages Update Conversation? */
-        if(message.getParentMessageId() && !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnMessageReplies()) {
+        if (message.getParentMessageId() && !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnMessageReplies()) {
             return false;
         }
-         /****END: Should Threaded Messages Update Conversation? */
+        /****END: Should Threaded Messages Update Conversation? */
 
         /****Start: Should Custom Message Update Conversation? */
-        if(message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.custom) {
+        if (message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.custom) {
             let customMessage = message as CometChat.CustomMessage;
-            if (!customMessage.willUpdateConversation() && 
-                !(customMessage.getMetadata() && (customMessage.getMetadata() as any)["incrementUnreadCount"]) && 
+            if (!customMessage.willUpdateConversation() &&
+                !(customMessage.getMetadata() && (customMessage.getMetadata() as any)["incrementUnreadCount"]) &&
                 !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCustomMessages()) {
-                    return false;
-                 } 
+                return false;
             }
+        }
         /****End: Should Custom Message Update Conversation? */
 
         /****Start: Should Group Actions sent update conversation? */
-        if(message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.action
-           && message.getReceiverType() == CometChatUiKitConstants.ReceiverTypeConstants.group
+        if (message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.action
+            && message.getReceiverType() == CometChatUiKitConstants.ReceiverTypeConstants.group
         ) {
-           return CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions();
+            return CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions();
         }
-        /****End: Should Group Actions sent update conversation? */        
+        /****End: Should Group Actions sent update conversation? */
 
         /****Start: Should Call Actions sent Update Conversation? */
-        if(message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.call
-        && !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()
-         ) {
-           return false;
+        if (message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.call
+            && !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()
+        ) {
+            return false;
         }
-        /****End: Should Call Actions sent Update Conversation */        
+        /****End: Should Call Actions sent Update Conversation */
 
         return true;
     }
@@ -537,6 +536,20 @@ export const CometChatConversations = (props: ConversationInterface) => {
         }
     }
 
+    const updateMessageReceipt = (receipt) => {
+        const conv: CometChat.Conversation = receipt?.receiverType === ReceiverTypeConstants.user && (conversationListRef.current.getListItem(`${receipt?.receiver}_user_${receipt?.sender?.uid}`) || conversationListRef.current.getListItem(`${receipt?.sender?.uid}_user_${receipt?.receiver}`));
+        if (conv && conv?.getLastMessage && (conv.getLastMessage().id == receipt['messageId'] || conv.getLastMessage().messageId == receipt['messageId'])) {
+            let newConversation = CommonUtils.clone(conv);
+            if (receipt['readAt']) {
+                newConversation.getLastMessage().setReadAt(receipt['readAt']);
+            }
+            if (receipt['deliveredAt']) {
+                newConversation.getLastMessage().setDeliveredAt(receipt['deliveredAt']);
+            }
+            conversationListRef.current.updateList(newConversation);
+        }
+    }
+
     /**
      *
      * When a text message / media message / custom message is received
@@ -551,31 +564,31 @@ export const CometChatConversations = (props: ConversationInterface) => {
      * callback handler for group Add / Kicked / Banned / Scope Change
      * @param {obj} message
      */
-    const groupHandler = (message, otherDetails: {action?: string, actionOn?: CometChat.User, actionBy?: CometChat.User, group?: CometChat.Group} = {}) => {
-        let conversation : CometChat.Conversation = (conversationListRef.current.getListItem(message['conversationId']) as unknown as CometChat.Conversation); 
-        let {action, actionOn, actionBy, group} = otherDetails;
-          if (conversation) {
-            if ((["kicked", "banned", "left"].includes(action)) && (actionOn.getUid() == loggedInUser.current.getUid())){
+    const groupHandler = (message, otherDetails: { action?: string, actionOn?: CometChat.User, actionBy?: CometChat.User, group?: CometChat.Group } = {}) => {
+        let conversation: CometChat.Conversation = (conversationListRef.current.getListItem(message['conversationId']) as unknown as CometChat.Conversation);
+        let { action, actionOn, actionBy, group } = otherDetails;
+        if (conversation) {
+            if ((["kicked", "banned", "left"].includes(action)) && (actionOn.getUid() == loggedInUser.current.getUid())) {
                 conversationListRef.current.removeItemFromList(message.conversationId);
                 return;
             } else {
-                if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions()) {
-                   return;
+                if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions()) {
+                    return;
                 }
                 conversation.setLastMessage(message);
                 conversationListRef.current.updateList(conversation);
             }
-          } else {
-              CometChat.CometChatHelper.getConversationFromMessage(message)
-                  .then(newConversation => {
-                 const conversation : CometChat.Conversation = (conversationListRef.current.getListItem(message['conversationId']) as unknown as CometChat.Conversation); 
-                      if (conversation) {
-                          groupHandler(message);
-                      } else {
-                          conversationListRef.current.addItemToList(newConversation, 0);
-                      }
-                  });
-          }
+        } else {
+            CometChat.CometChatHelper.getConversationFromMessage(message)
+                .then(newConversation => {
+                    const conversation: CometChat.Conversation = (conversationListRef.current.getListItem(message['conversationId']) as unknown as CometChat.Conversation);
+                    if (conversation) {
+                        groupHandler(message);
+                    } else {
+                        conversationListRef.current.addItemToList(newConversation, 0);
+                    }
+                });
+        }
     }
 
     const conversationClicked = (conversation) => {
@@ -814,7 +827,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
     const updateConversationLastMessage = (message) => {
-        if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions()) {
+        if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions()) {
             return;
         }
         try {
@@ -827,7 +840,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
     const updateUnreadMessageCount = (conversation: CometChat.Conversation) => {
-        const oldConversation: CometChat.Conversation = (conversationListRef.current.getListItem(conversation['conversationId'])  as unknown as CometChat.Conversation);
+        const oldConversation: CometChat.Conversation = (conversationListRef.current.getListItem(conversation['conversationId']) as unknown as CometChat.Conversation);
         if (oldConversation == undefined) {
             conversation.setUnreadMessageCount(1);
             return conversation;
@@ -861,7 +874,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 onIncomingCallReceived: (call) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -875,7 +888,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 onOutgoingCallAccepted: (call) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -889,7 +902,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 onOutgoingCallRejected: (call) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -903,7 +916,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 onIncomingCallCancelled: (call) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -925,35 +938,35 @@ export const CometChatConversations = (props: ConversationInterface) => {
                         message
                     );
                 },
-                onGroupMemberKicked: (             
+                onGroupMemberKicked: (
                     message: CometChat.Action,
                     kickedUser: CometChat.User,
                     kickedBy: CometChat.User,
                     kickedFrom: CometChat.Group) => {
                     groupHandler(
                         message,
-                        {action: 'kicked', actionOn: kickedUser, actionBy: kickedBy, group: kickedFrom}
+                        { action: 'kicked', actionOn: kickedUser, actionBy: kickedBy, group: kickedFrom }
                     );
                 },
                 onGroupMemberLeft: (message: CometChat.Action, leavingUser: CometChat.User, group: CometChat.Group) => {
-                    groupHandler(message, 
-                    {action: 'left', actionOn: leavingUser, group}
-                );
+                    groupHandler(message,
+                        { action: 'left', actionOn: leavingUser, group }
+                    );
                 },
                 onGroupMemberUnbanned: (message) => {
                     groupHandler(message);
                 },
-                onGroupMemberBanned: (                    
+                onGroupMemberBanned: (
                     message: CometChat.Action,
                     bannedUser: CometChat.User,
                     bannedBy: CometChat.User,
                     bannedFrom: CometChat.Group) => {
                     groupHandler(
                         message,
-                        {action: 'banned', actionOn: bannedUser, actionBy: bannedBy, group: bannedFrom}
+                        { action: 'banned', actionOn: bannedUser, actionBy: bannedBy, group: bannedFrom }
                     );
                 },
-                onMemberAddedToGroup: (              
+                onMemberAddedToGroup: (
                     message: CometChat.Action,
                     userAdded: CometChat.User,
                     userAddedBy: CometChat.User,
@@ -964,7 +977,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     onMemberAddedToGroupDebounceTimer.current = setTimeout(() => {
                         groupHandler(
                             message,
-                            {action: 'joined', actionOn: userAdded, actionBy: userAddedBy, group: userAddedIn}
+                            { action: 'joined', actionOn: userAdded, actionBy: userAddedBy, group: userAddedIn }
                         );
                     }, 50)
                 },
@@ -997,7 +1010,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
             {
                 ccMessageSent: ({ message, status }) => {
                     if (status == MessageStatusConstants.success) {
-                        if(!shouldUpdateLastMessageAndUnreadCount(message)) {
+                        if (!shouldUpdateLastMessageAndUnreadCount(message)) {
                             return;
                         }
                         updateLastMessage(message);
@@ -1013,21 +1026,21 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     checkAndUpdateLastMessage(message)
                 },
                 onTextMessageReceived: (textMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(textMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(textMessage)) {
                         return;
                     }
                     messageEventHandler(textMessage);
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onMediaMessageReceived: (mediaMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(mediaMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(mediaMessage)) {
                         return;
                     }
-                    messageEventHandler(mediaMessage);
-                    !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+                        messageEventHandler(mediaMessage);
+                        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onCustomMessageReceived: (customMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(customMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(customMessage)) {
                         return;
                     }
                     messageEventHandler(customMessage);
@@ -1040,10 +1053,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     checkAndUpdateLastMessage(editedMessage)
                 },
                 onMessagesRead: (messageReceipt) => {
-                    messageEventHandler(messageReceipt);
+                    updateMessageReceipt(messageReceipt);
                 },
                 onMessagesDelivered: (messageReceipt) => {
-                    messageEventHandler(messageReceipt);
+                    updateMessageReceipt(messageReceipt);
                 },
                 onTypingStarted: (typingIndicator) => {
                     typingEventHandler(typingIndicator, true);
@@ -1052,28 +1065,28 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     typingEventHandler(typingIndicator, false);
                 },
                 onFormMessageReceived: (formMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(formMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(formMessage)) {
                         return;
                     }
                     messageEventHandler(formMessage);
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onCardMessageReceived: (cardMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(cardMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(cardMessage)) {
                         return;
                     }
                     messageEventHandler(cardMessage);
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onSchedulerMessageReceived: (schedulerMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(schedulerMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(schedulerMessage)) {
                         return;
                     }
                     messageEventHandler(schedulerMessage);
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
-                    if(!shouldUpdateLastMessageAndUnreadCount(customInteractiveMessage)) {
+                    if (!shouldUpdateLastMessageAndUnreadCount(customInteractiveMessage)) {
                         return;
                     }
                     messageEventHandler(customInteractiveMessage);
@@ -1100,25 +1113,25 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     removeItemFromSelectionList(leftGroup['conversationId'])
                 },
                 ccGroupMemberKicked: ({ message, kickedFrom }: { message: CometChat.BaseMessage, kickedFrom: CometChat.Group }) => {
-                    if(!(shouldUpdateLastMessageAndUnreadCount(message))) {
+                    if (!(shouldUpdateLastMessageAndUnreadCount(message))) {
                         return;
                     }
                     updateConversationLastMessage(message)
                 },
                 ccGroupMemberBanned: ({ message }) => {
-                    if(!(shouldUpdateLastMessageAndUnreadCount(message))) {
+                    if (!(shouldUpdateLastMessageAndUnreadCount(message))) {
                         return;
                     }
                     groupHandler(message);
                 },
                 ccGroupMemberUnBanned: ({ message }) => {
-                    if(!(shouldUpdateLastMessageAndUnreadCount(message))) {
+                    if (!(shouldUpdateLastMessageAndUnreadCount(message))) {
                         return;
                     }
                     groupHandler(message)
                 },
                 ccOwnershipChanged: ({ message }) => {
-                    if(!(shouldUpdateLastMessageAndUnreadCount(message))) {
+                    if (!(shouldUpdateLastMessageAndUnreadCount(message))) {
                         return;
                     }
                     CometChat.CometChatHelper.getConversationFromMessage(message)
@@ -1151,7 +1164,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 ccOutgoingCall: ({ call }) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -1164,7 +1177,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 ccCallAccepted: ({ call }) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -1177,7 +1190,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 ccCallRejected: ({ call }) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -1190,7 +1203,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 ccCallEnded: ({ call }) => {
                     CometChat.CometChatHelper.getConversationFromMessage(call)
                         .then((conversation) => {
-                            if(!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
+                            if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {
                                 return;
                             }
                             conversation = updateUnreadMessageCount(conversation);
@@ -1266,7 +1279,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
             activeSwipeRows={activeSwipeRows.current}
             rowOpens={(id) => {
                 Object.keys(activeSwipeRows.current).forEach(key => {
-                    if(id !== key && activeSwipeRows.current[key]) {
+                    if (id !== key && activeSwipeRows.current[key]) {
                         activeSwipeRows.current[key]?.current?.closeRow?.()
                         delete activeSwipeRows.current[key]
                     }

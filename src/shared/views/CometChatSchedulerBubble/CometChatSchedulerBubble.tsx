@@ -286,8 +286,11 @@ export const CometChatSchedulerBubble = memo(
         timeZoneCode,
       };
       setAvailableRange({ initialDate, finalDate });
-
-      getQuickSelectSlots(new Date());
+      if(endDate >= new Date()){
+        getQuickSelectSlots(new Date());
+      } else {
+        getQuickSelectSlots(new Date(endDate), false);
+      }
     };
 
     const combineAvailability = (availability) => {
@@ -418,7 +421,7 @@ export const CometChatSchedulerBubble = memo(
       }
     };
 
-    const getQuickSelectSlots = async (date) => {
+    const getQuickSelectSlots = async (date, shouldViewNext = true) => {
       let day = DateTime.fromJSDate(date).toFormat("EEEE");
       date = DateTime.fromJSDate(date).toFormat(dateFormats.date);
 
@@ -445,7 +448,7 @@ export const CometChatSchedulerBubble = memo(
         range = [];
       }
 
-      if (range.length < 2) await getNextQuickSlots(date, newQuickObj);
+      if (range.length < 2 && shouldViewNext) await getNextQuickSlots(date, newQuickObj);
 
       let quickSlotsArray = [];
 

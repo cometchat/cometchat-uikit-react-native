@@ -18,6 +18,8 @@ export const Style = StyleSheet.create({
     },
     imageStyle: {
         tintColor: 'rgb(51, 153, 255)',
+        width: 25,
+        height: 25
     },
     downloadImage: {
         height: 24,

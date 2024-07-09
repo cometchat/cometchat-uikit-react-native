@@ -437,9 +437,19 @@ export const CometChatList = React.forwardRef<
   const handleSelection = (listItem: any) => {
     if (!shouldSelect || selectionMode === 'none') return;
     setShouldSelect(true);
-    setSelectedItems(() => {
-      return { [listItem.value.uid || listItem.value.guid]: true };
-    });
+    if (selectionMode === 'multiple')
+      setSelectedItems((prev: any) => {
+        let newState = { ...prev };
+        if (Object.keys(prev).includes(listItem.value[listItemKey])) {
+          delete newState[listItem.value[listItemKey]]
+          return newState;
+        } else {
+          newState[listItem.value[listItemKey]] = listItem.value;
+          return newState;
+        }
+      });
+    else if (selectionMode === 'single')
+      setSelectedItems({ [listItem.value[listItemKey]]: listItem.value });
   };
 
   const onSelectionHandler = () => {

@@ -189,6 +189,8 @@ export const CometChatMessageList = memo(forwardRef<
         const uiEventListenerShow = "uiEvent_show_" + new Date().getTime();
         const uiEventListenerHide = "uiEvent_hide_" + new Date().getTime();
         const connectionListenerId = 'connectionListener_' + new Date().getTime();
+        const messageEventListener = "messageEvent_" + new Date().getTime();
+        const groupEventListener = "groupEvent_" + new Date().getTime();
 
         useLayoutEffect(() => {
             if (user) {
@@ -437,10 +439,10 @@ export const CometChatMessageList = memo(forwardRef<
             messagesRequest.build()
                 .fetchNext()
                 .then(updatedMessages => {
-                    let tmpList = [...messagesList];
+                    let tmpList = [...messagesContentListRef.current];
                     for (let i = 0; i < updatedMessages.length; i++) {
                         let condition = (msg) => msg.getId() == updatedMessages[i]?.actionOn.getId()
-                        let msgIndex = messagesList.findIndex(condition);
+                        let msgIndex = messagesContentListRef.current.findIndex(condition);
                         if (msgIndex > -1) {
                             tmpList[msgIndex] = updatedMessages[i]?.actionOn;
                         }
@@ -461,19 +463,10 @@ export const CometChatMessageList = memo(forwardRef<
                 .fetchNext()
                 .then(newMessages => {
                     let cleanUpdatedList = [...updatedList];
-                    for (let i = (cleanUpdatedList.length - 1); i >= 0; i--) {
-                        if (cleanUpdatedList[i].id == lastID.current) break;
-                        if (cleanUpdatedList[i].id == undefined || Number.isNaN(parseInt(cleanUpdatedList[i].id)))
-                            cleanUpdatedList.splice(i, 1);
-                    }
-                    // console.log("newMessages", newMessages.length, JSON.stringify(newMessages))
-                    if (cleanUpdatedList?.length > 0 && cleanUpdatedList?.[cleanUpdatedList.length - 1]?.["muid"]) {
-                        let localFileExists = newMessages.findIndex(msg => msg?.["muid"] == cleanUpdatedList?.[cleanUpdatedList.length - 1]?.["muid"]);
-                        if (localFileExists > -1) {
-                            cleanUpdatedList.shift();
-                        }
-                    }
-                    let tmpList = [...cleanUpdatedList, ...newMessages];
+
+                    let finalOutput = CommonUtils.mergeArrays(cleanUpdatedList, newMessages, "muid");
+
+                    let tmpList = [...finalOutput];
                     tmpList = tmpList.map((item: CometChat.BaseMessage, index) => {
                         if (item.getCategory() === MessageCategoryConstants.interactive) {
                             return InteractiveMessageUtils.convertInteractiveMessage(item);
@@ -485,7 +478,7 @@ export const CometChatMessageList = memo(forwardRef<
                         const filteredInProgressMessages = inProgressMessages.current.filter(secondItem =>
                             !tmpList.some(firstItem => firstItem.muid === secondItem.muid)
                         );
-                        const combinedArray = tmpList.concat(filteredInProgressMessages);
+                        const combinedArray = CommonUtils.mergeArrays(tmpList, filteredInProgressMessages, "muid");
                         tmpList = combinedArray
                     }
                     messagesContentListRef.current = tmpList;
@@ -761,9 +754,9 @@ export const CometChatMessageList = memo(forwardRef<
             }
             else
                 condition = (msg) => msg.getId() == editedMessage.getId()
-            let msgIndex = messagesList.findIndex(condition);
+            let msgIndex = messagesContentListRef.current.findIndex(condition);
             if (msgIndex > -1) {
-                let tmpList = [...messagesList];
+                let tmpList = [...messagesContentListRef.current];
                 if (editedMessage.getCategory() === MessageCategoryConstants.interactive) {
                     editedMessage = InteractiveMessageUtils.convertInteractiveMessage(editedMessage);
                 }
@@ -798,29 +791,31 @@ export const CometChatMessageList = memo(forwardRef<
         const createActionMessage = () => { }
 
         const updateMessageReceipt = (receipt) => {
-            let index = messagesList.findIndex((msg, index) => msg['id'] == receipt['messageId'] || msg['messageId'] == receipt['messageId']);
-
+            let index = messagesContentListRef.current.findIndex((msg, index) => msg['id'] == receipt['messageId'] || msg['messageId'] == receipt['messageId']);
             if (index == -1) return;
 
-            let tmpList: Array<CometChat.BaseMessage> = [...messagesList];
+            let tmpList: Array<CometChat.BaseMessage> = [...messagesContentListRef.current];
 
             for (let i = index; i > 0; i--) {
 
                 if (tmpList[i]?.getReadAt && tmpList[i]?.getReadAt()) break;
 
                 let tmpMsg = tmpList[i];
-                if ((tmpMsg as CometChat.BaseMessage)?.getReceiverType() == ReceiverTypeConstants.group)
-                    return;
-                if (tmpMsg.getCategory() === MessageCategoryConstants.interactive) {
-                    tmpMsg = InteractiveMessageUtils.convertInteractiveMessage(tmpMsg);
-                }
-                if (receipt.getDeliveredAt) {
-                    tmpMsg.setDeliveredAt(receipt.getDeliveredAt());
-                }
-                if (receipt.getReadAt) {
-                    tmpMsg.setReadAt(receipt.getReadAt());
-                }
+                if (!Number.isNaN(Number(tmpMsg.getId()))) {
 
+                    if ((tmpMsg as CometChat.BaseMessage)?.getReceiverType() == ReceiverTypeConstants.group)
+                        return;
+                    if (tmpMsg.getCategory() === MessageCategoryConstants.interactive) {
+                        tmpMsg = InteractiveMessageUtils.convertInteractiveMessage(tmpMsg);
+                    }
+                    if (receipt.getDeliveredAt) {
+                        tmpMsg.setDeliveredAt(receipt.getDeliveredAt());
+                    }
+                    if (receipt.getReadAt) {
+                        tmpMsg.setReadAt(receipt.getReadAt());
+                    }
+
+                }
                 tmpList[i] = CommonUtils.clone(tmpMsg);
             }
 
@@ -863,12 +858,6 @@ export const CometChatMessageList = memo(forwardRef<
                     bottomSheetRef.current?.togglePanel()
                 },
             });
-            CometChatUIEventHandler.addCallListener(callEventListener, {
-                ccShowOngoingCall: (CometChatOngoingComponent) => {
-                    //show ongoing call
-                    setOngoingCallView(CometChatOngoingComponent?.child);
-                },
-            });
             CometChat.getLoggedinUser()
                 .then(u => {
                     loggedInUser.current = u;
@@ -888,7 +877,6 @@ export const CometChatMessageList = memo(forwardRef<
                 CometChatUIEventHandler.removeUIListener(uiEventListenerShow)
                 CometChatUIEventHandler.removeUIListener(uiEventListenerHide)
                 CometChatUIEventHandler.removeUIListener(uiEventListener);
-                CometChatUIEventHandler.removeCallListener(callEventListener);
                 onBack && onBack();
             }
         }, [])
@@ -932,7 +920,7 @@ export const CometChatMessageList = memo(forwardRef<
             );
 
             CometChatUIEventHandler.addMessageListener(
-                uiEventListener,
+                messageEventListener,
                 {
                     ccMessageSent: ({ message, status }) => {
                         if (status == MessageStatusConstants.inprogress) {
@@ -1011,7 +999,7 @@ export const CometChatMessageList = memo(forwardRef<
                 }
             )
             CometChatUIEventHandler.addGroupListener(
-                uiEventListener,
+                groupEventListener,
                 {
                     ccGroupMemberUnBanned: ({ message }) => {
                         newMessage(message, false)
@@ -1058,7 +1046,7 @@ export const CometChatMessageList = memo(forwardRef<
             );
 
             CometChatUIEventHandler.addCallListener(
-                uiEventListener,
+                callEventListener,
                 {
                     ccCallInitiated: ({ call }) => {
                         if (call['type'] == CallTypeConstants.audio || call['type'] == CallTypeConstants.video) {
@@ -1084,21 +1072,22 @@ export const CometChatMessageList = memo(forwardRef<
                         if (call['type'] == CallTypeConstants.audio || call['type'] == CallTypeConstants.video) {
                             newMessage(call);
                         }
-                    }
+                    },
+                    ccShowOngoingCall: (CometChatOngoingComponent) => {
+                        //show ongoing call
+                        setOngoingCallView(CometChatOngoingComponent?.child);
+                    },
                 }
             )
             CometChat.addConnectionListener(
                 connectionListenerId,
                 new CometChat.ConnectionListener({
                     onConnected: () => {
-                        console.log("ConnectionListener => On Connected - Message List", messagesList.length);
                         getUpdatedPreviousMessages();
                     },
                     inConnecting: () => {
-                        console.log("ConnectionListener => In connecting");
                     },
                     onDisconnected: () => {
-                        console.log("ConnectionListener => On Disconnected");
                         if (!messagesList[messagesList.length - 1].id) {
                             for (let i = (messagesList.length - 1); i >= 0; i--) {
                                 if (messagesList[i].id) {
@@ -1115,9 +1104,9 @@ export const CometChatMessageList = memo(forwardRef<
 
             return () => {
                 // clean up code like removing listeners
-                CometChatUIEventHandler.removeMessageListener(uiEventListener);
-                CometChatUIEventHandler.removeGroupListener(uiEventListener);
-                CometChatUIEventHandler.removeCallListener(uiEventListener);
+                CometChatUIEventHandler.removeMessageListener(messageEventListener);
+                CometChatUIEventHandler.removeGroupListener(groupEventListener);
+                CometChatUIEventHandler.removeCallListener(callEventListener);
 
                 CometChat.removeGroupListener(groupListenerId);
                 CometChat.removeCallListener(callListenerId);
@@ -1263,15 +1252,17 @@ export const CometChatMessageList = memo(forwardRef<
             )
         }, [])
 
-        const getStatusInfoView = useCallback((item: CometChat.TextMessage | CometChat.MediaMessage | CometChat.CustomMessage | CometChat.InteractiveMessage | CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
+        const getStatusInfoView = useCallback((item: CometChat.TextMessage | CometChat.MediaMessage | CometChat.CustomMessage | CometChat.InteractiveMessage | CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType, currentIndex?: number): JSX.Element => {
             // return null if time alignment is top
             if (timeStampAlignment == "top" || item['category'] == "action" || item['deletedAt']) return null
 
             let isSender = (item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current['uid'];
             let messageState;
-            if (item.getReadAt())
+            const nextItemIsRead = messagesContentListRef.current[currentIndex + 1] && messagesContentListRef.current[currentIndex + 1].getReadAt();
+            const nextItemIsDelivered = messagesContentListRef.current[currentIndex + 1] && messagesContentListRef.current[currentIndex + 1].getDeliveredAt();
+            if (item.getReadAt() || nextItemIsRead)
                 messageState = "READ";
-            else if (item.getDeliveredAt())
+            else if (item.getDeliveredAt() || nextItemIsDelivered)
                 messageState = "DELIVERED";
             else if (item.getSentAt())
                 messageState = "SENT";
@@ -1384,8 +1375,6 @@ export const CometChatMessageList = memo(forwardRef<
 
             let style = [{
                 color: theme?.palette.getAccent900(),
-                marginRight: alignment === "right" ? 3 : 0,
-                marginLeft: alignment === "left" ? 3 : 0
             }, theme?.typography?.subtitle1];
 
             // let unreadReplyCount = item?.getUnreadReplyCount && item?.getUnreadReplyCount();
@@ -1401,7 +1390,7 @@ export const CometChatMessageList = memo(forwardRef<
                         alignSelf: alignment === "right" ? "flex-end" : "flex-start",
                     }}
                 >
-                    {alignment === "left" && <Image style={{ resizeMode: "contain", tintColor: theme?.palette.getAccent600() }} source={LeftArrowCurve} />}
+                    {alignment === "left" && <Image style={{ resizeMode: "contain", tintColor: theme?.palette.getAccent600(), width: 30, height: 18 }} source={LeftArrowCurve} />}
                     <Text style={style}>{`${item.getReplyCount()} ${item.getReplyCount() > 1 ? localize("REPLIES") : localize("REPLY")}`}</Text>
 
                     {/**  NOTE: uncomment below code when want unread count in thread view  **/}
@@ -1432,7 +1421,7 @@ export const CometChatMessageList = memo(forwardRef<
                     } */}
                     {/**  NOTE: uncomment above code when want unread count in thread view  **/}
 
-                    {alignment === "right" && <Image style={[{ resizeMode: "contain", tintColor: theme?.palette.getAccent600() },
+                    {alignment === "right" && <Image style={[{ resizeMode: "contain", tintColor: theme?.palette.getAccent600(), width: 30, height: 18 },
                     {
                         transform: [{ scaleX: -1 }]
                     }
@@ -1623,8 +1612,8 @@ export const CometChatMessageList = memo(forwardRef<
             setShowMessageOptions(optionsWithPressHandling);
         }, [])
 
-        const MessageView = useCallback((params: { message: CometChat.BaseMessage, showOptions?: boolean, isThreaded?: boolean }) => {
-            const { message, showOptions = true, isThreaded = false } = params;
+        const MessageView = useCallback((params: { message: CometChat.BaseMessage, showOptions?: boolean, isThreaded?: boolean, currentIndex?: number }) => {
+            const { message, showOptions = true, isThreaded = false, currentIndex } = params;
             let hasTemplate = templatesMap.get(`${message.getCategory()}_${message.getType()}`)
             if (templates?.length > 0) {
                 let customTemplate = templates.find(template => template.type == message.getType() && template.category == message.getCategory())
@@ -1653,7 +1642,7 @@ export const CometChatMessageList = memo(forwardRef<
                         ContentView={hasTemplate.ContentView?.bind(this, message, bubbleAlignment)}
                         ThreadView={() => !isThreaded && !message.getDeletedBy() && getThreadView(message, bubbleAlignment)}
                         BottomView={hasTemplate.BottomView && hasTemplate.BottomView?.bind(this, message, bubbleAlignment)}
-                        StatusInfoView={hasTemplate.StatusInfoView ? hasTemplate.StatusInfoView?.bind(this, message, bubbleAlignment) : () => getStatusInfoView(message, bubbleAlignment)}
+                        StatusInfoView={hasTemplate.StatusInfoView ? hasTemplate.StatusInfoView?.bind(this, message, bubbleAlignment) : () => getStatusInfoView(message, bubbleAlignment, currentIndex)}
                         style={getStyle(message)}
                     />
                 </TouchableOpacity>
@@ -1663,10 +1652,7 @@ export const CometChatMessageList = memo(forwardRef<
         }, []);
 
         const getSentAtTimestamp = useCallback((item) => {
-            if (!item['sentAt']) {
-                return item['_composedAt'];
-            }
-            return item['sentAt'] * 1000;
+            return Date.now();
         }, [])
 
 
@@ -1772,7 +1758,7 @@ export const CometChatMessageList = memo(forwardRef<
 
             return <React.Fragment key={index}>
                 {seperatorView}
-                <MessageView message={item} />
+                <MessageView message={item} currentIndex={index} />
             </React.Fragment>
         }), []);
 

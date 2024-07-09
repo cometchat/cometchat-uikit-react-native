@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useLayoutEffect } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   View,
   Image,
@@ -662,7 +662,7 @@ export const CometChatMessageComposer = React.forwardRef(
       ...aiOptionsStyle,
     })
 
-    let isTyping = null;
+    const isTyping = useRef<NodeJS.Timeout | null>(null);
 
     /**
      * Event callback
@@ -877,7 +877,6 @@ export const CometChatMessageComposer = React.forwardRef(
       textMessage.setReceiver(chatWith.current);
       textMessage.setText(finalTextInput);
       textMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-      textMessage.setSentAt(getUnixTimestamp());
       parentMessageId && textMessage.setParentMessageId(parentMessageId as number);
 
       allFormatters.current.forEach(item => {
@@ -887,21 +886,24 @@ export const CometChatMessageComposer = React.forwardRef(
       setMentionsSearchData([]);
       plainTextInput.current = ""
 
+      if (finalTextInput.trim().length == 0) {
+        return;
+      }
+
+      clearInputBox();
+
       if (onSendButtonPress) {
         onSendButtonPress(textMessage);
         return;
       }
 
-      if (finalTextInput.trim().length == 0) {
-        return;
-      }
       CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
         message: textMessage,
         status: messageStatus.inprogress,
       });
 
       if (!disableSoundForMessages) playAudio();
-      clearInputBox();
+
       CometChat.sendMessage(textMessage)
         .then((message: any) => {
           CometChatUIEventHandler.emitMessageEvent(
@@ -945,9 +947,14 @@ export const CometChatMessageComposer = React.forwardRef(
       setInputMessage('');
       messageInputRef.current.textContent = '';
 
-      if (!disableSoundForMessages) playAudio();
-
       setMessagePreview(null);
+
+      if (onSendButtonPress) {
+        onSendButtonPress(textMessage);
+        return;
+      }
+
+      if (!disableSoundForMessages) playAudio();
 
       CometChat.editMessage(textMessage)
         .then((editedMessage: any) => {
@@ -984,11 +991,7 @@ export const CometChatMessageComposer = React.forwardRef(
       mediaMessage.setSender(loggedInUser.current);
       mediaMessage.setReceiver(receiverType);
       mediaMessage.setType(messageType);
-      mediaMessage['_composedAt'] = Date.now();
-      mediaMessage['_id'] = '_' + Math.random().toString(36).substr(2, 9);
-      mediaMessage.setId(mediaMessage['_id']);
       mediaMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-      mediaMessage.setSentAt(getUnixTimestamp());
       mediaMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -1009,11 +1012,7 @@ export const CometChatMessageComposer = React.forwardRef(
       localMessage.setSender(loggedInUser.current);
       localMessage.setReceiver(receiverType);
       localMessage.setType(messageType);
-      localMessage['_composedAt'] = Date.now();
-      localMessage['_id'] = '_' + Math.random().toString(36).substr(2, 9);
-      localMessage.setId(localMessage['_id']);
       localMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-      localMessage.setSentAt(getUnixTimestamp());
       localMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -1041,7 +1040,6 @@ export const CometChatMessageComposer = React.forwardRef(
       if (!disableSoundForMessages) playAudio();
       CometChat.sendMediaMessage(mediaMessage)
         .then((message: any) => {
-          setTimeout(() => {
             CometChatUIEventHandler.emitMessageEvent(
               MessageEvents.ccMessageSent,
               {
@@ -1050,7 +1048,6 @@ export const CometChatMessageComposer = React.forwardRef(
               }
             );
             setShowRecordAudio(false);
-          }, 1000);
         })
         .catch((error: any) => {
           setShowRecordAudio(false);
@@ -1073,22 +1070,25 @@ export const CometChatMessageComposer = React.forwardRef(
         return false;
       }
 
-      //if typing is in progress
-      if (isTyping) {
-        return false;
+
+      //if typing is in progress, clear the previous timeout and set new timeout
+      if (isTyping.current) {
+        clearTimeout(isTyping.current);
+        isTyping.current = null;
+      } else {
+        let metadata = typingMetadata || undefined;
+  
+        let typingNotification = new CometChat.TypingIndicator(
+          chatWithId.current,
+          chatWith.current,
+          metadata
+        );
+        CometChat.startTyping(typingNotification);
       }
 
-      let typingInterval = endTypingTimeout || 5000;
-      let metadata = typingMetadata || undefined;
 
-      let typingNotification = new CometChat.TypingIndicator(
-        chatWithId.current,
-        chatWith.current,
-        metadata
-      );
-      CometChat.startTyping(typingNotification);
-
-      isTyping = setTimeout(() => {
+      let typingInterval = endTypingTimeout || 500;
+      isTyping.current = setTimeout(() => {
         endTyping(null, typingMetadata);
       }, typingInterval);
       return false;
@@ -1112,23 +1112,10 @@ export const CometChatMessageComposer = React.forwardRef(
       );
       CometChat.endTyping(typingNotification);
 
-      clearTimeout(isTyping);
-      isTyping = null;
+      clearTimeout(isTyping.current!);
+      isTyping.current = null;
       return false;
     };
-
-    // const getActionSheetStyle = () => {
-    //   return new ActionSheetStyles({
-    //     layoutModeIconTint:
-    //       messageComposerStyle.actionSheetLayoutModeIconTint ??
-    //       theme.palette.getPrimary(),
-    //     titleFont:
-    //       messageComposerStyle.actionSheetTitleFont ?? theme.typography.text1,
-    //     titleColor:
-    //       messageComposerStyle.actionSheetTitleColor ??
-    //       theme.palette.getAccent800(),
-    //   });
-    // };
 
     const GetEmojiIconView = () => {
       return (

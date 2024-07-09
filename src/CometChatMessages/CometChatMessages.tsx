@@ -178,7 +178,6 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                         CometChat.getUser(user?.uid)
                             .then(user => {
                                 setUserObject(user);
-                                console.log("onConnected getUser", { user });
                             })
                             .catch(e => {
                                 console.log("ERROR")
@@ -235,7 +234,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                             detailsData.current = { user: params.user, group: params.group }
                             setShowComponent(ComponentNames.Details);
                         }}>
-                            <Image source={infoIcon} style={Style.infoIconStyle} />
+                            <Image source={infoIcon} style={[Style.infoIconStyle, {tintColor: theme.palette.getPrimary()}]} />
                         </TouchableOpacity>
                     )
                 }

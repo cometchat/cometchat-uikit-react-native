@@ -12,8 +12,8 @@ export interface CallLogsConfigurationInterface {
     AppBarOptions?: () => JSX.Element,
     options?: (param: { message: CometChat.BaseMessage }) => CometChatOptions[],
     callRequestBuilder?: any,
-    datePattern: DatePattern,
-    dateSeparatorPattern: DatePattern,
+    datePattern?: DatePattern,
+    dateSeparatorPattern?: DatePattern,
     hideSeperator?: boolean,
     BackButton?: JSX.Element,
     showBackButton?: boolean,
@@ -48,8 +48,8 @@ export class CallLogsConfiguration implements CallLogsConfigurationInterface {
     AppBarOptions?: () => JSX.Element
     options?: (param: { message: CometChat.BaseMessage }) => CometChatOptions[]
     callRequestBuilder?: any
-    datePattern: DatePattern
-    dateSeparatorPattern: DatePattern
+    datePattern?: DatePattern
+    dateSeparatorPattern?: DatePattern
     hideSeperator?: boolean
     BackButton?: JSX.Element
     showBackButton?: boolean
