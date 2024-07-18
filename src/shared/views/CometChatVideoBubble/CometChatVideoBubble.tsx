@@ -75,6 +75,11 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isVideoPlayerVisible, setIsVideoPlayerVisible] = useState(false);
 
+    const callCount = useRef(0);
+    const timerId = useRef(null);
+    const threshold = 10; 
+    const timeframe = 1000; 
+
     const _style = new VideoBubbleStyle({
         backgroundColor: theme?.palette.getBackgroundColor(),
         playIconTint: theme?.palette.getSecondary(),
@@ -141,12 +146,27 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         }
     };
 
+  
     const onTouchMove = () => {
-        if (Platform.OS === "ios") {
-            pressTime.current = null;
+        if (Platform.OS === 'ios') {
+            callCount.current += 1;
+    
+            if (callCount.current >= threshold) {
+                callCount.current = 0; // Reset the count after reaching the threshold
+                pressTime.current = null;
+            }
+    
+            if (timerId.current) {
+              clearTimeout(timerId.current);
+            }
+            
+            timerId.current = setTimeout(() => {
+                callCount.current = 0;
+            }, timeframe);
         }
-    }
+    };
 
+  
     function getImage(imageUrl: ImageType) {
         if (typeof imageUrl === "object" && imageUrl.uri) {
             return { uri: imageUrl.uri };

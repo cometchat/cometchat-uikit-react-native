@@ -1,10 +1,10 @@
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { FlatList, Image, StyleProp, Text, TouchableOpacity, View, ViewStyle } from 'react-native'
+import { ActivityIndicator, FlatList, Image, StyleProp, Text, TouchableOpacity, View, ViewStyle } from 'react-native'
 import { DatePattern, ImageType } from '../../shared/base/Types'
 import { CometChatContext, CometChatDate, CometChatListItem, CometChatOptions, ListItemStyleInterface, localize } from '../../shared'
 import { CallLogHistoryStyle, CallLogHistoryStyleInterface } from './CallLogHistoryStyle'
-import { LoadingIcon, BackIcon } from "./resources";
+import { BackIcon } from "./resources";
 import { Style } from './style'
 import { CallingPackage } from '../CallingPackage'
 import { CallUtils } from '../CallUtils'
@@ -30,6 +30,9 @@ export interface CometChatCallLogHistoryInterface {
   emptyStateText?: string,
   ErrorStateView?: () => JSX.Element,
   errorStateText?: string,
+  /**
+   * @deprecated
+   */
   loadingIcon?: ImageType,
   LoadingStateView?: () => JSX.Element,
   hideError?: boolean,
@@ -63,7 +66,6 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
     emptyStateText,
     ErrorStateView,
     errorStateText,
-    loadingIcon,
     LoadingStateView,
     hideError,
     onItemPress,
@@ -302,7 +304,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
     if (LoadingStateView)
       return <LoadingStateView />
     return <View style={[Style.container]}>
-      <Image source={loadingIcon || LoadingIcon} style={[Style.imageStyle, { tintColor: loadingTint }]} />
+      <ActivityIndicator size={"large"} color={loadingTint} />
     </View>
   }
 

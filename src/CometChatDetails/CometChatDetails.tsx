@@ -5,6 +5,8 @@ import {
   Image,
   FlatList,
   BackHandler,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import Header from './Header';
@@ -13,10 +15,10 @@ import { ICONS } from './resources';
 import { localize, ImageType } from '../shared';
 import {
   UserStatusConstants,
-  GroupMemberOptionConstants,
   ComponentIds,
   PASSWORD_GROUP_COLOR,
   PRIVATE_GROUP_COLOR,
+  GroupOptionConstants,
 } from '../shared/constants/UIKitConstants';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
@@ -375,7 +377,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     (data && data({ user, group })) ?? []
   );
   const [loggedInUser, setLoggedInUser] = useState<CometChat.User>();
-  const [currentScreen, setCurrentScreen] = useState(null);
+  const [currentScreen, setCurrentScreen] = useState<string | null>(null);
   const [modalDetails, setModalDetails] = useState<ModalDetailsInterface>();
 
   const handleViewMembers = () => {
@@ -529,17 +531,15 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
   };
   const handleOnClickFncDeclaration = (item?: any) => {
     switch (item.id) {
-      case GroupMemberOptionConstants.view:
+      case GroupOptionConstants.viewMembers:
         return handleViewMembers;
-      case GroupMemberOptionConstants.addMembers:
+      case GroupOptionConstants.addMembers:
         return handleAddMembers;
-      case GroupMemberOptionConstants.ban:
+      case GroupOptionConstants.bannedMembers:
         return handleBannedMembers;
-      case GroupMemberOptionConstants.unban:
-        return handleBannedMembers;
-      case GroupMemberOptionConstants.leave:
+      case GroupOptionConstants.leave:
         return handleLeaveGroup;
-      case GroupMemberOptionConstants.deleteGroup:
+      case GroupOptionConstants.delete:
         return handleDeleteGroup;
       case UserStatusConstants.blocked:
         return () => handleUserBlockUnblock(true);
@@ -707,13 +707,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
 
   const getDefaultTemplate = (loggedUser, user?: any) => {
     if (userDetails || groupDetails) {
-      const template = getDefaultDetailsTemplate({
-        loggedInUser: loggedUser,
-        user: user ?? userDetails,
-        group: groupDetails,
-        theme,
-      });
-
+      const template = getDefaultDetailsTemplate(loggedUser, user ?? userDetails, groupDetails, theme);
       setDetailsList(template.filter((item) => item));
     }
   };
@@ -859,7 +853,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
           backgroundColor:
             detailsStyle?.backgroundColor ?? theme.palette.getBackgroundColor(),
           borderRadius: detailsStyle?.borderRadius ?? 0,
-        },
+        } as StyleProp<ViewStyle>,
         detailsStyle?.border ? detailsStyle?.border : {},
       ]}
     >
@@ -931,11 +925,11 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
                       : '',
                 borderRadius: 15,
                 ...(statusIndicatorStyle ? statusIndicatorStyle : {}),
-              }
+              } as StyleProp<ViewStyle>
               : {
                 end: 10,
                 ...(statusIndicatorStyle ? statusIndicatorStyle : {}),
-              }
+              } as StyleProp<ViewStyle>
           }
           avatarStyle={
             avatarStyle ? avatarStyle : { border: { borderWidth: 0 } }

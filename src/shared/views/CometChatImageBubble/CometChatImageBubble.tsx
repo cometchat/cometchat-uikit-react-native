@@ -56,6 +56,11 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
     const [isVisible, setIsVisible] = useState(false);
     const url = useRef("");
 
+    const callCount = useRef(0);
+    const timerId = useRef(null);
+    const threshold = 10; 
+    const timeframe = 1000; 
+
     const {
         backgroundColor,
         border,
@@ -117,10 +122,23 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
     };
 
     const onTouchMove = () => {
-        if (Platform.OS === "ios") {
-            pressTime.current = null;
+        if (Platform.OS === 'ios') {
+            callCount.current += 1;
+    
+            if (callCount.current >= threshold) {
+                callCount.current = 0; // Reset the count after reaching the threshold
+                pressTime.current = null;
+            }
+    
+            if (timerId.current) {
+              clearTimeout(timerId.current);
+            }
+            
+            timerId.current = setTimeout(() => {
+                callCount.current = 0;
+            }, timeframe);
         }
-    }
+    };
 
     useLayoutEffect(() => {
         if(isHttpUrl(thumbnailUrl?.uri ?? imageUrl?.uri)) {

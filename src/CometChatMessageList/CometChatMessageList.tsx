@@ -1236,7 +1236,7 @@ export const CometChatMessageList = memo(forwardRef<
                     {Boolean(senderName) && <Text style={[Style.nameStyle, {
                         color: _messageListStyle.nameTextColor,
                         ..._messageListStyle.nameTextFont,
-                    }]}>{senderName}</Text>}
+                    }]} numberOfLines={1} ellipsizeMode={"tail"}>{senderName}</Text>}
                     {
                         timeStampAlignment == "bottom" || item['category'] == "action" ?
                             null :

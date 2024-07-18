@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, ScrollView } from 'react-native'
+import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, ScrollView, ActivityIndicator } from 'react-native'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { AvatarStyleInterface, ChatConfigurator, CometChatContext, CometChatDate, CometChatListItem, CometChatMessageTemplate, CometChatUIEventHandler, ImageType, ListItemStyleInterface, StatusIndicatorStyleInterface, localize } from '../shared'
 import { MessageInformationStyleInterface } from './MessageInformationStyle'
 import { MessageUtils } from '../shared/utils/MessageUtils'
 import { Style } from "./styles";
 import { ICONS } from "../shared/assets/images";
-import { LoadingIcon } from './resources'
 
 const listenerId = "uiEvents_" + new Date().getTime();
 
@@ -38,6 +37,9 @@ export interface CometChatMessageInformationInterface {
     emptyStateText?: string,
     ErrorStateView?: () => JSX.Element,
     errorStateText?: string,
+    /**
+     * @deprecated
+     */
     loadingIcon?: ImageType,
     LoadingStateView?: () => JSX.Element,
 }
@@ -66,7 +68,6 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         emptyStateText,
         ErrorStateView,
         errorStateText,
-        loadingIcon,
         LoadingStateView,
     } = props;
 
@@ -216,7 +217,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         if (LoadingStateView)
             return <LoadingStateView />
         return <View style={[Style.viewContainer]}>
-            <Image source={loadingIcon || LoadingIcon} style={[Style.imageStyle, { tintColor: "black" }]} />
+            <ActivityIndicator size={"large"} color={theme.palette.getPrimary()} />
         </View>
     }
 

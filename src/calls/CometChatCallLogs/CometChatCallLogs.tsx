@@ -1,11 +1,11 @@
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { FlatList, Image, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native'
 import { StyleProp, ViewStyle } from "react-native/types";
 import { AvatarStyleInterface, CometChatContext, CometChatDate, CometChatListItem, CometChatOptions, DatePattern, ImageType, ListItemStyleInterface, localize } from '../../shared'
 import { CallLogsStyle, CallLogsStyleInterface } from './CallLogsStyle'
 import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler'
-import { LoadingIcon, DetailIcon, BackIcon, IncomingCallIcon, IncomingVideoIcon, MissedCallIcon, MissedVideoIcon, OutgoingCallIcon, OutgoingVideoIcon } from "./resources";
+import { DetailIcon, BackIcon, IncomingCallIcon, IncomingVideoIcon, MissedCallIcon, MissedVideoIcon, OutgoingCallIcon, OutgoingVideoIcon } from "./resources";
 import { CallTypeConstants } from '../../shared/constants/UIKitConstants'
 import { Style } from './style'
 import { CallingPackage } from '../CallingPackage'
@@ -33,6 +33,9 @@ export interface CometChatCallLogsConfigurationInterface {
   emptyStateText?: string,
   ErrorStateView?: () => JSX.Element,
   errorStateText?: string,
+  /**
+   * @deprecated
+   */
   loadingIcon?: ImageType,
   LoadingStateView?: () => JSX.Element,
   hideError?: boolean,
@@ -75,7 +78,6 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     emptyStateText,
     ErrorStateView,
     errorStateText,
-    loadingIcon,
     LoadingStateView,
     hideError,
     onItemPress,
@@ -108,7 +110,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     emptyTextFont: theme?.typography?.subtitle1,
     errorTextColor: theme?.palette?.getError(),
     errorTextFont: theme?.typography?.subtitle1,
-    loadingTint: theme?.palette.getAccent700(),
+    loadingTint: theme?.palette.getPrimary(),
     infoIconTint: theme.palette.getPrimary(),
     subtitleTextColor: theme.palette.getAccent(),
     subtitleTextFont: theme.typography.text2,
@@ -429,7 +431,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     if (LoadingStateView)
       return <LoadingStateView />
     return <View style={[Style.container]}>
-      <Image source={loadingIcon || LoadingIcon} style={[Style.imageStyle, { tintColor: loadingTint }]} />
+      <ActivityIndicator size={"large"} color={loadingTint} />
     </View>
   }
 

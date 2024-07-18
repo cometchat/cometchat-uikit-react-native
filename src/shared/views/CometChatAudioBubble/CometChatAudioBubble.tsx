@@ -53,6 +53,11 @@ export const CometChatAudioBubble = ({
 
     const { theme } = useContext<CometChatContextType>(CometChatContext);
 
+    const callCount = useRef(0);
+    const timerId = useRef(null);
+    const threshold = 10; 
+    const timeframe = 1000; 
+
     const _style = new AudioBubbleStyle({
         backgroundColor: theme?.palette.getBackgroundColor(),
         iconTint: theme?.palette.getPrimary(),
@@ -145,11 +150,26 @@ export const CometChatAudioBubble = ({
         }
     };
 
+    
     const onTouchMove = () => {
-        if (Platform.OS === "ios") {
-            pressTime.current = null
+        if (Platform.OS === 'ios') {
+            callCount.current += 1;
+    
+            if (callCount.current >= threshold) {
+                callCount.current = 0; // Reset the count after reaching the threshold
+                pressTime.current = null;
+            }
+    
+            if (timerId.current) {
+              clearTimeout(timerId.current);
+            }
+            
+            timerId.current = setTimeout(() => {
+                callCount.current = 0;
+            }, timeframe);
         }
-    }
+    };
+
 
     return (
         <View style={[Style.container, { backgroundColor, ...border, borderRadius, height, width }]}>

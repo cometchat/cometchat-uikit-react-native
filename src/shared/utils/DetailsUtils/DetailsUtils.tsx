@@ -4,6 +4,7 @@ import {
   UserStatusConstants,
   GroupMemberOptionBan,
   GroupMemberOptionKick,
+  GroupOptionConstants,
 } from '../../constants/UIKitConstants';
 
 import { CometChatDetailsOption, CometChatOptions, CometChatDetailsTemplate } from '../../modals';
@@ -11,110 +12,123 @@ import { localize } from '../../resources/CometChatLocalize';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { ICONS } from "./resources";
 import { CometChatTheme } from '../../resources/CometChatTheme';
-export const getDefaultDetailsTemplate = ({ loggedInUser, user, group, theme }) => {
-  if (user) return [getSecondaryDetailsTemplate({ loggedInUser, user, group, theme })];
-  return [
-    getPrimaryDetailsTemplate({ loggedInUser, user, group, theme }),
-    getSecondaryDetailsTemplate({ loggedInUser, user, group, theme }),
-  ];
+
+export const getDefaultDetailsTemplate = (loggedInUser: CometChat.User, user: CometChat.User | null = null, group: CometChat.Group | null = null, theme: CometChatTheme = new CometChatTheme({})) : Array<CometChatDetailsTemplate> => {
+  if (user){
+    return [getSecondaryDetailsTemplate(loggedInUser, user, group, theme) ?? {} as CometChatDetailsTemplate];
+  } else if (group){
+    return [
+      getPrimaryDetailsTemplate(loggedInUser, user, group, theme) ?? {} as CometChatDetailsTemplate,
+      getSecondaryDetailsTemplate(loggedInUser, user, group, theme) ?? {} as CometChatDetailsTemplate,
+    ];
+  } else {
+    return [];
+  }
 };
 
-const validateDetailOptions = ({ loggedInUser, group, optionId }) => {
-  if (optionId === GroupMemberOptionConstants.view) return true;
-  let isValid = validateGroupMemberOptions(
-    loggedInUser.uid === group.owner
-      ? GroupMemberScope.owner
-      : group.scope,
-    group.scope,
-    optionId
-  );
-  return isValid;
-};
-
-const getBlockUnblockUserOption = ({ user, theme }) => {
-  if (user.blockedByMe)
-    return getCometChatDetailsOption({
+const getBlockUnblockUserOption = (user: CometChat.User, theme: CometChatTheme = new CometChatTheme({})) => {
+  if (user.getBlockedByMe()){
+    return {
       id: UserStatusConstants.blocked,
       title: localize('UNBLOCK_USER'),
       Tail: () => null,
       titleStyle: { color: theme?.palette?.getError() ?? 'red' },
-    });
-  return getCometChatDetailsOption({
-    id: UserStatusConstants.unblocked,
-    title: localize('BLOCK_USER'),
-    Tail: () => null,
-    titleStyle: { color: theme?.palette?.getError() ?? 'red' },
-  });
+    } as unknown as CometChatDetailsOption;
+  } else {
+    return {
+      id: UserStatusConstants.unblocked,
+      title: localize('BLOCK_USER'),
+      Tail: () => null,
+      titleStyle: { color: theme?.palette?.getError() ?? 'red' },
+    } as unknown as CometChatDetailsOption;
+  }
 };
 
-const getPrimaryDetailsTemplate = ({ loggedInUser, user, group, theme }) => {
-  if (user) return null;
-  return getCometChatDetailsTemplate({
-    id: 'primary',
-    options: [
-      getViewMembersOption(),
-      getAddMembersOption(),
-      getBannedMemberOption(),
-    ].filter((item) =>
-      validateDetailOptions({ loggedInUser, group, optionId: item.id })
-    ),
-  });
+const getPrimaryDetailsTemplate = (loggedInUser: CometChat.User, user: CometChat.User | null = null, group: CometChat.Group | null = null, theme: CometChatTheme = new CometChatTheme({})): CometChatDetailsTemplate | null => {
+  if (user) {
+    return null;
+  } else if(group){
+    return {
+      id: 'primary',
+      options: [
+        getViewMembersOption(),
+        getAddMembersOption(),
+        getBannedMemberOption(),
+      ].filter((template: CometChatDetailsOption) => {
+        let scope = group?.getScope() ? group?.getScope() : GroupMemberScope.participant;
+        let key = group.getOwner() == loggedInUser?.getUid() ? GroupMemberScope.owner : scope;
+        return template && _allowedGroupDetailsOptions[key][template?.id as string]
+      }),
+    } as CometChatDetailsTemplate;
+  } else {
+    return null;
+  }
 };
-const getSecondaryDetailsTemplate = ({ loggedInUser, user, group, theme }) => {
-  if (user)
-    return getCometChatDetailsTemplate({
+
+const getSecondaryDetailsTemplate = (loggedInUser: CometChat.User, user: CometChat.User | null = null, group: CometChat.Group | null = null, theme: CometChatTheme = new CometChatTheme({})): CometChatDetailsTemplate | null => {
+  if (user){
+    return {
       id: 'userDetails',
-      options: [getBlockUnblockUserOption({ user, theme })],
-    });
-  return getCometChatDetailsTemplate({
-    id: 'secondary',
-    options: [
-      getLeaveGroupOption({ theme }),
-      getDeleteGroupOption({ theme }),
-    ].filter((item) =>
-      validateDetailOptions({ loggedInUser, group, optionId: item.id })
-    ),
-    title: 'MORE',
-  });
+      options: [getBlockUnblockUserOption(user, theme)],
+    } as CometChatDetailsTemplate;
+  } else if(group){
+    return {
+      id: 'secondary',
+      options: [
+        getLeaveGroupOption(theme),
+        getDeleteGroupOption(theme),
+      ].filter((template: CometChatDetailsOption) => {
+        let scope = group?.getScope() ? group?.getScope() : GroupMemberScope.participant;
+        let key = group.getOwner() == loggedInUser?.getUid() ? GroupMemberScope.owner : scope;
+        return _allowedGroupDetailsOptions[key][template.id as string];
+      }),
+      title: 'MORE',
+    } as CometChatDetailsTemplate;
+  } else {
+    return null;
+  }
+  
 };
 
 const getViewMembersOption = () => {
-  return getCometChatDetailsOption({
-    id: GroupMemberOptionConstants.view,
+  return {
+    id: GroupOptionConstants.viewMembers,
     title: localize('VIEW_MEMBERS'),
-  });
+  } as CometChatDetailsOption;
 };
 
 const getAddMembersOption = () => {
-  return getCometChatDetailsOption({
-    id: GroupMemberOptionConstants.addMembers,
+  return {
+    id: GroupOptionConstants.addMembers,
     title: localize('ADD_MEMBERS'),
-  });
+  } as CometChatDetailsOption;
 };
 
 const getBannedMemberOption = () => {
-  return getCometChatDetailsOption({
-    id: GroupMemberOptionConstants.ban,
+  return {
+    id: GroupOptionConstants.bannedMembers,
     title: localize('BANNED_MEMBERS'),
-  });
+  } as CometChatDetailsOption;
 };
 
-const getLeaveGroupOption = ({ theme }) => {
-  return getCometChatDetailsOption({
-    id: GroupMemberOptionConstants.leave,
+const getLeaveGroupOption = (theme: CometChatTheme = new CometChatTheme({})) => {
+  return {
+    id: GroupOptionConstants.leave,
     title: localize('LEAVE_GROUP'),
     Tail: () => null,
     titleStyle: { color: theme?.palette?.getError() ?? 'red' },
-  });
+  } as unknown as CometChatDetailsOption;
 };
-const getDeleteGroupOption = ({ theme }) => {
-  return getCometChatDetailsOption({
-    id: GroupMemberOptionConstants.deleteGroup,
+
+const getDeleteGroupOption = (theme: CometChatTheme = new CometChatTheme({})) => {
+  return {
+    id: GroupOptionConstants.delete,
     title: localize('DELETE_AND_EXIT'),
     Tail: () => null,
     titleStyle: { color: theme?.palette?.getError() ?? 'red' },
-  });
+  } as unknown as CometChatDetailsOption;
 };
+
 export const getCometChatDetailsTemplate = (
   props: CometChatDetailsTemplate
 ) => {
@@ -350,4 +364,35 @@ _allowedGroupMemberOptions[GroupMemberScope.owner + GroupMemberScope.admin] = {
   deleteGroup: true,
   leave: true,
   transferOwnership: true,
+};
+
+const _allowedGroupDetailsOptions: { [key: string]: { [key: string]: boolean } } = {
+  [GroupMemberScope.participant]: {
+    [GroupOptionConstants.leave]: true,
+    [GroupOptionConstants.bannedMembers]: false,
+    [GroupOptionConstants.viewMembers]: true,
+    [GroupOptionConstants.addMembers]: false,
+    [GroupOptionConstants.delete]: false,
+  },
+  [GroupMemberScope.moderator]: {
+    [GroupOptionConstants.leave]: true,
+    [GroupOptionConstants.bannedMembers]: true,
+    [GroupOptionConstants.viewMembers]: true,
+    [GroupOptionConstants.addMembers]: false,
+    [GroupOptionConstants.delete]: false,
+  },
+  [GroupMemberScope.admin]: {
+    [GroupOptionConstants.leave]: true,
+    [GroupOptionConstants.bannedMembers]: true,
+    [GroupOptionConstants.viewMembers]: true,
+    [GroupOptionConstants.addMembers]: true,
+    [GroupOptionConstants.delete]: false,
+  },
+  [GroupMemberScope.owner]: {
+    [GroupOptionConstants.leave]: true,
+    [GroupOptionConstants.bannedMembers]: true,
+    [GroupOptionConstants.viewMembers]: true,
+    [GroupOptionConstants.addMembers]: true,
+    [GroupOptionConstants.delete]: true,
+  },
 };

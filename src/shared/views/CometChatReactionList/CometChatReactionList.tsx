@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react'
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { AvatarStyleInterface } from '../CometChatAvatar';
@@ -22,6 +22,9 @@ export interface CometChatReactionListInterface {
     selectedReaction?: string;
     ErrorStateView?: () => JSX.Element;
     errorStateText?: string;
+    /**
+     * @deprecated
+     */
     loadingIconURL?: ImageType;
     LoadingStateView?: () => JSX.Element;
 }
@@ -33,7 +36,6 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
         listItemStyle, selectedReaction, reactionListStyle,
         ErrorStateView,
         errorStateText,
-        loadingIconURL,
         LoadingStateView,
     } = props;
     const { theme } = useContext(CometChatContext);
@@ -59,7 +61,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
         sliderEmojiFont: reactionListStyle?.sliderEmojiFont || theme.typography.subtitle1,
         errorTextColor: reactionListStyle?.errorTextColor || theme?.palette?.getError(),
         errorTextFont: reactionListStyle?.errorTextFont || theme?.typography?.subtitle1,
-        loadingTint: reactionListStyle?.loadingTint || theme?.palette.getAccent700(),
+        loadingTint: reactionListStyle?.loadingTint || theme?.palette.getPrimary(),
         separatorColor: reactionListStyle?.separatorColor || theme.palette.getAccent100(),
         ...reactionListStyle,
     });
@@ -279,9 +281,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
             justifyContent: "center",
             alignItems: "center",
         }}>
-            <Image source={loadingIconURL || LoadingIcon} style={[{
-                height: 24, width: 24, alignSelf: "center", tintColor: loadingTint
-            }]} />
+            <ActivityIndicator size={"large"} color={loadingTint} />
         </View>
     }
 

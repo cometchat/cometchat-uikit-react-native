@@ -115,7 +115,7 @@ export const CometChatMessageBubble = memo(({
                     {
                         ReplyView && <ReplyView />
                     }
-                    <View style={{ ...border, borderRadius, backgroundColor}}>
+                    <View style={{ ...border, borderRadius, backgroundColor, alignSelf: "flex-start"}}>
                         {
                             ContentView && <ContentView />
                         }
