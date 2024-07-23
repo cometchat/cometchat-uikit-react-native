@@ -42,7 +42,7 @@ const CometChatAICard = (props: CometChatAICardInterface) => {
         errorIconTint: theme.palette.getAccent(),
         errorStateTextColor: theme.palette.getAccent(),
         errorStateTextFont: theme.typography.subtitle1,
-        loadingIconTint: theme.palette.getAccent(),
+        loadingIconTint: theme.palette.getPrimary(),
         loadingStateTextColor: theme.palette.getAccent(),
         loadingStateTextFont: theme.typography.subtitle1,
         ...style,

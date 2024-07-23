@@ -254,7 +254,7 @@ export const CometChatMessageList = memo(forwardRef<
             emptyStateTextFont: theme?.typography.subtitle1,
             errorStateTextColor: theme?.palette.getAccent(),
             errorStateTextFont: theme?.typography.title1,
-            loadingIconTint: theme?.palette.getAccent700(),
+            loadingIconTint: theme?.palette.getPrimary(),
             nameTextColor: theme?.palette.getAccent(),
             nameTextFont: theme?.typography.name,
             threadReplyIconTint: theme?.palette.getAccent700(),
@@ -280,7 +280,7 @@ export const CometChatMessageList = memo(forwardRef<
             textFont: _messageListStyle.timestampTextFont
         })).current;
         const _actionStyle = useRef(new ActionSheetStyles({
-            actionSheetSeparatorTint: 'transparent',
+            backgroundColor: theme?.palette?.getBackgroundColor(),
             ...actionSheetStyle
         })).current;
         const _messageBubbleStyle = useRef(new MessageBubbleStyle({
@@ -1811,7 +1811,7 @@ export const CometChatMessageList = memo(forwardRef<
 
             return (
                 <View style={Style.msgContainerStyle}>
-                    <ActivityIndicator size="large" color={messageListStyle?.loadingIconTint} />
+                    <ActivityIndicator size="large" color={_messageListStyle?.loadingIconTint} />
                 </View>
             )
         }, [])

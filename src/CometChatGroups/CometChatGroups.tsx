@@ -213,20 +213,16 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         errorTextColor: theme?.palette.getError(),
         errorTextFont: theme?.typography.subtitle1,
         searchBackgroundColor: theme?.palette.getAccent600(),
-        searchIconTint: theme?.palette.getAccent600(),
         searchBorder: new BorderStyle({
             borderColor: theme?.palette.getAccent700(),
             ...groupsStyle?.border,
         }),
-        searchTextColor: theme?.palette.getAccent(),
-        searchTextFont: theme?.typography.caption1,
-        searchPlaceHolderTextColor: theme?.palette.getAccent600(),
         separatorColor: theme?.palette.getAccent100(),
         subtitleTextColor: theme?.palette.getAccent600(),
         subtitleTextFont: theme?.typography.text1,
         titleColor: theme?.palette.getAccent(),
         titleFont: theme?.typography.title1,
-        loadingIconTint: theme?.palette.getAccent600(),
+        loadingIconTint: theme?.palette.getPrimary(),
         ...groupsStyle
     });
     const _avatarStyle = new AvatarStyle({
@@ -553,6 +549,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     };
 
     const onSelectionClicked = () => {
+        if(!selectedGroups.length) return
         onSelection && onSelection(selectedGroups);
 
         setSelecting(false);

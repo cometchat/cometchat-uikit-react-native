@@ -87,35 +87,9 @@ export class GroupsConfiguration implements GroupsConfigurationInterface {
   searchRequestBuilder?: CometChat.GroupsRequestBuilder;
 
   constructor(props: GroupsConfigurationInterface) {
-    this.SubtitleView = props?.SubtitleView || undefined;
-    this.ListItemView = props?.ListItemView || undefined;
-    this.AppBarOption = props?.AppBarOption || undefined;
-    this.hideSeparator = props?.hideSeparator || false;
-    this.groupsStyle = props?.groupsStyle || new GroupsStyle({});
-    this.searchPlaceholderText =
-      props?.searchPlaceholderText || localize('SEARCH');
-    this.backButton = props?.backButton || backIcon;
-    this.showBackButton = props?.showBackButton || false;
-    this.selectionMode = props?.selectionMode || 'none';
-    this.onSelection = props?.onSelection || undefined;
-    this.searchBoxIcon = props?.searchBoxIcon || searchIcon;
-    this.hideSearch = props?.hideSearch || false;
-    this.title = props?.title || localize('GROUPS');
-    this.EmptyStateView = props?.EmptyStateView || undefined;
-    this.ErrorStateView = props?.ErrorStateView || undefined;
-    this.LoadingStateView = props?.LoadingStateView || undefined;
-    this.groupsRequestBuilder = props?.groupsRequestBuilder || undefined;
-    this.searchKeyword = props?.searchKeyword || '';
-    this.privateGroupIcon = props?.privateGroupIcon || privateGroupIcon;
-    this.passwordGroupIcon = props?.passwordGroupIcon || passwordGroupIcon;
-    this.hideError = props?.hideError || false;
-    this.onItemPress = props?.onItemPress || undefined;
-    this.onItemLongPress = props?.onItemLongPress || undefined;
-    this.onError = props?.onError || undefined;
-    this.onBack = props?.onBack || undefined;
-    this.listItemStyle = props.listItemStyle;
-    this.avatarStyle = props.avatarStyle;
-    this.statusIndicatorStyle = props.statusIndicatorStyle;
-    this.searchRequestBuilder = props.searchRequestBuilder;
+    if (props)
+      for (const [key, value] of Object.entries(props)) {
+        this[key] = value;
+      }
   }
 }

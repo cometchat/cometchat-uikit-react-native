@@ -27,6 +27,8 @@ export const CometChatAddMembers = (props: CometChatAddMembersInterface) => {
   const userRef = useRef<CometChatUsersActionsInterface>(null);
   const loggedInUser = useRef(null);
   const addMembersToGroup = (res: any) => {
+    if(!res.length) return
+    userRef.current?.clearSelection()
     let membersList = res.map((item: any) => {
       let groupMember = new CometChat.GroupMember(
         item['uid'],

@@ -103,10 +103,12 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                     receipt == "DELIVERED" ? deliveredIcon :
                         receipt == 'READ' ? readIcon : undefined
                 }
+                resizeMode='contain'
                 style={{
                     tintColor: receipt == 'SENT' ? sendIconTint :
                         receipt == "DELIVERED" ? deliveredIconTint :
-                            receipt == 'READ' ? readIconTint : undefined
+                            receipt == 'READ' ? readIconTint : undefined,
+                    height: 15
                 }}
             />
             <View style={{ flex: 1 }}>

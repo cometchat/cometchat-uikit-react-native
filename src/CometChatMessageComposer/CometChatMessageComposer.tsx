@@ -1906,6 +1906,7 @@ export const CometChatMessageComposer = React.forwardRef(
                   onPress={onMentionPress}
                   onEndReached={onSuggestionListEndReached}
                   loading={suggestionListLoader}
+                  theme={theme}
                 />
                 {getMentionLimitView()}
               </View>

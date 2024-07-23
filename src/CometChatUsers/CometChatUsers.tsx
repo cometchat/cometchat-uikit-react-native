@@ -1,6 +1,6 @@
 //@ts-ignore
 import { View, ListRenderItem } from 'react-native';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useImperativeHandle } from 'react';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
@@ -104,6 +104,19 @@ export const CometChatUsers = React.forwardRef<
 
   const { usersRequestBuilder, usersStyle, ...newProps } = props;
   const userRef = useRef<CometChatUsersActionsInterface>(null);
+  
+  useImperativeHandle(ref, () => {
+    return {
+      updateList: userRef.current.updateList,
+      addItemToList: userRef.current.addItemToList,
+      removeItemFromList: userRef.current.removeItemFromList,
+      getListItem: userRef.current.getListItem,
+      updateAndMoveToFirst: userRef.current.updateAndMoveToFirst,
+      getSelectedItems: userRef.current.getSelectedItems,
+      getAllListItems: userRef.current.getAllListItems,
+      clearSelection: userRef.current.clearSelection
+    };
+  });
 
   useEffect(() => {
     CometChat.addUserListener(

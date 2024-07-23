@@ -46,6 +46,7 @@ export interface CometChatListActionsInterface {
   getListItem: (itemId: string | number) => void;
   getSelectedItems: () => Array<any>,
   getAllListItems: () => Array<any>,
+  clearSelection: () => void,
 }
 
 export interface CometChatListStylesInterface {
@@ -181,6 +182,7 @@ export const CometChatList = React.forwardRef<
       updateAndMoveToFirst,
       getSelectedItems,
       getAllListItems,
+      clearSelection
     };
   });
 
@@ -454,10 +456,18 @@ export const CometChatList = React.forwardRef<
   };
 
   const onSelectionHandler = () => {
-    onSelection(Object.values(selectedItems));
+    if(onSelection) {
+      onSelection(Object.values(selectedItems));
+      return
+    }
     setShouldSelect(false);
     setSelectedItems({});
   };
+
+  const clearSelection = () => {
+    setShouldSelect(false);
+    setSelectedItems({});
+  }
 
   const onListItemPress = (item: any) => {
     if (shouldSelect) {

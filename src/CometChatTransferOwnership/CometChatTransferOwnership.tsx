@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   CometChatGroupsMembers,
   CometChatGroupsMembersInterface,
@@ -11,7 +11,7 @@ import { CometChatUIEvents } from '../shared/events';
 import { GroupMemberConfigurationInterface } from '../CometChatGroupMembers/GroupMemberConfiguration';
 import { GroupMemberScope } from '../shared/constants/UIKitConstants';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
-import { localize } from '../shared';
+import { CometChatContext, localize } from '../shared';
 
 export interface CometChatTransferOwnershipInterface
   extends Omit<
@@ -62,6 +62,8 @@ export interface CometChatTransferOwnershipInterface
 export const CometChatTransferOwnership = (
   props: CometChatTransferOwnershipInterface
 ) => {
+  const { theme } = useContext(CometChatContext);
+
   const {
     title = localize("TRANSFER_OWNERSHIP"),
     group,
@@ -121,7 +123,7 @@ export const CometChatTransferOwnership = (
         TailView={(item: any) => {
           return (
             <View>
-              <Text>
+              <Text style={{color: theme?.palette?.getAccent()}}>
                 {loggedInUser.getUid() === item.owner
                   ? GroupMemberScope.owner
                   : item.scope}

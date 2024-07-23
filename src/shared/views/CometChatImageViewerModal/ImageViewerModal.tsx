@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useContext, useLayoutEffect, useState } from 'react';
 import {
   Modal,
   View,
@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { ICONS } from './resources';
 import { ReactNativeZoomableViewWithGestures } from '../../libs/ImageZoom';
+import { CometChatContext } from '../../CometChatContext';
 
 export const ImageViewerModal = ({ imageUrl, isVisible, onClose }) => {
+  const { theme } = useContext(CometChatContext);
 
   const [downloaded, setDownloaded] = useState(false);
   useLayoutEffect(() => {
@@ -58,7 +60,7 @@ export const ImageViewerModal = ({ imageUrl, isVisible, onClose }) => {
               </ReactNativeZoomableViewWithGestures>
             </View>
           ) : (
-            <ActivityIndicator color={'#fff'} />
+            <ActivityIndicator color={theme?.palette?.getPrimary()} />
           )}
         </View>
       </SafeAreaView>

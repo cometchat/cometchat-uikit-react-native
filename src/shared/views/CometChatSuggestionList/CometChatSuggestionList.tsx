@@ -3,6 +3,7 @@ import React from 'react'
 import { SuggestionItem } from './SuggestionItem';
 import { CometChatListItem, ListItemStyle } from '../CometChatListItem';
 import { AvatarStyleInterface } from '../CometChatAvatar';
+import { CometChatTheme } from '../../resources';
 
 export interface CometChatSuggestionListInterface {
     separatorColor?: string
@@ -15,10 +16,11 @@ export interface CometChatSuggestionListInterface {
     onPress: (item: SuggestionItem) => void;
     onEndReached?: () => void;
     loading?: boolean;
+    theme?: CometChatTheme
 }
 
 export const CometChatSuggestionList = (props: CometChatSuggestionListInterface) => {
-    const { data, avatarStyle, listItemStyle, separatorColor, onPress, onEndReached, loading } = props;
+    const { data, avatarStyle, listItemStyle, separatorColor, onPress, onEndReached, loading, theme } = props;
 
     const _render = ({ item, index }: ListRenderItemInfo<SuggestionItem>) => {
         let shouldLoadAvatarName = item.hideLeadingIcon ? {} : { avatarName: item.name }
@@ -57,7 +59,7 @@ export const CometChatSuggestionList = (props: CometChatSuggestionListInterface)
                 bottom: 0,
                 width: '100%',
             }}>
-                {loading && <ActivityIndicator animating={loading} />}
+                {loading && <ActivityIndicator animating={loading} color={theme?.palette?.getPrimary()}/>}
             </View>
         </View>
     )

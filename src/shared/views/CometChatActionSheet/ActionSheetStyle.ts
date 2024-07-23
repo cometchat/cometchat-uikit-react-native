@@ -44,39 +44,17 @@ export class ActionSheetStyles extends BaseStyle {
      * @param {object} listItemTitleFont
      * @param {string} listItemTitleColor
      */
-    constructor({
-        width = "100%",
-        height,
-        backgroundColor = "transparent",
-        border = new BorderStyle({}),
-        borderRadius = 8,
-        layoutModeIconTint = "",
-        titleFont = new FontStyle({fontSize: 17, fontWeight: "500"}),
-        titleColor = "",
-        listItemIconTint = "",
-        listItemIconBackground = "",
-        listItemIconBorderRadius = 0,
-        listItemTitleFont = new FontStyle({fontSize: 17, fontWeight: "400"}),
-        listItemTitleColor = "",
-        paddingHorizontal,
-        actionSheetSeparatorTint,
-    }: ActionSheetStylesInterface) {
+    constructor(props: ActionSheetStylesInterface) {
         super({
-            width,
-            height,
-            backgroundColor,
-            border,
-            borderRadius,
+            width: props.width,
+            height: props.height,
+            backgroundColor: props.backgroundColor,
+            border: props.border,
+            borderRadius: props.borderRadius,
         });
-        this.layoutModeIconTint = layoutModeIconTint;
-        this.titleFont = titleFont;
-        this.titleColor = titleColor;
-        this.listItemIconTint = listItemIconTint;
-        this.listItemTitleFont = listItemTitleFont;
-        this.listItemTitleColor = listItemTitleColor;
-        this.listItemIconBackground = listItemIconBackground;
-        this.listItemIconBorderRadius = listItemIconBorderRadius;
-        this.paddingHorizontal = paddingHorizontal;
-        this.actionSheetSeparatorTint = actionSheetSeparatorTint;
+        if (props)
+          for (const [key, value] of Object.entries(props)) {
+            this[key] = value;
+          }
     }
 }

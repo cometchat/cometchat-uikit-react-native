@@ -88,7 +88,7 @@ export function getCardViewStyle(theme:CometChatTheme, style:CardViewStyle,AiSty
       emptyStateTextFont: theme?.typography?.title2,
       errorStateTextFont: theme?.typography?.title2,
       loadingStateTextColor: theme?.palette?.getAccent600(),
-      loadingIconTint: theme?.palette?.getAccent600(),
+      loadingIconTint: theme?.palette?.getPrimary(),
       loadingStateTextFont: theme?.typography?.title2,
       errorIconTint: theme?.palette?.getAccent(),
       emptyIconTint: theme?.palette?.getAccent600(),

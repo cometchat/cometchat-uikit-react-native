@@ -87,7 +87,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
 
         return {
             height,
-            width: tabs.length <= 4 ? screenWidth / tabs.length : width,
+            width: tabs.length <= 4 ? (screenWidth - 30) / tabs.length : width,
             border: tab.isActive ? activeTabBorder : undefined,
             borderRadius: borderRadius,
             backgroundColor: tab.isActive ? activeBackgroundColor : backgroundColor,
@@ -136,7 +136,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
         setTabs(newTabState);
     }
 
-    const TabItemView = ({ index, item }: ListRenderItemInfo<TabItem>) => {
+    const TabItemView = ({ item }) => {
         let style = getStyleFor(item);
         
         return (
@@ -155,18 +155,16 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
     }
 
     const TabsList = () => {
-        return <FlatList
-            style={{backgroundColor: backgroundColor, borderRadius: borderRadius}}
-            data={tabs}
-            horizontal={true}
-            keyExtractor={(tabItem) => tabItem.id.toString()}
-            renderItem={(tabItem) => TabItemView(tabItem)}
-        />
+        return (
+            <View style={{flexDirection: 'row', backgroundColor: backgroundColor, borderRadius: borderRadius, margin: 15, marginTop: 0}}>
+                { tabs.map(item=> <TabItemView item={item}/>) }
+            </View>
+        )
     }
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={{display: tabAlignment == 'bottom' ? "none" : "flex", margin: 15, marginTop: 0}}>
+            <View style={{display: tabAlignment == 'bottom' ? "none" : "flex"}}>
                 {
                     tabAlignment == "top" && <TabsList />
                 }

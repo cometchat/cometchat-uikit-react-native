@@ -303,7 +303,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
         errorTextFont: theme?.typography?.subtitle1,
         lastMessageTextColor: theme?.palette.getAccent600(),
         lastMessageTextFont: theme?.typography.subtitle1,
-        loadingIconTint: theme?.palette.getAccent700(),
+        loadingIconTint: theme?.palette.getPrimary(),
         separatorColor: theme?.palette.getAccent100(),
         titleColor: theme?.palette.getAccent(),
         titleFont: theme?.typography.heading,
@@ -1311,6 +1311,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 backButtonIcon={backButtonIcon}
                 showBackButton={showBackButton}
                 onSelection={(items) => {
+                    if(!items.length) return
                     onSelection && onSelection(items);
                     setSelecting(false);
                     setSelectedConversations([]);

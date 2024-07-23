@@ -282,7 +282,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
       </Text>
 
       {isLoading && <View style={style.centerPosition}>
-        <ActivityIndicator size="small" />
+        <ActivityIndicator size="small" color={theme?.palette?.getPrimary()}/>
       </View>}
 
     </View>

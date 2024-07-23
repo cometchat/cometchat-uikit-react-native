@@ -177,6 +177,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         titleColor: theme?.palette.getAccent(),
         titleFont: theme?.typography.title1,
         onlineStatusColor: theme?.palette.getSuccess(),
+        loadingIconTint: theme?.palette?.getPrimary(),
         ...groupMemberStyle
     });
     const _avatarStyle = new AvatarStyle({
@@ -524,6 +525,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
     }
 
     const onSelectionClicked = () => {
+        if(!selectedMembers.length) return
         onSelection && onSelection(selectedMembers);
         setSelectedMembers([]);
         setSelecting(false);

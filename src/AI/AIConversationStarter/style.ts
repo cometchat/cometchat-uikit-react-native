@@ -12,7 +12,7 @@ export function getCardViewStyle(theme:CometChatTheme, style:AIConversationStart
         errorStateTextFont: theme?.typography?.title2,
         loadingStateTextFont: theme?.typography?.title2,
         backgroundColor: theme?.palette?.getBackgroundColor(),
-        loadingIconTint: theme?.palette?.getAccent600(),
+        loadingIconTint: theme?.palette?.getPrimary(),
         errorIconTint: theme?.palette?.getAccent600(),
         emptyIconTint: theme?.palette?.getAccent600(),
         border: {},

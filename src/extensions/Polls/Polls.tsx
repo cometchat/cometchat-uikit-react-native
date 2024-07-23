@@ -471,7 +471,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
         justifyContent: "center",
         alignItems: "center",
       }}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={theme?.palette?.getPrimary()}/>
       </View>}
     </KeyboardAvoidingView>
   );
