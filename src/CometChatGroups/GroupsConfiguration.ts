@@ -14,6 +14,7 @@ import {
   privateGroupIcon,
 } from './resources';
 import { localize } from '../shared';
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { StatusIndicatorStyleInterface } from '../shared/views/CometChatStatusIndicator/StatusIndicatorStyle';
 
@@ -55,23 +56,23 @@ export interface GroupsConfigurationInterface {
  * @description GroupConfiguration class is used for defining the GroupConfiguration template.
  */
 export class GroupsConfiguration implements GroupsConfigurationInterface {
-  SubtitleView: (item: CometChat.Group) => JSX.Element;
-  ListItemView: (item: CometChat.Group) => JSX.Element;
-  AppBarOption: () => JSX.Element;
-  options: (item: CometChat.Group) => CometChatOptions[];
+  SubtitleView!: (item: CometChat.Group) => JSX.Element;
+  ListItemView!: (item: CometChat.Group) => JSX.Element;
+  AppBarOption!: () => JSX.Element;
+  options!: (item: CometChat.Group) => CometChatOptions[];
   hideSeparator: boolean;
   searchPlaceholderText: string;
   backButton: ImageType;
   showBackButton: boolean;
   selectionMode: 'none' | 'single' | 'multiple';
-  onSelection: (items: Array<CometChat.Group>) => void;
+  onSelection!: (items: Array<CometChat.Group>) => void;
   searchBoxIcon: ImageType;
   hideSearch: boolean;
   title: string;
-  EmptyStateView: () => JSX.Element;
-  ErrorStateView: () => JSX.Element;
-  LoadingStateView: () => JSX.Element;
-  groupsRequestBuilder: CometChat.GroupsRequestBuilder;
+  EmptyStateView!: () => JSX.Element;
+  ErrorStateView!: () => JSX.Element;
+  LoadingStateView!: () => JSX.Element;
+  groupsRequestBuilder: CometChat.GroupsRequestBuilder | undefined;
   searchKeyword: string;
   privateGroupIcon: ImageType;
   passwordGroupIcon: ImageType;

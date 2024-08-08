@@ -2,7 +2,7 @@ import {  useState } from 'react';
 import {   contentContainerStyle, getButtonStyles, getPopoverStyle } from './style';
 import { CardViewStyle } from './CardViewStyle';
 import { CometChatTheme } from '../shared';
-import { TouchableOpacity,Text,ScrollView } from 'react-native';
+import { TouchableOpacity,Text,ScrollView, TextStyle } from 'react-native';
 import React from 'react';
 import { View } from 'react-native';
 import { AIButtonsStyle } from './utils';
@@ -45,13 +45,13 @@ function getButtons():JSX.Element | null{
       width:"100%",
       backgroundColor: "transparent",
     }}>
-    {props.buttons.map(item => (
+    {props.buttons?.map(item => (
       <TouchableOpacity
         key={item.id} // Make sure to set a unique key for each item
         onPress={() => fetchButtonContent(item)}
        
       >
-        <Text  style={getButtonStyles(new CometChatTheme({}),item?.style)}>{item.title}</Text>
+        <Text style={getButtonStyles(new CometChatTheme({}),item?.style || {}) as TextStyle}>{item.title}</Text>
       </TouchableOpacity>
       
     ))}
@@ -60,9 +60,9 @@ function getButtons():JSX.Element | null{
 }
 
   return (
-    <View  style={getPopoverStyle(props.cardViewStyle)}>
+    <View style={getPopoverStyle(props.cardViewStyle || {}) as TextStyle}>
       
-      <View  style={contentContainerStyle}>
+      <View style={contentContainerStyle as TextStyle}>
         {!currentSection && props.buttons &&  (
           <ScrollView  style={{height:"100%",width:"100%"}}>
 

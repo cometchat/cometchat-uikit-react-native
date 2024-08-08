@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { Platform } from 'react-native'
 import { MessageTypeConstants } from "../constants/UIKitConstants";
@@ -76,7 +77,13 @@ export class ListenerInitializer {
             },
             onMessageReactionRemoved: (message: CometChat.ReactionEvent) => {
                 CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageReactionRemoved, message);
-            }
+            },
+            onMessagesDeliveredToAll: (messageReceipt: CometChat.MessageReceipt) => {
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessagesDeliveredToAll, messageReceipt);
+            },
+            onMessagesReadByAll: (messageReceipt: CometChat.MessageReceipt) => {
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessagesReadByAll, messageReceipt);
+            },
         });
     }
 }

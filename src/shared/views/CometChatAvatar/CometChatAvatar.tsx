@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 // @ts-ignore
-import { View, Image, Text } from 'react-native';
+import { View, Image, Text, ViewProps, TextStyle } from 'react-native';
 import { ICONS } from './resources';
 import { AvatarStyle, AvatarStyleInterface } from './AvatarStyle';
 import { Styles } from './styles';
@@ -32,7 +32,8 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
     nameTextFont : theme.typography.body,
   });
   
-  const { image, name } = props;
+  const { image, name: rawName } = props;
+  const name = rawName.trim();
 
   const style = {
     ...defaultStyleProps,
@@ -60,7 +61,7 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
               color: style.nameTextColor,
             },
             style.nameTextFont ?? {},
-          ]}
+          ] as TextStyle}
         >
           {name.length >= 2 ? name.substring(0, 2).toUpperCase() : name}
         </Text>
@@ -98,7 +99,7 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
           width: style.width,
           backgroundColor: style.backgroundColor,
           borderRadius: style.borderRadius,
-        },
+        } as ViewProps,
         style.border ?? {},
       ]}
     >
@@ -110,7 +111,7 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
             width: style.width,
             borderRadius: style.borderRadius,
             margin: style.outerViewSpacing,
-          },
+          } as ViewProps,
           style.outerView ?? {},
         ]}
       />

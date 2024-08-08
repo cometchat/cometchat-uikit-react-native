@@ -13,7 +13,7 @@ export interface ImageBubbleStyleInterface extends Omit<BaseStyleInterface, "bor
 }
 
 export class ImageBubbleStyle extends BaseStyle {
-    aspectRatio: number;
+    aspectRatio?: number;
     constructor({
         backgroundColor = "transparent",
         border = {borderWidth: 0, borderColor: "rgb(0,0,0)"},

@@ -57,11 +57,11 @@ export const CometChatBannedMembers = (
     : undefined;
 
   const listRef = useRef<CometChatListActionsInterface>(null);
-  const loggedUserRef = useRef(null);
+  const loggedUserRef = useRef<CometChat.User | null | any>(null);
   const unbaned = (uid: any) => {
     CometChat.unbanGroupMember(group['guid'], uid).then(
-      (response) => {
-        let user = listRef.current.getListItem(uid);
+      (response: any) => {
+        let user: any = listRef.current?.getListItem(uid);
 
         let action: CometChat.Action = new CometChat.Action(
           group['guid'],
@@ -83,10 +83,10 @@ export const CometChatBannedMembers = (
             kickedFrom: group,
           }
         );
-        listRef.current.removeItemFromList(uid);
+        listRef.current?.removeItemFromList(uid);
         console.log('Group member unbanned successfully', response);
       },
-      (error) => {
+      (error: any) => {
         console.log('Group member unbanning failed with error', error);
         onError && onError(error);
       }
@@ -95,7 +95,7 @@ export const CometChatBannedMembers = (
 
   useEffect(() => {
     CometChat.getLoggedinUser().then(
-      (loggedUser: CometChat.User) => {
+      (loggedUser: CometChat.User | any) => {
         loggedUserRef.current = loggedUser;
       },
       (error: CometChat.CometChatException) => {
@@ -110,11 +110,11 @@ export const CometChatBannedMembers = (
       new CometChat.UserListener({
         onUserOnline: (onlineUser: any) => {
           /* when someuser/friend comes online, user will be received here */
-          listRef.current.updateList(onlineUser);
+          listRef.current?.updateList(onlineUser);
         },
         onUserOffline: (offlineUser: any) => {
           /* when someuser/friend went offline, user will be received here */
-          listRef.current.updateList(offlineUser);
+          listRef.current?.updateList(offlineUser);
         },
       })
     );

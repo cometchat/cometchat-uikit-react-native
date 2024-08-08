@@ -19,10 +19,16 @@ import {
   MessageTimeAlignmentType,
   SelectionMode,
   DatePattern,
-  MessageReceipt
-} from './base';
+  MessageReceipt,
+} from "./base";
 
-import { ChatConfigurator, DataSource, MessageDataSource, DataSourceDecorator, ExtensionsDataSource } from './framework';
+import {
+  ChatConfigurator,
+  DataSource,
+  MessageDataSource,
+  DataSourceDecorator,
+  ExtensionsDataSource,
+} from "./framework";
 import {
   CometChatOptions,
   CometChatMessageOption,
@@ -50,11 +56,21 @@ import {
   SingleSelectElement,
   TextInputElement,
   URLNavigationAction,
-  DateTimeElement
-} from './modals';
-import { CometChatLocalize, localize } from './resources/CometChatLocalize';
-import { CometChatTheme, Palette, Typography } from './resources/CometChatTheme';
-import { CometChatConversationEvents, CometChatGroupsEvents, CometChatUIEvents, MessageEvents, CometChatUIEventHandler } from "./events";
+  DateTimeElement,
+} from "./modals";
+import { CometChatLocalize, localize } from "./resources/CometChatLocalize";
+import {
+  CometChatTheme,
+  Palette,
+  Typography,
+} from "./resources/CometChatTheme";
+import {
+  CometChatConversationEvents,
+  CometChatGroupsEvents,
+  CometChatUIEvents,
+  MessageEvents,
+  CometChatUIEventHandler,
+} from "./events";
 import {
   CometChatConversationUtils,
   getDefaultDetailsTemplate,
@@ -63,7 +79,7 @@ import {
   MessagePreviewConfiguration,
   MessagePreviewStyle,
   CometChatSoundManager,
-} from './utils';
+} from "./utils";
 
 import {
   CometChatListItem,
@@ -143,7 +159,6 @@ import {
   CometChatFormBubbleInterface,
   CometChatCardBubble,
   CometChatCardBubbleInterface,
-
   CometChatReactions,
   CometChatReactionsInterface,
   ReactionsConfiguration,
@@ -162,14 +177,11 @@ import {
   QuickReactionsConfigurationInterface,
   QuickReactionsStyle,
   QuickReactionsStyleInterface,
-
   CometChatEmojiKeyboard,
   EmojiKeyboardConfiguration,
   EmojiKeyboardStyle,
-
   CometChatSchedulerBubble,
   CometChatSchedulerBubbleInterface,
-
   CometChatSuggestionList,
   CometChatSuggestionListInterface,
   SuggestionItem,
@@ -178,14 +190,14 @@ import {
   CometChatDateTimePicker,
   CometChatDateTimePickerInterface,
   DatePickerStyleInterface,
-} from './views';
+} from "./views";
 
 import {
   CometChatMentionsFormatter,
   CometChatTextFormatter,
   CometChatUrlsFormatter,
-  MentionTextStyle
-} from './formatters';
+  MentionTextStyle,
+} from "./formatters";
 
 import {
   CometChatUIKit,
@@ -193,13 +205,11 @@ import {
   UIKitSettings,
 } from "./CometChatUiKit";
 
-import {
-  CometChatMessageComposerActionInterface,
-} from "./helper/types";
+import { CometChatMessageComposerActionInterface } from "./helper/types";
 
-import * as CometChatUiKitConstants from './constants/UIKitConstants';
+import * as CometChatUiKitConstants from "./constants/UIKitConstants";
 
-import { messageStatus } from './utils/CometChatMessageHelper/index'
+import { messageStatus } from "./utils/CometChatMessageHelper/index";
 
 export {
   CometChatContextProvider,
@@ -213,63 +223,21 @@ export {
   CometChatTheme,
   Palette,
   Typography,
-  ActionItemInterface,
-  ActionSheetStylesInterface,
-  AvatarConfigurationInterface,
-  BadgeConfigurationInterface,
-  BadgeStyleInterface,
-  CometChatBottomSheetInterface,
-  CometChatDateInterface,
-  CometChatMessageInputInterface,
-  CometChatMessageInputStyleInterface,
-  CometChatReceiptInterface,
-  CometChatStatusIndicatorInterface,
-  DateConfigurationInterface,
-  DateStyleInterface,
-  ReceiptConfigurationInterface,
-  StatusIndicatorConfigurationInterface,
-  StatusIndicatorStyleInterface,
   DataSourceDecorator,
   ExtensionsDataSource,
-  CometChatContextType,
-  CometChatTabAlignment,
-  ConversationType,
-  AdditionalBubbleStylingParams,
-  MessageBubbleAlignmentType,
-  MessageListAlignmentType,
-  MessageTimeAlignmentType,
-  SelectionMode,
-  DatePattern,
-  MessageReceipt,
   CometChatUIKit,
   CometChatUIKitHelper,
   UIKitSettings,
-  CometChatConfirmDialogInterface,
-  CometChatConfirmDialogStyleInterface,
   CometChatContext,
   ListItemConfiguration,
   BaseStyle,
-  BaseStyleInterface,
   BorderStyle,
-  BorderStyleInterface,
   FontStyle,
-  FontStyleInterface,
   ShadowStyle,
-  ShadowStyleInterface,
-  ImageType,
-  CometChatMessageComposerActionInterface,
   //
   ChatConfigurator,
-  DataSource,
   MessageDataSource,
-  //
-  CometChatOptions,
-  CometChatMessageOption,
   CometChatMessageTemplate,
-  CometChatDetailsTemplate,
-  CometChatDetailsOption,
-  CometChatCallLogDetailsTemplate,
-  CometChatCallLogDetailsOption,
   //
   CometChatLocalize,
   localize,
@@ -279,8 +247,6 @@ export {
   CometChatLiveReactions,
   //
   CometChatListItem,
-  CometChatListItemInterface,
-  ListItemStyleInterface,
   ListItemStyle,
   CometChatAvatar,
   CometChatBadge,
@@ -298,26 +264,15 @@ export {
   AvatarStyle,
   CometChatMessageInput,
   AudioBubbleStyle,
-  AudioBubbleStyleInterface,
   CometChatAudioBubble,
-  CometChatAudioBubbleInterface,
   CometChatFileBubble,
-  CometChatFileBubbleInterface,
   FileBubbleStyle,
-  FileBubbleStyleInterface,
   CometChatVideoBubble,
-  CometChatVideoBubbleInterface,
   VideoBubbleStyle,
-  VideoBubbleStyleInterface,
   CometChatTextBubble,
-  CometChatTextBubbleInterface,
   TextBubbleStyle,
-  TextBubbleStyleInterface,
   CometChatImageBubble,
-  CometChatImageBubbleInterface,
   ImageBubbleStyle,
-  ImageBubbleStyleInterface,
-  AvatarStyleInterface,
   //
   CometChatActionSheet,
   ActionSheetStyles,
@@ -330,19 +285,11 @@ export {
   CometChatSoundManager,
   //
   CometChatList,
-  CometChatListProps,
-  CometChatListActionsInterface,
-  CometChatListStylesInterface,
   CometChatMediaRecorder,
-  CometChatMediaRecorderInterface,
-  MediaRecorderStyleInterface,
   MediaRecorderStyle,
   CometChatFormBubble,
-  CometChatFormBubbleInterface,
   CometChatCardBubble,
-  CometChatCardBubbleInterface,
-  CometChatSchedulerBubble, 
-  CometChatSchedulerBubbleInterface, 
+  CometChatSchedulerBubble,
   APIAction,
   ActionEntity,
   BaseInputElement,
@@ -362,41 +309,103 @@ export {
   SingleSelectElement,
   TextInputElement,
   URLNavigationAction,
-
   CometChatReactions,
-  CometChatReactionsInterface,
   ReactionsConfiguration,
-  ReactionsConfigurationInterface,
   ReactionsStyle,
-  ReactionsStyleInterface,
   CometChatReactionList,
-  CometChatReactionListInterface,
   ReactionListConfiguration,
-  ReactionListConfigurationInterface,
   ReactionListStyle,
-  ReactionListStyleInterface,
   CometChatQuickReactions,
-  CometChatQuickReactionsInterface,
   QuickReactionsConfiguration,
-  QuickReactionsConfigurationInterface,
   QuickReactionsStyle,
-  QuickReactionsStyleInterface,
-
   CometChatEmojiKeyboard,
   EmojiKeyboardConfiguration,
   EmojiKeyboardStyle,
-
   CometChatMentionsFormatter,
   CometChatTextFormatter,
   CometChatUrlsFormatter,
   MentionTextStyle,
   CometChatSuggestionList,
-  CometChatSuggestionListInterface,
   SuggestionItem,
   SuggestionListConfiguration,
-  SuggestionListConfigurationInterface,
   CometChatDateTimePicker,
+  DateTimeElement,
+};
+export type {
+  ActionItemInterface,
+  ActionSheetStylesInterface,
+  AvatarConfigurationInterface,
+  BadgeConfigurationInterface,
+  BadgeStyleInterface,
+  CometChatBottomSheetInterface,
+  CometChatDateInterface,
+  CometChatMessageInputInterface,
+  CometChatMessageInputStyleInterface,
+  CometChatReceiptInterface,
+  CometChatStatusIndicatorInterface,
+  DateConfigurationInterface,
+  DateStyleInterface,
+  ReceiptConfigurationInterface,
+  StatusIndicatorConfigurationInterface,
+  StatusIndicatorStyleInterface,
+  CometChatContextType,
+  CometChatTabAlignment,
+  ConversationType,
+  AdditionalBubbleStylingParams,
+  MessageBubbleAlignmentType,
+  MessageListAlignmentType,
+  MessageTimeAlignmentType,
+  SelectionMode,
+  DatePattern,
+  MessageReceipt,
+  CometChatConfirmDialogInterface,
+  CometChatConfirmDialogStyleInterface,
+  BaseStyleInterface,
+  BorderStyleInterface,
+  FontStyleInterface,
+  ShadowStyleInterface,
+  ImageType,
+  CometChatMessageComposerActionInterface,
+  DataSource,
+  //
+  CometChatOptions,
+  CometChatMessageOption,
+  CometChatDetailsTemplate,
+  CometChatDetailsOption,
+  CometChatCallLogDetailsTemplate,
+  CometChatCallLogDetailsOption,
+  CometChatListItemInterface,
+  ListItemStyleInterface,
+  AudioBubbleStyleInterface,
+  CometChatAudioBubbleInterface,
+  CometChatFileBubbleInterface,
+  FileBubbleStyleInterface,
+  CometChatVideoBubbleInterface,
+  VideoBubbleStyleInterface,
+  CometChatTextBubbleInterface,
+  TextBubbleStyleInterface,
+  CometChatImageBubbleInterface,
+  ImageBubbleStyleInterface,
+  AvatarStyleInterface,
+  CometChatListProps,
+  CometChatListActionsInterface,
+  CometChatListStylesInterface,
+  CometChatMediaRecorderInterface,
+  MediaRecorderStyleInterface,
+  CometChatFormBubbleInterface,
+  CometChatCardBubbleInterface,
+  CometChatSchedulerBubbleInterface,
+  CometChatReactionsInterface,
+  ReactionsConfigurationInterface,
+  ReactionsStyleInterface,
+  CometChatReactionListInterface,
+  ReactionListConfigurationInterface,
+  ReactionListStyleInterface,
+  CometChatQuickReactionsInterface,
+  QuickReactionsConfigurationInterface,
+  QuickReactionsStyleInterface,
+  CometChatSuggestionListInterface,
+  SuggestionListConfigurationInterface,
   CometChatDateTimePickerInterface,
   DatePickerStyleInterface,
-  DateTimeElement,
 };

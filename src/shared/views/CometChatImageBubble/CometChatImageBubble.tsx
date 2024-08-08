@@ -1,10 +1,11 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { View, Image, NativeModules, Platform, NativeEventEmitter, EmitterSubscription } from "react-native";
+import { View, Image, NativeModules, Platform, NativeEventEmitter, EmitterSubscription, ViewProps, ImageStyle } from "react-native";
 import { ImageType } from "../../base";
 import { ImageBubbleStyle, ImageBubbleStyleInterface } from "./ImageBubbleStyle";
 import { ImageViewerModal } from "../CometChatImageViewerModal";
 import { ICONS } from "./assets";
 import { isHttpUrl } from "../../utils/NetworkUtils";
+import { IMAGE_PREFETCH_MAX_ATTEMPTS } from "../../constants/UIKitConstants";
 
 const { FileManager, ImageManager } = NativeModules;
 const eventEmitter = new NativeEventEmitter(FileManager);
@@ -52,9 +53,13 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
 
     const _style = new ImageBubbleStyle(style || {});
     const [isOpening, setOpening] = useState(false);
-    const [downloaded, setDownloaded] = useState(false);
+    const [downloaded, setDownloaded] = useState<number>(0); //downloaded - 0(not downloaded), 1(download failed), 2(downloaded)
     const [isVisible, setIsVisible] = useState(false);
     const url = useRef("");
+    const attemptCount = useRef<number>(0);
+  
+    const timer = useRef<any>(null);
+
 
     const callCount = useRef(0);
     const timerId = useRef(null);
@@ -84,13 +89,13 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
 
         Platform.OS == 'ios' ?
-            FileManager.openFile(url.current, getFileName(url.current), (s) => { }) :
-            ImageManager.openImage(url.current, s => { });
+            FileManager.openFile(url.current, getFileName(url.current), (s: any) => { }) :
+            ImageManager.openImage(url.current, (s: any) => { });
     }
 
     useEffect(() => {
         if (typeof imageUrl == "object") {
-            url.current = imageUrl.uri;
+            url.current = imageUrl.uri as string;
         }
         statusListener = eventEmitter.addListener("status", (data) => {
             if (data['url'] == url.current && data['state'] == "downloading") {
@@ -106,7 +111,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
     }, []);
 
-    const pressTime = useRef(0);
+    const pressTime = useRef<any>(0);
 
     const handleTouchStart = () => {
         pressTime.current = Date.now();
@@ -140,13 +145,41 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
         }
     };
 
+    const prefetchImage = (): Promise<any> => {
+        return new Promise((resolve, reject) => {
+            if (timer.current) {
+                clearTimeout(timer.current); // Ensure previous timeout is cleared
+            }
+            Image.prefetch(thumbnailUrl?.uri! ?? imageUrl?.uri!)
+                .then((res) => {
+                    clearTimeout(timer.current);
+                    resolve(res);
+                })
+                .catch((err: any) => {
+                    if (attemptCount.current < IMAGE_PREFETCH_MAX_ATTEMPTS) {
+                        attemptCount.current += 1
+                        timer.current = setTimeout(() => {
+                            prefetchImage()
+                                .then((res) => resolve(res))
+                                .catch((error: any) => reject(error));
+                        }, 800);
+                    } else {
+                        reject(new Error(`Failed to download image after ${IMAGE_PREFETCH_MAX_ATTEMPTS} attempts`));
+                    }
+                });
+        });
+    };
+    
+
     useLayoutEffect(() => {
         if(isHttpUrl(thumbnailUrl?.uri ?? imageUrl?.uri)) {
-            Image.prefetch(thumbnailUrl?.uri ?? imageUrl?.uri).then((res) => {
-              setDownloaded(res);
-            });
+            prefetchImage().then((res) => {
+                setDownloaded(2);
+            }).catch((error: any) => {
+                setDownloaded(1);
+            })
         } else {
-            setDownloaded(true);
+            setDownloaded(2);
         }
     }, []);
 
@@ -174,14 +207,14 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
                     alignItems: 'center',
                     height, 
                     width
-                }}
+                } as ViewProps}
             >
                 {
-                    !downloaded 
-                    ? <View>
+                    downloaded === 0 ?
+                        <View>
                             <Image
                                 resizeMode={"contain"}
-                                source={getImage(placeHolderImage) || ICONS.Spinner} 
+                                source={ICONS.Spinner}
                                 style={{
                                     height: 20,
                                     width: 20,
@@ -189,9 +222,22 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
                                 }}
                             />
                         </View>
-                    : <Image
+                    :
+                        downloaded === 1 ?
+                        <View>
+                            <Image
+                                resizeMode={"contain"}
+                                source={ICONS.Default_image}
+                                style={{
+                                    height,
+                                    width,
+                                    backgroundColor,
+                                }}
+                            />
+                        </View>
+                    :
+                        <Image
                             resizeMode={resizeMode || "cover"}
-                            loadingIndicatorSource={getImage(placeHolderImage) || ICONS.Spinner}
                             source={getImage(thumbnailUrl) || getImage(imageUrl)} 
                             style={{
                                 height,
@@ -200,7 +246,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
                                 backgroundColor,
                                 borderRadius,
                                 ...border
-                            }}
+                            } as ImageStyle}
                         />
                 }
               

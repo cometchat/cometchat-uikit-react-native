@@ -1,7 +1,8 @@
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { FlatList, Image, Text, TouchableOpacity, View, NativeModules, Platform, ActivityIndicator } from 'react-native'
-import { StyleProp, ViewStyle } from "react-native/types";
+import { FlatList, Image, Text, TouchableOpacity, View, NativeModules, Platform, ActivityIndicator, TextStyle, ViewProps } from 'react-native'
+import { StyleProp, ViewStyle } from "react-native";
 import { CometChatContext, CometChatDate, CometChatListItem, DatePattern, ImageType, ListItemStyleInterface, localize } from '../../shared'
 import { CallRecordingsStyle, CallRecordingsStyleInterface } from './CallLogRecordingsStyle'
 import { BackIcon, Download } from "./resources";
@@ -104,20 +105,20 @@ export const CometChatRecordings = (props: CometChatCallLogRecordingsConfigurati
 
     useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(u => {
+            .then((u: any) => {
                 loggedInUser.current = u;
             })
-            .catch(e => {
+            .catch((e: any) => {
                 onError && onError(e);
             });
     }, []);
 
-    const DefaultSubtitleView = ({ recording }) => {
+    const DefaultSubtitleView = ({ recording }: any) => {
         if (SubtitleView)
             return SubtitleView(recording);
         return (
             <View style={[Style.row, { marginTop: 2 }]}>
-                <Text style={{ color: durationTextColor, ...durationTextFont }}>
+                <Text style={{ color: durationTextColor, ...durationTextFont } as TextStyle}>
                     {
                         CallUtils.convertSecondsToHoursMinutesSeconds(recording['duration'])
                     }
@@ -126,8 +127,8 @@ export const CometChatRecordings = (props: CometChatCallLogRecordingsConfigurati
         );
     }
 
-    const DefaultTailView = ({ recording }) => {
-        const getFileName = (fileUrl) => {
+    const DefaultTailView = ({ recording }: any) => {
+        const getFileName = (fileUrl: string) => {
             return (fileUrl.substring(fileUrl.lastIndexOf("/") + 1, fileUrl.length)).replace(" ", "_");
         }
         const _onDownloadIconPress = async () => {
@@ -171,12 +172,12 @@ export const CometChatRecordings = (props: CometChatCallLogRecordingsConfigurati
         )
     }
 
-    const onPress = (item) => {
+    const onPress = (item: any) => {
         onItemPress && onItemPress(item);
         return;
     }
 
-    const _render = ({ item, index }) => {
+    const _render = ({ item, index }: any) => {
 
         if (ListItemView)
             return <ListItemView recording={item} />
@@ -213,13 +214,13 @@ export const CometChatRecordings = (props: CometChatCallLogRecordingsConfigurati
             return <EmptyStateView />
         return (
             <View style={[Style.container]}>
-                <Text style={[{ color: emptyTextColor, ...emptyTextFont }]}>{emptyStateText || localize("NO_RECORDINGS")}</Text>
+                <Text style={[{ color: emptyTextColor, ...emptyTextFont }] as TextStyle}>{emptyStateText || localize("NO_RECORDINGS")}</Text>
             </View>
         )
     }
 
     return (
-        <View style={{ backgroundColor, height, width, borderRadius, ...border }}>
+        <View style={{ backgroundColor, height, width, borderRadius, ...border } as ViewProps}>
             <View style={[Style.row, Style.headerStyle, { height: 60 }]}>
                 <View style={Style.row}>
                     {
@@ -232,7 +233,7 @@ export const CometChatRecordings = (props: CometChatCallLogRecordingsConfigurati
                                 />
                             </TouchableOpacity> : null
                     }
-                    <Text style={[{ color: titleColor, ...titleFont }]}>{title}</Text>
+                    <Text style={[{ color: titleColor, ...titleFont }] as TextStyle}>{title}</Text>
                 </View>
                 <View style={Style.row}>
                     {

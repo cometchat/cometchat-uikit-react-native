@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { View, BackHandler, TouchableOpacity, Image } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { ConversationsConfiguration, ConversationsConfigurationInterface } from "../CometChatConversations/ConversationsConfiguration";
 import { MessagesConfiguration, MessagesConfigurationInterface } from "../CometChatMessages/MessagesConfiguration";
@@ -44,9 +45,9 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
     const [showComponent, setShowComponent] = useState(ComponentNames.ConversationList);
     // const [showForwarding, setShowForwarding] = useState(false);
 
-    const selectedConversation = useRef<CometChat.Conversation>(null);
-    const selectedUser = useRef<CometChat.User>(user);
-    const selectedGroup = useRef<CometChat.Group>(group);
+    const selectedConversation = useRef<CometChat.Conversation | any>(null);
+    const selectedUser = useRef<CometChat.User | any>(user);
+    const selectedGroup = useRef<CometChat.Group | any>(group);
 
     const openMessagesFor = (item: CometChat.Conversation) => {
         clearSelected();
@@ -159,11 +160,11 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
         CometChatUIEventHandler.addGroupListener(
             uiEventListener,
             {
-                ccGroupDeleted: ({ group }) => {
+                ccGroupDeleted: ({ group }: any) => {
                     if (selectedConversation.current?.getConversationWith()['guid'] == group['guid'] || selectedGroup.current?.getGuid() == group['guid'])
                         setShowComponent(ComponentNames.ConversationList);
                 },
-                ccGroupLeft: ({ leftGroup }) => {
+                ccGroupLeft: ({ leftGroup }: any) => {
                     console.log({ leftGroup });
                     if (selectedConversation.current?.getConversationId() == leftGroup['conversationId'] || selectedGroup.current?.getGuid() == leftGroup['guid'])
                         setShowComponent(ComponentNames.ConversationList);

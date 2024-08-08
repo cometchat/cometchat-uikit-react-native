@@ -45,8 +45,8 @@ export const Styles = StyleSheet.create({
 
   /**Child props style */
   getListStyle: {
-    iconWidth: 24,
-    iconHeight: 24,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',

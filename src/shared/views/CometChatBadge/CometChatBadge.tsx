@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 // @ts-ignore
-import { Text, View } from 'react-native';
+import { Text, TextStyle, View, ViewProps } from 'react-native';
 import { CometChatContextType } from '../../base/Types';
 import { CometChatContext } from '../../CometChatContext';
 import { BadgeStyle } from './BadgeStyle';
@@ -45,7 +45,7 @@ export const CometChatBadge = (props: CometChatBadgeProps) => {
           borderRadius: style.borderRadius,
           width: style.width,
           height: style.height,
-        },
+        } as ViewProps,
         style.border,
       ]}
     >
@@ -56,7 +56,7 @@ export const CometChatBadge = (props: CometChatBadgeProps) => {
             color: style.textColor,
           },
           style.textFont,
-        ]}
+        ] as TextStyle}
       >
         {count > 999 ? '999+' : count}
       </Text>

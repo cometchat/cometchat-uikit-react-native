@@ -15,6 +15,8 @@ export enum MessageEvents {
     onTypingEnded = "onTypingEnded",
     onMessagesDelivered = "onMessagesDelivered",
     onMessagesRead = "onMessagesRead",
+    onMessagesDeliveredToAll = "onMessagesDeliveredToAll",
+    onMessagesReadByAll = "onMessagesReadByAll",
     onMessageEdited = "onMessageEdited",
     onMessageDeleted = "onMessageDeleted",
     onTransientMessageReceived = "onTransientMessageReceived",

@@ -1,13 +1,13 @@
 import {
-    MessageTranslationExtension,
-    MessageTranslationConfigurationInterface
-} from './MessageTranslationExtension';
+  MessageTranslationExtension,
+  MessageTranslationConfigurationInterface,
+} from "./MessageTranslationExtension";
 import { MessageTranslationBubble } from "./MessageTranslationBubble";
 import { MessageTranslationExtensionDecorator } from "./MessageTranslationDecorator";
 
 export {
-    MessageTranslationExtension,
-    MessageTranslationBubble,
-    MessageTranslationConfigurationInterface,
-    MessageTranslationExtensionDecorator,
+  MessageTranslationExtension,
+  MessageTranslationBubble,
+  MessageTranslationExtensionDecorator,
 };
+export type { MessageTranslationConfigurationInterface };

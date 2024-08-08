@@ -2,13 +2,12 @@ import {
   CometChatCreatePoll,
   CometChatCreatePollInterface,
   PollsStyleInterface,
-} from './Polls';
+} from "./Polls";
 import { PollsConfigurationInterface } from "./PollsConfigurations";
 import { PollsExtension } from "./PollsExtension";
-export {
-  PollsExtension,
-  CometChatCreatePoll,
+export { PollsExtension, CometChatCreatePoll };
+export type {
   PollsStyleInterface,
   CometChatCreatePollInterface,
-  PollsConfigurationInterface
+  PollsConfigurationInterface,
 };

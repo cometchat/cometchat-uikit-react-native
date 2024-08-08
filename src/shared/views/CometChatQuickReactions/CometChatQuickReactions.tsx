@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Image, TextStyle } from 'react-native'
 import React, { useContext } from 'react'
 import { QuickReactionsStyle, QuickReactionsStyleInterface } from './QuickReactionsStyle';
 import { CometChatContext } from '../../CometChatContext';
@@ -19,7 +19,7 @@ export const CometChatQuickReactions = (props: CometChatQuickReactionsInterface)
 
     const _style = new QuickReactionsStyle({
         backgroundColor: style?.backgroundColor || theme.palette.getBackgroundColor(),
-        emojiBackgroundColor: style?.emojiBackgroundColor || theme.palette.getSecondary(),
+        emojiBackgroundColor: style?.emojiBackgroundColor || theme.palette.getAccent100(),
         addReactionIconTint: style?.addReactionIconTint || theme?.palette?.getAccent700(),
         borderBottomColor: style?.borderBottomColor || theme?.palette?.getAccent300(),
         ...style,
@@ -49,8 +49,8 @@ export const CometChatQuickReactions = (props: CometChatQuickReactionsInterface)
                     width: 45, height: 45,
                     backgroundColor: emojiBackgroundColor, borderRadius: 40,
                     alignItems: "center", justifyContent: "center"
-                }} onPress={() => onReactionPress && onReactionPress(item)}>
-                    <Text style={[{ fontSize: 25, color: theme?.palette?.getPrimary(), }, theme?.typography?.heading]}>{item}</Text>
+                }} onPress={() => onReactionPress && onReactionPress(item as string)}>
+                    <Text style={[{ fontSize: 25, color: theme?.palette?.getPrimary(), }, theme?.typography?.heading] as TextStyle}>{item}</Text>
                 </TouchableOpacity>
             )}
             <TouchableOpacity

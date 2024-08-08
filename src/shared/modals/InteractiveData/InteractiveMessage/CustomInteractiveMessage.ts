@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MessageTypeConstants } from "../../../constants/UIKitConstants";
 

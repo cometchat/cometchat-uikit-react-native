@@ -11,6 +11,8 @@ export interface ActionSheetStylesInterface extends BaseStyleInterface {
     listItemIconBorderRadius?: number;
     actionSheetSeparatorTint?: string;
     paddingHorizontal?: number;
+    optionsSeparatorTint?:string;
+
 }
 
 /**
@@ -28,6 +30,7 @@ export class ActionSheetStyles extends BaseStyle {
     listItemIconBorderRadius: number;
     actionSheetSeparatorTint: string;
     paddingHorizontal?: number;
+    optionsSeparatorTint?:string;
     /**
      * @param {object} param0 
      * @param {any} width

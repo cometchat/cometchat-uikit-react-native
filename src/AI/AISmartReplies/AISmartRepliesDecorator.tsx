@@ -1,11 +1,12 @@
 import React from "react";
 import { CometChatMessageComposerActionInterface, CometChatTheme, CometChatUIEventHandler, CometChatUIEvents, DataSource, DataSourceDecorator, MessageEvents, localize } from "../../shared";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { State } from "../utils";
 import { AISmartRepliesConfiguration } from "./configuration";
 import { AIOptionsStyle } from "../AIOptionsStyle";
 import { MessageStatusConstants, ReceiverTypeConstants, ViewAlignment } from "../../shared/constants/UIKitConstants";
-import { TouchableOpacity, View, Text, ScrollView, Keyboard } from "react-native";
+import { TouchableOpacity, View, Text, ScrollView, Keyboard, ViewProps } from "react-native";
 import CometChatAICard from "../../shared/views/CometChatAICard/CometChatAICard";
 import { CardViewStyle } from "../CardViewStyle";
 import { getCardViewStyle, getRepliesStyle, getRepliesWrapperStyle } from "../style";
@@ -15,14 +16,14 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
   public group!: CometChat.Group;
   public theme: CometChatTheme = new CometChatTheme({});
   public isPannelVisible: boolean = false;
-  public repliesView: JSX.Element;
+  public repliesView!: JSX.Element;
   public loadingStateText: string = localize("GENERATING_REPLIES");
   public errorStateText: string = localize("SOMETHING_WRONG");
   public emptyStateText: string = localize("NO_MESSAGES_FOUND");
   public cardViewStyle: CardViewStyle = {};
   public keyboardDidShowListener;
-  public keyboardDidHideListener;
-  public loggedInUser!: CometChat.User | null;
+  public keyboardDidHideListener: any;
+  public loggedInUser!: CometChat.User | any;
   private LISTENER_ID: string = "aismartlistener__listener";
 
   constructor(dataSource: DataSource, configuration?: AISmartRepliesConfiguration) {
@@ -30,7 +31,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
     this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this.hideOnKeyboardShow);
     // this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', this.showOnKeyboardShow);
     this.configuration = configuration;
-    this.cardViewStyle = getCardViewStyle(this.theme, this.configuration?.smartRepliesStyle)
+    this.cardViewStyle = getCardViewStyle(this.theme, this.configuration?.smartRepliesStyle || {})
     setTimeout(() => {
       this.addMessageListener();
     }, 1000);
@@ -39,11 +40,11 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
     return "aismartreply";
   }
 
-  override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] {
+  override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] | any[] {
     this.user = user!;
     this.group = group!;
     if (!id?.parentMessageId) {
-      const messageComposerActions: CometChatMessageComposerActionInterface[] = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
+      const messageComposerActions: CometChatMessageComposerActionInterface[] | any[] = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
       let newAction = {
         title: localize("SUGGEST_A_REPLY"),
         onPress: () => {
@@ -52,10 +53,10 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
         id: "smart-replies",
         iconURL: '',
         iconTint: '',
-        titleColor: this.configuration?.smartRepliesStyle?.buttonTextColor || AIOptionsStyle.listItemTitleColor,
-        titleFont: this.configuration?.smartRepliesStyle?.buttonTextFont || AIOptionsStyle.listItemTitleFont,
-        background: this.configuration?.smartRepliesStyle?.backgroundColor || AIOptionsStyle.listItemBackground,
-        cornerRadius: this.configuration?.smartRepliesStyle?.buttonBorderRadius || AIOptionsStyle.listItemBorderRadius,
+        titleColor: this.configuration?.smartRepliesStyle?.buttonTextColor || AIOptionsStyle?.listItemTitleColor,
+        titleFont: this.configuration?.smartRepliesStyle?.buttonTextFont || AIOptionsStyle?.listItemTitleFont,
+        background: this.configuration?.smartRepliesStyle?.backgroundColor || AIOptionsStyle?.listItemBackground,
+        cornerRadius: this.configuration?.smartRepliesStyle?.buttonBorderRadius || AIOptionsStyle?.listItemBorderRadius,
       };
       messageComposerActions.push(newAction);
       return messageComposerActions;
@@ -66,11 +67,11 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
 
 
   private getLoadingView(): JSX.Element {
-    let LoadingView: JSX.Element = this.configuration?.LoadingStateView;
+    let LoadingView = this.configuration?.LoadingStateView;
     return (
       <CometChatAICard
         state={State.loading}
-        style={this.configuration?.smartRepliesStyle}
+        style={this.configuration?.smartRepliesStyle || {}}
         loadingIconURL={this.configuration?.loadingIconURL}
         loadingStateText={this.loadingStateText}
       >
@@ -80,11 +81,11 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
   }
 
   private getEmptyView(): JSX.Element {
-    let EmptyView: JSX.Element = this.configuration?.EmptyStateView
+    let EmptyView = this.configuration?.EmptyStateView
     return (
       <CometChatAICard
         state={State.empty}
-        style={this.configuration?.smartRepliesStyle}
+        style={this.configuration?.smartRepliesStyle || {}}
         emptyIconURL={this.configuration?.emptyIconURL}
         emptyStateText={this.emptyStateText}
       >
@@ -97,7 +98,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
     return (
       <CometChatAICard
         state={State.error}
-        style={this.configuration?.smartRepliesStyle}
+        style={this.configuration?.smartRepliesStyle || {}}
         errorIconURL={this.configuration?.errorIconURL}
         errorStateText={this.errorStateText}
       >
@@ -141,7 +142,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
       let receiverType: string = this.user ? ReceiverTypeConstants.user : ReceiverTypeConstants.group;
       if (this.configuration?.customView) {
         CometChat.getSmartReplies(receiverId, receiverType).then((response: any) => {
-          this.configuration.customView(response).then((res) => {
+          this.configuration?.customView?.(response).then((res: any) => {
             return resolve((<View>{res}</View>))
 
           })
@@ -161,7 +162,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
             if (response[reply] && response[reply] != "") {
               view.push(
                 (<TouchableOpacity
-                  style={getRepliesWrapperStyle(this.theme, this.configuration?.smartRepliesStyle, this.configuration?.listItemStyle)}
+                  style={getRepliesWrapperStyle(this.theme, this.configuration?.smartRepliesStyle || {}, this.configuration?.listItemStyle) as ViewProps}
                   key={response[reply]} // Make sure to set a unique key for each item
                   onPress={() => this.editReply(response[reply])}
                 >
@@ -184,12 +185,12 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
 
   onButtonClick = (): void => {
     this.showDefaultPanel(State.loading)
-    this.getSmartReplies().then((replies) => {
+    this.getSmartReplies().then((replies: any) => {
       if (!replies || (replies?.length && replies.length <= 0)) {
         this.showDefaultPanel(State.empty)
       }
       else {
-        this.repliesView = (<View style={{ width: this.cardViewStyle?.width || "100%", height: this.cardViewStyle?.height || 200, backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius, ...this.cardViewStyle?.border, marginTop: 8 }}>
+        this.repliesView = (<View style={{ width: this.cardViewStyle?.width || "100%", height: this.cardViewStyle?.height || 200, backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius, ...this.cardViewStyle?.border, marginTop: 8 } as ViewProps}>
           <ScrollView style={{ height: "100%", width: "100%" }}>
             {replies}
           </ScrollView>
@@ -221,7 +222,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
             backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius,
             ...this.cardViewStyle?.border,
             justifyContent: "center", alignItems: "center"
-          }}
+          } as ViewProps}
         >
           {state == State.loading ? this.getLoadingView() : (state == State.empty ? this.getEmptyView() : this.getErrorView(error))}
         </View>
@@ -261,16 +262,16 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
       onMediaMessageReceived: (message: CometChat.MediaMessage) => {
         this.closeIfMessageReceived(message);
       },
-      onFormMessageReceived: (formMessage) => {
+      onFormMessageReceived: (formMessage: any) => {
         this.closeIfMessageReceived(formMessage)
       },
-      onCardMessageReceived: (cardMessage) => {
+      onCardMessageReceived: (cardMessage: any) => {
         this.closeIfMessageReceived(cardMessage)
       },
-      onSchedulerMessageReceived: (schedulerMessage) => {
+      onSchedulerMessageReceived: (schedulerMessage: any) => {
         this.closeIfMessageReceived(schedulerMessage)
       },
-      onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
+      onCustomInteractiveMessageReceived: (customInteractiveMessage: any) => {
         this.closeIfMessageReceived(customInteractiveMessage)
       }
     });
@@ -278,7 +279,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
     CometChatUIEventHandler.addMessageListener(
       MessageEvents.ccActiveChatChanged + "_AISmartReplies",
       {
-        ccActiveChatChanged: (data) => {
+        ccActiveChatChanged: (data: any) => {
           // console.log("_________ACTIVE CHAT CHANGED IN AI CONVERSATION SUMMARY")
           // this.currentMessage = data.message!;
           // this.user = data.user!;
@@ -288,7 +289,7 @@ export class AISmartRepliesExtensionDecorator extends DataSourceDecorator {
           //   this.loadConversationSummary();
           // }
         },
-        ccMessageSent: ({ message, status }) => {
+        ccMessageSent: ({ message, status }: any) => {
           if (status == MessageStatusConstants.success && message?.sender?.uid == this.loggedInUser?.uid) {
             this.closePanel();
           }

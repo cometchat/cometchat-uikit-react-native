@@ -31,10 +31,10 @@ export interface ReactNativeZoomableViewProps extends ViewProps {
   initialOffsetY?: number;
   contentWidth?: number;
   contentHeight?: number;
-  panBoundaryPadding?: number;
-  maxZoom?: number;
-  minZoom?: number;
-  doubleTapDelay?: number;
+  panBoundaryPadding?: number | any;
+  maxZoom?: number | any;
+  minZoom?: number | any;
+  doubleTapDelay?: number | any;
   doubleTapZoomToCenter?: boolean;
   bindToBorders?: boolean;
   zoomStep?: number;
@@ -83,14 +83,14 @@ export interface ReactNativeZoomableViewProps extends ViewProps {
     zoomableViewEventObject: ZoomableViewEvent
   ) => void;
   onZoomBefore?: (
-    event: GestureResponderEvent,
-    gestureState: PanResponderGestureState,
-    zoomableViewEventObject: ZoomableViewEvent
+    event: GestureResponderEvent | any,
+    gestureState: PanResponderGestureState | any,
+    zoomableViewEventObject: ZoomableViewEvent | any
   ) => boolean | void;
   onZoomAfter?: (
-    event: GestureResponderEvent,
-    gestureState: PanResponderGestureState,
-    zoomableViewEventObject: ZoomableViewEvent
+    event: GestureResponderEvent | any,
+    gestureState: PanResponderGestureState | any,
+    zoomableViewEventObject: ZoomableViewEvent | any
   ) => void;
   onZoomEnd?: (
     event: GestureResponderEvent,
@@ -141,11 +141,11 @@ export interface ReactNativeZoomableViewProps extends ViewProps {
   onStartShouldSetPanResponderCapture?: (
     event: GestureResponderEvent,
     gestureState: PanResponderGestureState
-  ) => boolean;
+  ) => boolean | any;
   onMoveShouldSetPanResponderCapture?: (
     event: GestureResponderEvent,
     gestureState: PanResponderGestureState
-  ) => boolean;
+  ) => boolean | any;
 }
 
 export interface Vec2D {

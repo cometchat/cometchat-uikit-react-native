@@ -34,7 +34,7 @@ export class GroupsStyle extends BaseStyle {
     titleFont: FontStyleInterface;
     titleColor: string;
     backIconTint: string;
-    createGroupIconTint: string;
+    createGroupIconTint!: string;
     searchBorder: BorderStyleInterface;
     searchBorderRadius: number;
     searchBackgroundColor: string;

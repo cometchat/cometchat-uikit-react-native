@@ -1,7 +1,8 @@
-import { Image, TouchableOpacity, View } from 'react-native'
+import { Image, TouchableOpacity, View, ViewProps } from 'react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { CometChatUsers, UsersConfiguration, UsersConfigurationInterface } from '../CometChatUsers'
+import { CometChatUsers, CometChatUsersInterface, UsersConfiguration, UsersConfigurationInterface } from '../CometChatUsers'
 import { CometChatGroups, GroupsConfiguration, GroupsConfigurationInterface } from '../CometChatGroups'
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { ImageType } from '../shared/helper/types'
 import { ContactsStyleInterface } from './ContactsStyle'
@@ -93,10 +94,10 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
     } = props;
 
     const { theme } = useContext(CometChatContext);
-    const [tabs, setTabs] = useState([])
+    const [tabs, setTabs] = useState<any[]>([])
 
-    const userList = useRef(null);
-    const groupList = useRef(null);
+    const userList = useRef<any>(null);
+    const groupList = useRef<any>(null);
 
     const {
         titleTextFont = theme.typography.heading,
@@ -139,7 +140,7 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
     }
 
     useEffect(() => {
-        let tabOptions = [];
+        let tabOptions: any[] = [];
         groupsConfiguration!.groupsRequestBuilder = groupsConfiguration?.groupsRequestBuilder || new CometChat.GroupsRequestBuilder().setLimit(30).joinedOnly(true);
         groupsConfiguration!.searchRequestBuilder = groupsConfiguration?.searchRequestBuilder || new CometChat.GroupsRequestBuilder().setLimit(30).joinedOnly(true);
         usersConfiguration!.usersRequestBuilder = usersConfiguration?.usersRequestBuilder || new CometChat.UsersRequestBuilder().setLimit(30).hideBlockedUsers(true);
@@ -157,7 +158,7 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
                     }}
                     title=''
                     hideSubmitIcon={true}
-                    {...usersConfiguration}
+                    {...usersConfiguration as CometChatUsersInterface}
                 />
             }
         };
@@ -192,7 +193,7 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
     },[]);
 
     return (
-        <View style={[{ flex: 1 }, border, [height, width, backgroundColor, borderRadius]]}>
+        <View style={[{ flex: 1 }, border, [height, width, backgroundColor, borderRadius]] as ViewProps}>
             <Header
                 AppBarOptions={MakeSelection}
                 showBackButton={true}
@@ -221,7 +222,6 @@ export const CometChatContacts = (props: CometChatContactsInterface) => {
                     activeTabTitleTextColor: activeTabTitleTextColor,
                     tabTitleTextColor: tabTitleTextColor,
                     activeTabBorder: activeTabBorder,
-                    tabBackgroundColor: tabBackgroundColor
                 }}
             />
         </View>

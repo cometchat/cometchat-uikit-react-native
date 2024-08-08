@@ -1,3 +1,4 @@
+//@ts-ignore
 import type { Dayjs } from 'dayjs';
 
 const dateRange = (start: Dayjs, end: Dayjs, jump: 'day' | 'month' = 'day') => {

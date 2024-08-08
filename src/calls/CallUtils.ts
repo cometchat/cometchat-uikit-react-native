@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
   CALL_BUSY,
@@ -24,9 +25,9 @@ export class CallUtils {
   ): string {
     try {
       // if (!(message instanceof CometChat.Call)) return '';
-      let call = message as CometChat.Call;
+      let call: CometChat.Call = message as CometChat.Call;
       let callMessageText = '';
-      let initiator = (call?.getCallInitiator && call?.getCallInitiator()) || call.getInitiator();
+      let initiator = (call?.getCallInitiator && call?.getCallInitiator()) || (call as any)?.getInitiator();
       switch (call.getStatus()) {
         case CALL_INITIATED:
           if (this.isInitiator(initiator, loggedInUser)) {
@@ -78,7 +79,7 @@ export class CallUtils {
 
   static isMissedCall(call: CometChat.Call, loggedInUser: CometChat.User) {
     const callStatus: any = call.getStatus();
-    if (this.isInitiator(call.getInitiator(), loggedInUser)) {
+    if (this.isInitiator((call as any)?.getInitiator(), loggedInUser)) {
       return callStatus === CALL_UNANSWERED;
     } else {
       return [

@@ -1,10 +1,18 @@
-import { ImageModerationExtension, ImageModerationConfigurationInterface } from './ImageModerationExtension';
+import {
+  ImageModerationExtension,
+  ImageModerationConfigurationInterface,
+} from "./ImageModerationExtension";
 import { ImageModerationExtensionDecorator } from "./ImageModerationDecorator";
-import { ImageModerationFilter, ImageModerationFilterInterface } from "./ImageModerationFilter";
+import {
+  ImageModerationFilter,
+  ImageModerationFilterInterface,
+} from "./ImageModerationFilter";
 export {
-    ImageModerationExtension,
-    ImageModerationConfigurationInterface,
-    ImageModerationExtensionDecorator,
-    ImageModerationFilter,
-    ImageModerationFilterInterface,
+  ImageModerationExtension,
+  ImageModerationExtensionDecorator,
+  ImageModerationFilter,
+};
+export type {
+  ImageModerationConfigurationInterface,
+  ImageModerationFilterInterface,
 };

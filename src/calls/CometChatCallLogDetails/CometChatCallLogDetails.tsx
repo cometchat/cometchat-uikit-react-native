@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, TouchableOpacity, Image, Text, SectionList } from 'react-native'
+import { View, TouchableOpacity, Image, Text, SectionList, TextStyle } from 'react-native'
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { AvatarStyle, AvatarStyleInterface, CometChatAvatar, CometChatContext, CometChatDetailsTemplate, ImageType, localize } from '../../shared'
 import { Style } from './style'
@@ -9,7 +10,7 @@ import { CallLogDetailsStyle, CallLogDetailsStyleInterface } from './CallLogDeta
 import { CallingDetailsUtils } from '../CallingDetailsUtils'
 import { CometChatParticipants } from '../CometChatCallLogParticipants/CometChatCallLogParticipants'
 import { CometChatRecordings } from '../CometChatCallLogRecordings/CometChatCallLogRecordings'
-import { CallLogHistoryConfiguration, CometChatCallLogHistory } from '../CometChatCallLogHistory'
+import { CometChatCallLogHistory, CometChatCallLogHistoryInterface } from '../CometChatCallLogHistory'
 import { CallLogParticipantsConfiguration } from '../CometChatCallLogParticipants'
 import { CallLogRecordingsConfiguration } from '../CometChatCallLogRecordings/CallLogRecordingsConfiguration'
 
@@ -68,7 +69,7 @@ export interface CometChatCallLogDetailsConfigurationInterface {
   /**
    * Configuration for call history.
    */
-  callLogHistoryConfiguration?: CallLogHistoryConfiguration;
+  callLogHistoryConfiguration?: CometChatCallLogHistoryInterface;
   /**
    * Configuration for call log participants.
    */
@@ -99,7 +100,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
   } = props;
 
   const { theme } = useContext(CometChatContext);
-  const [tempates, setTemplates] = useState([]);
+  const [tempates, setTemplates] = useState<any[]>([]);
   const [group, setGroup] = useState(undefined);
   const [user, setUser] = useState(undefined);
   const [error, setError] = useState(undefined);
@@ -107,7 +108,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
   const [participantsData, setParticipantsData] = useState([]);
   const [recordingsData, setRecordingsData] = useState([]);
   const [callData, setCallData] = useState(call);
-  const loggedInUser = useRef(null);
+  const loggedInUser = useRef<CometChat.User | any>(null);
 
   const _avatarStyle = new AvatarStyle({
     nameTextColor: theme.palette.getAccent(),
@@ -129,7 +130,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
 
   useEffect(() => {
     CometChat.getLoggedinUser().then(
-      (loggedUser: CometChat.User) => {
+      (loggedUser: CometChat.User | any) => {
         let tmpList: CometChatDetailsTemplate[];
         loggedInUser.current = loggedUser;
         console.log({ callData })
@@ -143,7 +144,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
           detailsTemplate.push(CallingDetailsUtils.getSecondaryDetailsTemplate(callData, loggedInUser.current, theme));
           tmpList = [...detailsTemplate];
         }
-        setTemplates(tmpList.map(item => {
+        setTemplates(tmpList.map((item: any) => {
           item['data'] = item.options;
           return item;
         }))
@@ -158,10 +159,10 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
     CometChat.addUserListener(
       listenerId,
       new CometChat.UserListener({
-        onUserOnline: (user) => {
+        onUserOnline: (user: any) => {
           setUser(user);
         },
-        onUserOffline: (user) => {
+        onUserOffline: (user: any) => {
           setUser(user);
         },
       })
@@ -171,7 +172,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
     }
   }, [callData]);
 
-  const _render = ({ item, onClick }) => {
+  const _render = ({ item, onClick }: any) => {
     function _onPress() {
       if (onClick) {
         onClick(item);
@@ -198,7 +199,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
         <CustomView />
       </TouchableOpacity>
     }
-    return <></>;
+    return <View/>;
   }
 
   console.log({user, group})
@@ -218,7 +219,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
                 <Image style={[Style.imageStyle, { tintColor: _callLogDetailsStyle.closeIconTint }]} source={closeButtonIconImage || CloseIcon} />
               </TouchableOpacity>
             }
-            <Text style={[theme.typography.heading, Style.heading, { color: theme.palette.getAccent() }]}>{title}</Text>
+            <Text style={[theme.typography.heading, Style.heading, { color: theme.palette.getAccent() }] as TextStyle}>{title}</Text>
           </View>
         }
         {
@@ -233,7 +234,7 @@ export const CometChatCallLogDetails = (props: CometChatCallLogDetailsConfigurat
                 image={user && user['avatar'] ? { uri: user['avatar'] } : group ? { uri: group['icon'] || group['avatar'] } : undefined}
                 name={user ? user['name'] : group ? group['name'] : undefined}
               />
-              <Text style={[{ marginVertical: 10, color: _callLogDetailsStyle.titleColor }, _callLogDetailsStyle.titleFont]}>{user ? user['name'] : group ? group['name'] : undefined}</Text>
+              <Text style={[{ marginVertical: 10, color: _callLogDetailsStyle.titleColor }, _callLogDetailsStyle.titleFont] as TextStyle}>{user ? user['name'] : group ? group['name'] : undefined}</Text>
             </View>
             <SectionList
               sections={tempates}

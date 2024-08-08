@@ -26,13 +26,13 @@ import { Platform, NativeModules } from 'react-native';
 class CometChatLocalize {
     /**Properties and constants */
     static fallbackLanguage = "en";
-    static locale;
+    static locale: string;
     static rtlLanguages = ["ar"];
     static direction = Object.freeze({
         ltr: "ltr",
         rtl: "rtl",
     });
-    static translations = {
+    static translations: any = {
         ar: translationAR,
         de: translationDE,
         en: translationEN,
@@ -118,7 +118,7 @@ class CometChatLocalize {
      * Set the active language
      * @param {String} language
      */
-    static setLocale = (language) => {
+    static setLocale = (language: any) => {
         this.locale = language;
     };
 
@@ -127,7 +127,7 @@ class CometChatLocalize {
      * @param {String} str
      * @returns {String} localized str
      */
-    static localize(str) {
+    static localize(str: any) {
         let language = this.getLocale();
         return this.translations[language][str];
     }
@@ -177,6 +177,6 @@ class CometChatLocalize {
  * @param {String} str
  * @returns {String} localized str
  */
-const localize = (str) => CometChatLocalize.localize(str);
+const localize = (str: any) => CometChatLocalize.localize(str);
 
 export { CometChatLocalize, localize };

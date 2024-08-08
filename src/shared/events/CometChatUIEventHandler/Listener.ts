@@ -1,6 +1,6 @@
 import { SuggestionItem } from "../../views";
 
-export function isFalsy($false) {
+export function isFalsy($false: any) {
     if ($false != null) {
         if (typeof $false == "string") $false = $false.trim();
         if (typeof $false == "object" && Object.keys($false).length === 0) $false = undefined;
@@ -35,8 +35,8 @@ type MessageUIEvents = {
     onInteractionGoalCompleted?: Function,
     onMessageReactionAdded?: Function,
     onMessageReactionRemoved?: Function,
-
-    // ccMessageForwarded?:Function,
+    onMessagesDeliveredToAll?: Function,
+    onMessagesReadByAll?: Function
 }
 export class MessageUIEventListener {
     ccMessageSent?: Function = undefined;
@@ -64,7 +64,8 @@ export class MessageUIEventListener {
     onInteractionGoalCompleted?: Function = undefined;
     onMessageReactionAdded?: Function = undefined;
     onMessageReactionRemoved?: Function = undefined;
-    // ccMessageForwarded?:Function =  undefined;
+    onMessagesDeliveredToAll?: Function = undefined;
+    onMessagesReadByAll?: Function = undefined;
     constructor({
         ccMessageSent,
         ccMessageEdited,
@@ -91,7 +92,8 @@ export class MessageUIEventListener {
         onInteractionGoalCompleted,
         onMessageReactionAdded,
         onMessageReactionRemoved,
-        // ccMessageForwarded,
+        onMessagesDeliveredToAll,
+        onMessagesReadByAll
     }: MessageUIEvents) {
         if (!isFalsy(ccMessageError)) this.ccMessageError = ccMessageError;
         if (!isFalsy(ccMessageDelivered)) this.ccMessageDelivered = ccMessageDelivered;
@@ -119,8 +121,8 @@ export class MessageUIEventListener {
         if (!isFalsy(onInteractionGoalCompleted)) this.onInteractionGoalCompleted = onInteractionGoalCompleted;
         if (!isFalsy(onMessageReactionAdded)) this.onMessageReactionAdded = onMessageReactionAdded;
         if (!isFalsy(onMessageReactionRemoved)) this.onMessageReactionRemoved = onMessageReactionRemoved;
-
-        // if (!isFalsy(ccMessageForwarded)) this.ccMessageForwarded = ccMessageForwarded;
+        if (!isFalsy(onMessagesDeliveredToAll)) this.onMessagesDeliveredToAll = onMessagesDeliveredToAll;
+        if (!isFalsy(onMessagesReadByAll)) this.onMessagesReadByAll = onMessagesReadByAll;
     }
 }
 
@@ -136,7 +138,7 @@ type CallUIEvents = {
     ccCallEnded?: Function,
     ccCallInitiated?: Function,
     ccCallFailed?: Function,
-    ccShowOngoingCall?: (CometChatOngoingComponent) => void,
+    ccShowOngoingCall?: (CometChatOngoingComponent: any) => void,
 }
 
 type PanelUIEvents = {
@@ -168,7 +170,7 @@ export class CallUIEventListener {
     ccOutgoingCallCancelled?: Function = undefined;
     ccCallFailed?: Function = undefined;
     ccCallInitiated?: Function = undefined;
-    ccShowOngoingCall?: (CometChatOngoingComponent) => void;
+    ccShowOngoingCall?: (CometChatOngoingComponent: any) => void;
 
     constructor({
         ccIncomingCallReceived,
@@ -218,20 +220,20 @@ export class UserUIEventListener {
 
 
 type UIEvents = {
-    showPanel?: (item)=>void,
-    hidePanel?: (item)=>void,
-    ccToggleBottomSheet?: (item)=>void,
-    openChat?: (item)=>void,
-    ccComposeMessage?:(item)=>void,
+    showPanel?: (item: any)=>void,
+    hidePanel?: (item: any)=>void,
+    ccToggleBottomSheet?: (item: any)=>void,
+    openChat?: (item: any)=>void,
+    ccComposeMessage?:(item: any)=>void,
     // ccMentionClick?:(item)=>void,
     ccSuggestionData?:(item: {id: string | number, data: Array<SuggestionItem>})=>void,
 }
 export class UIEventListener {
-    showPanel?: (item)=>void;
-    hidePanel?: (item)=>void;
-    ccToggleBottomSheet?: (item)=>void;
-    openChat?: (item)=>void;
-    ccComposeMessage?:(item)=>void;
+    showPanel?: (item: any)=>void;
+    hidePanel?: (item: any)=>void;
+    ccToggleBottomSheet?: (item: any)=>void;
+    openChat?: (item: any)=>void;
+    ccComposeMessage?:(item: any)=>void;
     // ccMentionClick?:(item)=>void;
     ccSuggestionData?:(item: {id: string | number, data: Array<SuggestionItem>})=>void;
     constructor({
@@ -277,7 +279,7 @@ export class GroupUIEventListener {
         ccGroupMemberJoined,
         ccGroupMemberAdded,
         ccGropuMemberleft,
-    }) {
+    }: any) {
 
         if (!isFalsy(ccGropuMemberleft)) this.ccGropuMemberleft = ccGropuMemberleft;
 
@@ -322,7 +324,7 @@ export class UserCallUIEventListener {
         ccAudioModesUpdated,
         ccCallEnded,
         ccError,
-    }) {
+    }: any) {
         if (!isFalsy(ccYouLeft)) this.ccYouLeft = ccYouLeft;
         if (!isFalsy(ccYouJoined)) this.ccYouJoined = ccYouJoined;
         if (!isFalsy(ccUserJoined)) this.ccUserJoined = ccUserJoined;
@@ -364,9 +366,9 @@ export class Listener implements EventListener {
 
 export class MessageListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: MessageUIEventListener;
+    _eventListener: MessageUIEventListener | undefined;
     constructor(name: string, messageEventListener?: MessageUIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = messageEventListener;
         if (cursor) this._cursor = cursor;
     }
@@ -374,18 +376,18 @@ export class MessageListener extends Listener implements EventListener {
 
 export class ConversationListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: ConversationUIEventListener;
+    _eventListener: ConversationUIEventListener | undefined;
     constructor(name: string, userEventHandler?: ConversationUIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = userEventHandler;
         if (cursor) this._cursor = cursor;
     }
 }
 export class UserListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: UserUIEventListener;
+    _eventListener: UserUIEventListener | undefined;
     constructor(name: string, userEventHandler?: UserUIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = userEventHandler;
         if (cursor) this._cursor = cursor;
     }
@@ -393,9 +395,9 @@ export class UserListener extends Listener implements EventListener {
 
 export class UIListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: UIEventListener;
+    _eventListener: UIEventListener | undefined;
     constructor(name: string, uiEventHandler?: UIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = uiEventHandler;
         if (cursor) this._cursor = cursor;
     }
@@ -403,9 +405,9 @@ export class UIListener extends Listener implements EventListener {
 
 export class GroupListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: GroupUIEventListener;
+    _eventListener: GroupUIEventListener | undefined;
     constructor(name: string, groupEventHandler?: GroupUIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = groupEventHandler;
         if (cursor) this._cursor = cursor;
     }
@@ -413,27 +415,27 @@ export class GroupListener extends Listener implements EventListener {
 
 export class UserCallListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: UserCallUIEventListener;
+    _eventListener: UserCallUIEventListener | undefined;
     constructor(callEventHandler?: UserCallUIEventListener, cursor?: number, callback?: Function) {
-        super("callListner", callback);
+        super("callListner", callback || function(){});
         this._eventListener = callEventHandler;
     }
 }
 
 export class CallListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: CallUIEventListener;
+    _eventListener: CallUIEventListener | undefined;
     constructor(name: string, callEventListner?: CallUIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = callEventListner;
     }
 }
 
 export class PanelListener extends Listener implements EventListener {
     _cursor?: number;
-    _eventListener: PanelUIEventListener;
+    _eventListener: PanelUIEventListener | undefined;
     constructor(name: string, panelEventListner?: PanelUIEventListener, cursor?: number, callback?: Function) {
-        super(name, callback);
+        super(name, callback || function(){});
         this._eventListener = panelEventListner;
     }
 }

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { View, Image, TouchableOpacity, BackHandler } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatGroups, GroupsConfiguration, GroupsConfigurationInterface } from "../CometChatGroups";
 import { MessagesConfiguration, MessagesConfigurationInterface } from "../CometChatMessages/MessagesConfiguration";
@@ -47,8 +48,8 @@ export const CometChatGroupsWithMessages = (props: CometChatGroupsWithMessagesIn
     const [joinProtectedGroup, setJoinProtectedGroup] = useState(false);
     // const [showForwarding, setShowForwarding] = useState(false);
 
-    const selectedGroup= useRef(group && group instanceof CometChat.Group ? group : undefined);
-    const selectedUser = useRef();
+    const selectedGroup= useRef<any>(group && group instanceof CometChat.Group ? group : undefined);
+    const selectedUser = useRef<any>();
 
     const _createGroupConfig = new CreateGroupConfiguration({...createGroupConfiguration});
 
@@ -59,7 +60,7 @@ export const CometChatGroupsWithMessages = (props: CometChatGroupsWithMessagesIn
             setShowComponent(ComponentNames.Messages);
         } else {
         if (item['type'] == "public") {
-            CometChat.joinGroup(item, item['type']).then((result) => {
+            CometChat.joinGroup(item, item['type']).then((result: any) => {
                 item['hasJoined'] = true;
                 item['membersCount'] = item['membersCount'] + 1;
                 item['scope'] = "participant";
@@ -146,13 +147,13 @@ export const CometChatGroupsWithMessages = (props: CometChatGroupsWithMessagesIn
       CometChatUIEventHandler.addGroupListener(
         uiEventListener,
         {
-            ccGroupCreated: ({group}) => {
+            ccGroupCreated: ({group}: any) => {
                 selectedGroup.current = group;
                 setTimeout(() => {
                     setShowComponent(ComponentNames.Messages);
                 }, 200);
             },
-            ccGroupMemberJoined: ({joinedGroup}) => {
+            ccGroupMemberJoined: ({joinedGroup}: any) => {
                 console.log("joined", joinedGroup);
                 joinedGroup['hasJoined'] = true;
                 joinedGroup['scope'] = "participant";
@@ -161,18 +162,18 @@ export const CometChatGroupsWithMessages = (props: CometChatGroupsWithMessagesIn
                     setShowComponent(ComponentNames.Messages);
                 }, 200);
             },
-            ccGroupDeleted: ({group}) => {
+            ccGroupDeleted: ({group}: any) => {
                 selectedGroup.current = null;
                 setShowComponent(ComponentNames.GroupsList);
             },
-            ccGroupLeft: ({group}) => {
+            ccGroupLeft: ({group}: any) => {
                 selectedGroup.current = null;
                 setShowComponent(ComponentNames.GroupsList);
             }
         }
       )
       CometChatUIEventHandler.addUIListener(uiEventListener, {
-        openChat: ({user, group}) => {
+        openChat: ({user, group}: any) => {
             setShowComponent(ComponentNames.GroupsList);
             // clearSelected();
             if (user != undefined) {

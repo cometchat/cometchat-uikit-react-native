@@ -1,5 +1,5 @@
 import React, { useContext, useRef } from "react";
-import { View, Image, NativeModules, Text, Platform } from "react-native";
+import { View, Image, NativeModules, Text, Platform, ViewProps } from "react-native";
 import { downloadIcon, fileIcon } from "./resources";
 import { CometChatContext } from "../../CometChatContext"
 import { FileBubbleStyle, FileBubbleStyleInterface } from "./FileBubbleStyle";
@@ -76,7 +76,7 @@ export const CometChatFileBubble = ({
         if(!fileUrl) return;
         
         setProcessing(true);
-        FileManager.checkAndDownload(fileUrl, getFileName(), async (storedFilePath) => {
+        FileManager.checkAndDownload(fileUrl, getFileName(), async (storedFilePath: any) => {
             console.log(storedFilePath);
             setProcessing(false);
         });
@@ -165,7 +165,7 @@ export const CometChatFileBubble = ({
     }
 
     return (
-        <View {...viewProps} style={[Style.container, { backgroundColor, borderWidth: border.borderWidth, borderColor: border.borderColor, borderRadius, height, width }]}>
+        <View {...viewProps} style={[Style.container, { backgroundColor, borderWidth: border?.borderWidth, borderColor: border?.borderColor, borderRadius, height, width }] as ViewProps}>
             <View {...viewPropsForAndroid} style={Style.messageInfoStyle}>
                 {
                     title && <Text

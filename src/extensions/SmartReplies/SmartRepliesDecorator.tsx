@@ -22,7 +22,7 @@ import { CommonUtils } from '../../shared/utils/CommonUtils';
 export class SmartRepliesDecorator extends DataSourceDecorator {
   smartRepliesConfiguration?: SmartRepliesConfigurationInterface;
 
-  loggedInUser: CometChat.User;
+  loggedInUser!: CometChat.User | null;
 
   constructor(
     dataSource: DataSource,
@@ -34,20 +34,20 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     }
 
     CometChat.getLoggedinUser()
-      .then((u) => {
+      .then((u: any) => {
         this.loggedInUser = u;
       })
-      .catch((err) => console.log(err));
+      .catch((err: any) => console.log(err));
 
     CometChatUIEventHandler.addMessageListener(
       MessageEvents.ccActiveChatChanged,
       {
-        ccActiveChatChanged: ({message}) => {
-          if(message && message['sender']?.['uid'] != this.loggedInUser.getUid())
+        ccActiveChatChanged: ({message}: any) => {
+          if(message && message['sender']?.['uid'] != this.loggedInUser?.getUid())
             this.getReplies(message);
         },
-        onTextMessageReceived: (textMessage) => {
-          if(textMessage && textMessage['sender']?.['uid'] != this.loggedInUser.getUid())
+        onTextMessageReceived: (textMessage: any) => {
+          if(textMessage && textMessage['sender']?.['uid'] != this.loggedInUser?.getUid())
           this.getReplies(textMessage);
         },
       }
@@ -62,14 +62,14 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     return 'SmartReply';
   }
 
-  getReplies(message) {
+  getReplies(message: any) {
 
     let id = CommonUtils.getComponentIdFromMessage(message);
     const smartReplyData = getExtentionData(
       message,
       ExtensionConstants.smartReply
     );
-    let options = [];
+    let options: any[] = [];
     if (
       smartReplyData &&
       Object.keys(smartReplyData).length &&
@@ -95,7 +95,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     });
   }
 
-  handleSendMessage = (message, smartReply) => {
+  handleSendMessage = (message: any, smartReply: any) => {
     let chatWithId = '';
     let id = CommonUtils.getComponentIdFromMessage(message)
     let chatWith;
@@ -116,7 +116,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
       chatWith
     );
     textMessage.setParentMessageId(message.getParentMessageId());
-    textMessage.setSender(this.loggedInUser);
+    this.loggedInUser && textMessage.setSender(this.loggedInUser);
     textMessage.setText(smartReply);
     textMessage.setSentAt(getUnixTimestamp());
     textMessage.setMuid(String(getUnixTimestampInMilliseconds()));

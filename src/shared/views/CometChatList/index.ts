@@ -3,9 +3,9 @@ import {
   CometChatListProps,
   CometChatListActionsInterface,
   CometChatListStylesInterface,
-} from './CometChatList';
-export {
-  CometChatList,
+} from "./CometChatList";
+export { CometChatList };
+export type {
   CometChatListProps,
   CometChatListActionsInterface,
   CometChatListStylesInterface,

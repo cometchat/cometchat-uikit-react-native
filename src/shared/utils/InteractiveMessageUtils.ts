@@ -1,5 +1,6 @@
 import { MessageTypeConstants, goalType } from "../constants/UIKitConstants";
 import { CardMessage, CustomInteractiveMessage, FormMessage, SchedulerMessage } from "../modals/InteractiveData";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 export class InteractiveMessageUtils {
 
@@ -26,18 +27,18 @@ export class InteractiveMessageUtils {
         let _interactedElements = [...interactedElements] || [];
 
         switch (neededInteractionElementCondition) {
-            case goalType.anyOf:
+            case goalType.anyOf.toString():
                 completed = _interactedElements.find((element: CometChat.Interaction) =>
                     neededInteractionElement.includes(element.getElementId())
                 )
                     ? true
                     : false;
                 break;
-            case goalType.anyAction:
+            case goalType.anyAction.toString():
                 completed = _interactedElements.length > 0 ? true : false;
                 break;
-            case goalType.allOf:
-                completed = neededInteractionElement.every((element) =>
+            case goalType.allOf.toString():
+                completed = neededInteractionElement.every((element: any) =>
                     _interactedElements.find(
                         (interaction: CometChat.Interaction) =>
                             interaction.getElementId() === element
@@ -46,7 +47,7 @@ export class InteractiveMessageUtils {
                     ? true
                     : false;
                 break;
-            case goalType.none:
+            case goalType.none.toString():
                 completed = false;
                 break;
             default:

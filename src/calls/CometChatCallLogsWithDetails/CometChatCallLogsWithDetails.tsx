@@ -1,18 +1,19 @@
 import React, { useState, useRef, useContext } from 'react'
 import { View } from 'react-native'
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { CometChatCallLogs } from '../CometChatCallLogs/CometChatCallLogs'
 import { Style } from './style'
 import { CometChatContext } from '../../shared'
 import { CometChatCallLogDetails } from '../CometChatCallLogDetails/CometChatCallLogDetails'
 import { CallLogsConfigurationInterface } from '../CometChatCallLogs/CallLogsConfiguration'
-import { CallLogDetailsConfigurationInterface } from '../CometChatCallLogDetails'
+import { CometChatCallLogDetailsConfigurationInterface } from '../CometChatCallLogDetails'
 
 interface CometChatCallLogsWithDetailsConfigurationInterface {
     call?: any,
     onError?: (e: CometChat.CometChatException) => void,
     CallLogsConfiguration?: CallLogsConfigurationInterface,
-    callLogDetailsConfiguration?: CallLogDetailsConfigurationInterface,
+    callLogDetailsConfiguration?: CometChatCallLogDetailsConfigurationInterface,
 }
 
 export const CometChatCallLogsWithDetails = (props: CometChatCallLogsWithDetailsConfigurationInterface) => {

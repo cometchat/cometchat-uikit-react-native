@@ -1,4 +1,5 @@
-import { StyleProp, ViewStyle } from "react-native/types";
+import { StyleProp, ViewStyle } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { DatePattern, ImageType, ListItemStyleInterface } from "../../shared";
 import { CallRecordingsStyleInterface } from "./CallLogRecordingsStyle";
@@ -36,8 +37,8 @@ export class CallLogRecordingsConfiguration implements CallLogRecordingsConfigur
     /**
      * Recording list
      */
-    data: any[]
-    datePattern: DatePattern; //'timeFormat' | 'dayDateFormat' | 'dayDateTimeFormat'
+    data!: any[]
+    datePattern!: DatePattern; //'timeFormat' | 'dayDateFormat' | 'dayDateTimeFormat'
     hideSeperator?: boolean
     BackButton?: JSX.Element
     showBackButton?: boolean
@@ -56,6 +57,7 @@ export class CallLogRecordingsConfiguration implements CallLogRecordingsConfigur
     constructor(props: CallLogRecordingsConfigurationInterface) {
         if (props) {
             for (const [key, value] of Object.entries(props)) {
+                //@ts-ignore
                 this[key] = value;
             }
         }

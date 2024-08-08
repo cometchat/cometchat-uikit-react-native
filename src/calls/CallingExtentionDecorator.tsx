@@ -1,5 +1,6 @@
 import React from "react";
 import { Modal, Text, View, Image, Platform } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatMessageTemplate } from "../shared/modals";
 import { localize } from "../shared/resources/CometChatLocalize";
@@ -15,7 +16,7 @@ import { CometChatCallButtons } from "./CometChatCallButtons";
 import { CometChatOngoingCall } from "./CometChatOngoingCall";
 import { CallingPackage } from "./CallingPackage";
 import { CallUtils } from "./CallUtils";
-import { CometChatUIEventHandler } from "../shared";
+import { ChatConfigurator, CometChatUIEventHandler } from "../shared";
 import { CallUIEvents } from "./CallEvents";
 import { permissionUtil } from "../shared/utils/PermissionUtil";
 import { AdditionalBubbleStylingParams } from "../shared/base/Types";
@@ -24,16 +25,16 @@ const CometChatCalls = CallingPackage.CometChatCalls;
 
 export class CallingExtensionDecorator extends DataSourceDecorator {
 
-    configuration: CallingConfiguration;
-    loggedInUser: CometChat.User;
+    configuration!: CallingConfiguration;
+    loggedInUser!: CometChat.User;
 
     constructor(props: { dataSource: DataSource, configuration: CallingConfiguration }) {
         super(props.dataSource);
         CometChat.getLoggedinUser()
-            .then(user => {
+            .then((user: any) => {
                 this.loggedInUser = user;
             })
-            .catch(err => {
+            .catch((err: any) => {
                 console.log("unable to get logged in user.");
             })
         if (props.configuration) {
@@ -64,9 +65,9 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         return categories;
     }
 
-    UserCallBubbleView = ({ message, theme }) => {
+    UserCallBubbleView = ({ message, theme }: any) => {
         if (this.isDeletedMessage(message))
-            return null;
+            return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
 
         const callStatus = CallUtils.getCallStatus(message, this.loggedInUser);
         return <View style={{ justifyContent: "space-around", alignItems: "center" }}>
@@ -81,7 +82,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         </View>
     }
 
-    getUserAudioCallTemplate = (theme) => {
+    getUserAudioCallTemplate = (theme: CometChatTheme) => {
         return new CometChatMessageTemplate({
             category: MessageCategoryConstants.call,
             type: MessageTypeConstants.audio,
@@ -94,7 +95,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         });
     }
 
-    getUserVideoCallTemplates = (theme) => {
+    getUserVideoCallTemplates = (theme: CometChatTheme) => {
         return new CometChatMessageTemplate({
             category: MessageCategoryConstants.call,
             type: MessageTypeConstants.video,
@@ -107,17 +108,17 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         });
     }
 
-    GroupCallBubbleView = (props: { message: CometChat.BaseMessage, theme: CometChatTheme, alignment: string }) => {
+    GroupCallBubbleView = (props: { message: CometChat.BaseMessage | any, theme: CometChatTheme, alignment?: string }) => {
         const { message, theme, alignment } = props;
 
         if (this.isDeletedMessage(message))
-            return null
+            return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
 
         return (
             <View>
                 <CometChatCallBubble
                     buttonText={localize("JOIN")}
-                    title={alignment == "right" ? localize("YOU_INITIATED_GROUP_CALL") : `${message['sender']['name']} ${localize("INITIATED_GROUP_CALL")}`}
+                    title={alignment == "right" ? localize("YOU_INITIATED_GROUP_CALL") : `${message['sender']['name'].trim()} ${localize("INITIATED_GROUP_CALL")}`}
                     icon={VideoIcon}
                     onClick={() => this.startDirectCall(message['customData']['sessionId'], theme)}
                     style={{
@@ -144,7 +145,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
                             child: null,
                         })
                     },
-                    onError: (error) => {
+                    onError: (error: any) => {
                         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccShowOngoingCall, {
                             child: null,
                         })
@@ -170,7 +171,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         });
     }
 
-    getAuxiliaryHeaderAppbarOptions(user, group, theme: CometChatTheme) {
+    getAuxiliaryHeaderAppbarOptions(user: any, group: any, theme: CometChatTheme) {
         return <View>
             <CometChatCallButtons
                 user={user}
@@ -187,14 +188,13 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
         </View>
     }
 
-    getGroupCallTemplate = (theme) => {
+    getGroupCallTemplate = (theme: CometChatTheme) => {
         return new CometChatMessageTemplate({
             category: MessageCategoryConstants.custom,
             type: MessageTypeConstants.meeting,
             ContentView: (message, alignment) => this.GroupCallBubbleView({ message, alignment, theme }),
             options: (loggedInUser, messageObject, group) => {
-                let commonOptions = super.getCommonOptions(loggedInUser, messageObject, group)
-                return commonOptions.filter(option => option.id == MessageOptionConstants.deleteMessage)
+                return super.getCommonOptions(loggedInUser, messageObject, (group as CometChat.Group));
             },
         })
     }

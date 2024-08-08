@@ -29,6 +29,7 @@ export class CreateGroupConfiguration {
   constructor(props: CreateGroupConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {
+        //@ts-ignore
         this[key] = value;
       }
   }

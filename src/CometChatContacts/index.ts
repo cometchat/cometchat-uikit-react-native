@@ -3,9 +3,11 @@ import { ContactsConfigurationInterface } from "./ContactsConfiguration";
 import { ContactsStyleInterface } from "./ContactsStyle";
 
 export {
-    CometChatContacts,
+    CometChatContacts
+};
+export type {
     CometChatContactsInterface,
     // ContactsConfigurationInterface as ForwardMessageConfigurationInterface,
     ContactsConfigurationInterface as StartConversationConfigurationInterface,
-    ContactsStyleInterface,
-}
+    ContactsStyleInterface
+};

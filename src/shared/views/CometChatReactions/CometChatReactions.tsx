@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TextStyle, TouchableOpacity, View } from 'react-native';
 import { CometChatContext } from "../../CometChatContext";
 import { Styles } from './style';
 //@ts-ignore
@@ -24,8 +24,8 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
   } = props;
 
   const { theme } = useContext(CometChatContext);
-  const [reactionList, setReactionList] = React.useState([]);
-  const reactionRef = React.useRef([]);
+  const [reactionList, setReactionList] = React.useState<any[]>([]);
+  const reactionRef = React.useRef<any[]>([]);
 
   const _style = new ReactionsStyle({
     emojiFont: style?.emojiFont || theme?.typography?.text1,
@@ -53,7 +53,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
     primaryBorder,
   } = _style;
 
-  const reactionView = (reactionObj, index) => {
+  const reactionView = (reactionObj: any, index: any) => {
     let count: number = reactionObj?.count;
     let Emoji: string = reactionObj?.reaction;
     let Count: JSX.Element = <Text
@@ -61,7 +61,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
         Styles.reactionCountStyle,
         { color: countColor },
         countFont,
-      ]}
+      ] as TextStyle}
     >
       {count}
     </Text>;
@@ -76,10 +76,10 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
         { backgroundColor: theme.palette.getBackgroundColor() }]}>
         <TouchableOpacity
           onPress={() => {
-            onReactionPress(reactionObj, messageObject);
+            onReactionPress && messageObject && onReactionPress(reactionObj, messageObject);
           }}
           onLongPress={() => {
-            onReactionLongPress(reactionObj, messageObject);
+            onReactionLongPress && messageObject && onReactionLongPress(reactionObj, messageObject);
           }}
           key={Math.random()}
           style={[
@@ -91,7 +91,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
             }
           ]}
         >
-          <Text style={[Styles.reactionListStyle, emojiFont]}>
+          <Text style={[Styles.reactionListStyle, emojiFont] as TextStyle}>
             {Emoji}&nbsp;{Count}
           </Text>
         </TouchableOpacity>
@@ -101,9 +101,9 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
 
   const extraEmojisView = (numberOfExtraEmojis: number) => {
     let extraEmojis = reactionRef.current.slice(reactionRef.current.length - numberOfExtraEmojis);
-    let hasReactedByMe = extraEmojis.some((reaction) => reaction.reactedByMe);
+    let hasReactedByMe = extraEmojis.some((reaction: any) => reaction.reactedByMe);
 
-    let totalCount = reactionRef.current.reduce((acc, curr) => acc + curr.count, 0);
+    let totalCount = reactionRef.current.reduce((acc: any, curr: any) => acc + curr.count, 0);
     let AllObj = new CometChat.ReactionCount("All", totalCount, false); // { reaction: "All", count: totalCount };
 
     return (
@@ -115,10 +115,10 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
         { backgroundColor: theme.palette.getBackgroundColor() }]}>
         <TouchableOpacity
           onPress={() => {
-            onReactionLongPress(AllObj, messageObject);
+            onReactionLongPress && messageObject && onReactionLongPress(AllObj, messageObject);
           }}
           onLongPress={() => {
-            onReactionLongPress(AllObj, messageObject);
+            onReactionLongPress && messageObject && onReactionLongPress(AllObj, messageObject);
           }}
           key={Math.random()}
           style={[
@@ -131,7 +131,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
             },
           ]}
         >
-          <Text style={[Styles.reactionListStyle, emojiFont]}>
+          <Text style={[Styles.reactionListStyle, emojiFont] as TextStyle}>
             +{numberOfExtraEmojis}
           </Text>
         </TouchableOpacity>
@@ -143,7 +143,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
     const messageReactions = reactionRef.current.map(reactionView) || [];
     if (messageReactions.length > 0) {
       if (messageReactions.length > 4) {
-        let newMessageReactions = [...messageReactions].slice(0, 3);
+        let newMessageReactions: any[] = [...messageReactions].slice(0, 3);
         newMessageReactions.push(extraEmojisView(reactionRef.current.length - 3));
         setReactionList(newMessageReactions);
       } else setReactionList(messageReactions);

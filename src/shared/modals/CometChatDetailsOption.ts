@@ -13,9 +13,9 @@ export interface CometChatDetailsOption {
   backgroundColor?: string;
   iconTint?: string;
   ///to pass custom view to options
-  CustomView?: () => JSX.Element;
+  CustomView?: () => JSX.Element | null;
   /// to pass tail component for detail option
-  Tail?:() => JSX.Element;
+  Tail?:() => JSX.Element | null;
   ///to pass height for details
   height?: number;
   ///[onClick] call function which takes 3 parameter , and one of user or group is populated at a time

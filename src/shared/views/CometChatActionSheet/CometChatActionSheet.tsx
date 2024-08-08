@@ -28,7 +28,7 @@ const OptionListView = ({
   onPress,
   style,
   theme,
-}) => {
+}: any) => {
   return (
     <TouchableOpacity
       key={id}
@@ -90,7 +90,7 @@ const OptionGridView = ({
   onPress,
   style,
   theme,
-}) => {
+}: any) => {
   return (
     <View
       style={[
@@ -150,7 +150,7 @@ interface CometChatActionSheetInterface {
 }
 export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
-  const style = {
+  const style: any = {
     ...new ActionSheetStyles({
       listItemIconTint: theme.palette.getAccent700(),
       listItemTitleFont: theme.typography.subtitle1,
@@ -169,12 +169,12 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
 
   Hooks(props, setActionList);
 
-  const _render = ({ item }) => {
+  const _render = ({ item }: any) => {
     return (
       <OptionListView id={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} backgroundColor={style.listItemBackground} style={style} />
     );
   };
-  const _renderGrid = ({ item }) => (
+  const _renderGrid = ({ item }: any) => (
     <OptionGridView id={item.id} {...item} iconUrl={item.icon || item.iconUrl} theme={theme} style={style} />
   );
 

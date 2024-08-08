@@ -3,6 +3,7 @@ import {
   View,
   Text,
   NativeModules,
+  TextStyle,
 } from "react-native";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatContext } from "../../CometChatContext";
@@ -14,6 +15,7 @@ import { APIAction, ButtonElement, CheckboxElement, DateTimeElement, DropdownEle
 import { ButtonAction, ElementType, HTTPSRequestMethods, goalType } from "../../constants/UIKitConstants";
 import CometChatDropdown from "../CometChatDropDown/CometChatDropDown";
 import { CometChatNetworkUtils } from "../../utils/NetworkUtils";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import CometChatTextInput from "../CometChatTextInput/CometChatTextInput";
 import CometChatCheckBox from "../CometChatCheckBox/CometChatCheckBox";
@@ -26,6 +28,7 @@ import { ButtonStyle, CometChatButton } from "../CometChatButton";
 import CometChatLabel from "../CometChatLabel/CometChatLabel";
 import { CometChatUiKitConstants, CometChatUIKit } from "../..";
 import { CometChatDateTimePicker } from '../CometChatDateTimePicker'
+import { anyObject } from "../../utils";
 
 const WebView = NativeModules['WebViewManager'];
 const { TimeZoneCodeManager } = NativeModules;
@@ -36,7 +39,7 @@ export interface CometChatFormBubbleInterface {
     onSubmitClick?: (data: any) => void
 }
 
-let allRequiredFields = [];
+let allRequiredFields: any[] = [];
 
 export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) => {
 
@@ -49,12 +52,12 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
     const { theme } = useContext<CometChatContextType>(CometChatContext);
 
     const [currentRequiredFields, setCurrentRequiredFields] = React.useState<string[]>([]);
-    const [bodyData, setBodyData] = React.useState({});
+    const [bodyData, setBodyData] = React.useState<anyObject>({});
     const [hasInteractionCompleted, setHasInteractionCompleted] = React.useState(false);
     const [interactedElements, setInteractedElements] = React.useState<CometChat.Interaction[]>([]);
-    const [interactionGoal, setInteractionGoal] = React.useState<CometChat.InteractionGoal>(undefined);
+    const [interactionGoal, setInteractionGoal] = React.useState<CometChat.InteractionGoal | undefined>(undefined);
     const [loaderButton, setLoaderButton] = React.useState<string>("");
-    const [loggedInUser, setLoggedInUser] = React.useState<CometChat.User>(null);
+    const [loggedInUser, setLoggedInUser] = React.useState<CometChat.User | null>(null);
     const currentTimeZoneRef = useRef("");
 
     const _style = new FormBubbleStyle({
@@ -102,20 +105,20 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
 
     useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(u => {
+            .then((u: any) => {
                 setLoggedInUser(u);
             })
-            .catch(e => {
+            .catch((e: any) => {
                 console.log("Error while getting loggedInUser");
                 setLoggedInUser(null);
             });
-        TimeZoneCodeManager.getCurrentTimeZone((timeZone) => {
+        TimeZoneCodeManager.getCurrentTimeZone((timeZone: string) => {
             currentTimeZoneRef.current = timeZone;
         });
         setInteractedElements(message.getInteractions() || []);
         setInteractionGoal(message.getInteractionGoal() || undefined);
-        let formFields = {};
-        message.getFormFields().forEach((field) => {
+        let formFields: anyObject = {};
+        message.getFormFields().forEach((field: any) => {
             formFields[field.getElementId()] = (field?.getDefaultValue && field?.getDefaultValue()) || "";
         });
 
@@ -239,10 +242,10 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         }
 
         function isDisabled() {
-            let isSender = message.getSender()?.getUid() == loggedInUser?.['uid'];
-            let allowInteraction = isSender ? message?.["data"]?.["allowSenderInteraction"] : true;
+            let isSender = message.getSender()?.getUid() == loggedInUser?.getUid();
+            let allowInteraction = isSender ? (message as any)?.["data"]?.["allowSenderInteraction"] : true;
 
-            let disableAfterInteracted: boolean;
+            let disableAfterInteracted: boolean = false;
             if (data.getDisableAfterInteracted()) {
                 disableAfterInteracted = interactedElements?.some(
                     (element) => element.getElementId() === data.getElementId()
@@ -328,7 +331,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
     }
 
     const filledRequiredFields = () => {
-        let _requiredFields = [];
+        let _requiredFields: any[] = [];
         for (let key in bodyData) {
             if ((Array.isArray(bodyData[key]) && bodyData[key].length === 0) || !bodyData[key]) {
                 if (allRequiredFields.includes(key)) {
@@ -349,10 +352,10 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         let conversation = await CometChat.CometChatHelper.getConversationFromMessage(
             message
           ).then(
-            (conversation) => {
+            (conversation: any) => {
               return conversation;
             },
-            (error) => {
+            (error: any) => {
               console.log("Error while converting message object", error);
               return undefined;
             }
@@ -382,22 +385,22 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                     body.payload = payload;
             
                     body.data = {
-                        messageId: message.id,
-                        conversationId: conversation.conversationId,
+                        messageId: (message as any).id,
+                        conversationId: conversation?.conversationId,
                         receiver: message.getSender().getUid(),
                         messageType: CometChatUiKitConstants.MessageTypeConstants.form,
                         messageCategory:
                             CometChatUiKitConstants.MessageCategoryConstants.interactive,
                         receiverType: message?.getReceiverType(),
-                        interactedBy: loggedInUser.uid,
+                        interactedBy: loggedInUser?.getUid(),
                         interactionTimezoneCode: currentTimeZoneRef.current,
-                        sender: loggedInUser.uid,
+                        sender: loggedInUser?.getUid(),
                         formData: bodyData
                     };
 
                     setLoaderButton(elementId)
                     CometChatNetworkUtils.fetcher({
-                        url: action.getURL(),
+                        url: (action as APIAction).getURL(),
                         method: (action as APIAction).getMethod() || HTTPSRequestMethods.POST,
                         body,
                         headers: (action as APIAction).getHeaders(),
@@ -433,18 +436,18 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         let _interactedElements = [...interactedElements] || [];
 
         switch (neededInteractionElementCondition) {
-            case goalType.anyOf:
+            case goalType.anyOf.toString():
                 completed = _interactedElements.find((element: CometChat.Interaction) =>
                     neededInteractionElement.includes(element.getElementId())
                 )
                     ? true
                     : false;
                 break;
-            case goalType.anyAction:
+            case goalType.anyAction.toString():
                 completed = _interactedElements.length > 0 ? true : false;
                 break;
-            case goalType.allOf:
-                completed = neededInteractionElement.every((element) =>
+            case goalType.allOf.toString():
+                completed = neededInteractionElement.every((element: any) =>
                     _interactedElements.find(
                         (interaction: CometChat.Interaction) =>
                             interaction.getElementId() === element
@@ -453,7 +456,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                     ? true
                     : false;
                 break;
-            case goalType.none:
+            case goalType.none.toString():
                 completed = false;
                 break;
             default:
@@ -465,7 +468,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
 
     function markAsInteracted(elementId: string) {
         CometChat.markAsInteracted(message?.getId(), elementId).then(
-            (response) => {
+            (response: any) => {
                 const interaction = new CometChat.Interaction(
                     elementId,
                     new Date().getTime()
@@ -476,7 +479,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                 setLoaderButton("")
             }
         )
-            .catch((error) => {
+            .catch((error: any) => {
                 console.log("error while markAsInteracted", error);
             });
     }
@@ -502,7 +505,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                     subtitle={message.getTitle()}
                     quickViewStyle={quickViewStyle}
                 />
-                <Text style={[{ marginTop: 10, color: goalCompletionTextColor }, goalCompletionTextFont]}>{message.getGoalCompletionText() || localize("FORM_COMPLETION_MESSAGE")}</Text>
+                <Text style={[{ marginTop: 10, color: goalCompletionTextColor }, goalCompletionTextFont] as TextStyle}>{message.getGoalCompletionText() || localize("FORM_COMPLETION_MESSAGE")}</Text>
             </View>
             :
             <View style={{
@@ -521,7 +524,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                                         color: titleColor,
                                     },
                                     titleFont,
-                                ]}
+                                ] as TextStyle}
                             >{message.getTitle()}</Text>
                         </View>
                     }
@@ -538,6 +541,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
     </View>
 })
 
+//@ts-ignore
 CometChatFormBubble.defaultProps = {
     message: {}
 }

@@ -1,9 +1,11 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, ScrollView, ActivityIndicator } from 'react-native'
+import { Dimensions, FlatList, Image, Text, TouchableOpacity, View, ScrollView, TextStyle, ViewProps, ActivityIndicator } from 'react-native'
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { AvatarStyleInterface, ChatConfigurator, CometChatContext, CometChatDate, CometChatListItem, CometChatMessageTemplate, CometChatUIEventHandler, ImageType, ListItemStyleInterface, StatusIndicatorStyleInterface, localize } from '../shared'
 import { MessageInformationStyleInterface } from './MessageInformationStyle'
 import { MessageUtils } from '../shared/utils/MessageUtils'
+import { CommonUtils } from '../shared/utils/CommonUtils'
 import { Style } from "./styles";
 import { ICONS } from "../shared/assets/images";
 
@@ -23,7 +25,7 @@ export interface CometChatMessageInformationInterface {
     backIcon?: ImageType,
     BubbleView?: (message: CometChat.BaseMessage) => JSX.Element,
     ListItemView?: (message: CometChat.BaseMessage, receipt: Recipient) => JSX.Element,
-    receiptDatePattern?: (timestamp) => string,
+    receiptDatePattern?: (timestamp: any) => string,
     onBack?: () => void,
     onError?: (e: CometChat.CometChatException) => void,
     messageInformationStyle?: MessageInformationStyleInterface,
@@ -92,12 +94,12 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         titleTextFont = theme.typography.heading,
     } = messageInformationStyle || {};
 
-    const receipt = (receipt, status, time) => {
+    const receipt = (receipt: any, status: any, time: any) => {
 
         if (ListItemView) {
             return ListItemView(message, receipt);
         }
-        return <View style={{ flexDirection: 'row' }}>
+        return <View style={{ flexDirection: 'row',  alignItems: 'center' }}>
             <Image
                 source={receipt == 'SENT' ? sentIcon :
                     receipt == "DELIVERED" ? deliveredIcon :
@@ -108,32 +110,31 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                     tintColor: receipt == 'SENT' ? sendIconTint :
                         receipt == "DELIVERED" ? deliveredIconTint :
                             receipt == 'READ' ? readIconTint : undefined,
-                    height: 15
+                    height: 15,
+                    width: 15,
+                    marginRight: 5
                 }}
             />
             <View style={{ flex: 1 }}>
                 <Text style={[
                     { color: subtitleTextColor || theme.palette.getAccent600() },
                     subtitleTextFont
-                ]}>{status}</Text>
+                ] as TextStyle}>{status}</Text>
             </View>
             {
                 receiptDatePattern ?
                     receiptDatePattern(time) :
                     <CometChatDate
                         style={{ textColor: theme.palette.getAccent600() }}
-                        customDateString={new Date(time * 1000).toLocaleString()}
+                        customDateString={CommonUtils.getFormattedDateTime(time)}
                         timeStamp={time}
                     />
             }
         </View>
     }
 
-    const receiptsList = (item) => {
+    const receiptsList = (item: any) => {
         return <View>
-            {
-                item['sentAt'] && receipt("SENT", localize("SENT"), item['sentAt'])
-            }
             {
                 item['deliveredAt'] && receipt("DELIVERED", localize("DELIVERED"), item['deliveredAt'])
             }
@@ -143,8 +144,11 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         </View>;
     }
 
-    const renderReceipients = ({ item, index }) => {
+    const renderReceipients = ({ item, index }: any) => {
         const { sender } = item;
+        if(!(item['deliveredAt'] || item['readAt'] )) {
+           return null;
+        }
         return <CometChatListItem
             id={sender['uid']}
             avatarName={sender['name']}
@@ -158,7 +162,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                 ...listItemStyle
             }}
             avatarStyle={avatarStyle}
-            statusIndicatorStyle={statusIndicatorStyle}
+            statusIndicatorStyle={statusIndicatorStyle as ViewProps}
         />
     }
 
@@ -170,11 +174,11 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         if (isGroup()) {
             setListState("loading");
             CometChat.getMessageReceipts(message.getId())
-                .then(receiptsList => {
-                    setRecipients(receiptsList as Array<Recipient>);
+                .then((receiptsList: any[]) => {
+                    setRecipients(receiptsList);
                     setListState("done");
                 })
-                .catch(er => {
+                .catch((er: any) => {
                     console.log("Unable to get message receipts", er);
                     onError && onError(er);
                     setListState("error");
@@ -184,7 +188,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         }
     }
 
-    const updateMessageReceipt = (newReceipt) => {
+    const updateMessageReceipt = (newReceipt: any) => {
         if (message.getId() == newReceipt['id']) {
             setRecipients([{
                 sender: isGroup() ? newReceipt['sender'] : newReceipt['receiver'],
@@ -201,10 +205,10 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
         CometChatUIEventHandler.addMessageListener(
             listenerId,
             {
-                onMessagesDelivered: (messageReceipt) => {
+                onMessagesDelivered: (messageReceipt: any) => {
                     updateMessageReceipt(messageReceipt);
                 },
-                onMessagesRead: (messageReceipt) => {
+                onMessagesRead: (messageReceipt: any) => {
                     updateMessageReceipt(messageReceipt);
                 },
             }
@@ -260,7 +264,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
             },
             Style.container,
             border
-        ]}>
+        ] as ViewProps}>
             <View style={{ flexDirection: "row" }}>
                 <TouchableOpacity onPress={onBack}>
                     <Image
@@ -273,12 +277,12 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                     />
                 </TouchableOpacity>
                 <View style={{ flex: 1, alignItems: "center" }}>
-                    <Text style={{ color: titleTextColor, ...titleTextFont }}>{title}</Text>
+                    <Text style={{ color: titleTextColor, ...titleTextFont } as TextStyle}>{title}</Text>
                 </View>
             </View>
 
             <View>
-                <Text style={{ color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 }}>{localize("MESSAGE")}</Text>
+                <Text style={{ color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 } as TextStyle}>{localize("MESSAGE")}</Text>
             </View>
             <View style={[Style.divider, { backgroundColor: dividerTint || theme.palette.getAccent200() }]} />
             <View style={Style.msgBubbleContainer}>
@@ -290,7 +294,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                                 ? BubbleView(message)
                                 : MessageUtils.getMessageView({
                                     message,
-                                    template: template ? template : templatesMap.get(`${message.category}_${message.type}`),
+                                    template: template ? template : templatesMap.get(`${message.getCategory()}_${message.getType()}`),
                                     alignment: "right",
                                     theme
                                 })
@@ -299,7 +303,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
             </View>
             <View style={[Style.divider, { backgroundColor: dividerTint || theme.palette.getAccent200() }]} />
             <View>
-                <Text style={{ color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 }}>{localize("RECEIPT_INFORMATION")}</Text>
+                <Text style={{ color: dividerTint || theme.palette.getAccent500(), ...theme.typography.text1 } as TextStyle}>{localize("RECEIPT_INFORMATION")}</Text>
             </View>
             <View style={[Style.divider, { backgroundColor: dividerTint || theme.palette.getAccent200() }]} />
             {

@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useContext } from "react";
-import { View, TouchableOpacity, Image, BackHandler } from "react-native";
+import { View, TouchableOpacity, Image, BackHandler, ViewProps } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MessageStyle, MessageStyleInterface } from "./MessageStyle";
 import { CometChatMessageList } from "../CometChatMessageList"
@@ -92,8 +93,8 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
 
     // refs
     const composerRef = useRef(null);
-    const threadedMessageInfo = useRef<{ message: CometChat.BaseMessage, view: () => JSX.Element }>({ message: null, view: () => null });
-    const detailsData = useRef<{ user: CometChat.User, group: CometChat.Group }>({ user: null, group: null });
+    const threadedMessageInfo = useRef<{ message: CometChat.BaseMessage | null, view: () => JSX.Element | null }>({ message: null, view: () => null });
+    const detailsData = useRef<{ user: CometChat.User | null, group: CometChat.Group | null }>({ user: null, group: null });
     const loggedInUser = useRef(null);
 
 
@@ -121,7 +122,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
         CometChatUIEventHandler.addMessageListener(
             msgListenerId,
             {
-                onTransientMessageReceived: (transientMessage) => {
+                onTransientMessageReceived: (transientMessage: any) => {
                     const { reaction, type } = transientMessage['data'];
                     if (!isLiveReactionOfThisList(transientMessage)) return;
                     if (type == MetadataConstants.liveReaction) {
@@ -134,10 +135,10 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
             }
         );
 
-        CometChat.getLoggedinUser().then(user => {
+        CometChat.getLoggedinUser().then((user: any) => {
             loggedInUser.current = user;
         })
-            .catch(e => {
+            .catch((e: any) => {
                 console.log("unable to get logged in user");
             });
 
@@ -147,11 +148,11 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                 ccGroupDeleted: () => {
                     _headerConfiguration.onBack && _headerConfiguration.onBack();      //hides the details screen
                 },
-                ccGroupLeft: ({ action, leftUser, leftGroup }) => {
+                ccGroupLeft: ({ action, leftUser, leftGroup }: any) => {
                     _headerConfiguration.onBack && _headerConfiguration.onBack();
                     setShowComponent(ComponentNames.Default);
                 },
-                ccOwnershipChanged: ({ group }) => {
+                ccOwnershipChanged: ({ group }: any) => {
                     setGroupObject(group);
                 }
             }
@@ -174,21 +175,21 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
             new CometChat.ConnectionListener({
                 onConnected: () => {
                     console.log("ConnectionListener => On Connected", user, group);
-                    if (user?.uid) {
-                        CometChat.getUser(user?.uid)
-                            .then(user => {
+                    if (user) {
+                        CometChat.getUser(user?.getUid())
+                            .then((user: any) => {
                                 setUserObject(user);
                             })
-                            .catch(e => {
+                            .catch((e: any) => {
                                 console.log("ERROR")
                             })
-                    } else {
-                        CometChat.getGroup(group?.guid)
-                            .then(group => {
+                    } else if(group) {
+                        CometChat.getGroup(group?.getGuid())
+                            .then((group: any) => {
                                 setGroupObject(group);
                                 console.log("onConnected getGroup", { group });
                             })
-                            .catch(e => {
+                            .catch((e: any) => {
                                 console.log("ERROR")
                             })
                     }
@@ -221,7 +222,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
         return false
     }
 
-    const DetailViewIcon = (params: { user: CometChat.User, group: CometChat.Group }) => {
+    const DetailViewIcon = (params: { user?: CometChat.User, group?: CometChat.Group }) => {
         return (
             <View style={Style.appBarStyle}>
                 {
@@ -231,7 +232,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                 {
                     !hideDetails && (
                         <TouchableOpacity onPress={() => {
-                            detailsData.current = { user: params.user, group: params.group }
+                            detailsData.current = { user: params.user || null, group: params.group || null }
                             setShowComponent(ComponentNames.Details);
                         }}>
                             <Image source={infoIcon} style={[Style.infoIconStyle, {tintColor: theme.palette.getPrimary()}]} />
@@ -253,7 +254,7 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
     return <View style={[
         Style.container,
         { backgroundColor, height, width, ...border, borderRadius }
-    ]
+    ] as ViewProps
     }>
         {
             showComponent == ComponentNames.Details &&
@@ -261,8 +262,12 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                 {/* showComponent == ComponentNames.Details &&
              <View style={{flex: 1}}> */}
                 <CometChatDetails
-                    user={detailsData.current.user}
-                    group={detailsData.current.group}
+                    {...(detailsData.current.user
+                        ? {user: detailsData.current.user}
+                        : detailsData.current.group
+                        ? {group:detailsData.current.group}
+                        : {})
+                    }
                     {..._detailsConfiguration}
                     onBack={_detailsConfiguration.onBack || setShowComponent.bind(this, ComponentNames.Default)}
                 />
@@ -272,11 +277,10 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
             showComponent == ComponentNames.Thread &&
             <View style={[Style.stackMe, { backgroundColor, borderRadius }]}>
                 <CometChatThreadedMessages
-                    BubbleView={(msg) => typeof threadedMessageInfo.current?.view === 'function' && threadedMessageInfo.current.view()}
-                    parentMessage={threadedMessageInfo.current.message}
+                    BubbleView={(msg) => typeof threadedMessageInfo.current?.view === 'function' ? threadedMessageInfo.current.view() : null}
+                    parentMessage={threadedMessageInfo.current.message || undefined}
                     onClose={() => setShowComponent(ComponentNames.Default)}
-                    threadedMessagesStyle={{ closeIconTint: "black", titleStyle: { fontSize: 18 } }}
-                    // threadedMessagesStyle={new ThreadedMessagesStyle({})}
+                    threadedMessagesStyle={{ titleStyle: { fontSize: 18 } }}
                     {..._threadedConfiguration}
                 />
             </View>
@@ -305,7 +309,6 @@ export const CometChatMessages = (props: CometChatMessagesInterface) => {
                             group={groupObject}
                             emptyStateText={localize("NO_MESSAGES_FOUND")}
                             errorStateText={localize("SOMETHING_WRONG")}
-                            dateSeparatorPattern={_listConfiguration.dateSeparatorPattern}
                             disableSoundForMessages={disableSoundForMessages}
                             onThreadRepliesPress={(msg, view) => {
                                 threadedMessageInfo.current = { message: msg, view }

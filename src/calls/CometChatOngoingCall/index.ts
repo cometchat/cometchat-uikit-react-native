@@ -1,8 +1,8 @@
-import { CometChatOngoingCall, CometChatOngoingCallInterface } from "./CometChatOngoingCall";
+import {
+  CometChatOngoingCall,
+  CometChatOngoingCallInterface,
+} from "./CometChatOngoingCall";
 import { OngoingCallStyleInterface } from "./OngoingCallStyle";
 
-export {
-    CometChatOngoingCall,
-    CometChatOngoingCallInterface,
-    OngoingCallStyleInterface,
-}
+export { CometChatOngoingCall };
+export type { CometChatOngoingCallInterface, OngoingCallStyleInterface };

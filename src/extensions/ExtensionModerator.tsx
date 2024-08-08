@@ -1,4 +1,4 @@
-export const CheckPropertyExists = (obj, propkey) => {
+export const CheckPropertyExists = (obj: any, propkey: PropertyKey) => {
     return Object.prototype.hasOwnProperty.call(obj, propkey);
 }
 
@@ -8,7 +8,7 @@ export const CheckPropertyExists = (obj, propkey) => {
  * @param {string} extentionKey extention tobe searched
  * @returns object or null.
  */
- export const getExtentionData = (message, extentionKey) => {
+ export const getExtentionData = (message: any, extentionKey: string) => {
     if (message?.metadata) {
         var injectedObject = message.metadata["@injected"];
         if (injectedObject != null && injectedObject.hasOwnProperty("extensions")) {
@@ -31,7 +31,7 @@ export const CheckPropertyExists = (obj, propkey) => {
  * @param {string} extentionKey extention tobe searched
  * @returns object or null.
  */
-export const getExtentionDataByMetaData = (metadata, extentionKey) => {
+export const getExtentionDataByMetaData = (metadata: any, extentionKey: string | number) => {
     
     if (metadata) {
         var injectedObject = metadata["@injected"];
@@ -48,7 +48,7 @@ export const getExtentionDataByMetaData = (metadata, extentionKey) => {
     return null;
 }
 
-export const getMetadataByKey = (message, metadataKey) => {
+export const getMetadataByKey = (message: any, metadataKey: string | number) => {
     if (message.hasOwnProperty("metadata")) {
         const metadata = message["metadata"];
         if (metadata.hasOwnProperty(metadataKey)) {

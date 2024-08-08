@@ -1,5 +1,5 @@
 //@ts-ignore
-import { View, Text, TouchableOpacity, TextInput, Image, NativeSyntheticEvent, TextInputSubmitEditingEventData } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Image, NativeSyntheticEvent, TextInputSubmitEditingEventData, TextStyle } from 'react-native';
 import React from 'react';
 import styles from './styles';
 import { ICONS } from '../shared/assets/images';
@@ -11,7 +11,7 @@ export function Header(props: {
   showBackButton?: boolean,
   onBack?: () => void,
   title?: string,
-  AppBarOptions?: () => JSX.Element,
+  AppBarOptions?: () => JSX.Element | null,
   shouldSelect?: boolean,
   onSelectionHandler?: () => void,
   hideSearch?: boolean,
@@ -90,7 +90,7 @@ export function Header(props: {
                 styles.titleStyle,
                 { color: titleColor ?? undefined },
                 titleFontStyle ?? {},
-              ]}
+              ] as TextStyle}
             >
               {title}
             </Text>
@@ -157,7 +157,7 @@ export function Header(props: {
               styles.searchTextStyle,
               searchTextFontStyle ?? {},
               { color: searchTextColor ?? undefined },
-            ]}
+            ] as TextStyle}
             onSubmitEditing={onSubmitEditing}
           />
         </View>

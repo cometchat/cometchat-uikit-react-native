@@ -1,4 +1,5 @@
 import { AvatarStyleInterface, CometChatDetailsTemplate, ImageType } from "../../shared"
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { CallLogDetailsStyleInterface } from "./CallLogDetailsStyle"
 import { CallLogHistoryConfiguration } from "../CometChatCallLogHistory";
@@ -109,6 +110,7 @@ export class CallLogDetailsConfiguration implements CallLogDetailsConfigurationI
     constructor(props: CallLogDetailsConfigurationInterface) {
         if (props) {
             for (const [key, value] of Object.entries(props)) {
+                //@ts-ignore
                 this[key] = value;
             }
         }

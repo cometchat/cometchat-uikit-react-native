@@ -1,4 +1,5 @@
 import React from "react";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import AIConversationSummaryView from "./AIConversationSummaryView";
 import { CometChatMessageComposerActionInterface, CometChatTheme, CometChatUIEventHandler, CometChatUIEvents, DataSource, DataSourceDecorator, MessageEvents, localize } from "../../shared";
@@ -11,7 +12,7 @@ export class AIConversationSummaryDecorator extends DataSourceDecorator {
   public newDataSource!: DataSource;
   public currentMessage: CometChat.BaseMessage | null = null;
   public unreadMessageCount: number = 0;
-  public loggedInUser!: CometChat.User | null;
+  public loggedInUser!: CometChat.User | any;
   public user!: CometChat.User;
   public group!: CometChat.Group;
   public theme: CometChatTheme = new CometChatTheme({});
@@ -98,21 +99,21 @@ export class AIConversationSummaryDecorator extends DataSourceDecorator {
     });
   }
 
-  override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] {
+  override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] | any[] {
     this.user = user!;
     this.group = group!;
     if (!id?.parentMessageId) {
-      const messageComposerActions: CometChatMessageComposerActionInterface[] = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
+      const messageComposerActions: CometChatMessageComposerActionInterface[] | any[] = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
       let newAction = {
         title: localize("GENERATE_SUMMARY"),
         onPress: () => { this.loadConversationSummary() },
         id: "ai-conversation-summary",
         iconURL: '',
         iconTint: '',
-        titleColor: this.configuration?.conversationSummaryStyle?.buttonTextColor || AIOptionsStyle.listItemTitleColor,
-        titleFont: this.configuration?.conversationSummaryStyle?.buttonTextFont || AIOptionsStyle.listItemTitleFont,
-        background: this.configuration?.conversationSummaryStyle?.backgroundColor || AIOptionsStyle.listItemBackground,
-        cornerRadius: this.configuration?.conversationSummaryStyle?.buttonBorderRadius || AIOptionsStyle.listItemBorderRadius,
+        titleColor: this.configuration?.conversationSummaryStyle?.buttonTextColor || AIOptionsStyle?.listItemTitleColor,
+        titleFont: this.configuration?.conversationSummaryStyle?.buttonTextFont || AIOptionsStyle?.listItemTitleFont,
+        background: this.configuration?.conversationSummaryStyle?.backgroundColor || AIOptionsStyle?.listItemBackground,
+        cornerRadius: this.configuration?.conversationSummaryStyle?.buttonBorderRadius || AIOptionsStyle?.listItemBorderRadius,
       };
       messageComposerActions.push(newAction);
       return messageComposerActions;
@@ -138,16 +139,16 @@ export class AIConversationSummaryDecorator extends DataSourceDecorator {
       onMediaMessageReceived: (message: CometChat.MediaMessage) => {
         this.closeIfMessageReceived(message);
       },
-      onFormMessageReceived: (formMessage) => {
+      onFormMessageReceived: (formMessage: any) => {
         this.closeIfMessageReceived(formMessage)
       },
-      onCardMessageReceived: (cardMessage) => {
+      onCardMessageReceived: (cardMessage: any) => {
         this.closeIfMessageReceived(cardMessage)
       },
-      onSchedulerMessageReceived: (schedulerMessage) => {
+      onSchedulerMessageReceived: (schedulerMessage: any) => {
         this.closeIfMessageReceived(schedulerMessage)
       },
-      onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
+      onCustomInteractiveMessageReceived: (customInteractiveMessage: any) => {
         this.closeIfMessageReceived(customInteractiveMessage)
       }
     });
@@ -155,7 +156,7 @@ export class AIConversationSummaryDecorator extends DataSourceDecorator {
     CometChatUIEventHandler.addMessageListener(
       MessageEvents.ccActiveChatChanged,
       {
-        ccActiveChatChanged: (data) => {
+        ccActiveChatChanged: (data: any) => {
           this.currentMessage = data.message!;
           this.user = data.user!;
           this.group = data.group!;
@@ -164,7 +165,7 @@ export class AIConversationSummaryDecorator extends DataSourceDecorator {
             this.loadConversationSummary();
           }
         },
-        ccMessageSent: ({ message, status }) => {
+        ccMessageSent: ({ message, status }: any) => {
           if (status == MessageStatusConstants.success && message?.sender?.uid == this.loggedInUser?.uid) {
             this.closePanel();
             this.currentMessage = null;

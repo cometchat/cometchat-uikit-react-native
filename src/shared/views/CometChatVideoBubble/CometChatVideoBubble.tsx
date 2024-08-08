@@ -7,6 +7,7 @@ import { defaultPlayIcon, defaultThumbnail } from "./resources";
 import { Style } from "./style";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatVideoPlayer } from "../CometChatVideoPlayer";
+import { ImageStyle } from "react-native";
 
 const { FileManager } = NativeModules;
 const eventEmitter = new NativeEventEmitter(FileManager);
@@ -97,7 +98,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
     } = _style;
 
 
-    const getFileName = (url) => {
+    const getFileName = (url: string) => {
         return (url.substring(url.lastIndexOf("/") + 1, url.length)).replace(" ", "_");
     }
 
@@ -131,7 +132,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
         }
     }, []);
 
-    const pressTime = useRef(0);
+    const pressTime = useRef<any>(0);
 
     const handleTouchStart = () => {
         pressTime.current = Date.now();
@@ -184,17 +185,17 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
                     setIsVideoPlayerVisible(false)
                 }}
                 onLoad={() => setIsLoading(false)}
-                loadingIconColor={style.playerLoadingIconColor}
+                loadingIconColor={style?.playerLoadingIconColor}
                 playIcon={playerPlayIcon}
-                playIconColor={style.playerPlayIconColor}
+                playIconColor={style?.playerPlayIconColor}
                 pauseIcon={playerPauseIcon}
-                pauseIconColor={style.playerPauseIconColor}
+                pauseIconColor={style?.playerPauseIconColor}
                 backIcon={playerBackIcon}
-                backIconColor={style.playerBackIconColor}
+                backIconColor={style?.playerBackIconColor}
                 volumeIcon={playerVolumeIcon}
-                volumeIconColor={style.playerVolumeIconColor}
+                volumeIconColor={style?.playerVolumeIconColor}
             />
-            <ImageBackground source={getImage(thumbnailUrl) || getImage(placeholderImage) || defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" }}>
+            <ImageBackground source={thumbnailUrl ? getImage(thumbnailUrl) : placeholderImage ? getImage(placeholderImage) : defaultThumbnail} resizeMode={"cover"} style={{ backgroundColor, ...border, borderRadius, height, width, overflow: "hidden" } as ImageStyle}>
                 <View
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}

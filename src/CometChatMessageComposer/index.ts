@@ -1,17 +1,16 @@
 import {
   CometChatMessageComposer,
-  CometChatMessageComposerInterface, 
+  CometChatMessageComposerInterface,
   MessageComposerStyleInterface,
-} from './CometChatMessageComposer';
+} from "./CometChatMessageComposer";
 import {
   MessageComposerConfiguration,
   MessageComposerConfigurationInterface,
-} from './MessageComposerConfiguration';
+} from "./MessageComposerConfiguration";
 
-export {
-  CometChatMessageComposer,
-  MessageComposerConfiguration,
+export { CometChatMessageComposer, MessageComposerConfiguration };
+export type {
   MessageComposerConfigurationInterface,
-  CometChatMessageComposerInterface, 
+  CometChatMessageComposerInterface,
   MessageComposerStyleInterface,
 };

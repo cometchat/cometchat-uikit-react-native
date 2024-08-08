@@ -1,5 +1,6 @@
 import React, {useCallback, useState, useEffect, useRef} from 'react';
 import {View} from 'react-native';
+//@ts-ignore
 import Video from '../VideoPlayer/Video';
 import {useControlTimeout, useJSAnimations, usePanResponders} from './hooks';
 import {

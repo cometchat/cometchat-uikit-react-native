@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, TextStyle } from 'react-native';
+//@ts-ignore
 import { DownArrow } from './resources';
 import { CometChatContextType } from '../../base';
 import { CometChatContext } from '../../CometChatContext';
@@ -57,7 +58,7 @@ const CometChatDropdown = (props: CometChatButtonInterface) => {
         setOpenDropdown(!openDropdown);
     };
 
-    const onOptionSelect = option => {
+    const onOptionSelect = (option: any) => {
         setCurrentOption(option);
         onOptionChange && onOptionChange(option); // Assuming that onOptionChange function is passed as a prop
         onDropDownToggle();
@@ -65,17 +66,17 @@ const CometChatDropdown = (props: CometChatButtonInterface) => {
 
     return (
         <View style={{ ...styles.defaultDropdownStyle, ...dropdownStyle }}>
-            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }] as TextStyle}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
 
             <View style={{ position: "relative" }}>
-                <TouchableOpacity onPress={onDropDownToggle} style={[styles.dropdownButton, { borderColor: showError ? theme.palette.getError() : border.borderColor, borderWidth: border.borderWidth }]}>
-                    <Text style={[optionFont, { color: optionColor }]}>{currentOption.label}</Text>
+                <TouchableOpacity onPress={onDropDownToggle} style={[styles.dropdownButton, { borderColor: showError ? theme.palette.getError() : border?.borderColor, borderWidth: border?.borderWidth }]}>
+                    <Text style={[optionFont, { color: optionColor }] as TextStyle}>{currentOption.label}</Text>
                     {/* Display arrow icon */}
                     {arrowIconURL && <Image source={arrowIconURL} style={[styles.dropdownArrow, openDropdown && { transform: [{ rotate: '180deg' }] }]} />}
                 </TouchableOpacity>
 
                 {openDropdown && (
-                    <ScrollView style={[styles.dropdownOptions, { borderColor: border.borderColor, borderWidth: border.borderWidth, backgroundColor: inactiveBackgroundColor }]}>
+                    <ScrollView style={[styles.dropdownOptions, { borderColor: border?.borderColor, borderWidth: border?.borderWidth, backgroundColor: inactiveBackgroundColor }]}>
                         {options.map((option, index) => (
                             <TouchableOpacity
                                 activeOpacity={1}
@@ -85,7 +86,7 @@ const CometChatDropdown = (props: CometChatButtonInterface) => {
                                     justifyContent: "center", paddingHorizontal: 8
                                 }}
                                 key={index} onPress={() => onOptionSelect(option)}>
-                                <Text style={[optionFont, { color: optionColor }]}>{option.label}</Text>
+                                <Text style={[optionFont, { color: optionColor }] as TextStyle}>{option.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>

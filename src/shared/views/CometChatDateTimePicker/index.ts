@@ -1,5 +1,3 @@
-export {
-  CometChatDateTimePickerInterface,
-  CometChatDateTimePicker,
-} from "./CometChatDateTimePicker";
-export { DatePickerStyleInterface } from "./DateTimePickerStyle";
+export { CometChatDateTimePicker } from "./CometChatDateTimePicker";
+export type { CometChatDateTimePickerInterface } from "./CometChatDateTimePicker";
+export type { DatePickerStyleInterface } from "./DateTimePickerStyle";

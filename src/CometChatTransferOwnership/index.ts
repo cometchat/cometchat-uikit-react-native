@@ -1,15 +1,14 @@
 import {
-    CometChatTransferOwnership,
-    CometChatTransferOwnershipInterface
+  CometChatTransferOwnership,
+  CometChatTransferOwnershipInterface,
 } from "./CometChatTransferOwnership";
 import {
-    TransferOwnershipConfiguration,
-    TransferOwnershipConfigurationInterface
- } from "./TransferOwnershipConfiguration";
+  TransferOwnershipConfiguration,
+  TransferOwnershipConfigurationInterface,
+} from "./TransferOwnershipConfiguration";
 
-export {
-    CometChatTransferOwnership,
-    CometChatTransferOwnershipInterface,
-    TransferOwnershipConfiguration,
-    TransferOwnershipConfigurationInterface,
-}
+export { CometChatTransferOwnership, TransferOwnershipConfiguration };
+export type {
+  CometChatTransferOwnershipInterface,
+  TransferOwnershipConfigurationInterface,
+};

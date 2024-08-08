@@ -6,6 +6,8 @@ export interface CometChatTabsStyleInterface extends BaseStyleInterface {
     activeTabTitleTextColor?: string,
     activeTabBackgroundColor?: string,
     activeTabBorder?: BorderStyleInterface,
+    backgroundColor?: string
+    borderRadius?: number
 }
 
 export class CometChatTabsStyle extends BaseStyle implements CometChatTabsStyleInterface {

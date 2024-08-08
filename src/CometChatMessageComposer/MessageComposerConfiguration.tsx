@@ -89,6 +89,7 @@ export class MessageComposerConfiguration {
   constructor(props: MessageComposerConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {
+        //@ts-ignore
         this[key] = value;
       }
   }

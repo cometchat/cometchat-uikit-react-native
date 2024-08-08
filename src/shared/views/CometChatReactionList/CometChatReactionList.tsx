@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, ActivityIndicator, TextStyle } from 'react-native'
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react'
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { AvatarStyleInterface } from '../CometChatAvatar';
 import { CometChatListItem, ListItemStyleInterface } from '../CometChatListItem';
@@ -42,14 +43,14 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
 
     const [messageReactions, setMessageReactions] = useState(messageObject?.getReactions() || []);
     const [currentSelectedReaction, setCurrentSelectedReaction] = useState(selectedReaction || "All");
-    const [reactionList, setReactionList] = useState([]);
+    const [reactionList, setReactionList] = useState<any[] | undefined>([]);
     const [state, setState] = useState<"loading" | "error" | "done">("loading");
-    const loggedInUser = useRef<CometChat.User>();
+    const loggedInUser = useRef<CometChat.User | any>();
     const newMessageObj = useRef<CometChat.BaseMessage>(CommonUtils.clone(messageObject));
 
 
-    let requestBuilderMap: Record<string, CometChat.ReactionsRequest> = useRef({});
-    let reactionListMap: Record<string, CometChat.Reaction[]> = useRef({});
+    let requestBuilderMap = useRef<Record<string, CometChat.ReactionsRequest>>({});
+    let reactionListMap = useRef<Record<string, CometChat.Reaction[]>>({});
 
     const _style = new ReactionListStyle({
         subtitleColor: reactionListStyle?.subtitleColor || theme.palette.getAccent600(),
@@ -83,8 +84,8 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
 
     useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(user => loggedInUser.current = user)
-            .catch(rej => {
+            .then((user: any) => loggedInUser.current = user)
+            .catch((rej: any) => {
                 loggedInUser.current = null;
                 // onError && onError(rej);
             })
@@ -97,8 +98,8 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
         showReactions();
     }, [currentSelectedReaction])
 
-    const _setAllReactions = (_messageReactions) => {
-        let totalCount = _messageReactions.reduce((acc, curr) => acc + curr.count, 0);
+    const _setAllReactions = (_messageReactions: any[]) => {
+        let totalCount = _messageReactions.reduce((acc: any, curr: any) => acc + curr.count, 0);
         setMessageReactions([{ reaction: "All", count: totalCount }, ..._messageReactions]);
     }
 
@@ -144,7 +145,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
             reactionListMap.current[reaction] = list;
             setState("done");
             return list;
-        } catch (error) {
+        } catch (error: any) {
             console.log("error while fetching reactions", error)
             if (error?.code === "REQUEST_IN_PROGRESS") return;
             setState("error");
@@ -166,15 +167,15 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
                 setReactionList(reactionListMap.current[currentSelectedReaction]);
             }
             setState("done");
-        } catch (error) {
+        } catch (error: any) {
             console.log("error while fetching next reactions", error);
             if (error?.code === "REQUEST_IN_PROGRESS") return;
             setState("error");
         }
     };
 
-    const removeReaction = (reactionObj: CometChat.Reaction) => {
-        let reactedByMe = loggedInUser.current.uid === reactionObj?.getReactedBy()?.getUid();
+    const removeReaction = (reactionObj: CometChat.Reaction | any) => {
+        let reactedByMe = loggedInUser.current?.uid === reactionObj?.getReactedBy()?.getUid();
         if (reactedByMe) {
             if (onPress) {
                 onPress(reactionObj, newMessageObj.current);
@@ -185,20 +186,20 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
             //     .then((message) => {
             //         CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, { message: message, status: messageStatus.success });
 
-            let newReactionList = [...reactionList]?.filter(reaction => reaction?.id !== reactionObj?.id);
+            let newReactionList = [...(reactionList ? reactionList : [])]?.filter((reaction: any) => reaction?.id !== reactionObj?.id);
             setReactionList(newReactionList);
 
             if (currentSelectedReaction === "All") {
                 reactionListMap.current[currentSelectedReaction] = [...newReactionList];
-                reactionListMap.current[reactionObj?.reaction] = reactionListMap.current[reactionObj?.reaction]?.filter((reaction: CometChat.Reaction) => reaction?.id !== reactionObj?.id);
+                reactionListMap.current[reactionObj?.reaction] = reactionListMap.current[reactionObj?.reaction]?.filter((reaction: any) => reaction?.id !== reactionObj?.id);
             } else {
                 reactionListMap.current[currentSelectedReaction] = [...newReactionList];
-                reactionListMap.current['All'] = reactionListMap.current['All']?.filter((reaction: CometChat.Reaction) => reaction?.id !== reactionObj?.id);
+                reactionListMap.current['All'] = reactionListMap.current['All']?.filter((reaction: any) => reaction?.id !== reactionObj?.id);
             }
 
             let newMessageReactions = [...messageReactions];
 
-            let messageReactionIndex = newMessageReactions.findIndex(reaction => reaction?.reaction === reactionObj?.reaction);
+            let messageReactionIndex = newMessageReactions.findIndex((reaction: any) => reaction?.reaction === reactionObj?.reaction);
             if (messageReactionIndex > -1) {
                 if (newMessageReactions[messageReactionIndex]?.getCount() > 1) {
                     newMessageReactions[messageReactionIndex].setCount(newMessageReactions[messageReactionIndex].getCount() - 1);
@@ -220,20 +221,20 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
         }
     };
 
-    const subtitleView = useCallback((item) => {
-        let reactedByMe = loggedInUser.current.uid === item?.reactedBy?.uid;
+    const subtitleView = useCallback((item: any) => {
+        let reactedByMe = loggedInUser.current?.uid === item?.reactedBy?.uid;
         return (reactedByMe ?
-            <Text style={[{ color: subtitleColor }, subtitleFont]}>
+            <Text style={[{ color: subtitleColor }, subtitleFont] as TextStyle}>
                 {localize("TAP_TO_REMOVE")}
             </Text>
             : null
         )
     }, []);
 
-    const _render = ({ item, index }) => {
+    const _render = ({ item, index }: any) => {
 
         function getName() {
-            let reactedByMe = loggedInUser.current.uid === item?.reactedBy?.uid;
+            let reactedByMe = loggedInUser.current?.uid === item?.reactedBy?.uid;
             return reactedByMe ? localize("YOU") : item?.reactedBy?.name;
         }
 
@@ -246,9 +247,9 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
                     avatarName={item?.reactedBy?.name}
                     avatarURL={item?.reactedBy?.avatar ? { uri: item?.reactedBy?.avatar } : undefined}
                     SubtitleView={() => subtitleView(item)}
-                    TailView={() => <Text style={[tailViewFont, { color: theme?.palette?.getPrimary() }]}>{item?.reaction}</Text>}
+                    TailView={() => <Text style={[tailViewFont, { color: theme?.palette?.getPrimary() }] as TextStyle}>{item?.reaction}</Text>}
                     listItemStyle={{ height: 60, ...listItemStyle }}
-                    onPress={(id) => removeReaction(item)}
+                    onPress={(id: any) => removeReaction(item)}
                 />
                 <View
                     style={{
@@ -269,7 +270,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
             justifyContent: "center",
             alignItems: "center",
         }}>
-            <Text style={[{ color: errorTextColor, ...errorTextFont }]}>{errorStateText || localize("SOMETHING_WRONG")}</Text>
+            <Text style={[{ color: errorTextColor, ...errorTextFont }] as TextStyle}>{errorStateText || localize("SOMETHING_WRONG")}</Text>
         </View>
     }
 
@@ -294,7 +295,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
                     paddingLeft: 5,
                 }}
                 showsHorizontalScrollIndicator={false} horizontal={true}>
-                {messageReactions?.length > 0 && messageReactions.map((reactionObject, index) => (
+                {messageReactions?.length > 0 && messageReactions.map((reactionObject: any, index: number) => (
                     <TouchableOpacity style={[{
                         paddingHorizontal: 10,
                         flexDirection: "row", marginRight: 5,
@@ -307,8 +308,8 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
                             borderColor: "transparent",
                             paddingVertical: 5,
                             marginRight: 4, color: reactionObject?.reaction === "All" ? sliderEmojiCountColor : theme?.palette?.getPrimary()
-                        }, sliderEmojiFont]}>{reactionObject?.reaction === "All" ? localize("ALL") : reactionObject?.reaction}</Text>
-                        <Text style={[{ color: sliderEmojiCountColor }, sliderEmojiCountFont]}>{reactionObject?.count}</Text>
+                        }, sliderEmojiFont] as TextStyle}>{reactionObject?.reaction === "All" ? localize("ALL") : reactionObject?.reaction}</Text>
+                        <Text style={[{ color: sliderEmojiCountColor }, sliderEmojiCountFont] as TextStyle}>{reactionObject?.count}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>

@@ -111,7 +111,7 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
         category: MessageCategoryConstants.custom,
         ContentView: (
           message: CometChat.BaseMessage,
-          _alignment: MessageBubbleAlignmentType
+          _alignment?: MessageBubbleAlignmentType
         ) => {
           if (this.isDeletedMessage(message)) {
             return ChatConfigurator.dataSource.getDeleteMessageBubble(
@@ -128,7 +128,7 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
             messageObject,
             group
           ),
-          BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+          BottomView: (message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType) => {
               return ChatConfigurator.dataSource.getBottomView(message, alignment);
           }
       })
@@ -139,7 +139,7 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
 
   getPollBubble(
     message: CometChat.BaseMessage,
-    _alignment: MessageBubbleAlignmentType
+    _alignment?: MessageBubbleAlignmentType
   ) {
     let _loggedInUser = CometChatUIKit.loggedInUser;
     if (message && _loggedInUser) {
@@ -150,12 +150,12 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
 
       return (
         <PollsBubble
-          pollQuestion={message['customData']?.['question']}
-          options={message['customData']?.['options']}
-          pollId={message['customData']?.['id']}
+          pollQuestion={(message as any)['customData']?.['question']}
+          options={(message as any)['customData']?.['options']}
+          pollId={(message as any)['customData']?.['id']}
           loggedInUser={_loggedInUser}
           // choosePoll
-          senderUid={message['sender']?.['uid']}
+          senderUid={(message as any)['sender']?.['uid']}
           metadata={metaData}
           {...(this.pollsConfiguration?.pollsBubbleStyle
             ? this.pollsConfiguration.pollsBubbleStyle

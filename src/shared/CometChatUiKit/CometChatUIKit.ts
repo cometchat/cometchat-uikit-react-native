@@ -1,4 +1,5 @@
 import { Platform } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { UIKitSettings } from "./UIKitSettings";
 import { CometChatUIKitHelper } from "./CometChatUIKitHelper";
@@ -33,11 +34,11 @@ import {
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
     static aiFeatures: AIExtensionDataSource[]
-    static loggedInUser: null | CometChat.User = null;
+    static loggedInUser: CometChat.User | null;
     static conversationUpdateSettings : CometChat.ConversationUpdateSettings = new CometChat.ConversationUpdateSettings();
     private static loginListenerID: string = ``;
     private static isLoginListenerAttached: boolean = false;
-    static init(uiKitSettings: UIKitSettings): Promise<boolean> {
+    static init(uiKitSettings: UIKitSettings) {
 
         //perform sdk init taking values from uiKitSettings
         CometChatUIKit.uiKitSettings = {
@@ -45,12 +46,12 @@ export class CometChatUIKit {
         };
         var appSetting = new CometChat.AppSettingsBuilder()
             .autoEstablishSocketConnection(uiKitSettings.autoEstablishSocketConnection)
-            .overrideAdminHost(uiKitSettings?.overrideAdminHost)
-            .overrideClientHost(uiKitSettings?.overrideClientHost)
+            .overrideAdminHost(uiKitSettings?.overrideAdminHost || '')
+            .overrideClientHost(uiKitSettings?.overrideClientHost || '')
             .setRegion(uiKitSettings.region)
 
 
-        appSetting.subscriptionType = uiKitSettings.subscriptionType;
+        appSetting.subscriptionType = uiKitSettings.subscriptionType || '';
 
         if (appSetting.subscriptionType === "ROLES" && Array.isArray(uiKitSettings.roles) && uiKitSettings.roles.length > 0) {
             appSetting.roles = uiKitSettings.roles;
@@ -64,7 +65,7 @@ export class CometChatUIKit {
                 ListenerInitializer.attachListeners();
 
                 CometChat.getLoggedinUser()
-                    .then(user => {
+                    .then((user: any) => {
                         console.log("setting logged in user", user);
                         CometChatUIKit.setLoggedInUser(user);
                         if (user) {
@@ -75,7 +76,7 @@ export class CometChatUIKit {
                             CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
                         })
                     })
-                    .catch(error => {
+                    .catch((error: any) => {
                         // CometChatUIKit.setLoggedInUser(null);
                     })
                 permissionUtil.init().then(res => {
@@ -83,7 +84,7 @@ export class CometChatUIKit {
                         console.warn("[IOS] Permission initialization failed.");
                     }
                 })
-            }, error => {
+            }, (error: any) => {
                 // console.log("Initialization failed with error:", error);
             }
         );
@@ -162,7 +163,7 @@ export class CometChatUIKit {
 
     static async getLoggedInUser(): Promise<CometChat.User> {
         if (CometChatUIKit.checkAuthSettings(Promise.reject)) null
-        let user = await CometChat.getLoggedinUser().catch((e) => Promise.reject(e))
+        let user = await CometChat.getLoggedinUser().catch((e: any) => Promise.reject(e))
         if (user == null) {
             throw (new CometChat.CometChatException({ code: "NOT_FOUND", message: "Login user not found" }));
         } else {
@@ -198,14 +199,14 @@ export class CometChatUIKit {
     static async login({ uid, authToken }: { uid?: string, authToken?: string }): Promise<CometChat.User> {
         if (CometChatUIKit.checkAuthSettings(Promise.reject)) null
         if (uid) {
-            let user = await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch(e => Promise.reject(e));
+            let user = await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch((e: any) => Promise.reject(e));
             CometChatUIKit.setLoggedInUser(user);
             CometChatUIKit.setConversationUpdateSettings(await CometChat.getConversationUpdateSettings());
             this.enableExtensions()
             return user;
         }
         if (authToken) {
-            let user = await CometChat.login(authToken).catch(e => Promise.reject(e));
+            let user = await CometChat.login(authToken).catch((e: any) => Promise.reject(e));
             this.enableExtensions()
             return user;
         }
@@ -223,13 +224,13 @@ export class CometChatUIKit {
 
         if (this.checkAuthSettings(Promise.reject)) { }
 
-        return CometChat.createUser(user, this.uiKitSettings.authKey)
+        return CometChat.createUser(user, this.uiKitSettings.authKey as string)
     }
 
     static updateUser(user: CometChat.User): Promise<CometChat.User> {
         if (this.checkAuthSettings(Promise.reject)) { }
 
-        return CometChat.updateUser(user, this.uiKitSettings.authKey);
+        return CometChat.updateUser(user, this.uiKitSettings.authKey as string);
     }
 
     //Error handling to give better logs
@@ -265,21 +266,22 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message.getSender()) {
+            if (!message.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
 
 
             CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
             CometChat.sendCustomMessage(message)
-                .then(customMessage => {
+                .then((customMessage: any) => {
                     CometChatUIKitHelper.onMessageSent(customMessage, messageStatus.success);
                     resolve(customMessage);
                 })
-                .catch(err => {
-                    if (message.data)
-                        message.data.metaData = { ...(message.data.metaData ? message.data.metaData : {}), error: true }
-                    CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                .catch((err: any) => {
+                    let msg: any = message
+                    if (msg.data)
+                        msg.data.metaData = { ...(msg.data.metaData ? msg.data.metaData : {}), error: true }
+                    CometChatUIKitHelper.onMessageSent(msg, messageStatus.error);
                     reject(err);
                 });
         });
@@ -294,7 +296,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message.getSender()) {
+            if (!message.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
 
@@ -324,14 +326,15 @@ export class CometChatUIKit {
 
             CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
             CometChat.sendMediaMessage(message)
-                .then(mediaMessage => {
+                .then((mediaMessage: any) => {
                     CometChatUIKitHelper.onMessageSent(mediaMessage, messageStatus.success);
                     resolve(mediaMessage);
                 })
-                .catch(err => {
-                    if (message.data)
-                        message.data.metaData = { ...(message.data.metaData ? message.data.metaData : {}), error: true }
-                    CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                .catch((err: any) => {
+                    let msg: any = message
+                    if (msg.data)
+                        msg.data.metaData = { ...(msg.data.metaData ? msg.data.metaData : {}), error: true }
+                    CometChatUIKitHelper.onMessageSent(msg, messageStatus.error);
                     reject(err);
                 });
         });
@@ -346,21 +349,22 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message?.getSender()) {
+            if (!message?.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
 
 
             CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
             CometChat.sendMessage(message)
-                .then(textMessage => {
+                .then((textMessage: any) => {
                     CometChatUIKitHelper.onMessageSent(textMessage, messageStatus.success);
                     resolve(textMessage);
                 })
-                .catch(err => {
-                    if (message.data)
-                        message.data.metaData = { ...(message.data.metaData ? message.data.metaData : {}), error: true }
-                    CometChatUIKitHelper.onMessageSent(message, messageStatus.error);
+                .catch((err: any) => {
+                    let msg: any = message
+                    if (msg.data)
+                        msg.data.metaData = { ...(msg.data.metaData ? msg.data.metaData : {}), error: true }
+                    CometChatUIKitHelper.onMessageSent(msg, messageStatus.error);
                     reject(err);
                 });
         });
@@ -379,14 +383,14 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message.getSender()) {
+            if (!message.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
             if (!disableLocalEvents) {
                 CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
             }
 
-            CometChat.sendInteractiveMessage(message)
+            CometChat.sendInteractiveMessage(message as unknown as CometChat.InteractiveMessage)
                 .then((message: CometChat.BaseMessage) => {
                     if (!disableLocalEvents) {
                         CometChatUIKitHelper.onMessageSent(message, messageStatus.success);
@@ -416,7 +420,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message.getSender()) {
+            if (!message.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
 
@@ -455,7 +459,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message.getSender()) {
+            if (!message.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
             if (!disableLocalEvents) {
@@ -494,7 +498,7 @@ export class CometChatUIKit {
                 message.setMuid(String(getUnixTimestampInMilliseconds()));
             }
 
-            if (!message.getSender()) {
+            if (!message.getSender() && this.loggedInUser) {
                 message.setSender(this.loggedInUser);
             }
 

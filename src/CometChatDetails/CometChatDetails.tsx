@@ -7,6 +7,7 @@ import {
   BackHandler,
   StyleProp,
   ViewStyle,
+  ViewProps,
 } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import Header from './Header';
@@ -369,14 +370,14 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
   const ccGroupMemberAddedId = 'ccGroupMemberAdded_' + new Date().getTime();
   const ccOwnershipChangedId = 'ccOwnershipChanged_' + new Date().getTime();
 
-  const [userDetails, setUserDetails] = useState(user);
-  const [groupDetails, setGroupDetails] = useState(group);
+  const [userDetails, setUserDetails] = useState<any>(user);
+  const [groupDetails, setGroupDetails] = useState<any>(group);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [detailsList, setDetailsList] = useState(
+  const [detailsList, setDetailsList] = useState<any[]>(
     (data && data({ user, group })) ?? []
   );
-  const [loggedInUser, setLoggedInUser] = useState<CometChat.User>();
+  const [loggedInUser, setLoggedInUser] = useState<CometChat.User | any>();
   const [currentScreen, setCurrentScreen] = useState<string | null>(null);
   const [modalDetails, setModalDetails] = useState<ModalDetailsInterface>();
 
@@ -487,7 +488,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     });
   };
 
-  const updateUserBlockStatus = (list: Object, blocked: boolean) => {
+  const updateUserBlockStatus = (list: any, blocked: boolean) => {
     let updatedUser = userDetails
     if (list[userDetails.getUid()]['success'] == true) {
       updatedUser.setBlockedByMe(blocked)
@@ -550,7 +551,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     }
   };
 
-  const ListItem = ({ item }) => {
+  const ListItem = ({ item }: any) => {
     const {
       title,
       icon,
@@ -604,7 +605,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     );
   };
 
-  const ListSection = (props) => {
+  const ListSection = (props: any) => {
     const { item } = props;
     const {
       title,
@@ -644,7 +645,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
       </>
     );
   };
-  const SectionHeader = (props) => {
+  const SectionHeader = (props: any) => {
     const { title, titleColor, titleFont, titleStyle } = props;
     return (
       <View>
@@ -661,7 +662,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     );
   };
 
-  const SectionDivider = (props) => {
+  const SectionDivider = (props: any) => {
     const { sectionSeparatorColor } = props;
     return (
       <View
@@ -705,7 +706,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     return () => { }
   }, [currentScreen]);
 
-  const getDefaultTemplate = (loggedUser, user?: any) => {
+  const getDefaultTemplate = (loggedUser: any, user?: any) => {
     if (userDetails || groupDetails) {
       const template = getDefaultDetailsTemplate(loggedUser, user ?? userDetails, groupDetails, theme);
       setDetailsList(template.filter((item) => item));
@@ -714,7 +715,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
 
   const getTemplates = () => {
     CometChat.getLoggedinUser().then(
-      (loggedUser: CometChat.User) => {
+      (loggedUser: CometChat.User | any) => {
         setLoggedInUser(loggedUser);
         if (!data) {
           getDefaultTemplate(loggedUser);
@@ -730,15 +731,15 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     getTemplates();
   }, []);
 
-  const handleUserStatus = (user) => {
-    setUserDetails((prev) => {
+  const handleUserStatus = (user: any) => {
+    setUserDetails((prev: any) => {
       const clonedUserDetails = CommonUtils.clone(prev);
       clonedUserDetails.setStatus(user.getStatus());
       return clonedUserDetails;
     });
   };
 
-  const handleGroupListener = (group) => {
+  const handleGroupListener = (group: any) => {
     setGroupDetails(group);
   };
 
@@ -766,7 +767,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     kickedMember,
     kickedBy,
     kickedFrom,
-  }) => {
+  }: any) => {
     handleGroupListener(kickedFrom);
   };
   const handleGroupMemberBanned = ({
@@ -774,7 +775,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     kickedUser,
     kickedBy,
     kickedFrom,
-  }) => {
+  }: any) => {
     handleGroupListener(kickedFrom);
   };
   const handleGroupMemberAdded = ({
@@ -782,21 +783,21 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
     message,
     usersAdded,
     userAddedIn,
-  }) => {
+  }: any) => {
     setCurrentScreen(null)
     handleGroupListener(userAddedIn);
   };
-  const handleOwnershipChanged = ({ group, newOwner, message }) => {
+  const handleOwnershipChanged = ({ group, newOwner, message }: any) => {
     handleGroupListener(group);
     getTemplates();
   };
 
   useEffect(() => {
     CometChatUIEventHandler.addGroupListener(groupListenerId, {
-      ccGroupMemberKicked: (item) => handleGroupMemberKicked(item),
-      ccGroupMemberBanned: (item) => handleGroupMemberBanned(item),
-      ccGroupMemberAdded: (item) => handleGroupMemberAdded(item),
-      ccOwnershipChanged: (item) => handleOwnershipChanged(item),
+      ccGroupMemberKicked: (item: any) => handleGroupMemberKicked(item),
+      ccGroupMemberBanned: (item: any) => handleGroupMemberBanned(item),
+      ccGroupMemberAdded: (item: any) => handleGroupMemberAdded(item),
+      ccOwnershipChanged: (item: any) => handleOwnershipChanged(item),
     });
     return () => {
       CometChatUIEventHandler.removeGroupListener(groupListenerId);
@@ -810,7 +811,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
         group={groupDetails}
         onBack={handleBackButtonClick}
         selectionMode="none"
-        groupMemberStyle={{ backIconTint: detailsStyle?.backIconTint ?? null }}
+        groupMemberStyle={{ backIconTint: detailsStyle?.backIconTint ?? undefined }}
         {...groupMembersConfiguration}
       />
     );
@@ -820,7 +821,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
       <CometChatAddMembers
         group={groupDetails}
         onBack={handleBackButtonClick}
-        usersStyle={{ backIconTint: detailsStyle?.backIconTint ?? null }}
+        usersStyle={{ backIconTint: detailsStyle?.backIconTint ?? undefined }}
         {...addMembersConfiguration}
       />
     );
@@ -830,7 +831,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
       <CometChatBannedMembers
         group={groupDetails}
         onBack={handleBackButtonClick}
-        bannedMemberStyle={{ backIconTint: detailsStyle?.backIconTint ?? null }}
+        bannedMemberStyle={{ backIconTint: detailsStyle?.backIconTint ?? undefined }}
         {...bannedMembersConfiguration}
       />
     );
@@ -855,7 +856,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
           borderRadius: detailsStyle?.borderRadius ?? 0,
         } as StyleProp<ViewStyle>,
         detailsStyle?.border ? detailsStyle?.border : {},
-      ]}
+      ] as ViewProps}
     >
       <Header
         title={title}
@@ -906,7 +907,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
             paddingLeft: 0,
           }}
           statusIndicatorStyle={
-            groupDetails
+            (groupDetails
               ? {
                 end: 10,
                 height: 15,
@@ -929,7 +930,7 @@ export const CometChatDetails = (props: CometChatDetailsInterface) => {
               : {
                 end: 10,
                 ...(statusIndicatorStyle ? statusIndicatorStyle : {}),
-              } as StyleProp<ViewStyle>
+              }) as ViewProps
           }
           avatarStyle={
             avatarStyle ? avatarStyle : { border: { borderWidth: 0 } }

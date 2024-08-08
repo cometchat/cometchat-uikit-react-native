@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 //@ts-ignore
-import { Text, View } from 'react-native';
+import { Text, TextStyle, View } from 'react-native';
 import { Style } from './style';
 import { DateStyle, DateStyleInterface } from './DateStyle';
 import { CometChatContext } from '../../CometChatContext';
@@ -175,7 +175,7 @@ export const CometChatDate = (props: CometChatDateInterface) => {
       ]}
     >
       <Text
-        style={[Style.textStyle, style.textFont, { color: style.textColor, textAlign: dateAlignment }]}
+        style={[Style.textStyle, style.textFont, { color: style.textColor, textAlign: dateAlignment }] as TextStyle}
       >
         {customDateString ? customDateString : getFormattedDate()}
       </Text>

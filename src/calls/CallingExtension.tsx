@@ -8,7 +8,7 @@ const CometChatCalls = CallingPackage.CometChatCalls;
 
 export class CallingExtension extends ExtensionsDataSource {
 
-    configuration: CallingConfiguration;
+    configuration!: CallingConfiguration;
 
     CallingExtension({ configuration }: { configuration?: CallingConfiguration }) {
         if (configuration)
@@ -30,7 +30,7 @@ export class CallingExtension extends ExtensionsDataSource {
                 () => {
                     console.log('CometChatCalls initialization completed successfully');
                 },
-                error => {
+                (error: any) => {
                     console.log('CometChatCalls initialization failed with error:', error);
                 },
             );

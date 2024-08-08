@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 //@ts-ignore
-import { Image } from 'react-native';
+import { Image, ImageStyle } from 'react-native';
 import { CometChatContextType, ImageType } from '../../base';
 import { ICONS } from './resources';
 import styles from './style';
@@ -21,7 +21,7 @@ export interface CometChatReceiptInterface {
   deliveredIcon?: ImageType;
   readIcon?: ImageType;
   errorIcon?: ImageType;
-  receipt?: 'SENT' | 'DELIVERED' | 'READ' | 'ERROR' | 'WAIT';
+  receipt?: 'SENT' | 'DELIVERED' | 'READ' | 'ERROR' | 'WAIT' | string;
   style?: {
     height?: string | number;
     width?: string | number;
@@ -44,8 +44,8 @@ export const CometChatReceipt = (props: CometChatReceiptInterface) => {
 
   const { height, width, tintColor } = _style;
 
-  let icon = null;
-  let imageSource = null;
+  let icon: any = null;
+  let imageSource: any = null;
 
   switch (receipt) {
     case 'SENT':
@@ -74,7 +74,7 @@ export const CometChatReceipt = (props: CometChatReceiptInterface) => {
     } else if (typeof icon === 'number') {
       imageSource = icon;
     }
-    return <Image source={imageSource} style={[styles.tickImageStyle, { tintColor: tintColor, width, height }]} />;
+    return <Image source={imageSource} style={[styles.tickImageStyle, { tintColor: tintColor, width, height }] as ImageStyle} />;
   }
   return null;
 };

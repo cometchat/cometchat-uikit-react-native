@@ -1,4 +1,4 @@
-import { Text, TextInput, View } from 'react-native';
+import { Text, TextInput, TextStyle, View, ViewProps } from 'react-native';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import Header from './Header';
 import {
@@ -15,6 +15,7 @@ import { CometChatGroupsEvents } from '../shared/events';
 import { styles } from './style';
 import { CometChatContextType } from '../shared/base/Types';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
+import { TextInputStyle } from '../shared/views/CometChatTextInput/TextInputStyle';
 
 export interface JoinProtectedGroupStyleInterface {
   closeIconTint?: string;
@@ -142,7 +143,7 @@ export const CometChatJoinProtectedGroup = (
   const [modalVisible, setModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const loggedUserRef = useRef(null);
-  const showError = (message) => {
+  const showError = (message: any) => {
     if (hasError) {
       setModalVisible(true);
       setErrorMessage(errorText ?? message);
@@ -158,7 +159,7 @@ export const CometChatJoinProtectedGroup = (
     let type = group?.['type'];
 
     CometChat.joinGroup(guid, type, password)
-      .then((response) => {
+      .then((response: any) => {
         setPassword('');
         onBack && onBack();
         group['membersCount'] = group['membersCount'] + 1;
@@ -177,7 +178,7 @@ export const CometChatJoinProtectedGroup = (
 
   useEffect(() => {
     CometChat.getLoggedinUser().then(
-      (loggedUser: CometChat.User) => {
+      (loggedUser: CometChat.User | any) => {
         loggedUserRef.current = loggedUser;
       },
       (error: CometChat.CometChatException) => {
@@ -191,15 +192,15 @@ export const CometChatJoinProtectedGroup = (
       style={[
         styles.container,
         {
-          width: joinProtectedGroupStyle.width ?? 'auto',
-          height: joinProtectedGroupStyle.height ?? 'auto',
+          width: joinProtectedGroupStyle?.width ?? 'auto',
+          height: joinProtectedGroupStyle?.height ?? 'auto',
           backgroundColor:
-            joinProtectedGroupStyle.background ??
+            joinProtectedGroupStyle?.background ??
             theme.palette.getBackgroundColor(),
-          borderRadius: joinProtectedGroupStyle.borderRadius ?? 0,
+          borderRadius: joinProtectedGroupStyle?.borderRadius ?? 0,
         },
-        joinProtectedGroupStyle.border ?? {},
-      ]}
+        joinProtectedGroupStyle?.border ?? {},
+      ] as ViewProps}
     >
       <CometChatConfirmDialog
         isOpen={modalVisible}
@@ -209,8 +210,8 @@ export const CometChatJoinProtectedGroup = (
         messageText={errorMessage}
         onConfirm={() => setModalVisible(false)}
         style={{
-          messageTextStyle: joinProtectedGroupStyle.errorTextStyle,
-          titleTextStyle: joinProtectedGroupStyle.errorTextStyle,
+          messageTextStyle: joinProtectedGroupStyle?.errorTextStyle,
+          titleTextStyle: joinProtectedGroupStyle?.errorTextStyle,
         }}
       />
       <Header
@@ -218,14 +219,14 @@ export const CometChatJoinProtectedGroup = (
         joinIcon={joinIcon}
         closeIcon={closeIcon}
         titleStyle={[
-          joinProtectedGroupStyle.titleStyle ?? theme.typography.heading,
+          joinProtectedGroupStyle?.titleStyle ?? theme.typography.heading,
           { color: theme.palette.getAccent() },
         ]}
         joinIconTint={
-          joinProtectedGroupStyle.joinIconTint ?? theme.palette.getPrimary()
+          joinProtectedGroupStyle?.joinIconTint ?? theme.palette.getPrimary()
         }
         closeIconTint={
-          joinProtectedGroupStyle.closeIconTint ?? theme.palette.getPrimary()
+          joinProtectedGroupStyle?.closeIconTint ?? theme.palette.getPrimary()
         }
         onSubmit={
           onJoinClick ? () => onJoinClick({ group, password }) : joinGroup
@@ -234,10 +235,10 @@ export const CometChatJoinProtectedGroup = (
       />
       <Text
         style={[
-          joinProtectedGroupStyle.descriptionTextStyle ??
+          joinProtectedGroupStyle?.descriptionTextStyle ??
             theme.typography.subtitle1,
           { color: theme.palette.getAccent() },
-        ]}
+        ] as TextStyle}
       >
         {description ?? `Enter password to access ${group?.['name']} Group.`}
       </Text>
@@ -250,16 +251,16 @@ export const CometChatJoinProtectedGroup = (
           styles.textInput,
           {
             borderBottomColor:
-              joinProtectedGroupStyle.inputBorderColor ??
+              joinProtectedGroupStyle?.inputBorderColor ??
               theme.palette.getAccent200(),
             color: theme.palette.getAccent(),
           },
           password.length > 0
-            ? joinProtectedGroupStyle.passwordPlaceholderStyle ??
+            ? joinProtectedGroupStyle?.passwordPlaceholderStyle ??
               theme.typography.body
-            : joinProtectedGroupStyle.passwordInputTextStyle ??
+            : joinProtectedGroupStyle?.passwordInputTextStyle ??
               theme.typography.body,
-        ]}
+        ] as TextInputStyle}
       />
     </View>
   );

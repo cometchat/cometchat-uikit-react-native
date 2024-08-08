@@ -1,11 +1,11 @@
 import React, { useContext, useEffect } from 'react';
 import { CometChatContext, CometChatContextType, ImageType, localize } from "../..";
-import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert, Platform, Linking } from "react-native";
+import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert, Platform, Linking, TextStyle, ViewProps } from "react-native";
 import { Style } from "./style";
 import { ICONS } from '../../framework/resources';
 import { MediaRecorderStyle, MediaRecorderStyleInterface } from './MediaRecorderStyle';
 
-let recordedTime = 0, stopRecordingIntervalId = null;
+let recordedTime = 0, stopRecordingIntervalId: any = null;
 export interface CometChatMediaRecorderInterface {
     onClose?: Function;
     onPlay?: Function;
@@ -23,7 +23,7 @@ export interface CometChatMediaRecorderInterface {
     submitIconUrl?: ImageType;
 }
 
-let timerIntervalId = null;
+let timerIntervalId: any = null;
 export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) => {
     const {
         onClose, style, onPause, onPlay, onSend, onStop, onStart, mediaRecorderStyle,
@@ -53,22 +53,25 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
         timerTextColor,
     } = _style;
 
+    const cleaner = async () => {
+        let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
+        if (!microphonePermission && Platform.OS === "android") return;
+        NativeModules.FileManager.deleteFile((success: any) => console.log("Filepath delete", success));
+        NativeModules.FileManager.releaseMediaResources((result: any) => { });
+        clearInterval(timerIntervalId)
+        setRecordedFile("");
+        recordedPlaying && setRecordedPlaying(false);
+    }
+
     useEffect(() => {
         recordingInitiator();
-
-        return async () => {
-            let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
-            if (!microphonePermission && Platform.OS === "android") return;
-            NativeModules.FileManager.deleteFile((success) => console.log("Filepath delete", success));
-            NativeModules.FileManager.releaseMediaResources((result) => { });
-            clearInterval(timerIntervalId)
-            setRecordedFile("");
-            recordedPlaying && setRecordedPlaying(false);
+        return () => {
+            cleaner()
         }
     }, [])
 
     function permissionAlert() {
-        Alert.alert(undefined, localize("MICROPHONE_PERMISSION"), [
+        Alert.alert('', localize("MICROPHONE_PERMISSION"), [
             {
                 style: 'cancel',
                 text: localize('CANCEL'),
@@ -86,7 +89,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     const recordingInitiator = async () => {
         let microphonePermission = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.RECORD_AUDIO);
         if (microphonePermission || Platform.OS === "ios") {
-            NativeModules.FileManager.startRecording((filepath) => {
+            NativeModules.FileManager.startRecording((filepath: any) => {
                 if (Platform.OS === "ios") {
                     try {
                         let resObj = JSON.parse(filepath);
@@ -126,7 +129,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     };
 
     const _onStop = () => {
-        NativeModules.FileManager.releaseMediaResources((result) => {
+        NativeModules.FileManager.releaseMediaResources((result: string) => {
             console.log(time, "Filepath _stopRecorderAudio", result);
             recordedTime = time;
             setRecordedFile(JSON.parse(result)?.file);
@@ -142,9 +145,9 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
         startInterval();
         setRecordedFile("");
         setRecordedPlaying(false);
-        NativeModules.FileManager.deleteFile((success) => {
+        NativeModules.FileManager.deleteFile((success: any) => {
             console.log("Filepath delete", success)
-            NativeModules.FileManager.startRecording((result) => {
+            NativeModules.FileManager.startRecording((result: any) => {
                 console.log("Filepath onRecorderAudioStarted", result);
             })
         });
@@ -153,7 +156,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     }
 
     const _onPlay = () => {
-        NativeModules.FileManager.playAudio((filepath) => {
+        NativeModules.FileManager.playAudio((filepath: any) => {
             console.log(recordedTime, "Filepath _playRecorderAudio", filepath);
             onPlay && onPlay();
             setRecordedPlaying(true);
@@ -166,7 +169,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     }
 
     const _onPause = () => {
-        NativeModules.FileManager.pausePlaying((filepath) => {
+        NativeModules.FileManager.pausePlaying((filepath: any) => {
             console.log("Filepath onRecorderAudioPaused", filepath);
             onPause && onPause();
             setRecordedPlaying(false);
@@ -179,14 +182,14 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
         _onPause();
         setRecordedFile("");
         setRecordedPlaying(false);
-        NativeModules.FileManager.releaseMediaResources((filepath) => {
+        NativeModules.FileManager.releaseMediaResources((filepath: any) => {
             console.log("Filepath onClose", filepath);
         })
         onClose && onClose();
     }
 
     const _onSend = () => {
-        NativeModules.FileManager.releaseMediaResources((result) => {
+        NativeModules.FileManager.releaseMediaResources((result: any) => {
             console.log("Filepath _stopRecorderAudio", result);
         })
         onSend && onSend(recordedFile);
@@ -196,7 +199,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
         setTime(time => time + 1);
     }
 
-    function formatTime(seconds) {
+    function formatTime(seconds: number) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
 
@@ -206,9 +209,9 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
         return `${formattedMinutes}:${formattedSeconds}`;
     }
 
-    const _render = ({ item, index }) => {
+    const _render = ({ item, index }: any) => {
         return (
-            <View style={[Style.soundBar, audioBarTint && { backgroundColor: audioBarTint }]} />
+            <View style={[Style.soundBar, audioBarTint && { backgroundColor: audioBarTint }] as ViewProps} />
         )
     }
 
@@ -241,15 +244,15 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
                     }
                 </>}
                 <View style={[Style.timerContainer, { flexDirection: Boolean(recordedFile) ? "row-reverse" : "row" }]}>
-                    <Text style={[Style.timerText,
-                    timerTextFont && { fontFamily: timerTextFont },
-                    timerTextColor && { color: timerTextColor },
-                    timerTextstyle && { fontStyle: timerTextstyle },
-                    !Boolean(recordedFile) && { marginRight: 10 }
-                    ]}>{formatTime(time)}</Text>
+                    <Text style={[
+                        timerTextFont && { fontFamily: timerTextFont },
+                        timerTextColor && { color: timerTextColor },
+                        timerTextstyle && { fontStyle: timerTextstyle },
+                        !Boolean(recordedFile) && { marginRight: 10 }
+                    ] as TextStyle}>{formatTime(time)}</Text>
                     <FlatList
                         data={soundBars}
-                        keyExtractor={(item) => item}
+                        keyExtractor={(item) => item.toString()}
                         renderItem={_render}
                         horizontal={true}
                         style={{

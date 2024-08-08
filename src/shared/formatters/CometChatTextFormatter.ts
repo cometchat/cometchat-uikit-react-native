@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatUIEventHandler, CometChatUIEvents } from "../events";
 import { SuggestionItem } from "../views/CometChatSuggestionList";
@@ -20,7 +21,7 @@ export abstract class CometChatTextFormatter {
   /**
    * The message object in context.
    */
-  protected messageObject: CometChat.BaseMessage;
+  protected messageObject!: CometChat.BaseMessage;
 
   /**
    * List of searched data.
@@ -30,22 +31,22 @@ export abstract class CometChatTextFormatter {
   /**
    * The user in context.
    */
-  protected user: CometChat.User;
+  protected user!: CometChat.User;
 
   /**
    * The group in context.
    */
-  protected group: CometChat.Group;
+  protected group!: CometChat.Group;
 
   /**
    * The composer ID.
    */
-  protected composerId: string | number;
+  protected composerId!: string | number;
 
   /**
    * The formatter id.
   */
-  protected id: string | number;
+  protected id!: string | number;
 
   /**
    * The character to track once typed in the text input field.

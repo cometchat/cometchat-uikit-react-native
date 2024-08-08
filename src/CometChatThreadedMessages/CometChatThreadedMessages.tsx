@@ -1,4 +1,4 @@
-import { View, Text, Image, ViewStyle, Platform, ScrollView } from 'react-native';
+import { View, Text, Image, ViewStyle, Platform, ScrollView, TextStyle } from 'react-native';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import Header from './Header';
 import { ICONS } from './resources';
@@ -52,7 +52,7 @@ export interface CometChatThreadedMessagesInterface {
    *
    * @description callback(messageObject) —> bubble view (combination of header+content+footer)
    */
-  BubbleView: (messageObject: CometChat.BaseMessage) => JSX.Element;
+  BubbleView: (messageObject: CometChat.BaseMessage) => JSX.Element | null;
   /**
    *
    *
@@ -116,7 +116,7 @@ export interface ThreadedMessagesStyleInterface {
   border?: BorderStyleInterface;
   borderRadius?: number;
   titleStyle: FontStyleInterface;
-  closeIconTint: string;
+  closeIconTint?: string;
 }
 export const CometChatThreadedMessages = (
   props: CometChatThreadedMessagesInterface
@@ -139,10 +139,10 @@ export const CometChatThreadedMessages = (
     MessageListView
   } = props;
 
-  const loggedInUser = useRef(null);
-  const [group, setGroup] = useState(null);
-  const [user, setUser] = useState(null);
-  const [message, setMessage] = useState(parentMessage);
+  const loggedInUser = useRef<CometChat.User | null>(null);
+  const [group, setGroup] = useState(undefined);
+  const [user, setUser] = useState(undefined);
+  const [message, setMessage] = useState<any>(parentMessage);
   const [replyCount, setReplyCount] = useState(
     parentMessage.getReplyCount() || 0
   );
@@ -158,24 +158,24 @@ export const CometChatThreadedMessages = (
 
   const checkAndUpdateRepliesCount = (updatedMessage: CometChat.BaseMessage) => {
     if (checkMessageBelongsToSameThread(updatedMessage)) {
-      setReplyCount((prev) => prev + 1);
+      setReplyCount((prev: number) => prev + 1);
     }
   }
 
-  const ccMessageSentFunc = ({ message: msg, status }) => {
+  const ccMessageSentFunc = ({ message: msg, status }: any) => {
     if (status === messageStatus.success) {
       checkAndUpdateRepliesCount(msg)
       if (message.getId() == msg.id) setMessage(message);
     }
   };
-  const ccMessageEditedFunc = ({ message: msg, status }) => {
+  const ccMessageEditedFunc = ({ message: msg, status }: any) => {
     if (message.getId() == msg.id && status == messageStatus.success)
       setMessage(message);
   };
-  const ccMessageDeletedFunc = ({ message: msg }) => {
+  const ccMessageDeletedFunc = ({ message: msg }: any) => {
     if (message.getId() == msg.id) setMessage(message);
   };
-  const ccMessageReadFunc = ({ message: msg }) => {
+  const ccMessageReadFunc = ({ message: msg }: any) => {
     if (message.getId() == msg.id) setMessage(message);
   };
 
@@ -183,29 +183,29 @@ export const CometChatThreadedMessages = (
 
   useEffect(() => {
     CometChatUIEventHandler.addMessageListener(uiEventId, {
-      ccMessageSent: (item) => ccMessageSentFunc(item),
-      ccMessageEdited: (item) => ccMessageEditedFunc(item),
-      ccMessageDeleted: (item) => ccMessageDeletedFunc(item),
-      ccMessageRead: (item) => ccMessageReadFunc(item),
-      onTextMessageReceived: (textMessage) => {
+      ccMessageSent: (item: any) => ccMessageSentFunc(item),
+      ccMessageEdited: (item: any) => ccMessageEditedFunc(item),
+      ccMessageDeleted: (item: any) => ccMessageDeletedFunc(item),
+      ccMessageRead: (item: any) => ccMessageReadFunc(item),
+      onTextMessageReceived: (textMessage: any) => {
         checkAndUpdateRepliesCount(textMessage)
       },
-      onMediaMessageReceived: (mediaMessage) => {
+      onMediaMessageReceived: (mediaMessage: any) => {
         checkAndUpdateRepliesCount(mediaMessage)
       },
-      onCustomMessageReceived: (customMessage) => {
+      onCustomMessageReceived: (customMessage: any) => {
         checkAndUpdateRepliesCount(customMessage)
       },
-      onFormMessageReceived: (formMessage) => {
+      onFormMessageReceived: (formMessage: any) => {
         checkAndUpdateRepliesCount(formMessage)
       },
-      onCardMessageReceived: (cardMessage) => {
+      onCardMessageReceived: (cardMessage: any) => {
         checkAndUpdateRepliesCount(cardMessage)
       },
-      onSchedulerMessageReceived: (schedulerMessage) => {
+      onSchedulerMessageReceived: (schedulerMessage: any) => {
         checkAndUpdateRepliesCount(schedulerMessage)
       },
-      onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
+      onCustomInteractiveMessageReceived: (customInteractiveMessage: any) => {
         checkAndUpdateRepliesCount(customInteractiveMessage)
       }
     });
@@ -216,9 +216,9 @@ export const CometChatThreadedMessages = (
   }, []);
 
   useEffect(() => {
-    CometChat.getLoggedinUser().then((loggedUser) => {
+    CometChat.getLoggedinUser().then((loggedUser: any) => {
       loggedInUser.current = loggedUser;
-      if (message.getSender()!.getUid() == loggedUser.getUid()) {
+      if (message.getSender()!.getUid() == loggedUser?.getUid()) {
         if (message?.getReceiverType() == 'group') {
           setGroup(message.getReceiver());
         } else {
@@ -239,13 +239,13 @@ export const CometChatThreadedMessages = (
       style={[
         styles.container,
         {
-          width: threadedMessagesStyle.width ?? '100%',
-          height: threadedMessagesStyle.height ?? '100%',
+          width: threadedMessagesStyle?.width ?? '100%',
+          height: threadedMessagesStyle?.height ?? '100%',
           backgroundColor:
-            threadedMessagesStyle.background ??
+            threadedMessagesStyle?.background ??
             theme.palette.getBackgroundColor(),
-          border: threadedMessagesStyle.border ?? {},
-          borderRadius: threadedMessagesStyle.borderRadius ?? 0,
+          border: threadedMessagesStyle?.border ?? {},
+          borderRadius: threadedMessagesStyle?.borderRadius ?? 0,
         } as ViewStyle,
       ]}
     >
@@ -254,14 +254,14 @@ export const CometChatThreadedMessages = (
         showCloseButton
         closeButtonIcon={closeIcon ?? ICONS.CLOSE}
         onPress={onClose}
-        titleStyle={
-          threadedMessagesStyle.titleStyle ?? {
+        titleStyle={({
             ...theme.typography.heading,
             color: theme.palette.getAccent(),
-          }
+            ...threadedMessagesStyle.titleStyle
+          }) as TextStyle
         }
         closeIconTint={
-          threadedMessagesStyle.closeIconTint ?? theme.palette.getPrimary()
+          threadedMessagesStyle?.closeIconTint ?? theme.palette.getPrimary()
         }
       />
       <View style={styles.msgBubbleContainer}>
@@ -286,7 +286,7 @@ export const CometChatThreadedMessages = (
               {
                 color: theme.palette.getAccent600(),
               },
-            ]}
+            ] as TextStyle}
           >
             {replyCount ?? 0} {replyCount > 1 ? localize("REPLIES") : localize("REPLY")}
           </Text>
@@ -304,7 +304,7 @@ export const CometChatThreadedMessages = (
               user={user}
               group={group}
               onError={onError && onError}
-              {...messageListConfiguration}
+              {...(messageListConfiguration ? messageListConfiguration : {})}
             />
         )}
       </View>
@@ -334,7 +334,7 @@ export const CometChatThreadedMessages = (
             height:
               keyboardHeight -
               (Number.isInteger(commonVars.safeAreaInsets.bottom)
-                ? commonVars.safeAreaInsets.bottom
+                ? commonVars.safeAreaInsets.bottom as number
                 : 35),
           }}
         />

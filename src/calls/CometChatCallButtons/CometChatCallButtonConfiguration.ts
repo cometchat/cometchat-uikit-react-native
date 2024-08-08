@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { ImageType } from "../../shared";
 import { CallButtonStyleInterface } from "./CallButtonStyle";

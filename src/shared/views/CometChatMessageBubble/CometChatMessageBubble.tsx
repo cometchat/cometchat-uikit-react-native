@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { View } from "react-native";
+import { View, ViewProps } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, BaseStyleInterface } from "../../base";
 import { MessageBubbleStyle } from "./MessageBubbleStyle";
@@ -16,42 +16,42 @@ export interface CometChatMessageBubbleInterface {
      * The leading view of the message bubble.
      * @type () => JSX.Element
      */
-    LeadingView?: () => JSX.Element,
+    LeadingView?: () => JSX.Element | null,
     /**
      * The header view of the message bubble.
      * @type () => JSX.Element
      */
-    HeaderView?: () => JSX.Element,
+    HeaderView?: () => JSX.Element | null,
     /**
      * The status info view of the message bubble.
      * @type () => JSX.Element
      */
-    StatusInfoView?: () => JSX.Element,
+    StatusInfoView?: () => JSX.Element | null,
     /**
      * The reply view of the message bubble.
      * @type () => JSX.Element
      */
-    ReplyView?: () => JSX.Element,
+    ReplyView?: () => JSX.Element | null,
     /**
      * The bottom view of the message bubble.
      * @type () => JSX.Element
      */
-    BottomView?: () => JSX.Element,
+    BottomView?: () => JSX.Element | null,
     /**
      * The content view of the message bubble.
      * @type () => JSX.Element
      */
-    ContentView?: () => JSX.Element,
+    ContentView?: () => JSX.Element | null,
     /**
      * The thread view of the message bubble.
      * @type () => JSX.Element
      */
-    ThreadView?: () => JSX.Element,
+    ThreadView?: () => JSX.Element | null,
     /**
      * The footer view of the message bubble.
      * @type () => JSX.Element
      */
-    FooterView?: () => JSX.Element,
+    FooterView?: () => JSX.Element | null,
     /**
      * The alignment of the message bubble.
      * @type MessageBubbleAlignmentType
@@ -104,18 +104,24 @@ export const CometChatMessageBubble = memo(({
         }}>
             <View style={{
                 height, flexDirection: "row",
-            }}>
+            } as ViewProps}>
                 {
                     LeadingView && <LeadingView />
                 }
-                <View style={{marginStart: 4, width, maxWidth: "80%"}}>
+                <View style={{marginStart: 4, width, maxWidth: "80%"} as ViewProps}>
                     {
                         HeaderView && <HeaderView />
                     }
                     {
                         ReplyView && <ReplyView />
                     }
-                    <View style={{ ...border, borderRadius, backgroundColor, alignSelf: "flex-start"}}>
+                    <View style={{
+                            ...border,
+                            borderRadius,
+                            backgroundColor,
+                            ...(alignment === "left" && { alignSelf: "flex-start" }),
+                            ...(alignment === "right" && { alignSelf: "flex-end" })
+                        }}>
                         {
                             ContentView && <ContentView />
                         }
@@ -139,6 +145,7 @@ export const CometChatMessageBubble = memo(({
     )
 })
 
+//@ts-ignore
 CometChatMessageBubble.defaultProps = {
     alignment: "left"
 }

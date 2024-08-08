@@ -1,30 +1,30 @@
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CometChatUIKit, CometChatUIEvents, CometChatUIEventHandler } from '../shared';
-const actionPerformedByMe = (message) => {
-  return message?.getActionBy && message?.getActionBy().getUid() === CometChatUIKit.loggedInUser.uid;
+const actionPerformedByMe = (message: any) => {
+  return message?.getActionBy && message?.getActionBy().getUid() === CometChatUIKit.loggedInUser?.getUid();
 }
 export const listners = {
   addListener: {
-    userListener: ({ userStatusListenerId, handleUserStatus }) =>
+    userListener: ({ userStatusListenerId, handleUserStatus }: any) =>
       CometChat.addUserListener(
         userStatusListenerId,
         new CometChat.UserListener({
-          onUserOnline: (onlineUser) => {
+          onUserOnline: (onlineUser: any) => {
             handleUserStatus(onlineUser);
             /* when someuser/friend comes online, user will be received here */
           },
-          onUserOffline: (offlineUser) => {
+          onUserOffline: (offlineUser: any) => {
             handleUserStatus(offlineUser);
             /* when someuser/friend went offline, user will be received here */
           },
         })
       ),
-    groupListener: ({ groupListenerId, handleGroupListener }) =>
+    groupListener: ({ groupListenerId, handleGroupListener }: any) =>
       CometChat.addGroupListener(
         groupListenerId,
         new CometChat.GroupListener({
-          onGroupMemberKicked: (message, kickedUser, kickedBy, kickedFrom) => {
+          onGroupMemberKicked: (message: any, kickedUser: any, kickedBy: any, kickedFrom: any) => {
             handleGroupListener(kickedFrom);
             if (actionPerformedByMe(message)) {
               CometChatUIEventHandler.emitGroupEvent(
@@ -38,7 +38,7 @@ export const listners = {
               );
             }
           },
-          onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
+          onGroupMemberBanned: (message: any, bannedUser: any, bannedBy: any, bannedFrom: any) => {
             handleGroupListener(bannedFrom);
             if (actionPerformedByMe(message)) {
               CometChatUIEventHandler.emitGroupEvent(
@@ -53,10 +53,10 @@ export const listners = {
             }
           },
           onMemberAddedToGroup: (
-            message,
-            userAdded,
-            userAddedBy,
-            userAddedIn
+            message: any,
+            userAdded: any,
+            userAddedBy: any,
+            userAddedIn: any
           ) => {
             handleGroupListener(userAddedIn);
             if (actionPerformedByMe(message)) {
@@ -71,7 +71,7 @@ export const listners = {
               );
             }
           },
-          onGroupMemberLeft: (message, leavingUser, group) => {
+          onGroupMemberLeft: (message: any, leavingUser: any, group: any) => {
             handleGroupListener(group);
             if (actionPerformedByMe(message)) {
               CometChatUIEventHandler.emitGroupEvent(
@@ -84,7 +84,7 @@ export const listners = {
               );
             }
           },
-          onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
+          onGroupMemberJoined: (message: any, joinedUser: any, joinedGroup: any) => {
             handleGroupListener(joinedGroup);
             if (actionPerformedByMe(message)) {
               CometChatUIEventHandler.emitGroupEvent(
@@ -100,10 +100,10 @@ export const listners = {
       ),
   },
   removeListner: {
-    removeUserListener: ({ userStatusListenerId }) =>
+    removeUserListener: ({ userStatusListenerId }: any) =>
       CometChat.removeUserListener(userStatusListenerId),
 
-    removeGroupListener: ({ groupListenerId }) =>
+    removeGroupListener: ({ groupListenerId }: any) =>
       CometChat.removeGroupListener(groupListenerId),
   },
 };

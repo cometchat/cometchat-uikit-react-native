@@ -1,5 +1,5 @@
 import React, { useContext, memo } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TextStyle, TouchableOpacity, View } from "react-native";
 import { CometChatContextType } from "../../base";
 import { CometChatContext } from "../../CometChatContext";
 import { TimeSlotSelectorStyles, styles } from "./styles";
@@ -28,7 +28,7 @@ export const CometChatTimeSlotSelector = memo(
       timeFormat = "12Hr",
     } = props;
 
-    const TimeSlot = ({ time }) => {
+    const TimeSlot = ({ time }: any) => {
       return (
         <TouchableOpacity
           key={time}
@@ -59,7 +59,7 @@ export const CometChatTimeSlotSelector = memo(
               theme.typography.subtitle3,
               style?.slotTextFont ?? {},
               { color: style?.slotTextColor ?? theme.palette.getAccent800() },
-            ]}
+            ] as TextStyle}
           >
             {timeFormat === "12Hr" ? convert24to12(time) : time}
           </Text>
@@ -77,7 +77,7 @@ export const CometChatTimeSlotSelector = memo(
               marginLeft: 10,
               marginBottom: 5,
             },
-          ]}
+          ] as TextStyle}
         >
           Select a Time
         </Text>
@@ -96,7 +96,7 @@ export const CometChatTimeSlotSelector = memo(
               alignSelf: "flex-end",
               paddingHorizontal: 10,
             },
-          ]}
+          ] as TextStyle}
         >
           <Image
             source={ICONS.EARTH}

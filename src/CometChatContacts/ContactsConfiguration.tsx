@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { GroupsConfigurationInterface } from "../CometChatGroups";
 import { UsersConfigurationInterface } from "../CometChatUsers";

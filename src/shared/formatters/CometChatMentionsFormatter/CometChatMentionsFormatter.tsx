@@ -1,4 +1,5 @@
 import React from 'react';
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
 import { MentionTextStyle } from "./MentionTextStyle";
@@ -32,19 +33,14 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
   private mentionsStyle: MentionTextStyle = {};
 
   /**
-   * The message object in context.
-   */
-  protected messageObject: CometChat.BaseMessage = undefined;
-
-  /**
    * Default search request object to fetch users or group members.
   */
-  private searchRequest: CometChat.UsersRequest | CometChat.GroupMembersRequest;
+  private searchRequest!: CometChat.UsersRequest | CometChat.GroupMembersRequest;
 
   /**
    * Custom request object to fetch users or group members.
   */
-  private customRequest: CometChat.UsersRequestBuilder | CometChat.GroupMembersRequestBuilder;
+  private customRequest!: CometChat.UsersRequestBuilder | CometChat.GroupMembersRequestBuilder;
 
   /**
    * Limit of unique users to be added in the composer.
@@ -93,7 +89,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
   }
 
   handlePreMessageSend(message: CometChat.TextMessage): CometChat.TextMessage {
-    let CCUsers = this.getSuggestionItems().map(item => {
+    let CCUsers = this.getSuggestionItems().map((item: any) => {
       let user = new CometChat.User(item.id);
       user.setAvatar(item?.leadingIconUrl);
       user.setName(item?.name);
@@ -160,7 +156,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
         this.searchData = freshCall ? [...structuredData] : [...this.searchData, ...structuredData];
         this.setSearchData(this.searchData);
       })
-      .catch(err => {
+      .catch((err: any) => {
         console.log("searchRequest fetchNext failed:", err);
         this.setSearchData(this.searchData);
       })
@@ -267,7 +263,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
     return formattedText;
   }
 
-  temp: Function;
+  temp!: Function;
 
   setOnMentionClick(callBack: (message: CometChat.BaseMessage, uid: string) => void) {
     // callBack(this.messageObject, "uid");
@@ -305,7 +301,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
   * @param {string} inputText - The input text where the view needs to be added.
   * @returns {string} - The modified input text.
   */
-  protected addMentionsView(inputText: string | JSX.Element) {
+  protected addMentionsView(inputText: string | JSX.Element): any {
     if (typeof inputText === 'string') {
       let mentions: JSX.Element[] = [];
 
@@ -324,7 +320,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
         // Break the string into segments split by the regex
         let match;
         let lastIndex = 0;
-        let segments = [];
+        let segments: any[] = [];
 
         while ((match = regex.exec(inputText)) !== null) {
 
@@ -372,13 +368,13 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
       }
       return inputText;
 
-    } else if (React.isValidElement(inputText)) {
+    } else if (React.isValidElement<any>(inputText)) {
       // inputText is a React element
-      if (inputText.props.children) {
+      if (inputText.props?.children) {
         // If the React element have children, we map over these children
         // and call addMentionsView recursively for each child.
         return React.cloneElement(inputText, {
-          children: React.Children.map(inputText.props.children, child => {
+          children: React.Children.map(inputText.props?.children, child => {
             return this.addMentionsView(child);
           }),
         });

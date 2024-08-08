@@ -39,7 +39,7 @@ export class FileBubbleStyle extends BaseStyle {
         iconTint = "rgb(51, 153, 255)",
         subtitleColor = "rgba(20, 20, 20, 0.58)",
         subtitleFont = new FontStyle({}),
-        titleColor,
+        titleColor = '',
         titleFont = new FontStyle({fontSize: 17, fontWeight:"500"}),
     }: FileBubbleStyleInterface) {
         super({

@@ -1,1 +1,2 @@
-export { CometChatCardBubble, CometChatCardBubbleInterface } from './CometChatCardBubble'
+export { CometChatCardBubble } from "./CometChatCardBubble";
+export type { CometChatCardBubbleInterface } from "./CometChatCardBubble";

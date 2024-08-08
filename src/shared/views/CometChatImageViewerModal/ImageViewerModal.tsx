@@ -12,7 +12,7 @@ import { ICONS } from './resources';
 import { ReactNativeZoomableViewWithGestures } from '../../libs/ImageZoom';
 import { CometChatContext } from '../../CometChatContext';
 
-export const ImageViewerModal = ({ imageUrl, isVisible, onClose }) => {
+export const ImageViewerModal = ({ imageUrl, isVisible, onClose }: any) => {
   const { theme } = useContext(CometChatContext);
 
   const [downloaded, setDownloaded] = useState(false);

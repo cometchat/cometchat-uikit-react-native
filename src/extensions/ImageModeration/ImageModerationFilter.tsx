@@ -4,6 +4,7 @@ import {
   StyleProp,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -87,7 +88,7 @@ export const ImageModerationFilter = (
               style?.warningImageStyle,
             ]}
           />
-          <Text style={[styles.unsafeText, style?.warningTextStyle]}>
+          <Text style={[styles.unsafeText, style?.warningTextStyle] as TextStyle}>
             {warningText ?? localize('UNSAFE_CONTENT')}
           </Text>
         </TouchableOpacity>

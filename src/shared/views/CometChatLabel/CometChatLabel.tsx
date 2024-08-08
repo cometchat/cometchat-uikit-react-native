@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from 'react-native'
+import { View, Text, TextStyle } from 'react-native'
 import { LabelStyle, LabelStyleInterface } from './LabelStyle';
 export interface CometChatCardBubbleInterface {
     text: string,
@@ -19,7 +19,7 @@ const CometChatLabel = (props: CometChatCardBubbleInterface) => {
     } = _style;
     return (
         <View style={{ padding: 10, paddingBottom: 12 }}>
-            <Text style={[labelFont, { color: labelColor }]}>{text}</Text>
+            <Text style={[labelFont, { color: labelColor }] as TextStyle}>{text}</Text>
         </View>
     )
 };

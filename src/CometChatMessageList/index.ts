@@ -1,23 +1,21 @@
 import {
-    CometChatMessageList,
-    CometChatMessageListActionsInterface,
-    CometChatMessageListProps,
+  CometChatMessageList,
+  CometChatMessageListActionsInterface,
+  CometChatMessageListProps,
 } from "./CometChatMessageList";
 import {
-    MessageListStyle,
-    MessageListStyleInterface
+  MessageListStyle,
+  MessageListStyleInterface,
 } from "./MessageListStyle";
-import { 
-    MessageListConfiguration,
-    MessageListConfigurationInterface,
- } from "./MessageListConfiguration";
+import {
+  MessageListConfiguration,
+  MessageListConfigurationInterface,
+} from "./MessageListConfiguration";
 
-export {
-    CometChatMessageList,
-    CometChatMessageListActionsInterface,
-    CometChatMessageListProps,
-    MessageListStyle,
-    MessageListStyleInterface,
-    MessageListConfiguration,
-    MessageListConfigurationInterface,
-}
+export { CometChatMessageList, MessageListStyle, MessageListConfiguration };
+export type {
+  CometChatMessageListActionsInterface,
+  CometChatMessageListProps,
+  MessageListStyleInterface,
+  MessageListConfigurationInterface,
+};

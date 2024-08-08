@@ -12,7 +12,7 @@ export const CometChatContext = createContext<CometChatContextType>({
   applyTheme(theme) {}
 });
 
-export const CometChatContextProvider = (props) => {
+export const CometChatContextProvider = (props: any) => {
   const { children } = props;
 
   const [theme, setTheme] = useState(props.theme);

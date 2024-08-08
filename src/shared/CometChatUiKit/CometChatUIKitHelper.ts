@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatUIEventHandler } from "../events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { CometChatConversationEvents, CometChatGroupsEvents, CometChatUIEvents, MessageEvents } from "../events";

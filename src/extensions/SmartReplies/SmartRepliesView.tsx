@@ -14,6 +14,7 @@ import {
 import { CometChatSoundManager } from "../../shared/resources";
 import { CometChatContext } from "../../shared/CometChatContext";
 import { ICONS } from './resources';
+import { TextStyle } from 'react-native';
 
 export interface SmartRepliesInterface {
   customOutgoingMessageSound?: any;
@@ -27,7 +28,7 @@ export interface SmartRepliesInterface {
     backgroundColor?: string;
     iconTint?: string;
   };
-  onClick?: (option) => void;
+  onClick?: (option: any) => void;
   closeIcon?: ImageType;
 }
 const SmartRepliesView = (props: SmartRepliesInterface) => {
@@ -77,7 +78,7 @@ const SmartRepliesView = (props: SmartRepliesInterface) => {
           <TouchableOpacity
             onPress={() => {
               playOutgoingAudio();
-              onClick(option);
+              onClick && onClick(option);
             }}
             style={[
               Styles.buttonWrapperStyle,
@@ -112,7 +113,7 @@ const SmartRepliesView = (props: SmartRepliesInterface) => {
                   {
                     color: style?.textColor || theme?.palette?.getAccent(),
                   },
-                ]}
+                ] as TextStyle}
               >
                 {option}
               </Text>

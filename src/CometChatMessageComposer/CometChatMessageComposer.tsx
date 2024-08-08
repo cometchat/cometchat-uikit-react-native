@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingViewProps,
   Dimensions,
   Text,
+  ViewProps,
+  TextStyle,
 } from 'react-native';
 import { Style } from './styles';
 import {
@@ -28,8 +30,9 @@ import {
   CometChatSuggestionList,
   SuggestionItem,
   CometChatUIKit,
+  CometChatMessageOption,
 } from '../shared';
-
+//@ts-ignore
 import { CheckPropertyExists } from '../shared/helper/functions';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
@@ -593,8 +596,8 @@ export const CometChatMessageComposer = React.forwardRef(
     const composerIdMap = new Map().set('parentMessageId', parentMessageId);
     const defaultAuxiliaryButtonOptions =
       ChatConfigurator.getDataSource().getAuxiliaryOptions(
-        user,
-        group,
+        user as CometChat.User,
+        group as CometChat.Group,
         composerIdMap,
         theme
       );
@@ -622,10 +625,10 @@ export const CometChatMessageComposer = React.forwardRef(
     const [AIOptionItems, setAIOptionItems] = React.useState([]);
     const [rootAIOptionItems, setRootAIOptionItems] = React.useState([]);
     const [actionSheetItems, setActionSheetItems] = React.useState([]);
-    const [messagePreview, setMessagePreview] = React.useState(null);
-    const [CustomView, setCustomView] = React.useState(null);
-    const [CustomViewHeader, setCustomViewHeader] = React.useState(null);
-    const [CustomViewFooter, setCustomViewFooter] = React.useState(null);
+    const [messagePreview, setMessagePreview] = React.useState<any>(null);
+    const [CustomView, setCustomView] = React.useState<any>(null);
+    const [CustomViewHeader, setCustomViewHeader] = React.useState<any>(null);
+    const [CustomViewFooter, setCustomViewFooter] = React.useState<any>(null);
     const [isVisible, setIsVisible] = React.useState(false);
     const [kbOffset, setKbOffset] = React.useState(59);
     const [showMentionList, setShowMentionList] = React.useState(false);
@@ -637,10 +640,10 @@ export const CometChatMessageComposer = React.forwardRef(
     useLayoutEffect(() => {
       if (Platform.OS === "ios") {
         if (Number.isInteger(commonVars.safeAreaInsets.top)) {
-          setKbOffset(commonVars.safeAreaInsets.top)
+          setKbOffset(commonVars.safeAreaInsets.top as number);
           return;
         }
-        CommonUtil.getSafeAreaInsets().then(res => {
+        CommonUtil.getSafeAreaInsets().then((res: any) => {
           if (Number.isInteger(res.top)) {
             commonVars.safeAreaInsets.top = res.top;
             commonVars.safeAreaInsets.bottom = res.bottom;
@@ -662,7 +665,7 @@ export const CometChatMessageComposer = React.forwardRef(
       ...aiOptionsStyle,
     })
 
-    const isTyping = useRef<NodeJS.Timeout | null>(null);
+    let isTyping = useRef<any>(null);
 
     /**
      * Event callback
@@ -678,7 +681,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
         let rawText = message?.text;
 
-        let users: { key: string, value: SuggestionItem } = {};
+        let users: any = {};
         let regexes: Array<RegExp> = [];
 
         allFormatters.current.forEach((formatter: CometChatTextFormatter, key) => {
@@ -692,7 +695,7 @@ export const CometChatMessageComposer = React.forwardRef(
           textComponents = resp;
         })
 
-        let edits = [];
+        let edits: any[] = [];
 
         regexes.forEach(regex => {
           let match;
@@ -779,7 +782,7 @@ export const CometChatMessageComposer = React.forwardRef(
         }
       }
       else if (Platform.OS === 'ios' && fileType === MessageTypeConstants.video) {
-        NativeModules.VideoPickerModule.pickVideo(((file) => {
+        NativeModules.VideoPickerModule.pickVideo(((file: any) => {
           if (file.uri)
             sendMediaMessage(
               chatWithId.current,
@@ -867,7 +870,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
       let finalTextInput = getRegexString(plainTextInput.current);
 
-      let textMessage = new CometChat.TextMessage(
+      let textMessage: any = new CometChat.TextMessage(
         chatWithId.current,
         finalTextInput,
         chatWith.current
@@ -981,7 +984,7 @@ export const CometChatMessageComposer = React.forwardRef(
       receiverType?: any
     ) => {
       setShowActionSheet(false);
-      let mediaMessage = new CometChat.MediaMessage(
+      let mediaMessage: any = new CometChat.MediaMessage(
         receiverId,
         messageInput,
         messageType,
@@ -1002,7 +1005,7 @@ export const CometChatMessageComposer = React.forwardRef(
       });
       parentMessageId && mediaMessage.setParentMessageId(parentMessageId as number);
 
-      let localMessage = new CometChat.MediaMessage(
+      let localMessage: any = new CometChat.MediaMessage(
         receiverId,
         messageInput,
         messageType,
@@ -1132,7 +1135,7 @@ export const CometChatMessageComposer = React.forwardRef(
     }
 
     const AuxiliaryButtonViewElem = () => {
-      if (AuxiliaryButtonView)
+      if (AuxiliaryButtonView && id)
         return (
           <AuxiliaryButtonView user={user} group={group} composerId={id} />
         );
@@ -1147,7 +1150,7 @@ export const CometChatMessageComposer = React.forwardRef(
     };
 
     const SendButtonViewElem = () => {
-      if (SendButtonView)
+      if (SendButtonView && id)
         return <SendButtonView user={user} group={group} composerId={id} />;
       return (
         <ImageButton
@@ -1156,7 +1159,7 @@ export const CometChatMessageComposer = React.forwardRef(
             Style.imageStyle,
             {
               tintColor: ((inputMessage as String).length === 0) ? theme.palette.getAccent400() :
-                messageComposerStyle.sendIconTint ||
+                messageComposerStyle?.sendIconTint ||
                 theme.palette.getPrimary(),
             },
           ]}
@@ -1167,7 +1170,7 @@ export const CometChatMessageComposer = React.forwardRef(
     };
 
     const SecondaryButtonViewElem = () => {
-      if (SecondaryButtonView)
+      if (SecondaryButtonView && id)
         return (
           <SecondaryButtonView user={user} group={group} composerId={id} />
         );
@@ -1180,7 +1183,7 @@ export const CometChatMessageComposer = React.forwardRef(
             height: 23,
             width: 23,
             resizeMode: 'contain',
-            tintColor: messageComposerStyle.attachIconTint
+            tintColor: messageComposerStyle?.attachIconTint
               ? messageComposerStyle.attachIconTint
               : theme.palette.getAccent(),
           }}
@@ -1224,34 +1227,34 @@ export const CometChatMessageComposer = React.forwardRef(
 
     //fetch logged in user
     useEffect(() => {
-      CometChat.getLoggedinUser().then((user) => (loggedInUser.current = user));
+      CometChat.getLoggedinUser().then((user: any) => (loggedInUser.current = user));
       let _formatter = [...(textFormatters || [])] || [];
 
       if (!disableMentions) {
         let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
-        mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser);
+        CometChatUIKit.loggedInUser &&  mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser);
         mentionsFormatter.setMentionsStyle(new MentionTextStyle({
           loggedInUserTextStyle: {
             color: theme.palette.getPrimary(),
             ...theme.typography.title2,
             fontSize: 17
-          },
+          } as TextStyle,
           textStyle: {
             color: theme.palette.getPrimary(),
             ...theme.typography.subtitle1,
             fontSize: 17
-          }
+          } as TextStyle
         }));
-        mentionsFormatter.setUser(user);
-        mentionsFormatter.setGroup(group);
+        user && mentionsFormatter.setUser(user);
+        group && mentionsFormatter.setGroup(group);
 
         _formatter.unshift(mentionsFormatter)
       }
 
       _formatter.forEach((formatter) => {
-        formatter.setComposerId(id);
-        formatter.setUser(user);
-        formatter.setGroup(group);
+        id && formatter.setComposerId(id);
+        user && formatter.setUser(user);
+        group && formatter.setGroup(group);
         let trackingCharacter = formatter.getTrackingCharacter();
         trackingCharacters.current.push(trackingCharacter);
 
@@ -1279,7 +1282,7 @@ export const CometChatMessageComposer = React.forwardRef(
       }
     }, [user, group, chatRef]);
 
-    const handleOnClick = (CustomView) => {
+    const handleOnClick = (CustomView: any) => {
       let view = CustomView(
         user,
         group,
@@ -1313,14 +1316,14 @@ export const CometChatMessageComposer = React.forwardRef(
             if (typeof item.onPress == 'function')
               return {
                 ...item,
-                onPress: () => item.onPress(user, group),
+                onPress: () => item.onPress?.(user, group),
               };
             return {
               ...item,
               onPress: () => fileInputHandler(item.id),
             };
           })
-          : defaultAttachmentOptions.map((item) => {
+          : defaultAttachmentOptions.map((item: any) => {
             if (typeof item.CustomView === 'function')
               return {
                 ...item,
@@ -1338,21 +1341,21 @@ export const CometChatMessageComposer = React.forwardRef(
           })
       );
 
-      const aiOptions = ChatConfigurator.dataSource.getAIOptions(user, group, theme, composerIdMap, AIStyles);
-      let newAiOptions = _getAIOptions(aiOptions);
+      const aiOptions = ChatConfigurator.dataSource.getAIOptions(user as CometChat.User, group as CometChat.Group, theme, composerIdMap, AIStyles);
+      let newAiOptions: any = _getAIOptions(aiOptions);
       setAIOptionItems(newAiOptions);
       setRootAIOptionItems(newAiOptions);
     }, [user, group, id, parentMessageId]);
 
-    const _getAIOptions = (options) => {
+    const _getAIOptions = (options: (CometChatMessageOption | CometChatMessageComposerActionInterface)[]) => {
       let newOptions = [...options];
-      let newAiOptions = newOptions.map((item) => {
+      let newAiOptions = newOptions.map((item: any) => {
         if (typeof item.onPress === 'function')
           return {
             ...item,
             onPress: () => {
               setShowAIOptions(false)
-              item.onPress(user)
+              item?.onPress?.(user)
             },
           };
         return {
@@ -1366,12 +1369,12 @@ export const CometChatMessageComposer = React.forwardRef(
 
     useEffect(() => {
       CometChatUIEventHandler.addMessageListener(editMessageListenerID, {
-        ccMessageEdited: (item) => previewMessage(item),
+        ccMessageEdited: (item: any) => previewMessage(item),
       });
       CometChatUIEventHandler.addUIListener(UiEventListenerID, {
         ccToggleBottomSheet: (item) => {
           if (item?.bots) {
-            let newAiOptions = _getAIOptions(item.bots)
+            let newAiOptions: any = _getAIOptions(item.bots)
             setAIOptionItems(newAiOptions);
             setShowAIOptions(true)
             return;
@@ -1403,7 +1406,7 @@ export const CometChatMessageComposer = React.forwardRef(
       }
     }, []);
 
-    const handlePannel = (item) => {
+    const handlePannel = (item: any) => {
       if (item.child) {
         if (item.alignment === ViewAlignment.composerTop)
           setCustomViewHeader(() => item.child);
@@ -1446,7 +1449,7 @@ export const CometChatMessageComposer = React.forwardRef(
       console.log("Send Audio");
     }
 
-    function isCursorWithinMentionRange(mentionRanges, cursorPosition) {
+    function isCursorWithinMentionRange(mentionRanges: any, cursorPosition: number) {
       for (let [range, mention] of mentionRanges) {
         const [start, end] = range.split('_').map(Number);
         if (cursorPosition >= start && cursorPosition <= end) {
@@ -1468,7 +1471,7 @@ export const CometChatMessageComposer = React.forwardRef(
       )
     }
 
-    let timeoutId;
+    let timeoutId: any;
     const openList = (selection: {
       start: number;
       end: number;
@@ -1490,7 +1493,7 @@ export const CometChatMessageComposer = React.forwardRef(
               formatter.search(searchString);
             }
           } else {
-            formatter.search(searchString);
+            formatter?.search(searchString);
           }
 
         } else {
@@ -1593,7 +1596,7 @@ export const CometChatMessageComposer = React.forwardRef(
           newMentionMap.delete(newKey);
 
           if (!ifIdExists(value.id, newMentionMap)) {
-            let targetedFormatter = allFormatters.current.get(value.trackingCharacter);
+            let targetedFormatter: any = allFormatters.current.get(value.trackingCharacter);
             let existingCCUsers = [...targetedFormatter.getSuggestionItems()];
             let userPosition = existingCCUsers.findIndex((item: SuggestionItem) => item.id === value.id);
             if (userPosition !== -1) {
@@ -1625,7 +1628,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
       let newMentionMap = new Map(mentionMap.current);
 
-      let targetedFormatter = allFormatters.current.get(activeCharacter.current);
+      let targetedFormatter: any = allFormatters.current.get(activeCharacter.current);
 
       let existingCCUsers = [...targetedFormatter.getSuggestionItems()];
       let userAlreadyExists = existingCCUsers.find((existingUser: SuggestionItem) => existingUser.id === item.id);
@@ -1675,9 +1678,9 @@ export const CometChatMessageComposer = React.forwardRef(
     }
 
     const setFormattedInputMessage = () => {
-      let textComponents = getRegexString(plainTextInput.current);
+      let textComponents: any = getRegexString(plainTextInput.current);
 
-      allFormatters.current.forEach((formatter: CometChatMentionsFormatter, key) => {
+      allFormatters.current.forEach((formatter, key) => {
         let resp = formatter.getFormattedText(textComponents);
         textComponents = resp;
       })
@@ -1743,7 +1746,7 @@ export const CometChatMessageComposer = React.forwardRef(
     }
 
     const getMentionLimitView = () => {
-      let targetedFormatter = allFormatters.current.get(activeCharacter.current);
+      let targetedFormatter: any = allFormatters.current.get(activeCharacter.current);
       let shouldWarn;
       let limit;
       if (targetedFormatter?.getLimit && targetedFormatter?.getLimit()) {
@@ -1772,7 +1775,7 @@ export const CometChatMessageComposer = React.forwardRef(
             marginLeft: 5,
             color: theme.palette.getAccent500(),
             ...theme.typography.text1
-          }}>{errorString}</Text>
+          } as TextStyle}>{errorString}</Text>
         </View>
       )
     }
@@ -1803,7 +1806,7 @@ export const CometChatMessageComposer = React.forwardRef(
                 paddingTop: CustomViewHeader ? 0 : 8
               },
               messageComposerStyle,
-            ]}
+            ] as ViewProps}
           >
             <EmojiBoard
               hideSearch={true}
@@ -1831,19 +1834,19 @@ export const CometChatMessageComposer = React.forwardRef(
               onClose={() => setShowActionSheet(false)}
               style={{
                 // ...getActionSheetStyle(),
-                ...(messageComposerStyle.actionSheetSeparatorTint
+                ...(messageComposerStyle?.actionSheetSeparatorTint
                   ? {
                     actionSheetSeparatorTint:
                       messageComposerStyle.actionSheetSeparatorTint,
                   }
                   : {}),
-                layoutModeIconTint: messageComposerStyle.actionSheetLayoutModeIconTint,
-                titleColor: messageComposerStyle.actionSheetTitleColor,
-                listItemIconTint: messageComposerStyle.attachIconTint,
-                listItemTitleFont: messageComposerStyle.actionSheetTitleFont
+                layoutModeIconTint: messageComposerStyle?.actionSheetLayoutModeIconTint,
+                titleColor: messageComposerStyle?.actionSheetTitleColor,
+                listItemIconTint: messageComposerStyle?.attachIconTint,
+                listItemTitleFont: messageComposerStyle?.actionSheetTitleFont
               }}
               cometChatBottomSheetStyle={
-                messageComposerStyle.actionSheetCancelButtonIconTint
+                messageComposerStyle?.actionSheetCancelButtonIconTint
                   ? {
                     lineColor:
                       messageComposerStyle.actionSheetCancelButtonIconTint,
@@ -1860,7 +1863,7 @@ export const CometChatMessageComposer = React.forwardRef(
               }}
               onSend={_sendRecordedAudio}
               cometChatBottomSheetStyle={
-                messageComposerStyle.actionSheetCancelButtonIconTint
+                messageComposerStyle?.actionSheetCancelButtonIconTint
                   ? {
                     lineColor:
                       messageComposerStyle.actionSheetCancelButtonIconTint,
@@ -1934,7 +1937,7 @@ export const CometChatMessageComposer = React.forwardRef(
                 openList(selection)
               }
               }
-              maxHeight={maxHeight ?? null}
+              maxHeight={maxHeight ?? undefined}
               onChangeText={textChangeHandler}
               SecondaryButtonView={SecondaryButtonViewElem}
               AuxiliaryButtonView={AuxiliaryButtonViewElem}

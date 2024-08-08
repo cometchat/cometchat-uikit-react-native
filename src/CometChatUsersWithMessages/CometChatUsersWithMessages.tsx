@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { View } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { CometChatUsers, UsersConfiguration } from "../CometChatUsers";
+import { CometChatUsers, CometChatUsersInterface, UsersConfiguration } from "../CometChatUsers";
 import { MessagesConfiguration, MessagesConfigurationInterface } from "../CometChatMessages/MessagesConfiguration";
 import { CometChatMessages } from "../CometChatMessages";
 import { Style } from "./styles";
@@ -38,7 +39,7 @@ export const CometChatUsersWithMessages = (props: CometChatUsersWithMessagesInte
     );
     // const [showForwarding, setShowForwarding] = useState(false);
 
-    const loggedInUser = useRef(null);
+    const loggedInUser = useRef<CometChat.User | null>(null);
 
     const { theme } = useContext(CometChatContext);
 
@@ -83,10 +84,10 @@ export const CometChatUsersWithMessages = (props: CometChatUsersWithMessagesInte
         //         }
         //     });
         CometChat.getLoggedinUser()
-            .then((user) => {
+            .then((user: any) => {
                 loggedInUser.current = user;
             })
-            .catch(err => { });
+            .catch((err: any) => { });
 
         CometChatUIEventHandler.addUserListener(
             uiEventListener,
@@ -109,7 +110,7 @@ export const CometChatUsersWithMessages = (props: CometChatUsersWithMessagesInte
     return (
         <View style={{ flex: 1 }}>
             <CometChatUsers
-                {..._usersConfig}
+                {..._usersConfig as CometChatUsersInterface}
             />
             {/* {
                 showForwarding && <Toast message={localize("FORWARDING")} />

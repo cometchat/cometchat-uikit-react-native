@@ -9,12 +9,12 @@ export class DateTimeElement extends BaseInputElement<string> {
   /**
    * The label of the input element.
    */
-  private label: string;
-  private mode: string;
-  private timezoneCode: string;
-  private to: string;
-  private from: string;
-  private dateTimeFormat: string;
+  private label!: string;
+  private mode!: string;
+  private timezoneCode!: string;
+  private to!: string;
+  private from!: string;
+  private dateTimeFormat!: string;
   /**
    * The default value to be selected in the DateTime.
    */
@@ -26,7 +26,7 @@ export class DateTimeElement extends BaseInputElement<string> {
    * @param label - The label of the input element.
    * @param options - The options available for the DateTime input element.
    */
-  constructor(elementId: string, json) {
+  constructor(elementId: string, json: any) {
     super(elementId, ElementType.dateTime);
     Object.assign(this, json);
   }

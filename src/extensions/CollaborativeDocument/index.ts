@@ -1,12 +1,15 @@
-import { CollaborativeDocumentConfiguration, CollaborativeDocumentConfigurationInterface } from './CollaborativeDocumentConfiguration';
-import { CollaborativeDocumentExtension } from './CollaborativeDocumentExtension';
-import { CollaborativeDocumentExtensionDecorator } from './CollaborativeDocumentExtensionDecorator';
-import { CometChatCollaborativeBubble } from '../CollaborativeBubble/CometChatCollaborativeBubble';
+import {
+  CollaborativeDocumentConfiguration,
+  CollaborativeDocumentConfigurationInterface,
+} from "./CollaborativeDocumentConfiguration";
+import { CollaborativeDocumentExtension } from "./CollaborativeDocumentExtension";
+import { CollaborativeDocumentExtensionDecorator } from "./CollaborativeDocumentExtensionDecorator";
+import { CometChatCollaborativeBubble } from "../CollaborativeBubble/CometChatCollaborativeBubble";
 
 export {
-    CollaborativeDocumentConfigurationInterface,
-    CollaborativeDocumentExtensionDecorator,
-    CollaborativeDocumentExtension,
-    CollaborativeDocumentConfiguration,
-    CometChatCollaborativeBubble as CometChatCollaborativeDocumentBubble
+  CollaborativeDocumentExtensionDecorator,
+  CollaborativeDocumentExtension,
+  CollaborativeDocumentConfiguration,
+  CometChatCollaborativeBubble as CometChatCollaborativeDocumentBubble,
 };
+export type { CollaborativeDocumentConfigurationInterface };

@@ -1,9 +1,8 @@
-import {CometChatFileBubble, CometChatFileBubbleInterface} from "./CometChatFileBubble";
-import {FileBubbleStyle, FileBubbleStyleInterface} from "./FileBubbleStyle";
+import {
+  CometChatFileBubble,
+  CometChatFileBubbleInterface,
+} from "./CometChatFileBubble";
+import { FileBubbleStyle, FileBubbleStyleInterface } from "./FileBubbleStyle";
 
-export {
-    CometChatFileBubble,
-    CometChatFileBubbleInterface,
-    FileBubbleStyle,
-    FileBubbleStyleInterface
-}
+export { CometChatFileBubble, FileBubbleStyle };
+export type { CometChatFileBubbleInterface, FileBubbleStyleInterface };

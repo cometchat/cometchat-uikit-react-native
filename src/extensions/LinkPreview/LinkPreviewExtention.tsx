@@ -4,7 +4,7 @@ import { LinkPreviewConfigurationInterface } from "./LinkPreviewConfiguration";
 import { LinkPreviewExtentionDecorator } from "./LinkPreviewExtentionDecorator";
 
 export class LinkPreviewExtention extends ExtensionsDataSource {
-    linkPreviewConfiguration: LinkPreviewConfigurationInterface
+    linkPreviewConfiguration?: LinkPreviewConfigurationInterface
 
     constructor(linkPreviewConfiguration?: LinkPreviewConfigurationInterface) {
         super();

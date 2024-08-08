@@ -1,7 +1,8 @@
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import React, { useContext, useEffect, useRef } from 'react'
-import { FlatList, Image, Text, TouchableOpacity, View } from 'react-native'
-import { StyleProp, ViewStyle } from "react-native/types";
+import { FlatList, Image, Text, TextStyle, TouchableOpacity, View, ViewProps } from 'react-native'
+import { StyleProp, ViewStyle } from "react-native";
 import { AvatarStyleInterface, CometChatContext, CometChatDate, CometChatListItem, DatePattern, ListItemStyleInterface, localize } from '../../shared'
 import { CallParticipantsStyle, CallParticipantsStyleInterface } from './CallLogParticipantsStyle'
 import { BackIcon } from "./resources";
@@ -99,20 +100,20 @@ export const CometChatParticipants = (props: CometChatCallLogParticipantsConfigu
 
     useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(u => {
+            .then((u: any) => {
                 loggedInUser.current = u;
             })
-            .catch(e => {
+            .catch((e: any) => {
                 onError && onError(e);
             });
     }, []);
 
-    const DefaultSubtitleView = ({ participant }) => {
+    const DefaultSubtitleView = ({ participant }: any) => {
         if (SubtitleView)
             return SubtitleView(participant);
         return (
             <View style={[Style.row]}>
-                <Text style={[{ color: durationTextColor }, durationTextFont]}>{CallUtils.convertMinutesToHoursMinutesSeconds(participant['totalDurationInMinutes'])}</Text>
+                <Text style={[{ color: durationTextColor }, durationTextFont] as TextStyle}>{CallUtils.convertMinutesToHoursMinutesSeconds(participant['totalDurationInMinutes'])}</Text>
             </View>
         );
     }
@@ -125,19 +126,19 @@ export const CometChatParticipants = (props: CometChatCallLogParticipantsConfigu
         )
     }
 
-    const onPress = (item) => {
+    const onPress = (item: any) => {
         onItemPress && onItemPress(item);
         return;
     }
 
-    const getCallDetails = (item) => {
+    const getCallDetails = (item: any) => {
         return {
             title: item['name'],
             avatarUrl: item['avatar']
         }
     }
 
-    const _render = ({ item, index }) => {
+    const _render = ({ item, index }: any) => {
 
         if (ListItemView)
             return <ListItemView participant={item} />
@@ -180,13 +181,13 @@ export const CometChatParticipants = (props: CometChatCallLogParticipantsConfigu
             return <EmptyStateView />
         return (
             <View style={[Style.container]}>
-                <Text style={[{ color: emptyTextColor, ...emptyTextFont }]}>{emptyStateText || localize("NO_PARTICIPANTS")}</Text>
+                <Text style={[{ color: emptyTextColor, ...emptyTextFont }] as TextStyle}>{emptyStateText || localize("NO_PARTICIPANTS")}</Text>
             </View>
         )
     }
 
     return (
-        <View style={{ backgroundColor, height, width, borderRadius, ...border }}>
+        <View style={{ backgroundColor, height, width, borderRadius, ...border } as ViewProps}>
             <View style={[Style.row, Style.headerStyle, { height: 60 }]}>
                 <View style={Style.row}>
                     {
@@ -199,7 +200,7 @@ export const CometChatParticipants = (props: CometChatCallLogParticipantsConfigu
                                 />
                             </TouchableOpacity> : null
                     }
-                    <Text style={[{ color: titleColor, ...titleFont }]}>{title}</Text>
+                    <Text style={[{ color: titleColor, ...titleFont }] as TextStyle}>{title}</Text>
                 </View>
                 <View style={Style.row}>
                     {

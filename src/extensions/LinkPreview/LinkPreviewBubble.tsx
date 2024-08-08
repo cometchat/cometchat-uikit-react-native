@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, Linking, Image, Alert, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Linking, Image, Alert, Platform, TextStyle } from 'react-native'
 import { LinkPreviewBubbleStyle, LinkPreviewBubbleStyleInterface } from './LInkPreviewBubbleStyle';
 import { localize } from '../../shared/resources/CometChatLocalize';
 import { DefaultLinkPreview } from "./resources";
 
 export interface LinkPreviewBubbleInterface {
-    ChildView?: () => JSX.Element,
+    ChildView?: () => JSX.Element | null,
     description?: string,
     style?: LinkPreviewBubbleStyleInterface,
     link: string,
@@ -26,7 +26,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
         description
     } = props;
 
-    const _style = new LinkPreviewBubbleStyle(style);
+    const _style = new LinkPreviewBubbleStyle(style || {});
 
     const [imageSource, setImageSource] = useState({ uri: image.startsWith("https:") ? image : `https:${image.split("http:")[1]}` });
 
@@ -35,18 +35,18 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
     const threshold = 10; 
     const timeframe = 1000; 
 
-    const pressTime = useRef(0);
+    const pressTime = useRef<any>(0);
 
     const handleTouchStart = () => {
         pressTime.current = Date.now();
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = async () => {
         if (pressTime.current === null && Platform.OS === "ios") return;
         const endTime = Date.now();
         const pressDuration = endTime - pressTime.current;
         if (pressDuration < 500) {
-            onPress ? onPress() : (Linking.canOpenURL(link) && Linking.openURL(link)) || Alert.alert(localize("SOMETHING_WRONG"))
+            onPress ? onPress() : await Linking.openURL(link) ? Linking.openURL(link) : Alert.alert(localize("SOMETHING_WRONG"))
         }
     };
 
@@ -98,7 +98,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
                     style={{
                         color: _style.titleColor,
                         ..._style.titleFont
-                    }}
+                    }  as TextStyle}
                     ellipsizeMode="tail"
                 >
                     {title}
@@ -107,7 +107,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
                     style={{
                         color: _style.subtitleColor,
                         ..._style.subtitleFont,
-                    }}
+                    } as TextStyle}
                     numberOfLines={2}
                     ellipsizeMode="tail"
                 >

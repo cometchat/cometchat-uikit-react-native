@@ -1,21 +1,23 @@
 import React from "react";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { ExtensionConstants, ExtensionURLs } from "../../ExtensionConstants";
 import { CometChatUIEventHandler } from "../../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { localize } from "../../../shared/resources/CometChatLocalize";
 import { MessageEvents } from "../../../shared/events";
+import { CometChatStickerKeyboardInterface } from "./CometChatStickerKeyboard";
 
 export const Hooks = (
-  props,
-  stickerList,
-  stickerSet,
-  activeStickerSetName,
-  setStickerList,
-  setStickerSet,
-  setActiveStickerList,
-  setActiveStickerSetName,
-  setDecoratorMessage,
-  decoratorMessage
+  props: CometChatStickerKeyboardInterface,
+  stickerList: any[],
+  stickerSet: any,
+  activeStickerSetName: any,
+  setStickerList: any,
+  setStickerSet: any,
+  setActiveStickerList: any,
+  setActiveStickerSetName: any,
+  setDecoratorMessage: any,
+  decoratorMessage: any
 ) => {
   React.useEffect(() => {
     CometChat.callExtension(
@@ -23,9 +25,9 @@ export const Hooks = (
       "GET",
       ExtensionURLs.stickers,
       // ExtensionURLs.stickers,
-      null
+      undefined
     )
-      .then((stickers) => {
+      .then((stickers: any) => {
         // Stickers received
         const customStickers = stickers.hasOwnProperty(
           ExtensionConstants.customStickers
@@ -38,11 +40,11 @@ export const Hooks = (
           ? stickers[ExtensionConstants.defaultStickers]
           : [];
 
-        defaultStickers.sort(function (a, b) {
+        defaultStickers.sort(function (a: any, b: any) {
           return a.stickerSetOrder - b.stickerSetOrder;
         });
 
-        customStickers.sort(function (a, b) {
+        customStickers.sort(function (a: any, b: any) {
           return a.stickerSetOrder - b.stickerSetOrder;
         });
 
@@ -53,7 +55,7 @@ export const Hooks = (
         }
       })
 
-      .catch((error) => {
+      .catch((error: object) => {
         console.log(error);
         setDecoratorMessage(props?.errorText || localize("SOMETHING_WRONG"));
         CometChatUIEventHandler.emitMessageEvent(
@@ -64,7 +66,7 @@ export const Hooks = (
   }, []);
 
   React.useEffect(() => {
-    const stickerSet = stickerList?.reduce((r, sticker, index) => {
+    const stickerSet = stickerList?.reduce((r: any, sticker: any, index: number) => {
       const { stickerSetName } = sticker;
 
       if (index === 0) {
@@ -82,7 +84,7 @@ export const Hooks = (
     if (stickerSet && Object.keys(stickerSet).length) {
       let activeStickerList = [];
       Object.keys(stickerSet).forEach((key) => {
-        stickerSet[key].sort(function (a, b) {
+        stickerSet[key].sort(function (a: any, b: any) {
           return a.stickerOrder - b.stickerOrder;
         });
       });

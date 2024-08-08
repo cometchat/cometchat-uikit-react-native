@@ -1,8 +1,10 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
   View,
-  Text
+  Text,
+  TextStyle
 } from 'react-native';
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { AvatarStyleInterface, CometChatContext, CometChatListItem, CometChatSoundManager, ListItemStyleInterface, localize } from '../../shared';
 import { IncomingCallStyle, IncomingCallStyleInterface } from './IncomingCallStyle';
@@ -20,7 +22,7 @@ const listnerID = "CALL_LISTENER_" + new Date().getTime();
 
 const CometChatCalls = CallingPackage.CometChatCalls;
 export interface CometChatIncomingCallInterface {
-  call: CometChat.Call | CometChat.CustomMessage,
+  call: CometChat.Call | CometChat.CustomMessage | any,
   title?: string,
   SubtitleView?: (call: CometChat.Call | CometChat.CustomMessage) => JSX.Element,
   disableSoundForCalls?: boolean,
@@ -56,7 +58,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
   const { theme } = useContext(CometChatContext);
 
   const [showCallScreen, setShowCallScreen] = useState(false);
-  const acceptedCall = useRef(null);
+  const acceptedCall = useRef<string | any>(null);
   const callListener = useRef(null);
   const callSettings = useRef(null);
 
@@ -98,12 +100,12 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
 
   const endCall = () => {
     CometChat.rejectCall(call["sessionId"], CometChat.CALL_STATUS.REJECTED).then(
-      call => {
+      (call: any) => {
         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallRejected, { call });
         onDecline && onDecline(call);
         CometChatSoundManager.pause();
       },
-      err => {
+      (err: any) => {
         onError && onError(err);
       }
     )
@@ -116,12 +118,12 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
       return;
     }
     CometChat.acceptCall(call['sessionId']).then(
-      call => {
+      (call: string | any) => {
         acceptedCall.current = call;
         setShowCallScreen(true);
         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallAccepted, { call });
       },
-      err => {
+      (err: any) => {
         onError && onError(err);
       }
     )
@@ -158,7 +160,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
     CometChat.addCallListener(
       listnerID,
       new CometChat.CallListener({
-        onIncomingCallCancelled: (call) => {
+        onIncomingCallCancelled: (call: any) => {
           CometChatSoundManager.pause();
         }
       })
@@ -175,26 +177,26 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
       onCallEndButtonPressed: () => {
         if(checkIfDefualtCall(call)){
           CometChat.endCall( (call as CometChat.Call).getSessionId())
-            .then(endedCall => {
+            .then((endedCall: any) => {
               CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded,{call: endedCall});
             });
         }
     },
-      onUserJoined: user => {
+      onUserJoined: (user: any) => {
         console.log("user joined:", user);
     },
-    onUserLeft: user => {
+    onUserLeft: (user: any) => {
       if(checkIfDefualtCall(call)) {
-        CometChat.endCall( (call as CometChat.Call).getSessionId()).then(( endedCall2 ) => {
+        CometChat.endCall( (call as CometChat.Call).getSessionId()).then(( endedCall2: any ) => {
           //let endedCall = (call as CometChat.Call).setStatus("ended");
           CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, {call: endedCall2})
         })
-        .catch(err => {
+        .catch((err: any) => {
           console.log("Error", err);
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { error });
         onError && onError(error);
       }
@@ -227,7 +229,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
             avatarName={call['sender']['name']}
             avatarUrl={call['sender']['avatar']}
             avatarStyle={avatarStyle}
-            SubtitleView={() => (SubtitleView && SubtitleView(call)) || <Text style={{ color: subtitleColor, ...subtitleFont }}>{
+            SubtitleView={() => (SubtitleView && SubtitleView(call)) || <Text style={{ color: subtitleColor, ...subtitleFont } as TextStyle}>{
               call?.['type'] == CallTypeConstants.audio ?
                 localize("INCOMING_AUDIO_CALL") :
                 localize("INCOMING_VIDEO_CALL")}</Text>
@@ -249,6 +251,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
                   text={declineButtonText || localize("DECLINE")}
                   style={{
                     ...Style.buttonStyle,
+                    iconCornerRadius: 25,
                     border: declineButtonBorder,
                     iconBackgroundColor: declineButtonBackgroundColor || theme.palette.getError(),
                     iconTint: theme.palette.getSecondary(),
@@ -263,6 +266,7 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
                   style={{
                     ...Style.buttonStyle,
                     border: acceptButtonBorder,
+                    iconCornerRadius: 25,
                     iconBackgroundColor: theme.palette.getPrimary(),
                     iconTint: theme.palette.getSecondary(),
                     textColor: acceptButtonTextColor || theme.palette.getAccent(),

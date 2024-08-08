@@ -60,7 +60,7 @@ export class ImageModerationExtensionDecorator extends DataSourceDecorator {
     style: ImageBubbleStyleInterface,
     message: CometChat.MediaMessage,
     theme: CometChatTheme
-  ): JSX.Element {
+  ): JSX.Element | null {
     if (this.isImageMessage(message)) {
       return (
         <ImageModerationFilter

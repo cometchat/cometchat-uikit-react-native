@@ -1,4 +1,5 @@
 import React from "react";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatMessageComposerActionInterface, CometChatTheme, CometChatUIEventHandler, CometChatUIEvents, DataSource, DataSourceDecorator, MessageEvents, localize } from "../../shared";
 import { AIAssistBotConfiguration } from "./configuration";
@@ -11,8 +12,8 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
     public group!: CometChat.Group;
     public bots!: CometChat.User[];
     public theme: CometChatTheme = new CometChatTheme({});
-    public loggedInUser!: CometChat.User | null;
-    public usersRequest: CometChat.UsersRequestBuilder;
+    public loggedInUser!: CometChat.User | any;
+    public usersRequest: CometChat.UsersRequest;
 
     constructor(
         dataSource: DataSource,
@@ -31,7 +32,7 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
     }
 
     fetchBots() {
-        this.usersRequest.fetchNext().then((bots) => {
+        this.usersRequest.fetchNext().then((bots: string | any[]) => {
             if (bots.length > 0) {
                 this.bots = [...(this.bots || []), ...bots];
             }
@@ -43,13 +44,13 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
         return "bots";
     }
 
-    override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] {
+    override getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: any, AIOptionsStyle?: AIOptionsStyle): CometChatMessageComposerActionInterface[] | any[] {
         this.user = user!;
         this.group = group!;
         const numberOfBots = this.bots?.length;
         if (!id?.parentMessageId && numberOfBots > 0) {
             const titleName = numberOfBots > 1 ? localize("COMETCHAT_ASK_AI_BOT") : `${localize("COMETCHAT_ASK_BOT")} ${this.bots[0]?.getName()}`;
-            const messageComposerActions: CometChatMessageComposerActionInterface[] = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
+            const messageComposerActions: CometChatMessageComposerActionInterface[] | any = super.getAIOptions(user, group, theme, id, AIOptionsStyle);
             let newAction = {
                 title: titleName,
                 onPress: () => {
@@ -58,10 +59,10 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
                 id: "ai-assist-bot",
                 iconURL: '',
                 iconTint: '',
-                titleColor: this.configuration?.style?.buttonTextColor || AIOptionsStyle.listItemTitleColor,
-                titleFont: this.configuration?.style?.buttonTextFont || AIOptionsStyle.listItemTitleFont,
-                background: this.configuration?.style?.backgroundColor || AIOptionsStyle.listItemBackground,
-                cornerRadius: this.configuration?.style?.buttonBorderRadius || AIOptionsStyle.listItemBorderRadius,
+                titleColor: this.configuration?.style?.buttonTextColor || AIOptionsStyle?.listItemTitleColor,
+                titleFont: this.configuration?.style?.buttonTextFont || AIOptionsStyle?.listItemTitleFont,
+                background: this.configuration?.style?.backgroundColor || AIOptionsStyle?.listItemBackground,
+                cornerRadius: this.configuration?.style?.buttonBorderRadius || AIOptionsStyle?.listItemBorderRadius,
             };
             messageComposerActions.push(newAction);
             return messageComposerActions;
@@ -70,7 +71,7 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
         }
     }
 
-    onOptionsClick(AIOptionsStyle) {
+    onOptionsClick(AIOptionsStyle: AIOptionsStyle | undefined) {
         if (this.bots?.length > 1) {
             this.openBotList(AIOptionsStyle);
         } else {
@@ -78,7 +79,7 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
         }
     }
 
-    openBotList(AIOptionsStyle) {
+    openBotList(AIOptionsStyle: any) {
         const botList = this.bots.map((bot) => {
             return ({
                 title: bot.getName(),
@@ -98,16 +99,20 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
         });
     }
 
-    openBotChat(bot) {
+    openBotChat(bot: any) {
         CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.ccToggleBottomSheet, {
             botView: true,
             child: () => <AIAssistBotView
                 bot={bot}
                 closeCallback={this.closeAIOption}
-                configuration={this.configuration}
                 title={bot.getName()}
                 onSend={this.getBotReply.bind(this)}
                 sender={this.loggedInUser}
+                {...(this.configuration
+                    ? {
+                        configuration: this.configuration,
+                      }
+                    : {})}
             />
         });
     }
@@ -127,7 +132,7 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
             : CometChat.RECEIVER_TYPE.USER;
 
         try {
-            configuration = await this.configuration.apiConfiguration(bot, this.user, this.group) || {}
+            configuration = await this.configuration?.apiConfiguration?.(bot, this.user, this.group) || {}
         } catch (err) {
             configuration = {}
         }
@@ -152,7 +157,7 @@ export class AIAssistBotDecorator extends DataSourceDecorator {
         CometChatUIEventHandler.addMessageListener(
             MessageEvents.ccActiveChatChanged,
             {
-                ccActiveChatChanged: (data) => {
+                ccActiveChatChanged: (data: any) => {
 
                 },
             }

@@ -11,7 +11,7 @@ class CometChatEmojiCategory {
   name = "";
   symbol = "";
   emojis = {};
-  constructor({ id, name, emojis, symbol }) {
+  constructor({ id, name, emojis, symbol }: any) {
     this.id = id;
     this.name = name;
     this.emojis = emojis;

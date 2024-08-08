@@ -31,32 +31,32 @@ export interface DataSource {
 
 
     //views
-    getBottomView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType): JSX.Element
+    getBottomView(message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType): JSX.Element | null
     getDeleteMessageBubble(message: CometChat.BaseMessage, theme: CometChatTheme): JSX.Element
-    getVideoMessageBubble(videoUrl: string, thumbnailUrl: string, message: CometChat.MediaMessage, theme: CometChatTheme, videoBubbleStyle: VideoBubbleStyleInterface)
-    getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element
+    getVideoMessageBubble(videoUrl: string, thumbnailUrl: string, message: CometChat.MediaMessage, theme: CometChatTheme, videoBubbleStyle: VideoBubbleStyleInterface): JSX.Element | null
+    getTextMessageBubble(messageText: string, message: CometChat.TextMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element | null
     getFormMessageBubble(message: FormMessage, theme: CometChatTheme, style?: FormBubbleStyle, onSubmitClick?: (data: any) => void): JSX.Element
     getSchedulerMessageBubble(message: SchedulerMessage, theme: CometChatTheme, style?: SchedulerBubbleStyles, onScheduleClick?: (data: any) => void): JSX.Element
     getCardMessageBubble(message: CardMessage, theme: CometChatTheme, style?: CardBubbleStyle, onSubmitClick?: (data: any) => void): JSX.Element
-    getImageMessageBubble(imageUrl: string, caption: string, style: ImageBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element
-    getAudioMessageBubble(audioUrl: string, title: string, style: AudioBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element
-    getFileMessageBubble(fileUrl: string, title: string, style: FileBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element
-    getGroupActionBubble(message: CometChat.BaseMessage, theme: CometChatTheme): JSX.Element
+    getImageMessageBubble(imageUrl: string, caption: string, style: ImageBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element | null
+    getAudioMessageBubble(audioUrl: string, title: string, style: AudioBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element | null
+    getFileMessageBubble(fileUrl: string, title: string, style: FileBubbleStyleInterface, message: CometChat.MediaMessage, theme: CometChatTheme): JSX.Element | null
+    getGroupActionBubble(message: CometChat.BaseMessage, theme: CometChatTheme): JSX.Element | null
 
 
     //content views
-    getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element
-    getFormMessageContentView(message: FormMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
-    getSchedulerMessageContentView(message: SchedulerMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
-    getCardMessageContentView(message: CardMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
-    getAudioMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
-    getVideoMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
-    getImageMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
-    getFileMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme): JSX.Element
+    getTextMessageContentView(message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element | null
+    getFormMessageContentView(message: CometChat.BaseMessage | FormMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element
+    getSchedulerMessageContentView(message: CometChat.BaseMessage | SchedulerMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element
+    getCardMessageContentView(message: CometChat.BaseMessage | CardMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element
+    getAudioMessageContentView(message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element | null
+    getVideoMessageContentView(message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element | null
+    getImageMessageContentView(message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element | null
+    getFileMessageContentView(message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType, theme?: CometChatTheme): JSX.Element | null
 
 
     //templates
-    getTextMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate
+    getTextMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate | null
     getFormMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate
     getSchedulerMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate
     getCardMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate
@@ -87,7 +87,7 @@ export interface DataSource {
 
     getLastConversationMessage(conversation: CometChat.Conversation): string
 
-    getAuxiliaryHeaderAppbarOptions(user?: CometChat.User, group?: CometChat.Group, theme?: CometChatTheme): JSX.Element
+    getAuxiliaryHeaderAppbarOptions(user?: CometChat.User, group?: CometChat.Group, theme?: CometChatTheme): JSX.Element | null
 
     getAIOptions(user: CometChat.User | null, group: CometChat.Group | null, theme: CometChatTheme, id?: Map<String, any>, AIOptionsStyle?: AIOptionsStyle): Array<(CometChatMessageComposerActionInterface | CometChatMessageOption)>
 

@@ -6,6 +6,7 @@ import {
   Platform,
 } from 'react-native';
 import { localize } from '../resources/CometChatLocalize/CometChatLocalize';
+import { anyObject } from './TypeUtils';
 const { FileManager } = NativeModules;
 
 let instance: PermissionUtilIOS;
@@ -21,11 +22,11 @@ const permissionStatusAndroid = {
   granted: 3,
   denied: 2,
   never_ask_again: 2,
-} as const;
+} as any;
 
 const permissibleResources = ['camera', 'mic'] as const;
 
-const permissionMapAndroid = {
+const permissionMapAndroid: any = {
   camera: PermissionsAndroid.PERMISSIONS.CAMERA,
   mic: PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
 };
@@ -35,7 +36,7 @@ type TPermissibleResources = (typeof permissibleResources)[number];
 type ValueOf<T> = T[keyof T];
 type TPermissionStatus = ValueOf<typeof permissionStatus>;
 
-const permissionStore: Record<TPermissibleResources, TPermissionStatus> = {
+const permissionStore: any = {
   camera: permissionStatus.Unknown,
   mic: permissionStatus.Unknown,
 };
@@ -95,8 +96,8 @@ class PermissionUtilIOS {
           res[resourceType as TPermissibleResources];
       }
     } else if (Platform.OS === 'android') {
-      const res = await PermissionsAndroid.requestMultiple(resources.map(item => permissionMapAndroid[item]));
-      const permissionMapAndroidRevert = {};
+      const res: any = await PermissionsAndroid.requestMultiple(resources.map(item => permissionMapAndroid[item]));
+      const permissionMapAndroidRevert: anyObject = {};
       for (const resource in permissionMapAndroid) {
         permissionMapAndroidRevert[permissionMapAndroid[resource]] = resource;
       }
@@ -121,7 +122,7 @@ class PermissionUtilIOS {
       }
     }
     if (allResourcesAllowed === false) {
-      Alert.alert(undefined, localize('CAMERA_PERMISSION'), [
+      Alert.alert('', localize('CAMERA_PERMISSION'), [
         {
           style: 'cancel',
           text: localize('CANCEL'),

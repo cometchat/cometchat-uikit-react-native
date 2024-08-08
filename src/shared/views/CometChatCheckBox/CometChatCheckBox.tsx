@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Image } from 'react-native'
+import { View, Text, TouchableOpacity, Image, TextStyle } from 'react-native'
 import React, { useContext } from 'react'
 import { CheckboxElement, OptionElement } from '../../modals/InteractiveData'
 import { ICONS } from '../../assets/images';
@@ -47,17 +47,17 @@ const CometChatCheckBox = (props: CometChatCheckBoxInterface) => {
     return (
         <View style={{ marginBottom: 12 }}>
 
-            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }] as TextStyle}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
 
             {data.getOptions().map((option, index) => (
                 <View key={index} style={{ flexDirection: "row", alignItems: "center", marginVertical: 1 }}>
                     <TouchableOpacity style={{
                         height: 20, width: 20, backgroundColor: _checkSelectedOption(option) ? activeBackgroundColor : inactiveBackgroundColor,
                         borderRadius: 5, marginRight: 5, alignItems: "center", justifyContent: "center",
-                        borderColor: showError ? theme.palette.getError() : border.borderColor,
-                        borderWidth: border.borderWidth,
+                        borderColor: showError ? theme.palette.getError() : border?.borderColor,
+                        borderWidth: border?.borderWidth,
                     }}
-                        onPress={() => onChange(option)}
+                        onPress={() => onChange && onChange(option)}
                     >
                         {_checkSelectedOption(option) && <Image
                             style={{
@@ -68,7 +68,7 @@ const CometChatCheckBox = (props: CometChatCheckBoxInterface) => {
                             source={ICONS.CHECK_MARK}
                         />}
                     </TouchableOpacity>
-                    <Text style={[optionFont, { color: optionColor }]}>{option.getLabel()}</Text>
+                    <Text style={[optionFont, { color: optionColor }] as TextStyle}>{option.getLabel()}</Text>
                 </View>
             ))}
 

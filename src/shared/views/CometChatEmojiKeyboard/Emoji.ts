@@ -8,7 +8,7 @@
 class CometChatEmoji {
   char = "";
   keywords = [];
-  constructor({ char, keywords }) {
+  constructor({ char, keywords }: any) {
     this.char = char;
     this.keywords = keywords;
   }

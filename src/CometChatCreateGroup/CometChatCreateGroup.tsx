@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Image, TextStyle, ViewProps } from 'react-native';
 import React, { useContext, useState } from 'react';
 import Header from './Header';
 import { styles } from './style';
@@ -130,7 +130,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
   const [groupName, setGroupName] = React.useState('');
   const [error, setError] = React.useState('');
 
-  const Tab = ({ name, type, onSelect, isSelected }) => {
+  const Tab = ({ name, type, onSelect, isSelected }: any) => {
     return (
       <TouchableOpacity
         onPress={() => onSelect(type)}
@@ -139,7 +139,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
           isSelected
             ? {
                 backgroundColor:
-                  createGroupStyle.selectedTabColor ??
+                  createGroupStyle?.selectedTabColor ??
                   theme.palette.getPrimary(),
                 borderRadius: 16,
               }
@@ -152,15 +152,15 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
             isSelected
               ? {
                   color: theme.palette.getBackgroundColor(),
-                  ...(createGroupStyle.selectedTabTextStyle &&
-                    createGroupStyle.selectedTabTextStyle),
+                  ...(createGroupStyle?.selectedTabTextStyle &&
+                    createGroupStyle?.selectedTabTextStyle),
                 }
               : {
                   color: theme.palette.getAccent600(),
-                  ...(createGroupStyle.tabTextStyle &&
-                    createGroupStyle.tabTextStyle),
+                  ...(createGroupStyle?.tabTextStyle &&
+                    createGroupStyle?.tabTextStyle),
                 },
-          ]}
+          ] as TextStyle}
         >
           {name}
         </Text>
@@ -213,7 +213,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
     }
     let group = new CometChat.Group(guid, name, type, password);
     CometChat.createGroup(group)
-      .then((group) => {
+      .then((group: any) => {
         CometChatUIEventHandler.emitGroupEvent(
           CometChatGroupsEvents.ccGroupCreated,
           { group }
@@ -259,7 +259,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
               styles.errorTextTitle,
               theme.typography.body,
               { color: theme.palette.getError() },
-            ]}
+            ] as TextStyle}
           >
             {error?.length > 0 ? error : localize('ERROR_GROUP_CREATE')}
           </Text>
@@ -268,7 +268,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
               styles.errorText,
               theme.typography.body,
               { color: theme.palette.getError() },
-            ]}
+            ] as TextStyle}
           >
             {localize('TRY_AGAIN_LATER')}
           </Text>
@@ -281,28 +281,28 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
       style={[
         styles.container,
         {
-          width: createGroupStyle.width ?? 'auto',
-          height: createGroupStyle.height ?? 'auto',
+          width: createGroupStyle?.width ?? 'auto',
+          height: createGroupStyle?.height ?? 'auto',
           backgroundColor:
-            createGroupStyle.background ?? theme.palette.getBackgroundColor(),
-          borderRadius: createGroupStyle.borderRadius ?? 0,
+            createGroupStyle?.background ?? theme.palette.getBackgroundColor(),
+          borderRadius: createGroupStyle?.borderRadius ?? 0,
         },
-        createGroupStyle.border ?? {},
-      ]}
+        createGroupStyle?.border ?? {},
+      ] as ViewProps}
     >
       <Header
         title={title}
         joinIcon={createIcon}
         closeIcon={closeIcon}
         titleStyle={[
-          createGroupStyle.titleTextStyle ?? theme.typography.heading,
+          createGroupStyle?.titleTextStyle ?? theme.typography.heading,
           { color: theme.palette.getAccent() },
         ]}
         closeIconTint={
-          createGroupStyle.closeIconTint ?? theme.palette.getPrimary()
+          createGroupStyle?.closeIconTint ?? theme.palette.getPrimary()
         }
         createIconTint={
-          createGroupStyle.createIconTint ?? theme.palette.getPrimary()
+          createGroupStyle?.createIconTint ?? theme.palette.getPrimary()
         }
         onSubmit={
           onCreatePress
@@ -316,7 +316,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
           styles.tabContainer,
           {
             backgroundColor:
-              createGroupStyle.tabColor ?? theme.palette.getAccent100(),
+              createGroupStyle?.tabColor ?? theme.palette.getAccent100(),
           },
         ]}
       >
@@ -324,19 +324,19 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
           name={'Public'}
           type={GroupTypeConstants.public}
           isSelected={groupType === GroupTypeConstants.public}
-          onSelect={(type) => setGroupType(type)}
+          onSelect={(type: any) => setGroupType(type)}
         />
         <Tab
           name={'Private'}
           type={GroupTypeConstants.private}
           isSelected={groupType === GroupTypeConstants.private}
-          onSelect={(type) => setGroupType(type)}
+          onSelect={(type: any) => setGroupType(type)}
         />
         <Tab
           name={'Protected'}
           type={GroupTypeConstants.password}
           isSelected={groupType === GroupTypeConstants.password}
-          onSelect={(type) => setGroupType(type)}
+          onSelect={(type: any) => setGroupType(type)}
         />
       </View>
       <TextInput
@@ -352,9 +352,9 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
           },
           theme.typography.body,
           groupName?.length > 0
-            ? createGroupStyle.namePlaceholderTextStyle
-            : createGroupStyle.nameInputTextStyle,
-        ]}
+            ? createGroupStyle?.namePlaceholderTextStyle
+            : createGroupStyle?.nameInputTextStyle,
+        ] as TextStyle}
       />
       {groupType === GroupTypeConstants.password && (
         <TextInput
@@ -370,9 +370,9 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
             },
             theme.typography.body,
             password?.length > 0
-              ? createGroupStyle.passwordPlaceholderTextStyle
-              : createGroupStyle.passwordInputTextStyle,
-          ]}
+              ? createGroupStyle?.passwordPlaceholderTextStyle
+              : createGroupStyle?.passwordInputTextStyle,
+          ] as TextStyle}
         />
       )}
       <ErrorView />

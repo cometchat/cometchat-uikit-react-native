@@ -1,5 +1,3 @@
-export {
-  CometChatTimeSlotSelector,
-  CometChatTimeSlotSelectorInterface,
-} from "./CometChatTimeSlotSelector";
-export { TimeSlotSelectorStyles } from "./styles";
+export { CometChatTimeSlotSelector } from "./CometChatTimeSlotSelector";
+export type { CometChatTimeSlotSelectorInterface } from "./CometChatTimeSlotSelector";
+export type { TimeSlotSelectorStyles } from "./styles";

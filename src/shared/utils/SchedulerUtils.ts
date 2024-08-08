@@ -1,5 +1,7 @@
+//@ts-ignore
 import { DateTime } from "../libs/luxon/src/luxon";
-export const convert24to12 = (time) => {
+import { anyObject } from "./TypeUtils";
+export const convert24to12 = (time: any) => {
   if (time && typeof time === "string") {
     let [hours, minutes] = time.split(":"); // split hours and minutes
     let suffix = +hours >= 12 ? "PM" : "AM"; // set suffix as AM or PM
@@ -81,7 +83,7 @@ export const convertToLocalTimeZone = (
   return localTime;
 };
 
-export const convertDate = (dateStr) => {
+export const convertDate = (dateStr: any) => {
   const year = dateStr.slice(0, 4);
   const month = dateStr.slice(4, 6);
   const day = dateStr.slice(6, 8);
@@ -113,8 +115,8 @@ export const getMinSlotsFromRange = ({
   slotDuration = 30,
   selectedSlots = [],
   bufferDuration = 0,
-}) => {
-  const slots = []; // Array to hold all available slots
+}:any) => {
+  const slots: any[] = []; // Array to hold all available slots
 
   // Convert start time and end time (HHMM format) to total minutes
   let currentStartMinutes =
@@ -125,7 +127,7 @@ export const getMinSlotsFromRange = ({
 
   // Add buffer time if the availability starts immediately after a blocked time
   const prevSlot = selectedSlots.find(
-    (slot) =>
+    (slot: any) =>
       Number(slot.endTime!.slice(0, 2)) * 60 +
         Number(slot.endTime!.slice(2)) ===
       currentStartMinutes
@@ -134,7 +136,7 @@ export const getMinSlotsFromRange = ({
 
   // Keep generating slots until the end of the availability range
   while (currentStartMinutes + slotDuration <= endMinutesTotal) {
-    let conflictSlot = null;
+    let conflictSlot: anyObject | null = null;
 
     // Iterate over each selected slot to find a conflict
     for (let i = 0; i < selectedSlots.length; i++) {

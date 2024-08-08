@@ -1,7 +1,9 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
-  Modal, Text, SafeAreaView
+  Modal, Text, SafeAreaView,
+  TextStyle
 } from 'react-native';
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CometChatSoundManager, localize } from '../../shared/resources';
 import { AvatarStyleInterface } from '../../shared/views';
@@ -23,7 +25,7 @@ export interface CometChatOutgoingCallInterface {
   /**
    * CometChat.Call object
    */
-  call?: CometChat.Call | CometChat.CustomMessage,
+  call?: CometChat.Call | CometChat.CustomMessage | any,
   /**
    * text tobe displayed below cancel/reject button
    */
@@ -80,11 +82,11 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
 
   const [isCallConnected, setCallConnected] = useState(false);
 
-  const ongoingCall = useRef<CometChat.Call | CometChat.CustomMessage>(null);
-  const callSessionId = useRef<string>(null);
+  const ongoingCall = useRef<CometChat.Call | CometChat.CustomMessage | any>(null);
+  const callSessionId = useRef<any>(null);
   const callListener = useRef(null);
   const callSettings = useRef(null);
-  const isCallEnded = useRef<null | string>(undefined);
+  const isCallEnded = useRef<any>(null);
 
   const {
     backgroundColor,
@@ -118,7 +120,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
           !isCallEnded.current && CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallEnded, { call });
           isCallEnded.current = true;
         })
-        .catch(err => {
+        .catch((err: any) => {
           console.log("Error", err);
         })
     }
@@ -128,7 +130,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
     if (call['status'] == "ongoing" || (call.getCategory() == (CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory) && call.getType() == MessageTypeConstants.meeting)) {
       ongoingCall.current = call;
       if (call.getType() == MessageTypeConstants.meeting)
-        callSessionId.current = (call as CometChat.CustomMessage).getCustomData()['sessionId'];
+        callSessionId.current = ((call as CometChat.CustomMessage).getCustomData() as any)['sessionId'];
       if (call.getCategory() == MessageCategoryConstants.call)
         callSessionId.current = call['sessionId'];
       setCallConnected(true);
@@ -147,13 +149,13 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
     CometChat.addCallListener(
       listenerId,
       new CometChat.CallListener({
-        onOutgoingCallAccepted(call) {
+        onOutgoingCallAccepted(call: any) {
           CometChatSoundManager.pause();
           ongoingCall.current = call;
           callSessionId.current = call['sessionId'];
           setCallConnected(true);
         },
-        onOutgoingCallRejected: (call) => {
+        onOutgoingCallRejected: (call: any) => {
           CometChatSoundManager.pause();
           ongoingCall.current = null;
           callSessionId.current = null;
@@ -190,13 +192,13 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
           endCallIfRequired();
         }
       },
-      onUserJoined: user => {
+      onUserJoined: (user: any) => {
         console.log("user joined:", user);
       },
-      onUserLeft: user => {
+      onUserLeft: (user: any) => {
         endCallIfRequired();
       },
-      onError: (error) => {
+      onError: (error: any) => {
         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { error });
       }
     });
@@ -247,7 +249,7 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
                 titleFont,
               }}
               SubtitleView={() => {
-                return <Text style={{ color: subtitleColor, ...subtitleFont }}>{
+                return <Text style={{ color: subtitleColor, ...subtitleFont } as TextStyle}>{
                   call?.['type'] == CallTypeConstants.audio ?
                     localize("OUTGOING_AUDIO_CALL") :
                     localize("OUTGOING_VIDEO_CALL")}</Text>

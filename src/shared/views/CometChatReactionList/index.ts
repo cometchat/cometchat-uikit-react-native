@@ -3,10 +3,6 @@ import { ReactionListStyle, ReactionListStyleInterface } from './ReactionListSty
 import { ReactionListConfiguration, ReactionListConfigurationInterface } from './ReactionListConfiguration';
 
 export {
-    CometChatReactionList,
-    CometChatReactionListInterface,
-    ReactionListStyle,
-    ReactionListStyleInterface,
-    ReactionListConfiguration,
-    ReactionListConfigurationInterface
-}
+    CometChatReactionList, ReactionListStyle, ReactionListConfiguration
+};
+export type { CometChatReactionListInterface, ReactionListStyleInterface, ReactionListConfigurationInterface };

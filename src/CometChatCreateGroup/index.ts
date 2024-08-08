@@ -1,16 +1,15 @@
 import {
   CometChatCreateGroup,
   CometChatCreateGroupInterface,
-  CreateGroupStyleInterface
-} from './CometChatCreateGroup';
+  CreateGroupStyleInterface,
+} from "./CometChatCreateGroup";
 import {
   CreateGroupConfiguration,
   CreateGroupConfigurationInterface,
-} from './CreateGroupConfiguration';
-export {
+} from "./CreateGroupConfiguration";
+export { CometChatCreateGroup, CreateGroupConfiguration };
+export type {
   CreateGroupStyleInterface,
-  CometChatCreateGroup,
   CometChatCreateGroupInterface,
-  CreateGroupConfiguration,
   CreateGroupConfigurationInterface,
 };

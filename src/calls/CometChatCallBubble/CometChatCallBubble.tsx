@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   Image,
   Text,
+  TextStyle,
 } from 'react-native';
 import { Style } from './styles';
 import { ImageType } from '../../shared';
@@ -45,10 +46,10 @@ export const CometChatCallBubble = (props: CometChatCallBubbleInterface) => {
   return <View style={[{ backgroundColor, borderRadius }, border]} >
     <View style={[Style.row, {margin: 8}]}>
       <Image source={icon} style={[Style.iconStyle, { tintColor: iconTint }]} />
-      <Text style={{ flexShrink: 1, color: titleColor, ...titleFont }}> {title} </Text>
+      <Text style={{ flexShrink: 1, color: titleColor, ...titleFont } as TextStyle}> {title} </Text>
     </View>
     <TouchableOpacity onPress={onClick} style={[Style.buttonStyle, { backgroundColor: buttonBackgroundColor }]} >
-      <Text style={{ color: buttonTextColor, ...buttonTextFont }}> {buttonText} </Text>
+      <Text style={{ color: buttonTextColor, ...buttonTextFont } as TextStyle}> {buttonText} </Text>
     </TouchableOpacity>
   </View>
 }

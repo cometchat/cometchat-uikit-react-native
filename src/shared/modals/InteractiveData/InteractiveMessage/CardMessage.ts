@@ -1,5 +1,6 @@
 import { MessageTypeConstants } from "../../../constants/UIKitConstants";
 import { ButtonElement } from "../InteractiveElements/index";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 
 interface CardData {

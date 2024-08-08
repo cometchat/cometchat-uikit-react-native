@@ -1,3 +1,4 @@
+//@ts-ignore
 import type { Dayjs } from 'dayjs';
 
 // Inclusive range

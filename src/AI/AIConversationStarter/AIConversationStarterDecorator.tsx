@@ -1,5 +1,6 @@
 import React from "react";
-import { TouchableOpacity, View, Text, ScrollView } from "react-native";
+import { TouchableOpacity, View, Text, ScrollView, ViewProps } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatTheme, CometChatUIEventHandler, CometChatUIEvents, DataSource, DataSourceDecorator, MessageEvents, localize } from "../../shared";
 import { MessageStatusConstants, ReceiverTypeConstants, ViewAlignment } from "../../shared/constants/UIKitConstants";
@@ -12,14 +13,14 @@ import CometChatAICard from "../../shared/views/CometChatAICard/CometChatAICard"
 export class AIConversationStarterDecorator extends DataSourceDecorator {
   public configuration?: AIConversationStarterConfiguration;
   public currentMessage: CometChat.BaseMessage | null = null;
-  public loggedInUser!: CometChat.User | null;
+  public loggedInUser!: CometChat.User | any;
   messageListenerId = 'message_' + new Date().getTime();
   public user!: CometChat.User;
   public group!: CometChat.Group;
   public cardViewStyle: CardViewStyle = {};
   public errorStateText: string = localize("SOMETHING_WRONG");
   public emptyStateText: string = localize("NO_MESSAGES_FOUND");
-  public theme: CometChatTheme;
+  public theme!: CometChatTheme;
   constructor(dataSource: DataSource, configuration?: AIConversationStarterConfiguration) {
 
     super(dataSource);
@@ -36,7 +37,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
 
   private loadConversationStarter(): void {
     this.getConversationStarter()
-      .then((replies) => {
+      .then((replies: any) => {
         if (!replies || (replies?.length && replies.length <= 0)) {
           this.showDefaultPanel(State.empty)
         }
@@ -44,7 +45,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
           CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.showPanel, {
             alignment: ViewAlignment.composerTop,
             child: () => (
-              <View style={{ boxShadow: this.cardViewStyle?.boxShadow, width: this.cardViewStyle?.width || "100%", height: this.cardViewStyle?.height || 130, backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius, ...this.cardViewStyle?.border }}>
+              <View style={{ width: this.cardViewStyle?.width || "100%", height: this.cardViewStyle?.height || 130, backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius, ...this.cardViewStyle?.border } as ViewProps}>
                 <ScrollView style={{ height: "100%", width: "100%" }}>
                   {replies}
                 </ScrollView>
@@ -62,11 +63,11 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
   }
 
   private getLoadingView(): JSX.Element {
-    let LoadingView: JSX.Element = this.configuration?.LoadingStateView
+    let LoadingView = this.configuration?.LoadingStateView
     return (
       <CometChatAICard
         state={State.loading}
-        style={this.configuration?.conversationStarterStyle}
+        style={this.configuration?.conversationStarterStyle || {}}
         loadingIconURL={this.configuration?.loadingIconURL}// || loadingIconURL}
         loadingStateText={localize("GENERATIONG_ICEBREAKER")}
       >
@@ -76,11 +77,11 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
   }
 
   private getEmptyView(): JSX.Element {
-    let EmptyView: JSX.Element = this.configuration?.EmptyStateView
+    let EmptyView = this.configuration?.EmptyStateView
     return (
       <CometChatAICard
         state={State.empty}
-        style={this.configuration?.conversationStarterStyle}
+        style={this.configuration?.conversationStarterStyle || {}}
         emptyIconURL={this.configuration?.emptyIconURL}// || emptyIcon}
         emptyStateText={this.emptyStateText}
       >
@@ -93,7 +94,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
     return (
       <CometChatAICard
         state={State.error}
-        style={this.configuration?.conversationStarterStyle}
+        style={this.configuration?.conversationStarterStyle || {}}
         errorIconURL={this.configuration?.errorIconURL}// || errorIcon}
         errorStateText={this.errorStateText}
       >
@@ -106,7 +107,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
     CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.showPanel, {
       alignment: ViewAlignment.composerTop,
       child: () => (
-        <View style={{ width: this.cardViewStyle?.width || "100%", height: 'auto', backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius, ...this.cardViewStyle?.border, justifyContent: "center", alignItems: "center" }}>
+        <View style={{ width: this.cardViewStyle?.width || "100%", height: 'auto', backgroundColor: this.cardViewStyle?.backgroundColor, borderRadius: this.cardViewStyle?.borderRadius, ...this.cardViewStyle?.border, justifyContent: "center", alignItems: "center" } as ViewProps}>
           {state == State.loading ? this.getLoadingView()
             : state == State.empty ? this.getEmptyView() : this.getErrorView(error)
           }
@@ -128,7 +129,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
     });
   }
 
-  closeIfMessageReceived(message) {
+  closeIfMessageReceived(message: any) {
     if (message?.receiverId == this.loggedInUser?.uid) {
       this.closePanel()
     }
@@ -140,7 +141,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
       let receiverType: string = this.user ? ReceiverTypeConstants.user : ReceiverTypeConstants.group;
       if (this.configuration?.customView) {
         CometChat.getConversationStarter(receiverId, receiverType).then((response: any) => {
-          this.configuration.customView(response).then((res) => {
+          this.configuration?.customView?.(response).then((res: any) => {
             return resolve((<View>{res}</View>))
           })
             .catch((err: CometChat.CometChatException) => {
@@ -158,7 +159,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
             if (response[reply] && response[reply] != "") {
               view.push(
                 (<TouchableOpacity
-                  style={getRepliesWrapperStyle(this.theme, this.configuration?.conversationStarterStyle)}
+                  style={getRepliesWrapperStyle(this.theme, this.configuration?.conversationStarterStyle || {}) as ViewProps}
                   key={response[reply]}
                   onPress={() => this.editReply(response[reply])}
                 >
@@ -178,29 +179,29 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
   }
 
   attachMessageListener() {
-    this.cardViewStyle = getCardViewStyle(this.theme, this.configuration?.conversationStarterStyle)
+    this.cardViewStyle = getCardViewStyle(this.theme, this.configuration?.conversationStarterStyle || {})
     CometChatUIEventHandler.addMessageListener(
       this.messageListenerId,
       {
-        onTextMessageReceived: (textMessage) => {
+        onTextMessageReceived: (textMessage: any) => {
           this.closeIfMessageReceived(textMessage)
         },
-        onMediaMessageReceived: (mediaMessage) => {
+        onMediaMessageReceived: (mediaMessage: any) => {
           this.closeIfMessageReceived(mediaMessage)
         },
-        onCustomMessageReceived: (customMessage) => {
+        onCustomMessageReceived: (customMessage: any) => {
           this.closeIfMessageReceived(customMessage)
         },
-        onFormMessageReceived: (formMessage) => {
+        onFormMessageReceived: (formMessage: any) => {
           this.closeIfMessageReceived(formMessage)
         },
-        onCardMessageReceived: (cardMessage) => {
+        onCardMessageReceived: (cardMessage: any) => {
           this.closeIfMessageReceived(cardMessage)
         },
-        onSchedulerMessageReceived: (schedulerMessage) => {
+        onSchedulerMessageReceived: (schedulerMessage: any) => {
           this.closeIfMessageReceived(schedulerMessage)
         },
-        onCustomInteractiveMessageReceived: (customInteractiveMessage) => {
+        onCustomInteractiveMessageReceived: (customInteractiveMessage: any) => {
           this.closeIfMessageReceived(customInteractiveMessage)
         }
       })
@@ -209,15 +210,15 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
   private listeners() {
 
     CometChat.getLoggedinUser()
-      .then((u) => {
+      .then((u: any) => {
         this.loggedInUser = u;
       })
-      .catch((err) => console.log(err));
+      .catch((err: any) => console.log(err));
 
     CometChatUIEventHandler.addMessageListener(
       MessageEvents.ccActiveChatChanged + "_STARTER",
       {
-        ccActiveChatChanged: ({ message, user, group, theme, parentMessageId }) => {
+        ccActiveChatChanged: ({ message, user, group, theme, parentMessageId }: any) => {
           this.user = user;
           this.group = group;
           if (theme) {
@@ -233,7 +234,7 @@ export class AIConversationStarterDecorator extends DataSourceDecorator {
             this.loadConversationStarter();
           }
         },
-        ccMessageSent: ({ message, status }) => {
+        ccMessageSent: ({ message, status }: any) => {
           if (status == MessageStatusConstants.success && message?.sender?.uid == this.loggedInUser?.uid) {
             this.closePanel();
           }

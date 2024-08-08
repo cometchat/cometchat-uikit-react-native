@@ -2,15 +2,13 @@ import React from 'react';
 import { Linking, Text } from "react-native";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
 import { emailPattern, phoneNumPattern, urlPattern } from "../../constants/UIKitConstants";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { FontStyle } from '../../base';
+import { anyObject } from '../../utils';
 
 export class CometChatUrlsFormatter extends CometChatTextFormatter {
 
-    /**
-     * The message object in context.
-     */
-    protected messageObject!: CometChat.BaseMessage;
 
     protected style: {
         linkTextColor?: string,
@@ -26,7 +24,7 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
         this.loggedInUser = loggedInUser;
     }
 
-    private Link = ({ text, url, style }) => {
+    private Link = ({ text, url, style }: any) => {
         return <Text style={{
             color: style?.linkTextColor,
             ...style?.linkTextFont,
@@ -52,7 +50,7 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
     }
 
     private getPatternGroup = (str: string): { phone?: string, email?: string, url?: string } => {
-        let result = {};
+        let result: anyObject = {};
         if (str.match(phoneNumPattern))
             result['phone'] = str;
         if (str.match(emailPattern))
@@ -77,10 +75,10 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
         return formattedText;
     }
 
-    getFormatTextForLinks = ({ str, style }) => {
+    getFormatTextForLinks = ({ str, style }: any): any => {
         if (typeof str === "string") {
-            let res = str.matchAll(phoneNumPattern + "|" + emailPattern + "|" + urlPattern);
-            for (let resPart of res) {
+            let res = str.matchAll((phoneNumPattern + "|" + emailPattern + "|" + urlPattern) as unknown as RegExp);
+            for (let resPart of res as any) {
                 let { email, phone } = this.getPatternGroup(resPart[0]);
                 let pre: string, post: string;
                 pre = str.substring(0, resPart.index);
@@ -106,7 +104,7 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
             }
 
             return <Text>{str}</Text>;
-        } else if (React.isValidElement(str)) {
+        } else if (React.isValidElement<any>(str)) {
             // str is a React element
             if (str.props.children) {
                 // If the React element have children, we map over these children

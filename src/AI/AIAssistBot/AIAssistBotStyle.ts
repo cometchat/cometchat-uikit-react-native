@@ -4,8 +4,8 @@ import { AIBaseStyle } from "../AIBaseStyle";
 export class AIAssistBotStyle extends AIBaseStyle {
     titleFont?: FontStyle;
     titleColor?: string = "";
-    subtitleFont: FontStyle;
-    subtitleColor: string;
+    subtitleFont!: FontStyle;
+    subtitleColor!: string;
     closeIconTint?: string = "";
     sendIconTint?: string = "";
     buttonTextColor?: string  = "";

@@ -51,6 +51,7 @@ export class AddMembersConfiguration {
   constructor(props: AddMembersConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {
+        //@ts-ignore
         this[key] = value;
       }
   }

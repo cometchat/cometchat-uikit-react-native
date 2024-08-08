@@ -1,4 +1,5 @@
 import { ButtonElement } from "../InteractiveElements/index";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MessageTypeConstants } from "../../../constants/UIKitConstants";
 
@@ -26,18 +27,17 @@ interface InteractiveData {
 }
 
 export class SchedulerMessage extends CometChat.InteractiveMessage {
-  private interactiveData: InteractiveData;
   private title?: string;
   private avatarUrl?: string;
   private goalCompletionText?: string;
-  private timezoneCode: string;
+  private timezoneCode!: string;
   private bufferTime?: number;
   private duration?: number;
-  private availability: Availability;
+  private availability!: Availability;
   private dateRangeStart?: number;
   private dateRangeEnd?: number;
   private icsFileUrl?: string;
-  private scheduleElement: ButtonElement;
+  private scheduleElement!: ButtonElement;
 
   
   constructor(
@@ -52,13 +52,12 @@ export class SchedulerMessage extends CometChat.InteractiveMessage {
       MessageTypeConstants.scheduler,
       interactiveData
     );
-    this.interactiveData = interactiveData;
     Object.assign(this, interactiveData);
   }
 
   // Setters
   setInteractiveData(interactiveData: InteractiveData) {
-    this.interactiveData = interactiveData;
+    super.setInteractiveData(interactiveData);
   }
   setTitle(title: string) {
     this.title = title;
@@ -98,7 +97,7 @@ export class SchedulerMessage extends CometChat.InteractiveMessage {
 
   // Getters
   getInteractiveData() {
-    return this.interactiveData;
+    return super.getInteractiveData();
   }
   getTitle() {
     return this.title;

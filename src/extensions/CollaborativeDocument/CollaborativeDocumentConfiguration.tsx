@@ -16,7 +16,7 @@ export interface CollaborativeDocumentConfigurationInterface
     
    }
    export class CollaborativeDocumentConfiguration implements CollaborativeDocumentConfigurationInterface {
-    collaborativeBubbleStyle: CollaborativeBubbleStyleInterface;
+    collaborativeBubbleStyle?: CollaborativeBubbleStyleInterface;
   
     constructor({
       collaborativeBubbleStyle = undefined,}:

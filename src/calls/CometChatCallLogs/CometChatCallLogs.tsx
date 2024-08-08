@@ -1,7 +1,8 @@
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from 'react-native'
-import { StyleProp, ViewStyle } from "react-native/types";
+import { ActivityIndicator, FlatList, Image, Text, TextStyle, TouchableOpacity, View, ViewProps } from 'react-native'
+import { StyleProp, ViewStyle } from "react-native";
 import { AvatarStyleInterface, CometChatContext, CometChatDate, CometChatListItem, CometChatOptions, DatePattern, ImageType, ListItemStyleInterface, localize } from '../../shared'
 import { CallLogsStyle, CallLogsStyleInterface } from './CallLogsStyle'
 import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler'
@@ -147,35 +148,35 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     subtitleTextFont
   } = _style;
 
-  const [list, setList] = useState([]);
+  const [list, setList] = useState<any[]>([]);
   const [listState, setListState] = useState<"loading" | "error" | "done">("loading");
   const [showOutgoingCallScreen, setShowOutgoingCallScreen] = useState(false);
-  const activeSwipeRows = React.useRef({});
+  const activeSwipeRows = React.useRef<any>({});
 
-  const loggedInUser = useRef(null);
-  const callRequestBuilderRef = useRef(null);
-  const outGoingCall = useRef<CometChat.Call | CometChat.CustomMessage>(null);
+  const loggedInUser = useRef<CometChat.User | any>(null);
+  const callRequestBuilderRef = useRef<any>(null);
+  const outGoingCall = useRef<CometChat.Call | CometChat.CustomMessage | any>(null);
 
   function setRequestBuilder() {
     callRequestBuilderRef.current = (callRequestBuilder && callRequestBuilder.build()) ??
       new CometChatCalls.CallLogRequestBuilder()
         .setLimit(30)
-        .setAuthToken(loggedInUser.current.getAuthToken() || "")
+        .setAuthToken(loggedInUser.current?.getAuthToken() || "")
         .setCallCategory("call")
         .build()
   }
 
   const fetchCallLogs = () => {
     setListState("loading");
-    callRequestBuilderRef.current.fetchNext()
-      .then(callLogs => {
+    callRequestBuilderRef.current?.fetchNext()
+      .then((callLogs: string | any[]) => {
         console.log(callLogs.length);
         if (callLogs.length > 0) {
           setList([...list, ...callLogs]);
         }
         setListState("done");
       })
-      .catch(err => {
+      .catch((err: any) => {
         onError && onError(err);
         setListState("error");
       });
@@ -183,18 +184,18 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
 
   useEffect(() => {
     CometChat.getLoggedinUser()
-      .then(u => {
+      .then((u: any) => {
         loggedInUser.current = u;
         setRequestBuilder();
         fetchCallLogs();
       })
-      .catch(e => {
+      .catch((e: any) => {
         onError && onError(e);
       });
     CometChat.addCallListener(
       listenerId,
       new CometChat.CallListener({
-        onOutgoingCallRejected: (call) => {
+        onOutgoingCallRejected: (call: any) => {
           setShowOutgoingCallScreen(false);
           outGoingCall.current = null;
         },
@@ -204,7 +205,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     CometChatUIEventHandler.addCallListener(
       listenerId,
       {
-        ccCallRejected: (call) => {
+        ccCallRejected: (call: any) => {
           outGoingCall.current = null;
           setShowOutgoingCallScreen(false);
         },
@@ -217,8 +218,8 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
 
   }, []);
 
-  const DefaultSubtitleView = ({ call }) => {
-    function getCallDirectionIcon(call) {
+  const DefaultSubtitleView = ({ call }: any) => {
+    function getCallDirectionIcon(call: any) {
       const missedCall = CallUtils.isMissedCall(call, loggedInUser.current);
       const callType = call.getType();
       let icon, tintColor;
@@ -252,7 +253,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     return (
       <View style={[Style.row]}>
         <Image source={getCallDirectionIcon(call).icon} style={{ height: 20, width: 20, alignSelf: "center", tintColor: getCallDirectionIcon(call).tintColor }} />
-        <Text style={[{ color: subtitleTextColor, marginStart: 2 }, subtitleTextFont]}>
+        <Text style={[{ color: subtitleTextColor, marginStart: 2 }, subtitleTextFont] as TextStyle}>
           {
             CallUtils.getCallStatus(call as CometChat.Call, loggedInUser.current)
           }
@@ -261,7 +262,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     );
   }
 
-  const DeafultTailView = ({ call }) => {
+  const DeafultTailView = ({ call }: any) => {
     return (
       <View style={[Style.row, { alignItems: "center" }]}>
         <CometChatDate timeStamp={call['initiatedAt'] * 1000} pattern={datePattern || 'timeFormat'} style={{ textColor: dateTextColor, textFont: dateTextFont }} />
@@ -272,7 +273,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     )
   }
 
-  const makeCall = (call, type) => {
+  const makeCall = (call: any, type: any) => {
     if (type == CallTypeConstants.audio || type == CallTypeConstants.video) {
       let user = call?.getReceiverType() == "user" ? loggedInUser.current?.getUid() === call?.getInitiator()?.getUid() ? call.getReceiver() : call?.getInitiator() : undefined
       let group = call?.getReceiverType() == "group" ? loggedInUser.current?.getUid() === call?.getInitiator()?.getUid() ? call.getReceiver() : call?.getInitiator() : undefined
@@ -285,15 +286,15 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
       if (!receiverID || !receiverType)
         return;
 
-      var call = new CometChat.Call(receiverID, callType, receiverType, CometChat.CATEGORY_CALL);
+      var call: any = new CometChat.Call(receiverID, callType, receiverType, CometChat.CATEGORY_CALL);
 
       CometChat.initiateCall(call).then(
-        initiatedCall => {
+        (initiatedCall: any) => {
           outGoingCall.current = initiatedCall;
           setShowOutgoingCallScreen(true);
           CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccOutgoingCall, { call: outGoingCall.current });
         },
-        error => {
+        (error: any) => {
           console.log("Call initialization failed with exception:", error);
           CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { call });
           onError && onError(error);
@@ -305,7 +306,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     }
   }
 
-  const onPress = (item) => {
+  const onPress = (item: any) => {
     if (onItemPress) {
       onItemPress(item);
     } else {
@@ -316,7 +317,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     }
   }
 
-  const getCallDetails = (call) => {
+  const getCallDetails = (call: any) => {
     const { mode, initiator, receiver, receiverType } = call;
 
     if (mode == "meet") {
@@ -334,18 +335,18 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     return { title: "", avatarUrl: undefined }
   }
 
-  const getInitiatedAtTimestamp = (item) => {
+  const getInitiatedAtTimestamp = (item: any) => {
     return item['initiatedAt'] * 1000;
   }
 
-  const _render = ({ item, index }) => {
+  const _render = ({ item, index }: any) => {
 
     if (ListItemView)
       return <ListItemView call={item} />
 
     const { title, avatarUrl } = getCallDetails(item);
 
-    let seperatorView = null;
+    let seperatorView: JSX.Element | null = null;
     const previousMessageDate = list[index - 1] ? new Date(getInitiatedAtTimestamp(list[index - 1])) : null;
     const currentMessageDate = new Date(getInitiatedAtTimestamp(item));
 
@@ -391,7 +392,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
         }
         TailView={TailView ? () => <TailView call={item} /> : () => <DeafultTailView call={item} />}
         avatarStyle={avatarStyle}
-        options={() => options && options(item)}
+        options={() => options && options(item) || []}
         activeSwipeRows={activeSwipeRows.current}
         rowOpens={(id) => {
             Object.keys(activeSwipeRows.current).forEach(key => {
@@ -413,7 +414,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
       return <EmptyStateView />
     return (
       <View style={[Style.container]}>
-        <Text style={[{ color: emptyTextColor }, emptyTextFont]}>{emptyStateText || localize("NO_CALL_HISTORY")}</Text>
+        <Text style={[{ color: emptyTextColor }, emptyTextFont] as TextStyle}>{emptyStateText || localize("NO_CALL_HISTORY")}</Text>
       </View>
     )
   }
@@ -423,7 +424,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     if (ErrorStateView)
       return <ErrorStateView />
     return <View style={[Style.container]}>
-      <Text style={[{ color: errorTextColor }, errorTextFont]}>{errorStateText || localize("SOMETHING_WRONG")}</Text>
+      <Text style={[{ color: errorTextColor }, errorTextFont] as TextStyle}>{errorStateText || localize("SOMETHING_WRONG")}</Text>
     </View>
   }
 
@@ -436,7 +437,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
   }
 
   return (
-    <View style={{ backgroundColor, height, width, borderRadius, ...border }}>
+    <View style={{ backgroundColor, height, width, borderRadius, ...border } as ViewProps}>
       <>
         <View style={[Style.row, Style.headerStyle, { height: 60 }]}>
           <View style={Style.row}>
@@ -450,7 +451,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
                   />
                 </TouchableOpacity> : null
             }
-            <Text style={[{ color: titleColor, ...titleFont }]}>{title}</Text>
+            <Text style={[{ color: titleColor, ...titleFont }] as TextStyle}>{title}</Text>
           </View>
           <View style={Style.row}>
             {
@@ -476,12 +477,12 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
       {
         showOutgoingCallScreen && <CometChatOutgoingCall
           call={outGoingCall.current}
-          onDeclineButtonPressed={(call) => {
+          onDeclineButtonPressed={(call: any) => {
             CometChat.rejectCall(call['sessionId'], CometChat.CALL_STATUS.CANCELLED).then(
-              rejectedCall => {
+              (rejectedCall: any) => {
                 CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallRejected, { call: rejectedCall });
               },
-              err => {
+              (err: any) => {
                 onError && onError(err);
               }
             );

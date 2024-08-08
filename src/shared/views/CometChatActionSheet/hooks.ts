@@ -1,8 +1,8 @@
 import React from "react";
 
 export const Hooks = (
-  props,
-  setActionList
+  props: any,
+  setActionList: any
 ) => {
   React.useEffect(() => {
     setActionList(props.actions);

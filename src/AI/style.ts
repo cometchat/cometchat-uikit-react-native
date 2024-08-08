@@ -58,7 +58,7 @@ export function tabButtonStyle(style:CardViewStyle) {
 }
 
 export function getPopoverStyle(style:CardViewStyle) {
-  return StyleSheet.create({
+  return {
     height: style?.height ||  'auto',
     // flex: 1,
     width: style?.width || '100%',
@@ -67,10 +67,9 @@ export function getPopoverStyle(style:CardViewStyle) {
     borderRadius: style.borderRadius,
     flexDirection: 'column',
     alignItems: 'center',
-   
-  });
+  };
 }
-export function getloadingStateStyle(theme, configStyles?:CardViewStyle, AIStyle?:AISmartRepliesStyle){
+export function getloadingStateStyle(theme: any, configStyles?:CardViewStyle, AIStyle?:AISmartRepliesStyle) {
   let fontFamily = AIStyle?.loadingStateTextFont ||  configStyles?.loadingStateTextFont || theme?.typography?.title2;
 
   return StyleSheet.create({
@@ -81,97 +80,86 @@ export function getloadingStateStyle(theme, configStyles?:CardViewStyle, AIStyle
 });
 }
 export function getCardViewStyle(theme:CometChatTheme, style:CardViewStyle,AiStyles?:AISmartRepliesStyle) {
-  const defaultStyle = StyleSheet.create({
-      tintColor: theme?.palette?.getAccent600(),
-      emptyStateTextColor: theme?.palette?.getAccent600(),
-      errorStateTextColor: theme?.palette?.getAccent600(),
-      emptyStateTextFont: theme?.typography?.title2,
-      errorStateTextFont: theme?.typography?.title2,
-      loadingStateTextColor: theme?.palette?.getAccent600(),
-      loadingIconTint: theme?.palette?.getPrimary(),
-      loadingStateTextFont: theme?.typography?.title2,
-      errorIconTint: theme?.palette?.getAccent(),
-      emptyIconTint: theme?.palette?.getAccent600(),
-      backgroundColor:  theme?.palette?.getBackgroundColor(),
-      border: {},
-      borderRadius: 8,
-      width: "100%",
-      buttonTintColor: theme?.palette?.getAccent600(),
-    
-  });
+  const defaultStyle = {
+    tintColor: theme?.palette?.getAccent600(),
+    emptyStateTextColor: theme?.palette?.getAccent600(),
+    errorStateTextColor: theme?.palette?.getAccent600(),
+    emptyStateTextFont: theme?.typography?.title2,
+    errorStateTextFont: theme?.typography?.title2,
+    loadingStateTextColor: theme?.palette?.getAccent600(),
+    loadingIconTint: theme?.palette?.getAccent600(),
+    loadingStateTextFont: theme?.typography?.title2,
+    errorIconTint: theme?.palette?.getAccent(),
+    emptyIconTint: theme?.palette?.getAccent600(),
+    backgroundColor:  theme?.palette?.getBackgroundColor(),
+    border: {},
+    borderRadius: 8,
+    width: "100%",
+    buttonTintColor: theme?.palette?.getAccent600(),
+  };
 
   return StyleSheet.flatten([defaultStyle,style,AiStyles]);
 }
 
-export const containerStyle = StyleSheet.create({
-  
-    overflow: 'hidden',
-    width: '100%',
-    position: 'relative',
-    justifyContent: 'flex-start',
-   alignItems: "center",
-    flexDirection: 'column',
-  
-});
+export const containerStyle = {
+  overflow: 'hidden',
+  width: '100%',
+  position: 'relative',
+  justifyContent: 'flex-start',
+  alignItems: "center",
+  flexDirection: 'column',
+};
 
-export const contentContainerStyle = StyleSheet.create({
-
-   alignItems: 'flex-start',
-    width: '100%' ,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
-    padding: 8,
-   
-   height:'auto',
-
-});
+export const contentContainerStyle = {
+  alignItems: 'flex-start',
+  width: '100%' ,
+  flexDirection: 'column',
+  justifyContent: 'center',
+  backgroundColor: 'transparent',
+  overflow: 'hidden',
+  padding: 8,
+  height:'auto',
+}
 
 
 
-export function getRepliesStyle(theme, configStyles,cardStyle?:CardStyle) {
+export function getRepliesStyle(theme: any, configStyles: any,cardStyle?:CardStyle) {
   let fontFamily = configStyles?.repliesTextFont || cardStyle?.repliesTextFont || theme?.typography?.text3;
-  return StyleSheet.create({
-  
-      ...fontFamily,
-      color: configStyles?.repliesTextColor || cardStyle?.repliesTextColor ||  theme?.palette?.getAccent(),
-      backgroundColor: 'transparent',
-      textAlign: 'left',
-    
-  });
+  return {
+    ...fontFamily,
+    color: configStyles?.repliesTextColor || cardStyle?.repliesTextColor ||  theme?.palette?.getAccent(),
+    backgroundColor: 'transparent',
+    textAlign: 'left',
+  };
 }
 
 export function getRepliesWrapperStyle(theme:CometChatTheme, configStyles:AIButtonsStyle,cardStyle?:CardStyle) {
   
-  return StyleSheet.create({
+  return {
+    flexDirection: 'row',
+    padding: 8,
+    marginVertical: 4,
+    backgroundColor: configStyles?.repliesTextBackgroundColor || cardStyle?.repliesTextBackgroundColor ||  theme?.palette?.getBackgroundColor(),
+      ...configStyles?.repliesTextBorder || cardStyle?.repliesTextBorder || {borderBottomWidth:1,borderStyle:"solid",borderBottomColor:theme?.palette.getAccent200()},
+    borderRadius: configStyles?.repliesTextBorderRadius || cardStyle?.repliesTextBorderRadius || 8,
+    boxSizing: 'border-box',
+    cursor: 'pointer',
   
-      flexDirection: 'row',
-      padding: 8,
-      marginVertical: 4,
-      backgroundColor: configStyles?.repliesTextBackgroundColor || cardStyle?.repliesTextBackgroundColor ||  theme?.palette?.getBackgroundColor(),
-       ...configStyles?.repliesTextBorder || cardStyle?.repliesTextBorder || {borderBottomWidth:1,borderStyle:"solid",borderBottomColor:theme?.palette.getAccent200()},
-      
-      
-      borderRadius: configStyles?.repliesTextBorderRadius || cardStyle?.repliesTextBorderRadius || 8,
-      boxSizing: 'border-box',
-      cursor: 'pointer',
-   
-  });
+  };
 }
 
 export function getButtonStyles(theme:CometChatTheme, style:AISmartRepliesStyle, cardStyle?:CardStyle) {
   let fontFamily = style?.buttonTextFont || cardStyle?.buttonTextFont || theme?.typography?.text1;
-  return StyleSheet.create({
-     paddingHorizontal: 8,
-     justifyContent:"center",
-     alignItems:"flex-start",
-       ...style?.buttonBorder || cardStyle?.buttonBorder,
-      backgroundColor: style?.buttonBackgroundColor ||  cardStyle?.buttonBackgroundColor  || theme?.palette?.getBackgroundColor(),
-     ...fontFamily,
-      color: style?.buttonTextColor ||   cardStyle?.buttonTextColor  || theme?.palette?.getAccent(),
-      marginBottom: 8,
-      height:style?.buttonHeight ||  cardStyle?.buttonHeight,
-      width:style?.buttonWidth ||  cardStyle?.buttonWidth  || "100%"
-  });
+  return {
+    paddingHorizontal: 8,
+    justifyContent:"center",
+    alignItems:"flex-start",
+      ...style?.buttonBorder || cardStyle?.buttonBorder,
+    backgroundColor: style?.buttonBackgroundColor ||  cardStyle?.buttonBackgroundColor  || theme?.palette?.getBackgroundColor(),
+    ...fontFamily,
+    color: style?.buttonTextColor ||   cardStyle?.buttonTextColor  || theme?.palette?.getAccent(),
+    marginBottom: 8,
+    height:style?.buttonHeight ||  cardStyle?.buttonHeight,
+    width:style?.buttonWidth ||  cardStyle?.buttonWidth  || "100%"
+  };
 }

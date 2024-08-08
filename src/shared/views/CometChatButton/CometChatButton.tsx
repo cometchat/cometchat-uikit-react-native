@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text, Image, ActivityIndicator } from "react-native";
+import { View, TouchableOpacity, Text, Image, ActivityIndicator, ViewProps, TextStyle, ImageStyle } from "react-native";
 import { ImageType } from '../../base';
 import { ButtonStyle, ButtonStyleInterface } from './CometChatButtonStyle';
 import { CometChatContext } from '../../CometChatContext';
@@ -44,11 +44,11 @@ export const CometChatButton = (props: CometChatButtonInterface) => {
     return (
         <TouchableOpacity onPress={onPress} style={[{ alignItems: "center", backgroundColor, borderRadius }, !iconUrl && {
             height, width, justifyContent: "center",
-        }]}>
+        } as ViewProps]}>
             {!isLoading ? <>
                 {Boolean(iconUrl) && <View style={[Style.container, { backgroundColor: iconBackgroundColor, borderRadius: iconCornerRadius, ...border }]}>
                     <Image
-                        source={iconUrl}
+                        source={iconUrl as ImageType}
                         resizeMode="contain"
                         style={{
                             height,
@@ -57,13 +57,13 @@ export const CometChatButton = (props: CometChatButtonInterface) => {
                             borderRadius: iconCornerRadius,
                             tintColor: iconTint,
                             ...iconBorder,
-                        }} />
+                        } as ImageStyle} />
                 </View>}
                 {
                     Boolean(text) && <Text style={{
                         color: textColor,
                         ...textFont
-                    }}>{text}</Text>
+                    } as TextStyle}>{text}</Text>
                 }
             </>
                 :

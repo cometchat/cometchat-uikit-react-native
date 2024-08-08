@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { FlatList, Image, ListRenderItemInfo, TouchableOpacity, View, Text, Dimensions } from 'react-native'
+import { FlatList, Image, ListRenderItemInfo, TouchableOpacity, View, Text, Dimensions, ViewProps, TextStyle } from 'react-native'
 import { CometChatTabAlignment } from '../shared/base/Types'
 import { CometChatContext } from '../shared'
 import { TabItem } from './TabItems'
@@ -27,16 +27,6 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
         keepAlive = false,
         tabAlignment = "bottom",
     } = props;
-
-    const {
-        activeTabBackgroundColor,
-        activeTabBorder,
-        activeTabTitleTextColor,
-        backgroundColor,
-        borderRadius,
-        tabTitleTextColor,
-        tabTitleTextFont,
-    } = style;
 
     const { theme } = React.useContext(CometChatContext);
 
@@ -74,23 +64,23 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
             width
         } = new TabItemStyle({
             height: 36,
-            titleTextColor: tabTitleTextColor || theme?.palette.getAccent(),
-            titleTextFont: tabTitleTextFont || theme?.typography.body,
+            titleTextColor: style?.tabTitleTextColor || theme?.palette.getAccent(),
+            titleTextFont: style?.tabTitleTextFont || theme?.typography.body,
             activeIconTint: theme?.palette.getPrimary(),
-            activeTitleTextColor: activeTabTitleTextColor || theme?.palette.getPrimary(),
-            activeBackgroundColor: activeTabBackgroundColor || theme?.palette.getSecondary(),
+            activeTitleTextColor: style?.activeTabTitleTextColor || theme?.palette.getPrimary(),
+            activeBackgroundColor: style?.activeTabBackgroundColor || theme?.palette.getSecondary(),
             iconTint: theme?.palette.getAccent600(),
             activeTitleTextFont: theme?.typography.body,
-            borderRadius: style.borderRadius,
+            borderRadius: style?.borderRadius,
             ...tab.style
         });
 
         return {
             height,
             width: tabs.length <= 4 ? (screenWidth - 30) / tabs.length : width,
-            border: tab.isActive ? activeTabBorder : undefined,
-            borderRadius: borderRadius,
-            backgroundColor: tab.isActive ? activeBackgroundColor : backgroundColor,
+            border: tab.isActive ? style?.activeTabBorder : undefined,
+            borderRadius: style?.borderRadius,
+            backgroundColor: tab.isActive ? activeBackgroundColor : style?.backgroundColor,
             tintColor: tab.isActive ? activeIconTint : iconTint,
             color: tab.isActive ? activeTitleTextColor : titleTextColor,
             titleFont: tab.isActive ? activeTitleTextFont : titleTextFont,
@@ -107,7 +97,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
         });
         if (keepAlive) {
             let alreadyLoaded = views.findIndex((view) => view.id == item.id);
-            let newViews = [];
+            let newViews: any[] = [];
 
             if (alreadyLoaded >= 0) {
                 newViews = views.map((vw, index) => {
@@ -141,14 +131,14 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
         
         return (
             <TouchableOpacity
-                style={[style, { justifyContent: "center", alignItems: "center" }]}
+                style={[style, { justifyContent: "center", alignItems: "center" }] as ViewProps}
                 onPress={() => tabItemPressed(item)}
             >
                 {
                     item.icon && <Image source={item.icon} style={{ tintColor: style.tintColor }} />
                 }
                 {
-                    item.title && <Text style={{ color: style.color, ...style.titleFont }}>{item.title}</Text>
+                    item.title && <Text style={{ color: style.color, ...style.titleFont } as TextStyle}>{item.title}</Text>
                 }
             </TouchableOpacity>
         );
@@ -156,7 +146,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
 
     const TabsList = () => {
         return (
-            <View style={{flexDirection: 'row', backgroundColor: backgroundColor, borderRadius: borderRadius, margin: 15, marginTop: 0}}>
+            <View style={{flexDirection: 'row', backgroundColor: style.backgroundColor, borderRadius: style.borderRadius, margin: 15, marginTop: 0}}>
                 { tabs.map(item=> <TabItemView item={item}/>) }
             </View>
         )

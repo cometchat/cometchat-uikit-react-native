@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useContext } from "react";
-import { View, Text, Image, NativeModules, ActivityIndicator, NativeEventEmitter, Platform } from "react-native";
+import { View, Text, Image, NativeModules, ActivityIndicator, NativeEventEmitter, Platform, ViewProps, TextStyle } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, ImageType } from "../../base/Types";
 import { AudioBubbleStyle, AudioBubbleStyleInterface } from "./AudioBubbleStyle";
@@ -8,7 +8,7 @@ import { Style } from "./style";
 
 const { SoundPlayer } = NativeModules;
 const eventEmitter = new NativeEventEmitter(SoundPlayer);
-let listener;
+let listener: any;
 export interface CometChatAudioBubbleInterface {
     /**
      * url of audio
@@ -129,13 +129,13 @@ export const CometChatAudioBubble = ({
 
     React.useEffect(() => {
         return () => {
-            SoundPlayer.pause((s) => {
+            SoundPlayer.pause((s: any) => {
                 console.log(s);
             });
         }
     }, []);
 
-    const pressTime = useRef(0);
+    const pressTime = useRef<any>(0);
 
     const handleTouchStart = () => {
         pressTime.current = Date.now();
@@ -172,7 +172,7 @@ export const CometChatAudioBubble = ({
 
 
     return (
-        <View style={[Style.container, { backgroundColor, ...border, borderRadius, height, width }]}>
+        <View style={[Style.container, { backgroundColor, ...border, borderRadius, height, width } as ViewProps]}>
             {
                 status == "loading" ?
                     <ActivityIndicator style={Style.imageStyle} color={iconTint} size={"small"} /> :
@@ -193,7 +193,7 @@ export const CometChatAudioBubble = ({
             }
             <View style={{ flex: 1 }}>
                 <Text
-                    style={[Style.titleStyle, { ...titleFont, color: titleColor }]}
+                    style={[Style.titleStyle, { ...titleFont, color: titleColor }] as TextStyle}
                     numberOfLines={1}
                     ellipsizeMode="middle"
                 >

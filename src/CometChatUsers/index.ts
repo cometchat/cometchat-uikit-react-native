@@ -2,13 +2,15 @@ import {
   CometChatUsers,
   CometChatUsersInterface,
   CometChatUsersActionsInterface,
-} from './CometChatUsers';
+} from "./CometChatUsers";
 
-import { UsersConfiguration, UsersConfigurationInterface } from './UsersConfiguration';
-export {
-  CometChatUsers,
+import {
+  UsersConfiguration,
+  UsersConfigurationInterface,
+} from "./UsersConfiguration";
+export { CometChatUsers, UsersConfiguration };
+export type {
   CometChatUsersInterface,
   CometChatUsersActionsInterface,
-  UsersConfiguration,
-  UsersConfigurationInterface
+  UsersConfigurationInterface,
 };

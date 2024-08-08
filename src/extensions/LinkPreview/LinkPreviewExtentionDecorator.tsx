@@ -1,4 +1,5 @@
 import React from "react";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 import { LinkPreviewConfigurationInterface } from "./LinkPreviewConfiguration";
@@ -27,7 +28,7 @@ export class LinkPreviewExtentionDecorator extends DataSourceDecorator {
         return "LinkPreviewExtention";
     }
 
-    getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element {
+    getTextMessageContentView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType, theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): JSX.Element | null {
         let linkData = getExtentionData(message, ExtensionConstants.linkPreview);
         if (!linkData || linkData.links.length == 0) {
             return super.getTextMessageContentView(message, alignment, theme, additionalParams);

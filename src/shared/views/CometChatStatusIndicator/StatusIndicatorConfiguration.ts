@@ -1,6 +1,6 @@
 import { StatusIndicatorStyle } from './StatusIndicatorStyle';
 //@ts-ignore
-import { StyleProp, ViewStyle } from 'react-native';
+import { StyleProp, ViewProps, ViewStyle } from 'react-native';
 import { ImageType } from '../../base';
 /**
  * @class StatusIndicatorConfiguration
@@ -12,7 +12,7 @@ export class StatusIndicatorConfiguration {
   style?: StyleProp<ViewStyle>;
   backgroundImage?: ImageType;
   constructor({
-    style = new StatusIndicatorStyle({}),
+    style = new StatusIndicatorStyle({}) as ViewProps,
     backgroundImage,
   }: StatusIndicatorConfigurationInterface) {
     this.style = style;

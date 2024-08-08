@@ -37,9 +37,9 @@ export class GroupMembersStyle extends BaseStyle {
     emptyTextFont: FontStyleInterface
     errorTextColor: string
     errorTextFont: FontStyleInterface
-    avatarStyle: AvatarStyleInterface;
-    listItemStyle: ListItemStyleInterface;
-    statusIndicatorStyle: StatusIndicatorStyleInterface;
+    avatarStyle!: AvatarStyleInterface;
+    listItemStyle!: ListItemStyleInterface;
+    statusIndicatorStyle!: StatusIndicatorStyleInterface;
 
     constructor({
         width = "100%",

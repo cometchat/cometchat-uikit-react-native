@@ -1,6 +1,9 @@
 import React from 'react';
+//@ts-ignore
 import dayjs from 'dayjs';
+//@ts-ignore
 import localeData from 'dayjs/plugin/localeData';
+//@ts-ignore
 import utc from 'dayjs/plugin/utc';
 
 dayjs.extend(localeData);

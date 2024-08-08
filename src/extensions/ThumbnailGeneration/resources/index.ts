@@ -1,3 +1,4 @@
+//@ts-ignore
 import defaultThumbnail from "./default_image.png";
 
 export {

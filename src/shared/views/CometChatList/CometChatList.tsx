@@ -14,7 +14,9 @@ import {
   StyleProp,
   ViewStyle,
   ListRenderItem,
-  ActivityIndicator,
+  ViewProps,
+  TextStyle,
+  ActivityIndicator
   //@ts-ignore
 } from 'react-native';
 import { CometChatContext } from '../../CometChatContext';
@@ -35,8 +37,10 @@ import { BorderStyleInterface, FontStyleInterface } from '../../base';
 import { ListItemStyleInterface } from '../CometChatListItem/ListItemStyle';
 import { AvatarStyleInterface } from '../CometChatAvatar/AvatarStyle';
 import { CometChatContextType } from '../../base/Types';
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { StatusIndicatorStyleInterface } from '../CometChatStatusIndicator';
+import { anyObject } from '../../utils';
 
 export interface CometChatListActionsInterface {
   updateList: (prop: any) => void;
@@ -75,12 +79,12 @@ export interface CometChatListStylesInterface {
   sectionHeaderTextColor?: string;
 }
 export interface CometChatListProps {
-  SubtitleView?: (item: object) => JSX.Element;
-  TailView?: (item: object) => JSX.Element;
+  SubtitleView?: (item: object | any) => JSX.Element;
+  TailView?: (item: object | any) => JSX.Element;
   disableUsersPresence?: boolean;
-  ListItemView?: ListRenderItem<any>;
+  ListItemView?: (item: any) => JSX.Element | null;
   AppBarOptions?: React.FC;
-  options?: (item: object) => Array<CometChatOptions>;
+  options?: (item: object | any) => Array<CometChatOptions>;
   hideSeparator?: boolean;
   searchPlaceholderText?: string;
   backButtonIcon?: ImageType;
@@ -113,7 +117,7 @@ export interface CometChatListProps {
   listStyle?: CometChatListStylesInterface;
   hideSubmitIcon?: boolean
 }
-let lastCall;
+let lastCall: any;
 let lastReject: Function;
 
 /**
@@ -220,11 +224,11 @@ export const CometChatList = React.forwardRef<
   const [shouldSelect, setShouldSelect] = React.useState(
     selectionMode !== 'none' ? true : false
   );
-  const [selectedItems, setSelectedItems] = useState({});
+  const [selectedItems, setSelectedItems] = useState<anyObject>({});
   const listHandlerRef = React.useRef(null);
   const initialRunRef = React.useRef(true);
 
-  const activeSwipeRows = React.useRef({});
+  const activeSwipeRows = React.useRef<anyObject>({});
 
   const [list, setList] = React.useState<any>([]);
   const [decoratorMessage, setDecoratorMessage] = React.useState(LOADING);
@@ -244,7 +248,7 @@ export const CometChatList = React.forwardRef<
     getSearch(_searchRequestBuilder);
   };
 
-  const getSearch = (builder) => {
+  const getSearch = (builder: any) => {
     getList(builder)
       .then((newlist: any) => {
         setDecoratorMessage(NO_DATA_FOUND);
@@ -260,7 +264,7 @@ export const CometChatList = React.forwardRef<
   };
 
   const getSelectedItems = () => {
-    let markedItems = [];
+    let markedItems: any[] = [];
     Object.keys(selectedItems).forEach(item => {
       return markedItems.push(getListItem(item));
     })
@@ -485,13 +489,13 @@ export const CometChatList = React.forwardRef<
       else if (selectionMode === 'single')
         setSelectedItems({ [item.value[listItemKey]]: item.value });
     }
-    onItemPress(item.value);
+    onItemPress && onItemPress(item.value);
     // CometChatUserEvents.emit(CometChatUserEvents.onUserItemClick, item);
   };
 
   const onListItemLongPress = (item: any) => {
     handleSelection(item);
-    onItemLongPress(item.value);
+    onItemLongPress && onItemLongPress(item.value);
     // CometChatUserEvents.emit(CometChatUserEvents.onUserItemClick, item);
   };
 
@@ -514,11 +518,11 @@ export const CometChatList = React.forwardRef<
               styles.headerLetterStyle,
               {
                 color:
-                  listStyle.sectionHeaderTextColor ??
+                  listStyle?.sectionHeaderTextColor ??
                   theme.palette.getAccent500(),
               },
-              listStyle.sectionHeaderTextFont ?? theme.typography.text2,
-            ]}
+              listStyle?.sectionHeaderTextFont ?? theme.typography.text2,
+            ] as TextStyle}
           >
             {headerLetter}
           </Text>
@@ -555,10 +559,10 @@ export const CometChatList = React.forwardRef<
         statusIndicatorIcon={
           Object.keys(selectedItems).includes(item.value[listItemKey]) && ICONS.CHECK
         }
-        SubtitleView={
-          SubtitleView ? () => SubtitleView(item.value) : null
-        }
-        TailView={TailView ? () => TailView(item.value) : null}
+        {...(SubtitleView
+          ? { SubtitleView: () => SubtitleView(item.value) }
+          : {})}
+        {...(TailView ? { TailView: () => TailView(item.value) } : {})}
         statusIndicatorStyle={
           selectedItems[item.value[listItemKey]] === true
             ? {
@@ -567,10 +571,10 @@ export const CometChatList = React.forwardRef<
               height: 20,
               width: 20,
             }
-            : statusIndicatorStyle
+            : statusIndicatorStyle as ViewProps
         }
         avatarStyle={avatarStyle}
-        options={() => options && options(item.value)}
+        options={() => options ? options(item.value) : []}
         activeSwipeRows={activeSwipeRows.current}
         rowOpens={(id) => {
             Object.keys(activeSwipeRows.current).forEach(key => {
@@ -606,7 +610,7 @@ export const CometChatList = React.forwardRef<
       lastCall = setTimeout(() => {
         props?.fetchNext().then((listItems: any) => {
           resolve(listItems);
-        }).catch((error) => {
+        }).catch((error: any) => {
           reject(error)
         });
       }, 500);
@@ -619,7 +623,7 @@ export const CometChatList = React.forwardRef<
    * Returns a container of users if exists else returns the corresponding decorator message
    */
   const getMessageContainer = () => {
-    let messageContainer = null;
+    let messageContainer: any= null;
     decoratorMessage === LOADING;
     if (list.length === 0 && decoratorMessage.toLowerCase() === LOADING) {
       if (LoadingStateView) return <LoadingStateView />;
@@ -639,12 +643,12 @@ export const CometChatList = React.forwardRef<
           <Text
             style={[
               styles.msgTxtStyle,
-              listStyle.emptyTextFont ?? theme.typography.body,
+              listStyle?.emptyTextFont ?? theme.typography.body,
               {
                 color:
                   listStyle?.emptyTextColor ?? theme.palette.getAccent400(),
               },
-            ]}
+            ] as TextStyle}
           >
             {emptyStateText}
           </Text>
@@ -666,7 +670,7 @@ export const CometChatList = React.forwardRef<
                 color:
                   listStyle?.errorTextColor ?? theme.palette.getAccent400(),
               },
-            ]}
+            ] as TextStyle}
           >
             {errorStateText}
           </Text>
@@ -674,7 +678,7 @@ export const CometChatList = React.forwardRef<
       );
     } else {
       let currentLetter = '';
-      const listWithHeaders = [];
+      const listWithHeaders: any[] = [];
       if (list.length) {
         list.forEach((listItem: any) => {
           const chr = listItem?.name && listItem.name[0].toUpperCase();
@@ -726,14 +730,14 @@ export const CometChatList = React.forwardRef<
       style={[
         styles.containerStyle,
         {
-          height: listStyle.height ?? '100%',
-          width: listStyle.width ?? '100%',
+          height: listStyle?.height ?? '100%',
+          width: listStyle?.width ?? '100%',
           backgroundColor:
-            listStyle.background ?? theme.palette.getBackgroundColor(),
-          borderRadius: listStyle.borderRadius ?? 0,
+            listStyle?.background ?? theme.palette.getBackgroundColor(),
+          borderRadius: listStyle?.borderRadius ?? 0,
         },
-        listStyle.border ?? {},
-      ]}
+        listStyle?.border ?? {},
+      ] as ViewProps}
     >
       <Header
         backButtonIcon={backButtonIcon}
@@ -751,20 +755,20 @@ export const CometChatList = React.forwardRef<
         searchInput={searchInput}
         onSubmitEditing={() => searchHandler(searchInput)}
         selectionIcon={selectionIcon}
-        titleFontStyle={listStyle.titleFont ?? theme.typography.heading}
-        titleColor={listStyle.titleColor ?? theme.palette.getAccent()}
-        backIconTint={listStyle.backIconTint ?? theme.palette.getPrimary()}
+        titleFontStyle={listStyle?.titleFont ?? theme.typography.heading}
+        titleColor={listStyle?.titleColor ?? theme.palette.getAccent()}
+        backIconTint={listStyle?.backIconTint ?? theme.palette.getPrimary()}
         selectionIconTint={theme.palette.getPrimary()}
-        searchBorderStyle={listStyle.searchBorder}
-        searchBorderRadius={listStyle.searchBorderRadius}
-        searchTextFontStyle={listStyle.searchTextFont ?? theme.typography.body}
-        searchTextColor={listStyle.searchTextColor ?? theme.palette.getAccent()}
+        searchBorderStyle={listStyle?.searchBorder}
+        searchBorderRadius={listStyle?.searchBorderRadius}
+        searchTextFontStyle={listStyle?.searchTextFont ?? theme.typography.body}
+        searchTextColor={listStyle?.searchTextColor ?? theme.palette.getAccent()}
         searchPlaceholderTextColor={theme.palette.getAccent600()}
         searchIconTint={
-          listStyle.searchIconTint ?? theme.palette.getAccent400()
+          listStyle?.searchIconTint ?? theme.palette.getAccent400()
         }
         searchBackground={
-          listStyle.searchBackground ?? theme.palette.getAccent50()
+          listStyle?.searchBackground ?? theme.palette.getAccent50()
         }
       />
       <View style={styles.container}>{getMessageContainer()}</View>

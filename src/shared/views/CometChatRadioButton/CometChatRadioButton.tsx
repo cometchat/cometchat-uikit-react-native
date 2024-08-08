@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, TextStyle } from 'react-native'
 import React, { useContext } from 'react'
 import { RadioButtonElement } from '../../modals/InteractiveData'
 import { CometChatContextType } from '../../base'
@@ -41,12 +41,12 @@ const CometChatRadioButton = (props: CometChatRadioButtonInterface) => {
 
     return (
         <View style={{ marginBottom: 12 }}>
-            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }] as TextStyle}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
             {data.getOptions().map((option, index) => (
                 <View key={index} style={{ flexDirection: "row", alignItems: "center", marginVertical: 1.5 }}>
                     <TouchableOpacity style={{
                         height: 20, width: 20, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: selectedOption !== option.getValue() ? inactiveBackgroundColor : undefined,
-                        borderWidth: selectedOption === option.getValue() ? borderWidth + 1 : borderWidth, borderColor: showError ? theme.palette.getError() : borderColor, marginRight: 5,
+                        borderWidth: selectedOption === option.getValue() && borderWidth ? borderWidth + 1 : borderWidth, borderColor: showError ? theme.palette.getError() : borderColor, marginRight: 5,
                     }}
                         onPress={() => onChange(option.getValue())}
                     >
@@ -57,7 +57,7 @@ const CometChatRadioButton = (props: CometChatRadioButtonInterface) => {
                             }}
                         />}
                     </TouchableOpacity>
-                    <Text style={[optionFont, { color: optionColor }]}>{option.getLabel()}</Text>
+                    <Text style={[optionFont, { color: optionColor }] as TextStyle}>{option.getLabel()}</Text>
                 </View>
             ))}
         </View>

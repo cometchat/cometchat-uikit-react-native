@@ -1,29 +1,29 @@
 import { BorderStyle, CometChatTheme } from "../../shared";
-import { AIConversationStarterStyle } from "../utils";
+import { AIConversationStarterStyle } from "./AIConversationStarterStyle";
 import { CardViewStyle } from "../CardViewStyle";
 import { StyleSheet } from 'react-native';
 
 export function getCardViewStyle(theme:CometChatTheme, style:AIConversationStarterStyle) {
-    const defaultStyle:AIConversationStarterStyle = StyleSheet.create({
-        emptyStateTextColor: theme?.palette?.getAccent600(),
-        loadingStateTextColor: theme?.palette?.getAccent600(),
-        errorStateTextColor: theme?.palette?.getAccent600(),
-        emptyStateTextFont: theme?.typography?.title2,
-        errorStateTextFont: theme?.typography?.title2,
-        loadingStateTextFont: theme?.typography?.title2,
-        backgroundColor: theme?.palette?.getBackgroundColor(),
-        loadingIconTint: theme?.palette?.getPrimary(),
-        errorIconTint: theme?.palette?.getAccent600(),
-        emptyIconTint: theme?.palette?.getAccent600(),
-        border: {},
-        borderRadius: 8,
-        height: 130,
-        width: "100%",      
-    });
+    const defaultStyle:AIConversationStarterStyle = {
+      emptyStateTextColor: theme?.palette?.getAccent600(),
+      loadingStateTextColor: theme?.palette?.getAccent600(),
+      errorStateTextColor: theme?.palette?.getAccent600(),
+      emptyStateTextFont: theme?.typography?.title2,
+      errorStateTextFont: theme?.typography?.title2,
+      loadingStateTextFont: theme?.typography?.title2,
+      backgroundColor: theme?.palette?.getBackgroundColor(),
+      loadingIconTint: theme?.palette?.getAccent600(),
+      errorIconTint: theme?.palette?.getAccent600(),
+      emptyIconTint: theme?.palette?.getAccent600(),
+      border: {},
+      borderRadius: 8,
+      height: 130,
+      width: "100%",      
+    };
   
     return StyleSheet.flatten([defaultStyle, style]);
   }
-  export function getRepliesStyle(theme, configStyles) {
+  export function getRepliesStyle(theme: any, configStyles: any) {
     let fontFamily = configStyles?.repliesTextFont || theme?.typography?.text3;
     return StyleSheet.create({
     
@@ -35,7 +35,7 @@ export function getCardViewStyle(theme:CometChatTheme, style:AIConversationStart
     });
   }
 
-  export function getloadingStateStyle(theme, configStyles:AIConversationStarterStyle){
+  export function getloadingStateStyle(theme: any, configStyles:AIConversationStarterStyle){
     let fontFamily = configStyles?.loadingStateTextFont|| theme?.typography?.title2;
 
     return StyleSheet.create({
@@ -61,16 +61,14 @@ export function getCardViewStyle(theme:CometChatTheme, style:AIConversationStart
   
   export function getRepliesWrapperStyle(theme:CometChatTheme, configStyles:AIConversationStarterStyle) {
     
-    return StyleSheet.create({
-    
-        flexDirection: 'row',
-        padding: 8,
-        margin:4,
-        backgroundColor: configStyles?.repliesTextBackgroundColor || theme?.palette?.getBackgroundColor(),
-         ...new BorderStyle({borderWidth:1,borderStyle:"solid",borderColor:theme?.palette.getAccent200()}),
-        borderRadius: configStyles?.repliesTextBorderRadius || 8,
-        boxSizing: 'border-box',
-        cursor: 'pointer',
-     
-    });
+    return {
+      flexDirection: 'row',
+      padding: 8,
+      margin: 4,
+      backgroundColor: configStyles?.repliesTextBackgroundColor || theme?.palette?.getBackgroundColor(),
+        ...new BorderStyle({borderWidth: 1, borderStyle: "solid", borderColor: theme?.palette.getAccent200()}),
+      borderRadius: configStyles?.repliesTextBorderRadius || 8,
+      boxSizing: 'border-box',
+      cursor: 'pointer',
+    };
   }

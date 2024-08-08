@@ -1,3 +1,7 @@
-import { SmartRepliesExtension, SmartRepliesConfigurationInterface } from './SmartRepliesExtension';
+import {
+  SmartRepliesExtension,
+  SmartRepliesConfigurationInterface,
+} from "./SmartRepliesExtension";
 import { SmartRepliesInterface, SmartRepliesView } from "./SmartRepliesView";
-export { SmartRepliesExtension, SmartRepliesInterface, SmartRepliesView, SmartRepliesConfigurationInterface };
+export { SmartRepliesExtension, SmartRepliesView };
+export type { SmartRepliesInterface, SmartRepliesConfigurationInterface };

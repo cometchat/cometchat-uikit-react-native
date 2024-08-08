@@ -1,3 +1,4 @@
+//@ts-ignore
 import {useTVEventHandler} from 'react-native';
 
 interface OSSupport {

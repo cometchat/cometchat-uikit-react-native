@@ -1,9 +1,11 @@
-import { CometChatIncomingCall, CometChatIncomingCallInterface } from "./CometChatIncomingCall";
-import { IncomingCallStyle, IncomingCallStyleInterface } from "./IncomingCallStyle";
+import {
+  CometChatIncomingCall,
+  CometChatIncomingCallInterface,
+} from "./CometChatIncomingCall";
+import {
+  IncomingCallStyle,
+  IncomingCallStyleInterface,
+} from "./IncomingCallStyle";
 
-export {
-    CometChatIncomingCall,
-    CometChatIncomingCallInterface,
-    IncomingCallStyle,
-    IncomingCallStyleInterface,
-}
+export { CometChatIncomingCall, IncomingCallStyle };
+export type { CometChatIncomingCallInterface, IncomingCallStyleInterface };

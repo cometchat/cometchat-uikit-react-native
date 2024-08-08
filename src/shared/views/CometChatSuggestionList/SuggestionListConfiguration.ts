@@ -6,14 +6,14 @@ import { SuggestionItem } from "./SuggestionItem";
 export interface SuggestionListConfigurationInterface extends CometChatSuggestionListInterface { }
 
 export class SuggestionListConfiguration {
-    separatorColor: string
+    separatorColor!: string;
     /**
      * Array of selection items
      */
-    data: Array<SuggestionItem>;
+    data!: Array<SuggestionItem>;
     listItemStyle?: ListItemStyle
     avatarStyle?: AvatarStyleInterface
-    onPress: (item: SuggestionItem) => void
+    onPress!: (item: SuggestionItem) => void;
     onEndReached?: () => void
     loading?: boolean
 

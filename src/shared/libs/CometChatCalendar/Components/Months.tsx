@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
+//@ts-ignore
 import dayjs, { Dayjs } from 'dayjs';
 
 import type { DateProperties, Theme, MonthComponentType, Locale } from '../Entities';

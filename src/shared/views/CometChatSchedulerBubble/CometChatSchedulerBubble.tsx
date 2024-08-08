@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   NativeModules,
+  TextStyle,
 } from "react-native";
 import { CometChatContextType } from "../../base";
 import { CometChatContext } from "../../CometChatContext";
@@ -18,11 +19,14 @@ import {
 } from "../../libs/CometChatCalendar";
 import { ICONS } from "../../assets/images";
 import { CometChatButton } from "../CometChatButton";
+//@ts-ignore
 import icsToJson from "../../utils/icsToJson";
 import { APIAction, ButtonElement, SchedulerMessage } from "../../modals";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatNetworkUtils } from "../../utils/NetworkUtils";
 import { HTTPSRequestMethods } from "../../constants/UIKitConstants";
+//@ts-ignore
 import { DateTime } from "../../libs/luxon/src/luxon";
 import {
   getMinSlotsFromRange,
@@ -72,7 +76,7 @@ export const CometChatSchedulerBubble = memo(
     const { theme } = useContext<CometChatContextType>(CometChatContext);
     const { schedulerMessage, style, onScheduleClick } = props;
     const message = SchedulerMessage.fromJSON(schedulerMessage);
-    let interactiveData = message.getInteractiveData();
+    let interactiveData: anyObject = message.getInteractiveData();
 
     const [allowInteraction, setAllowInteraction] = useState<boolean>(true);
     const [slotError, setSlotError] = useState<slotErrorEnum>(
@@ -91,7 +95,8 @@ export const CometChatSchedulerBubble = memo(
     const [selectedDateObj, setSlectedDateObj] = useState<anyObject>({});
     const [compDimensions, setCompDimensions] = useState<anyObject>({});
     const [selectedSlotState, setSelectedSlotState] = useState<anyObject>({});
-    const [loggedInUser, setLoggedInUser] = useState<CometChat.User>({});
+    //@ts-ignore
+    const [loggedInUser, setLoggedInUser] = useState<CometChat.User | any>({});
     const tempQuickSelectRange = useRef<any[]>([]);
     const [quickAvailbleSlots, setQuickAvailbleSlots] = useState<any[]>([]);
     const [availableRange, setAvailableRange] = useState<anyObject>({});
@@ -103,17 +108,17 @@ export const CometChatSchedulerBubble = memo(
       setCompDimensions(calcDimensions(currentComp.current));
     }, [currentComp]);
 
-    const icsFileData = useRef({});
+    const icsFileData = useRef<anyObject>({});
 
-    const getDayFomDate = (date) => {
+    const getDayFomDate = (date: any) => {
       let day = DateTime.fromFormat(date, "yyyy-MM-dd").toFormat("EEEE");
       return day;
     };
 
-    const getConvertedAvailablityObjectForDate = (date, day, newObj) => {
+    const getConvertedAvailablityObjectForDate = (date: any, day: string, newObj: any) => {
       let newAvailabilityObj = availablityObjRef.current;
       if (!newAvailabilityObj || !newAvailabilityObj.availability) return;
-      newAvailabilityObj?.availability[day.toLowerCase()]?.forEach((item) => {
+      newAvailabilityObj?.availability[day.toLowerCase()]?.forEach((item: any) => {
         let from = (convertToATimeZone(
           `${date} ${item.from}`,
           newAvailabilityObj.timeZoneCode,
@@ -190,9 +195,9 @@ export const CometChatSchedulerBubble = memo(
       });
     };
 
-    const onSelectDate = async (date) => {
+    const onSelectDate = async (date: any) => {
       setSelectedDate(date);
-      let newObj = {};
+      let newObj: anyObject = {};
       let previousDate = getNextFormatedDate(date, true);
       let previousDay = DateTime.fromFormat(
         previousDate,
@@ -275,7 +280,7 @@ export const CometChatSchedulerBubble = memo(
       endDate,
       availability,
       timeZoneCode,
-    }) => {
+    }: any) => {
       let initialDate = new Date(startDate);
       let finalDate = new Date(endDate);
 
@@ -293,10 +298,10 @@ export const CometChatSchedulerBubble = memo(
       }
     };
 
-    const combineAvailability = (availability) => {
+    const combineAvailability = (availability: any[]) => {
       if (availability && availability.length) {
         // Sort availability array
-        availability.sort((a, b) => a.from.localeCompare(b.from));
+        availability.sort((a: any, b: any) => a.from.localeCompare(b.from));
 
         let combinedAvailability = [availability[0]];
         for (let i = 1; i < availability.length; i++) {
@@ -322,7 +327,7 @@ export const CometChatSchedulerBubble = memo(
       blockedSlots,
     }: any): Promise<string[]> => {
       return new Promise((resolve, reject) => {
-        let range = [];
+        let range: any[] = [];
         combineAvailability(availabilityObject[date]?.availability);
         if (
           availabilityObject[date]?.availability?.length &&
@@ -334,13 +339,13 @@ export const CometChatSchedulerBubble = memo(
           };
         }
 
-        availabilityObject[date]?.availability?.forEach((item) => {
+        availabilityObject[date]?.availability?.forEach((item: any) => {
           let icsSelectedSlots = icsFileData.current[date];
-          let selectedSlots = [];
+          let selectedSlots: any[] = [];
           if (blockedSlots) {
             selectedSlots = blockedSlots;
           }
-          icsSelectedSlots?.forEach((item) => {
+          icsSelectedSlots?.forEach((item: any) => {
             if (item.startDate === item.endDate) {
               selectedSlots.push({
                 startTime: item.startTime,
@@ -391,7 +396,7 @@ export const CometChatSchedulerBubble = memo(
       });
     };
 
-    const getNextQuickSlots = async (date, newQuickObj, i = 0) => {
+    const getNextQuickSlots = async (date: string, newQuickObj: anyObject, i = 0): Promise<any> => {
       if (date && date !== "Invalid DateTime" && i < 30) {
         let nextDate = getNextFormatedDate(date);
         let nextday = DateTime.fromFormat(nextDate, dateFormats.date).toFormat(
@@ -425,7 +430,7 @@ export const CometChatSchedulerBubble = memo(
       let day = DateTime.fromJSDate(date).toFormat("EEEE");
       date = DateTime.fromJSDate(date).toFormat(dateFormats.date);
 
-      let newQuickObj = {};
+      let newQuickObj: anyObject = {};
       getConvertedAvailablityObjectForDate(date, day, newQuickObj);
       let blockedSlots = [
         {
@@ -450,10 +455,10 @@ export const CometChatSchedulerBubble = memo(
 
       if (range.length < 2 && shouldViewNext) await getNextQuickSlots(date, newQuickObj);
 
-      let quickSlotsArray = [];
+      let quickSlotsArray: any[] = [];
 
       Object.entries(newQuickObj).forEach(([key, value]: [string, any]) => {
-        value.availability.forEach((item) => {
+        value.availability.forEach((item: any) => {
           quickSlotsArray.push({
             slot: item,
             date: value.date,
@@ -479,15 +484,15 @@ export const CometChatSchedulerBubble = memo(
               }
               return { status: response.status };
             })
-            .then(async (res) => {
+            .then(async (res: any) => {
               // let text = response?.text();
               // Converted ICS to JSON
               if (res.status === 200) {
                 let text = await res.response.text();
                 let jcalData = icsToJson(text);
                 // Restructure the JSON to make it more easy to assign to calendar dates
-                let finalJcalData = {};
-                jcalData.forEach((item, index) => {
+                let finalJcalData: anyObject = {};
+                jcalData.forEach((item: any) => {
                   let startDate = convertToLocalTimeZone(
                     convertDate(item.startDate),
                     item.tzid ? item.tzid : "utc",
@@ -622,7 +627,7 @@ export const CometChatSchedulerBubble = memo(
 
     useEffect(() => {
       CometChat.getLoggedinUser()
-        .then((u) => {
+        .then((u: any) => {
           let hasInteractionCompleted: boolean = InteractiveMessageUtils.checkHasInteractionCompleted({
             interactedElements: message?.getInteractions() || [],
             interactionGoal: message?.getInteractionGoal() || undefined
@@ -634,13 +639,13 @@ export const CometChatSchedulerBubble = memo(
             }));
             return
           }
-          TimeZoneCodeManager.getCurrentTimeZone((timeZone) => {
+          TimeZoneCodeManager.getCurrentTimeZone((timeZone: string) => {
             currentTimeZoneRef.current = timeZone;
           });
           setLoggedInUser(u);
           if (
             u?.getUid() === schedulerMessage?.getSender()?.getUid() &&
-            schedulerMessage?.data?.allowSenderInteraction == false
+            (schedulerMessage as any)?.data?.allowSenderInteraction == false
           ) {
             setAllowInteraction(false);
           }
@@ -664,7 +669,7 @@ export const CometChatSchedulerBubble = memo(
             });
           }
         })
-        .catch((e) => {
+        .catch((e: any) => {
           console.log("Error while getting loggedInUser");
           setLoggedInUser(null);
         });
@@ -700,7 +705,7 @@ export const CometChatSchedulerBubble = memo(
               style={[
                 theme.typography.subtitle5,
                 { color: theme.palette.getAccent600(), lineHeight: 22 },
-              ]}
+              ] as TextStyle}
             >
               {interactiveData?.duration}
               {localize("MIN_MEETING")} • {interactiveData?.timezoneCode}
@@ -724,7 +729,7 @@ export const CometChatSchedulerBubble = memo(
                     ? theme.palette.getPrimary()
                     : theme.palette.getAccent800(),
                 },
-              ]}
+              ] as TextStyle}
             >
               {localize("MORE_TIMES")}
             </Text>
@@ -732,7 +737,7 @@ export const CometChatSchedulerBubble = memo(
         </View>
       );
     };
-    const TimeBoxView = ({ text, item }) => {
+    const TimeBoxView = ({ text, item }: any) => {
       return (
         <TouchableOpacity
           key={text}
@@ -774,7 +779,7 @@ export const CometChatSchedulerBubble = memo(
                   ? style?.suggestedTimeTextColor ?? theme.palette.getPrimary()
                   : theme.palette.getAccent800(),
               },
-            ]}
+            ] as TextStyle}
           >
             {text}
           </Text>
@@ -782,7 +787,7 @@ export const CometChatSchedulerBubble = memo(
       );
     };
 
-    const AvatarView = (props) => {
+    const AvatarView = (props: any) => {
       const { avatar, title, subTitle, onBackPress } = props;
       if (
         currentComp.current === componentEnum.quickSelect ||
@@ -798,6 +803,7 @@ export const CometChatSchedulerBubble = memo(
               style={{
                 outerView: { borderWidth: 0 },
                 ...styles.avatarCont,
+                border: { borderWidth: 0 },
                 ...(style?.avatarStyle ? style.avatarStyle : {}),
               }}
             />
@@ -810,7 +816,7 @@ export const CometChatSchedulerBubble = memo(
                     style?.titleTextColor ?? theme?.palette?.getAccent800(),
                   textAlign: "center",
                 },
-              ]}
+              ] as TextStyle}
             >
               {title}
             </Text>
@@ -856,7 +862,7 @@ export const CometChatSchedulerBubble = memo(
                       style?.titleTextColor ?? theme?.palette?.getAccent800(),
                     flex: 1,
                   },
-                ]}
+                ] as TextStyle}
               >
                 {title}
               </Text>
@@ -886,7 +892,7 @@ export const CometChatSchedulerBubble = memo(
                         style?.summaryTextColor ??
                         theme?.palette?.getAccent600(),
                     },
-                  ]}
+                  ] as TextStyle}
                 >
                   {" "}
                   {subTitle}
@@ -897,7 +903,7 @@ export const CometChatSchedulerBubble = memo(
         </View>
       );
     };
-    const getNextFormatedDate = (date, previous = false) => {
+    const getNextFormatedDate = (date: string | number | Date, previous = false) => {
       let nextDate = getFormatedDateString({
         date: DateTime.fromJSDate(
           new Date(
@@ -941,7 +947,7 @@ export const CometChatSchedulerBubble = memo(
               style={[
                 theme.typography.text1,
                 { color: theme?.palette?.getAccent900() },
-              ]}
+              ] as TextStyle}
             >
               {localize("SELECT_DAY")}
             </Text>
@@ -986,7 +992,7 @@ export const CometChatSchedulerBubble = memo(
                 style={[
                   theme.typography.subtitle2,
                   { color: theme.palette.getAccent900() },
-                ]}
+                ] as TextStyle}
               >
                 <Image
                   source={ICONS.EARTH}
@@ -1004,7 +1010,7 @@ export const CometChatSchedulerBubble = memo(
       );
     };
 
-    const onSlotSelection = (startTime, endTime) => {
+    const onSlotSelection = (startTime: any, endTime: any) => {
       setSelectedSlotState({
         startTime,
         endTime,
@@ -1052,7 +1058,7 @@ export const CometChatSchedulerBubble = memo(
                   color: theme.palette.getAccent800(),
                   lineHeight: 30,
                 },
-              ]}
+              ] as TextStyle}
             >
               <Image
                 source={ICONS.CALENDAR}
@@ -1078,7 +1084,7 @@ export const CometChatSchedulerBubble = memo(
                 marginBottom: 5,
                 marginTop: 2,
               },
-            ]}
+            ] as TextStyle}
           >
             {localize("SELECT_TIME")}
           </Text>
@@ -1091,7 +1097,7 @@ export const CometChatSchedulerBubble = memo(
                   color: theme.palette.getAccent500(),
                   textAlign: "center",
                 },
-              ]}
+              ] as TextStyle}
             >
               {localize("NO_TIME_SLOT_AVAILABLE")}
             </Text>
@@ -1105,7 +1111,7 @@ export const CometChatSchedulerBubble = memo(
                   marginBottom: 4,
                   marginRight: 2,
                 },
-              ]}
+              ] as TextStyle}
             >
               <Image
                 source={ICONS.EARTH}
@@ -1157,7 +1163,7 @@ export const CometChatSchedulerBubble = memo(
                   color: theme.palette.getAccent800(),
                   lineHeight: 30,
                 },
-              ]}
+              ] as TextStyle}
             >
               <Image
                 source={ICONS.CALENDAR}
@@ -1178,8 +1184,8 @@ export const CometChatSchedulerBubble = memo(
             slots={dateAvailablity.availability}
             onSelection={onSlotSelection}
             timeZone={interactiveData.timezoneCode}
-            style={style?.timeSlotSelectorStyle}
             slotSelected={selectedSlotState?.startTime}
+            style={style?.timeSlotSelectorStyle ?? {}}
           />
         </View>
       );
@@ -1209,10 +1215,10 @@ export const CometChatSchedulerBubble = memo(
       let conversation = await CometChat.CometChatHelper.getConversationFromMessage(
         message
       ).then(
-        (conversation) => {
+        (conversation: any) => {
           return conversation;
         },
-        (error) => {
+        (error: any) => {
           console.log("Error while converting message object", error);
           setSlotError(slotErrorEnum.error);
           setScheduleLoading(false);
@@ -1238,7 +1244,7 @@ export const CometChatSchedulerBubble = memo(
       body.payload = payload;
 
       body.data = {
-        messageId: schedulerMessage.id,
+        messageId: (schedulerMessage as any).id,
         conversationId: conversation.conversationId,
         receiver: schedulerMessage.getSender().getUid(),
         messageType: CometChatUiKitConstants.MessageTypeConstants.scheduler,
@@ -1352,7 +1358,7 @@ export const CometChatSchedulerBubble = memo(
                   {
                     color: theme.palette.getAccent800(),
                   },
-                ]}
+                ] as TextStyle}
               >
                 {`${selectedSlotState?.startTime?.slice(
                   0,
@@ -1375,7 +1381,7 @@ export const CometChatSchedulerBubble = memo(
                     color: theme.palette.getAccent800(),
                     paddingVertical: 10,
                   },
-                ]}
+                ] as TextStyle}
               >
                 {" "}
                 {interactiveData.timezoneCode}
@@ -1396,7 +1402,7 @@ export const CometChatSchedulerBubble = memo(
                       textAlign: "center",
                       marginHorizontal: 15,
                     },
-                  ]}
+                  ] as TextStyle}
                 >
                   {slotError === slotErrorEnum.noSlot
                     ? localize("TIME_SLOT_UNAVAILABLE")
@@ -1435,7 +1441,7 @@ export const CometChatSchedulerBubble = memo(
       return (
         <View style={{ padding: 5 }}>
           <CometChatQuickView
-            title={message.getTitle()}
+            title={message.getTitle() ?? ''}
             subtitle={localize("MEETING_SCHEDULER")}
             quickViewStyle={style?.quickViewStyle ?? {}}
           />
@@ -1448,7 +1454,7 @@ export const CometChatSchedulerBubble = memo(
                   theme.palette.getAccent800(),
               },
               style?.goalCompletionTextFont ?? {},
-            ]}
+            ] as TextStyle}
           >
             {message.getGoalCompletionText() ||
               localize("FORM_COMPLETION_MESSAGE")}
@@ -1477,7 +1483,7 @@ export const CometChatSchedulerBubble = memo(
           return null;
       }
     };
-    const calcDimensions = (currentComp) => {
+    const calcDimensions = (currentComp: any) => {
       switch (currentComp) {
         case componentEnum.quickSelect:
           return { width: 272 };

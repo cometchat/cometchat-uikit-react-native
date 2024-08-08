@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, Text, Linking, StyleProp, ViewStyle } from "react-native";
+import { View, Text, Linking, StyleProp, ViewStyle, ViewProps, TextStyle } from "react-native";
 import { CometChatContextType } from "../../base/Types";
 import { CometChatContext } from "../../CometChatContext";
 import { emailPattern, phoneNumPattern, urlPattern } from "../../constants/UIKitConstants";
 import { TextBubbleStyle, TextBubbleStyleInterface } from "./TextBubbleStyle";
 import { CometChatMentionsFormatter, CometChatTextFormatter, CometChatUrlsFormatter } from "../../formatters";
+import { anyObject } from "../../utils";
 
-const Link = ({ text, url, style }) => {
+const Link = ({ text, url, style }: any) => {
     return <Text style={{ ...style, textDecorationLine: "underline" }} onPress={() => {
         let finalUrl = url.startsWith("http") ? url : `http://${url}`
         Linking.canOpenURL(finalUrl)
@@ -25,7 +26,7 @@ const Link = ({ text, url, style }) => {
 }
 
 const getPatternGroup = (str: string): { phone?: string, email?: string, url?: string } => {
-    let result = {};
+    let result: anyObject = {};
     if (str.match(phoneNumPattern))
         result['phone'] = str;
     if (str.match(emailPattern))
@@ -101,8 +102,8 @@ export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
         },
         border,
         textContainerStyle
-    ]}>
-        <Text style={[{ color: textColor }, textFont]}>{formattedText}</Text>
+    ] as ViewProps}>
+        <Text style={[{ color: textColor }, textFont] as TextStyle}>{formattedText}</Text>
 
     </View>
 }

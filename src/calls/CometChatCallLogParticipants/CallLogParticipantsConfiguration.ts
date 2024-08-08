@@ -1,4 +1,5 @@
-import { StyleProp, ViewStyle } from "react-native/types";
+import { StyleProp, ViewStyle } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { AvatarStyleInterface, CometChatOptions, ImageType, ListItemStyleInterface } from "../../shared";
 import { CallParticipantsStyleInterface } from "./CallLogParticipantsStyle";
@@ -35,7 +36,7 @@ export class CallLogParticipantsConfiguration implements CallLogParticipantsConf
     /**
      * Participant list
      */
-    data: any[]
+    data!: any[]
     call: any
     hideSeperator?: boolean
     BackButton?: JSX.Element
@@ -54,6 +55,7 @@ export class CallLogParticipantsConfiguration implements CallLogParticipantsConf
     constructor(props: CallLogParticipantsConfigurationInterface) {
         if (props) {
             for (const [key, value] of Object.entries(props)) {
+                //@ts-ignore
                 this[key] = value;
             }
         }

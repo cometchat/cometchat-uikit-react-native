@@ -1,4 +1,5 @@
 import { BaseStyle, FontStyle } from "../../../shared/base";
+
 /**
  * @class EmojiKeyboardStyle
  * @param {String} sectionHeaderFont
@@ -24,7 +25,7 @@ class EmojiKeyboardStyle extends BaseStyle {
     backgroundColor,
     // border = 0,
     borderRadius = 8,
-  }) {
+  }: any) {
     super({
       width,
       height,

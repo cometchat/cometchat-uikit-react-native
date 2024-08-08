@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState, useRef } from 'react'
-import { View, Text, TouchableOpacity, Image, Platform, Alert, Linking } from 'react-native'
+import { View, Text, TouchableOpacity, Image, Platform, Alert, Linking, ViewProps } from 'react-native'
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { CometChatUIEventHandler } from '../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler'
 import { CallButtonStyle, CallButtonStyleInterface } from './CallButtonStyle'
@@ -109,9 +110,9 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
     const [showOutgoingCallScreen, setShowOutgoingCallScreen] = useState(false);
     const [callReceived, setCallReceived] = useState(false);
 
-    const outGoingCall = useRef<CometChat.Call | CometChat.CustomMessage>(null);
-    const incomingCall = useRef<CometChat.Call>(null);
-    const loggedInUser = useRef<CometChat.User>();
+    const outGoingCall = useRef<CometChat.Call | CometChat.CustomMessage | any>(null);
+    const incomingCall = useRef<CometChat.Call | any>(null);
+    const loggedInUser = useRef<CometChat.User | any>();
 
     /**
      * checks CometChat.getActiveCall() if there is
@@ -139,7 +140,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
         return true;
     }
 
-    const makeCall = (type) => {
+    const makeCall = (type: any) => {
         if (type == CallTypeConstants.audio || type == CallTypeConstants.video) {
             var receiverID = user ? user.getUid() : group ? group.getGuid() : undefined;
             var callType = type;
@@ -186,13 +187,13 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
                 var call = new CometChat.Call(receiverID, callType, receiverType, CometChat.CATEGORY_CALL);
 
                 CometChat.initiateCall(call).then(
-                    initiatedCall => {
+                    (initiatedCall: any) => {
                         outGoingCall.current = initiatedCall
                         setDisableButton(true)
                         setShowOutgoingCallScreen(true);
                         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccOutgoingCall, { call: outGoingCall.current });
                     },
-                    error => {
+                    (error: any) => {
                         console.log("Call initialization failed with exception:", error);
                         CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { call });
                         onError && onError(error);
@@ -239,28 +240,28 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
 
     useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(user => loggedInUser.current = user)
-            .catch(rej => {
+            .then((user: any) => loggedInUser.current = user)
+            .catch((rej: any) => {
                 loggedInUser.current = null;
                 onError && onError(rej);
             })
         CometChat.addCallListener(
             listenerId,
             new CometChat.CallListener({
-                onIncomingCallReceived: (call) => {
+                onIncomingCallReceived: (call: any) => {
                     incomingCall.current = call;
                     setDisableButton(true);
                     setCallReceived(call);
                 },
-                onOutgoingCallAccepted: (call) => {
+                onOutgoingCallAccepted: (call: any) => {
                     console.log("call accepted");
                 },
-                onOutgoingCallRejected: (call) => {
+                onOutgoingCallRejected: (call: any) => {
                     setShowOutgoingCallScreen(false);
                     outGoingCall.current = null;
                     setDisableButton(false)
                 },
-                onIncomingCallCancelled: (call) => {
+                onIncomingCallCancelled: (call: any) => {
                     setCallReceived(false);
                     incomingCall.current = null;
                     setDisableButton(false)
@@ -270,7 +271,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
         CometChatUIEventHandler.addCallListener(
             listenerId,
             {
-                ccCallRejected: (call) => {
+                ccCallRejected: (call: any) => {
                     outGoingCall.current = null;
                     setShowOutgoingCallScreen(false);
                     setDisableButton(false)
@@ -292,7 +293,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
     }, []);
 
     return (
-        <View style={[Style.row, { height, width }]}>
+        <View style={[Style.row, { height, width }] as ViewProps}>
             {
                 !hideVoiceCall && !group &&
                 <TouchableOpacity
@@ -336,12 +337,12 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface) => {
             {
                 showOutgoingCallScreen && <CometChatOutgoingCall
                     call={outGoingCall.current}
-                    onDeclineButtonPressed={(call) => {
+                    onDeclineButtonPressed={(call: any) => {
                         CometChat.rejectCall(call['sessionId'], CometChat.CALL_STATUS.CANCELLED).then(
-                            rejectedCall => {
+                            (rejectedCall: any) => {
                                 CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallRejected, { call: rejectedCall });
                             },
-                            err => {
+                            (err: any) => {
                                 onError && onError(err);
                             }
                         );

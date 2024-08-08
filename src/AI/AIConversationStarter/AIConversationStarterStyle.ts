@@ -6,6 +6,7 @@ export class AIConversationStarterStyle extends AIBaseStyle {
   repliesTextBorderRadius?: string;
   repliesTextColor?: string;
   repliesTextBackground?: string;
+  repliesTextBackgroundColor?: any;
   constructor(props: Partial<AIConversationStarterStyle>) {
       super({});
       Object.assign(this, props);

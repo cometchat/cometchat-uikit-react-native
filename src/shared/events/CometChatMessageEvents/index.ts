@@ -1,3 +1,5 @@
+import { anyObject } from "../../utils";
+
 export class CometChatMessageEvents {
 	static messageReceived = Symbol("messageReceived");
 	static customMessageReceived = Symbol("customMessageReceived");
@@ -34,9 +36,9 @@ export class CometChatMessageEvents {
 
 	static onBackButtonClick = Symbol("onBackButtonClick");
 
-	static _triggers = {};
+	static _triggers: anyObject = {};
 
-	static emit = (...args) => {
+	static emit = (...args: any) => {
 		let event, params;
 		if (args.length === 2) {
 			[event, params] = args;
@@ -58,7 +60,7 @@ export class CometChatMessageEvents {
 	 * @param {string} event
 	 * @param {string} id
 	 */
-	static removeListener = (...args) => {
+	static removeListener = (...args: any) => {
 		let event, id;
 		if (args.length === 2) {
 			[event, id] = args;
@@ -79,7 +81,7 @@ export class CometChatMessageEvents {
 	 * @param {string} id
 	 * @param {func} callback
 	 */
-	static addListener = (...args) => {
+	static addListener = (...args: any) => {
 		let event, id, callback;
 		if (args.length === 3) {
 			[event, id, callback] = args;

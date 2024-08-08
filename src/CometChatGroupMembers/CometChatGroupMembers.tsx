@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Alert, TouchableOpacity, Image, Modal } from "react-native";
+import { View, Text, Alert, TouchableOpacity, Image, Modal, ViewProps, TextStyle } from "react-native";
 import { kickIcon, banIcon, downArrowIcon, checkIcon } from "./resources";
 import { CometChatOptions } from "../shared/modals/CometChatOptions";
 import { AvatarStyle, AvatarStyleInterface, CometChatContext, CometChatUiKitConstants, ListItemStyle, ListItemStyleInterface, StatusIndicatorStyle } from "../shared";
@@ -208,16 +208,16 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         ...groupScopeStyle
     });
 
-    const activeSwipeRows = React.useRef({});
+    const activeSwipeRows = React.useRef<any>({});
     const groupMemberListenerId = 'groupMemberList_' + new Date().getTime();
-    const groupRef = React.useRef(null);
+    const groupRef = React.useRef<any>(null);
     const itemRef = React.useRef(null);
-    const loggedInUser = React.useRef(null);
+    const loggedInUser = React.useRef<CometChat.User | null | any>(null);
 
     const [selecting, setSelecting] = React.useState(selectionMode ? true : false);
-    const [selectedMembers, setSelectedMembers] = React.useState([]);
+    const [selectedMembers, setSelectedMembers] = React.useState<any[]>([]);
 
-    const swipeOptions = (member, onKick, onBan): CometChatOptions[] => {
+    const swipeOptions = (member: any, onKick: Function | undefined, onBan: Function | undefined): CometChatOptions[] => {
         let arr: CometChatOptions[] = getDefaultGroupMemberOptions(group, member, theme);
         return arr.map(option => {
             if (option.id == GroupMemberOptionConstants.kick)
@@ -228,9 +228,9 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         });
     }
 
-    const removeMemerFromSelectionList = (id) => {
+    const removeMemerFromSelectionList = (id: any) => {
         if (selecting) {
-            let index = selectedMembers.find(member => member['uid'] == id);
+            let index: any = selectedMembers.find(member => member['uid'] == id);
             if (index > -1) {
                 let tmpSelectedMembers = [...selectedMembers];
                 tmpSelectedMembers.splice(index, 1);
@@ -239,17 +239,17 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         }
     }
 
-    const banUser = (user) => {
+    const banUser = (user: any) => {
         //logic to ban user
         CometChat.banGroupMember(group['guid'], user.uid)
-            .then((response) => {
-                groupRef.current && groupRef.current.removeItemFromList(user.uid);
+            .then((response: any) => {
+                groupRef.current && groupRef.current?.removeItemFromList(user.uid);
                 removeMemerFromSelectionList(user['uid']);
                 let action: CometChat.Action = new CometChat.Action(group['guid'], MessageTypeConstants.groupMember, CometChat.RECEIVER_TYPE.GROUP, CometChat.CATEGORY_ACTION as CometChat.MessageCategory);
                 action.setActionBy(loggedInUser.current);
                 action.setActionOn(user);
                 action.setActionFor(group);
-                action.setMessage(`${loggedInUser.current.name} banned ${user.name}`);
+                action.setMessage(`${loggedInUser.current?.name} banned ${user.name}`);
                 action.setSentAt(getUnixTimestamp());
                 action.setMuid(String(getUnixTimestampInMilliseconds()));
                 action.setSender(loggedInUser.current);
@@ -260,16 +260,16 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
 
                 CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberBanned, { message: action, kickedUser: user, kickedBy: loggedInUser.current, kickedFrom: group });
             })
-            .catch((err) => {
+            .catch((err: any) => {
                 console.log("ban user", err);
-                onError(err);
+                onError && onError(err);
             })
     }
 
-    const kickUser = (id, user) => {
+    const kickUser = (id: any, user: any) => {
         //logic to kick user
-        CometChat.kickGroupMember(group['guid'], id)
-            .then((response) => {
+        CometChat.kickGroupMember((group as any)['guid'], id)
+            .then((response: any) => {
                 groupRef.current && groupRef.current.removeItemFromList(id);
                 removeMemerFromSelectionList(id);
                 //reducing members count by one
@@ -284,16 +284,16 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 action.setMuid(String(getUnixTimestampInMilliseconds()));
                 action.setSender(loggedInUser.current);
                 action.setReceiver(group);
-                action.setConversationId(group['conversationId'])
+                action.setConversationId((group as any)['conversationId'])
                 CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberKicked, { message: action, kickedUser: user, kickedBy: loggedInUser.current, kickedFrom: group });
             })
-            .catch((err) => {
+            .catch((err: any) => {
                 console.log("kick user", err);
-                onError(err);
+                onError && onError(err);
             })
     }
 
-    const itemPress = (item) => {
+    const itemPress = (item: any) => {
         if (onItemPress) {
             onItemPress(item);
             return;
@@ -307,7 +307,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             setSelectedMembers([...selectedMembers, item]);
     }
 
-    const itemLongPress = (item) => {
+    const itemLongPress = (item: any) => {
         if (onItemLongPress) {
             onItemLongPress(item);
             return;
@@ -349,7 +349,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         );
     }
 
-    const ItemView = ({ item: member, ...props }) => {
+    const ItemView = ({ item: member, ...props }: any) => {
         if (ListItemView)
             return ListItemView(member);
 
@@ -369,7 +369,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             onLongPress={itemLongPress.bind(this, member)}
             SubtitleView={SubtitleView ? () => <SubtitleView {...member} /> : null}  //Note: should return prop to SubtitleView
             statusIndicatorIcon={image}
-            statusIndicatorColor={getStatusIndicatorColor(member)}
+            statusIndicatorColor={getStatusIndicatorColor(member) || undefined}
             title={member.uid == loggedInUser.current.uid ? "You" : member.name}
             avatarName={member.name}
             avatarURL={member.avatar}
@@ -377,9 +377,9 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             avatarStyle={_avatarStyle}
             hideSeparator={hideSeparator}
             separatorColor={_groupMemberStyle?.separatorColor}
-            statusIndicatorStyle={_statusIndicatorStyle}
+            statusIndicatorStyle={_statusIndicatorStyle as ViewProps}
             TailView={TailView ? () => <TailView {...member} /> : ScopeChangeUI.bind(this, member, groupScopeStyle)}  //Note: should return prop to TailView
-            options={() => (options && options(member)) || swipeOptions(member, (id) => kickUser(id, member), () => banUser(member))}  //Note: should have options 
+            options={() => (options && options(member)) || swipeOptions(member, (id: any) => kickUser(id, member), () => banUser(member))}  //Note: should have options 
             activeSwipeRows={activeSwipeRows.current}
             rowOpens={(id) => {
                 Object.keys(activeSwipeRows.current).forEach(key => {
@@ -392,7 +392,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         />
     }
 
-    const ScopeChangeUI = (member, style) => {
+    const ScopeChangeUI = (member: any, style: any) => {
 
         const [showChangeScope, setShowChangeScope] = React.useState(false);
 
@@ -403,15 +403,15 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
             border = new BorderStyle({}),
             borderRadius = 4,
             titleTextFont = new FontStyle({ fontSize: 14 }),
-        } = style || {};
+        }: any = style || {};
 
-        const onOptionSelection = (newScope) => {
+        const onOptionSelection = (newScope: any) => {
             if (member['scope'] == group['scope'] && group['owner'] == member['uid']) {
                 Alert.alert("you can not remove yourself from admin as Transfer Ownership is not yet done.");
                 return;
             }
             CometChat.updateGroupMemberScope(group['guid'], member.uid, newScope)
-                .then((res) => {
+                .then((res: any) => {
                     let updatedMember = { ...member, scope: newScope };
                     groupRef.current?.updateList(updatedMember);
                     setShowChangeScope(false);
@@ -426,14 +426,14 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                     action.setReceiver(group);
                     CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberScopeChanged, { action, updatedUser: updatedMember, scopeChangedTo: newScope, scopeChangedFrom: member.scope, group });
                 })
-                .catch(err => {
+                .catch((err: any) => {
                     console.log("Error:", err);
                     setShowChangeScope(false);
                     onError && onError(err);
                 });
         }
 
-        const OptionButton = ({ title, isCurrent }) => {
+        const OptionButton = ({ title, isCurrent }: any) => {
             return <TouchableOpacity
                 style={{
                     flexDirection: "row", justifyContent: "center",
@@ -452,7 +452,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                         backgroundColor: isCurrent && _groupScopeStyle.selectedOptionBackgroundColor || _groupScopeStyle.backgroundColor || "transparent",
                         borderRadius: isCurrent && _groupScopeStyle.selectedOptionBorderRadius || _groupScopeStyle.optionBorderRadius,
                     }
-                ]}>{title}</Text>
+                ] as TextStyle}>{title}</Text>
             </TouchableOpacity>
         }
 
@@ -475,9 +475,9 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                             backgroundColor: _groupScopeStyle.backgroundColor,
                             borderRadius: _groupMemberStyle.borderRadius,
                             ..._groupScopeStyle.border,
-                        }}>
+                        } as ViewProps}>
                             {
-                                changeScopeOptions.map(option => {
+                                changeScopeOptions.map((option: any) => {
                                     return <OptionButton key={option} title={option} isCurrent={member['scope'] == option} />
                                 })
                             }
@@ -535,8 +535,8 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
      *
      * Listener callback when a member is kicked from / has left the group
      */
-    const handleGroupMemberRemoval = (...options) => {
-        const groupMember = options[1];
+    const handleGroupMemberRemoval = (...options: null[]) => {
+        const groupMember: any = options[1];
         groupRef.current.removeItemFromList(groupMember.uid);
     };
 
@@ -544,7 +544,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
      *
      * Listener callback when a member is banned from the group
      */
-    const handleGroupMemberBan = (...options) => {
+    const handleGroupMemberBan = (...options: any[]) => {
         const groupMember = options[1];
         groupRef.current.removeItemFromList(groupMember.uid);
     };
@@ -553,8 +553,8 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
      *
      * Listener callback when a user joins/added to the group
      */
-    const handleGroupMemberAddition = (...options) => {
-        const groupMember = options[1];
+    const handleGroupMemberAddition = (...options: null[]) => {
+        const groupMember: any = options[1];
         let newGroupMember = { ...groupMember, scope: CometChat.GROUP_MEMBER_SCOPE.PARTICIPANT }
         groupRef.current.addItemToList(newGroupMember);
     };
@@ -563,7 +563,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
      *
      * Listener callback when a group member scope is updated
      */
-    const handleGroupMemberScopeChange = (...options) => {
+    const handleGroupMemberScopeChange = (...options: any[]) => {
         const groupMember = options[1];
         let newScope = { ...groupMember, scope: options[2] };
         groupRef.current.updateList(newScope);
@@ -571,8 +571,8 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
 
     React.useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(u => loggedInUser.current = u)
-            .catch(e => console.log(e));
+            .then((u: any) => loggedInUser.current = u)
+            .catch((e: any) => console.log(e));
         CometChat.addUserListener(
             groupMemberListenerId,
             new CometChat.UserListener({
@@ -601,7 +601,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
         CometChat.addGroupListener(
             groupListenerId,
             new CometChat.GroupListener({
-                onGroupMemberScopeChanged: (message, changedUser, newScope, oldScope, changedGroup) => {
+                onGroupMemberScopeChanged: (message: any, changedUser: any, newScope: any, oldScope: any, changedGroup: any) => {
                     handleGroupMemberScopeChange(
                         message,
                         changedUser,
@@ -610,7 +610,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                         changedGroup
                     );
                 },
-                onGroupMemberKicked: (message, kickedUser, kickedBy, kickedFrom) => {
+                onGroupMemberKicked: (message: any, kickedUser: any, kickedBy: any, kickedFrom: any) => {
                     handleGroupMemberRemoval(
                         message,
                         kickedUser,
@@ -618,10 +618,10 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                         kickedFrom
                     );
                 },
-                onGroupMemberLeft: (message, leavingUser, group) => {
+                onGroupMemberLeft: (message: any, leavingUser: any, group: any) => {
                     handleGroupMemberRemoval(message, leavingUser, null, group);
                 },
-                onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
+                onGroupMemberBanned: (message: any, bannedUser: any, bannedBy: any, bannedFrom: any) => {
                     handleGroupMemberBan(
                         message,
                         bannedUser,
@@ -630,10 +630,10 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                     );
                 },
                 onMemberAddedToGroup: (
-                    message,
-                    userAdded,
-                    userAddedBy,
-                    userAddedIn
+                    message: any,
+                    userAdded: any,
+                    userAddedBy: any,
+                    userAddedIn: any
                 ) => {
                     handleGroupMemberAddition(
                         message,
@@ -642,7 +642,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                         userAddedIn
                     );
                 },
-                onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
+                onGroupMemberJoined: (message: any, joinedUser: any, joinedGroup: any) => {
                     handleGroupMemberAddition(
                         message,
                         joinedUser,

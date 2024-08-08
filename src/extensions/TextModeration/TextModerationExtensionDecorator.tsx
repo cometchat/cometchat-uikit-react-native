@@ -1,4 +1,5 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
 import { ExtensionConstants } from "../ExtensionConstants";

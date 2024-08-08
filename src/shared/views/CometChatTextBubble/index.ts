@@ -1,10 +1,9 @@
-import { CometChatTextBubble, CometChatTextBubbleInterface } from "./CometChatTextBubble";
+import {
+  CometChatTextBubble,
+  CometChatTextBubbleInterface,
+} from "./CometChatTextBubble";
 
 import { TextBubbleStyle, TextBubbleStyleInterface } from "./TextBubbleStyle";
 
-export {
-    CometChatTextBubble,
-    CometChatTextBubbleInterface,
-    TextBubbleStyle,
-    TextBubbleStyleInterface
-}
+export { CometChatTextBubble, TextBubbleStyle };
+export type { CometChatTextBubbleInterface, TextBubbleStyleInterface };

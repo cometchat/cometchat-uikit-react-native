@@ -73,9 +73,9 @@ export const CometChatTransferOwnership = (
     onBack,
     ...newProps
   } = props;
-  const [loggedInUser, setLoggedInUser] = useState<CometChat.User>();
+  const [loggedInUser, setLoggedInUser] = useState<CometChat.User | null>();
 
-  const transferOwnership = (members) => {
+  const transferOwnership = (members: string | any[]) => {
     if(!members.length) return
     let member = members[0];
     let GUID: string = member.guid;
@@ -97,7 +97,7 @@ export const CometChatTransferOwnership = (
         });
         onBack && onBack();
       },
-      (error) => {
+      (error: any) => {
         onError && onError(error);
         console.log('Could not transfer ownership of the group: ', error);
       }
@@ -106,7 +106,7 @@ export const CometChatTransferOwnership = (
 
   useEffect(() => {
     CometChat.getLoggedinUser().then(
-      (loggedUser: CometChat.User) => {
+      (loggedUser: CometChat.User | null) => {
         setLoggedInUser(loggedUser);
       },
       (error: CometChat.CometChatException) => {
@@ -124,7 +124,7 @@ export const CometChatTransferOwnership = (
           return (
             <View>
               <Text style={{color: theme?.palette?.getAccent()}}>
-                {loggedInUser.getUid() === item.owner
+                {loggedInUser?.getUid() === item.owner
                   ? GroupMemberScope.owner
                   : item.scope}
               </Text>

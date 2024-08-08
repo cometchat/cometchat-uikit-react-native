@@ -1,7 +1,7 @@
 //@ts-ignore
 import React, { useState, useRef } from "react";
 //@ts-ignore
-import { Text, View } from "react-native";
+import { Text, TextStyle, View, ViewProps } from "react-native";
 import {
     backIcon, searchIcon,
     passwordGroupIcon, privateGroupIcon,
@@ -199,11 +199,11 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     //context values
     const { theme } = React.useContext<CometChatContextType>(CometChatContext);
 
-    const groupListRef = useRef<CometChatListActionsInterface>(null);
-    const activeSwipeRows = React.useRef({});
+    const groupListRef = useRef<CometChatListActionsInterface | null>(null);
+    const activeSwipeRows = React.useRef<any>({});
 
     const [selecting, setSelecting] = useState(selectionMode != 'none' ? true : false);
-    const [selectedGroups, setSelectedGroups] = useState([]);
+    const [selectedGroups, setSelectedGroups] = useState<any[]>([]);
 
     const _groupsStyle = new GroupsStyle({
         backgroundColor: theme?.palette.getBackgroundColor(),
@@ -268,7 +268,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         else
             return (
                 <View style={Style.listContainer}>
-                    <Text style={{ ..._groupsStyle.errorTextFont, color: _groupsStyle.errorTextColor }}>
+                    <Text style={{ ..._groupsStyle.errorTextFont, color: _groupsStyle.errorTextColor } as TextStyle}>
                         {errorStateText || localize("SOMETHING_WRONG")}
                     </Text>
                 </View>
@@ -281,7 +281,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         else
             return (
                 <View style={Style.listContainer}>
-                    <Text style={{ ..._groupsStyle.emptyTextFont, color: _groupsStyle.emptyTextColor }}>
+                    <Text style={{ ..._groupsStyle.emptyTextFont, color: _groupsStyle.emptyTextColor } as TextStyle}>
                         {emptyStateText || localize("NO_GROUPS_FOUND")}
                     </Text>
                 </View>
@@ -292,63 +292,63 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
      *
      * Listener callback when a member is kicked from / has left the group
      */
-    const handleGroupMemberRemoval = (...options) => {
+    const handleGroupMemberRemoval = (...options: any[]) => {
         const group = options[3];
-        groupListRef.current.updateList(group);
+        groupListRef.current?.updateList(group);
     };
 
     /**
      *
      * Listener callback when a member is banned from the group
      */
-    const handleGroupMemberBan = (...options) => {
+    const handleGroupMemberBan = (...options: any[]) => {
         const group = options[3];
-        groupListRef.current.updateList(group);
+        groupListRef.current?.updateList(group);
     };
 
     /**
      *
      * Listener callback when a user joins/added to the group
      */
-    const handleGroupMemberAddition = (...options) => {
+    const handleGroupMemberAddition = (...options: any[]) => {
         const group = options[3];
-        groupListRef.current.updateList(group);
+        groupListRef.current?.updateList(group);
     };
 
     /**
      *
      * Listener callback when a group member scope is updated
      */
-    const handleGroupMemberScopeChange = (...options) => {
+    const handleGroupMemberScopeChange = (...options: any[]) => {
         const group = options[4];
-        groupListRef.current.updateList(group);
+        groupListRef.current?.updateList(group);
     };
 
     /**
      * This will update group in the list if not found then 
      * @param {object} group Group object
      */
-    const updateGroup = (group) => {
-        groupListRef.current.updateList((grp) => grp["guid"] == group["guid"]);
+    const updateGroup = (group: any) => {
+        groupListRef.current?.updateList((grp: any) => grp["guid"] == group["guid"]);
     }
 
     /**
      * Add the group to the group list at first position.
      * @param {object} group group object
      */
-    const addGroup = (group) => {
-        groupListRef.current.addItemToList((grp) => grp["guid"] == group["guid"], 0);
+    const addGroup = (group: any) => {
+        groupListRef.current?.addItemToList((grp: any) => grp["guid"] == group["guid"], 0);
     }
 
     /**
      * removes the group from the list.
      * @param {object} group Group object
      */
-    const removeGroup = (group) => {
-        groupListRef.current.removeItemFromList(group["guid"])
+    const removeGroup = (group: any) => {
+        groupListRef.current?.removeItemFromList(group["guid"])
         //remove from selected items if present
         if (selecting) {
-            let index = selectedGroups.find(grp => grp['guid'] == group['guid'])
+            let index: any = selectedGroups.find(grp => grp['guid'] == group['guid'])
             if (index > -1) {
                 let selectedItems = [...selectedGroups];
                 selectedItems.splice(index, 1);
@@ -357,7 +357,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         }
     }
 
-    const groupClicked = (group) => {
+    const groupClicked = (group: any) => {
         if (selecting) {
             if (selectionMode == "single") {
                 if (selectedGroups.length > 0 && selectedGroups[0].guid == group.guid)
@@ -379,7 +379,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         onItemPress && onItemPress(group)
     }
 
-    const groupLongPressed = (group) => {
+    const groupLongPressed = (group: any) => {
         if (selectionMode != "none") {
             setSelecting(true);
             if (selectionMode === "multiple")
@@ -395,11 +395,11 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
             groupListenerId,
             new CometChat.GroupListener({
                 onGroupMemberScopeChanged: (
-                    message,
-                    changedUser,
-                    newScope,
-                    oldScope,
-                    changedGroup
+                    message: any,
+                    changedUser: any,
+                    newScope: any,
+                    oldScope: any,
+                    changedGroup: any
                 ) => {
                     handleGroupMemberScopeChange(
                         message,
@@ -409,7 +409,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         changedGroup
                     );
                 },
-                onGroupMemberKicked: (message, kickedUser, kickedBy, kickedFrom) => {
+                onGroupMemberKicked: (message: any, kickedUser: any, kickedBy: any, kickedFrom: any) => {
                     handleGroupMemberRemoval(
                         message,
                         kickedUser,
@@ -417,10 +417,10 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         kickedFrom
                     );
                 },
-                onGroupMemberLeft: (message, leavingUser, group) => {
+                onGroupMemberLeft: (message: any, leavingUser: any, group: any) => {
                     handleGroupMemberRemoval(message, leavingUser, null, group);
                 },
-                onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
+                onGroupMemberBanned: (message: any, bannedUser: any, bannedBy: any, bannedFrom: any) => {
                     handleGroupMemberBan(
                         message,
                         bannedUser,
@@ -429,10 +429,10 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                     );
                 },
                 onMemberAddedToGroup: (
-                    message,
-                    userAdded,
-                    userAddedBy,
-                    userAddedIn
+                    message: any,
+                    userAdded: any,
+                    userAddedBy: any,
+                    userAddedIn: any
                 ) => {
                     handleGroupMemberAddition(
                         message,
@@ -441,7 +441,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         userAddedIn
                     );
                 },
-                onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
+                onGroupMemberJoined: (message: any, joinedUser: any, joinedGroup: any) => {
                     handleGroupMemberAddition(
                         message,
                         joinedUser,
@@ -454,13 +454,13 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         CometChatUIEventHandler.addGroupListener(
             uiEventListener,
             {
-                ccGroupCreated: ({ group }) => {
-                    groupListRef.current.addItemToList(group, 0);
+                ccGroupCreated: ({ group }: any) => {
+                    groupListRef.current?.addItemToList(group, 0);
                 },
-                ccGroupDeleted: ({ group }) => {
+                ccGroupDeleted: ({ group }: any) => {
                     groupListRef.current?.removeItemFromList(group.guid);
                 },
-                ccGroupLeft: ({ leftGroup }) => {
+                ccGroupLeft: ({ leftGroup }: any) => {
                     leftGroup['hasJoined'] = false;
                     leftGroup['membersCount'] = leftGroup['membersCount'] - 1;
                     console.log(leftGroup);
@@ -470,7 +470,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         groupListRef.current?.updateList(leftGroup);
                     }
                 },
-                ccGroupMemberKicked: ({ group }) => {
+                ccGroupMemberKicked: ({ group }: any) => {
                     if (group['type'] == CometChat.GROUP_TYPE.PRIVATE) {
                         groupListRef.current?.removeItemFromList(group.getGuid());
                     } else {
@@ -478,7 +478,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
                         groupListRef.current?.updateList(group);
                     }
                 },
-                ccOwnershipChanged: ({ group }) => {
+                ccOwnershipChanged: ({ group }: any) => {
                     groupListRef.current?.updateList(group);
                 },
                 ccGroupMemberAdded: ({ userAddedIn }: { userAddedIn: CometChat.Group }) => {
@@ -498,13 +498,13 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         }
     }, []);
 
-    const GroupItemView = ({ item }) => {
+    const GroupItemView = ({ item }: any) => {
         //custom view check
         if (ListItemView)
             return ListItemView(item);
 
         const { type, name, icon, membersCount } = item;
-        let image: ImageType, backgroundColor: string = "transparent";
+        let image: ImageType | undefined, backgroundColor: string = "transparent";
         if (type == GroupTypeConstants.password) {
             image = passwordGroupIcon || passwordGroupIcon;
             backgroundColor = PASSWORD_GROUP_COLOR;
@@ -532,10 +532,10 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
             statusIndicatorColor={backgroundColor}
             listItemStyle={_listItemStyle}
             avatarStyle={_avatarStyle}
-            statusIndicatorStyle={_statusIndicatorStyle}
+            statusIndicatorStyle={_statusIndicatorStyle as ViewProps}
             onPress={groupClicked.bind(this, item)}
             onLongPress={groupLongPressed.bind(this, item)}
-            options={() => options && options(item)}
+            options={() => options && options(item) || []}
             activeSwipeRows={activeSwipeRows.current}
             rowOpens={(id) => {
                 Object.keys(activeSwipeRows.current).forEach(key => {

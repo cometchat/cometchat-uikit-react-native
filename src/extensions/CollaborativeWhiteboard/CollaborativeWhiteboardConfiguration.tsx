@@ -16,7 +16,7 @@ export interface CollaborativeWhiteboardConfigurationInterface
     
    }
    export class CollaborativeWhiteboardConfiguration implements CollaborativeWhiteboardConfigurationInterface {
-    collaborativeBubbleStyle: CollaborativeBubbleStyleInterface;
+    collaborativeBubbleStyle?: CollaborativeBubbleStyleInterface;
   
     constructor({
       collaborativeBubbleStyle = undefined,}:

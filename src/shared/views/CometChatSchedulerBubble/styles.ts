@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "rgba(212, 213, 215, 1)",
   },
-  avatarCont: { height: 48, width: 48, border: { borderWidth: 0 } },
+  avatarCont: { height: 48, width: 48 },
   quickContTimeContainer: { paddingHorizontal: 20, paddingTop: 6 },
   quickContMore: {
     alignItems: "center",

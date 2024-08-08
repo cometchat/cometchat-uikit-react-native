@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { OngoingCallStyleInterface } from './OngoingCallStyle';
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatContext } from '../../shared/CometChatContext';
 import { CallingPackage } from '../CallingPackage';
@@ -30,18 +31,18 @@ export const CometChatOngoingCall = (props: CometChatOngoingCallInterface) => {
 
     useEffect(() => {
         CometChat.getLoggedinUser()
-            .then(user => {
+            .then((user: any) => {
                 let authToken = user.getAuthToken();
                 CometChatCalls.generateToken(sessionID, authToken)
-                    .then(token => {
+                    .then((token: any) => {
                         setToken(token.token);
                     })
-                    .catch(rej => {
+                    .catch((rej: any) => {
                         setToken(undefined);
                         onError && onError(rej);
                     })
             })
-            .catch(rej => {
+            .catch((rej: any) => {
                 console.log("Error", rej);
                 onError && onError(rej);
             });

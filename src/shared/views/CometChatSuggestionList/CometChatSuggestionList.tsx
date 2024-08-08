@@ -45,7 +45,7 @@ export const CometChatSuggestionList = (props: CometChatSuggestionListInterface)
                 renderItem={_render}
                 onEndReached={({ distanceFromEnd }) => {
                     if (distanceFromEnd < 0) return;
-                    onEndReached();
+                    onEndReached && onEndReached();
                 }}
                 ItemSeparatorComponent={() => <View style={{ height: 1, marginLeft: 5, backgroundColor: separatorColor }}></View>}
                 onEndReachedThreshold={0.3}

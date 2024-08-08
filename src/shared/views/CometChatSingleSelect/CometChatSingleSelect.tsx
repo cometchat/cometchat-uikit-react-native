@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, TextStyle } from 'react-native'
 import React, { useContext } from 'react'
 import { SingleSelectElement } from '../../modals/InteractiveData'
 import { CometChatContextType } from '../../base'
@@ -38,21 +38,21 @@ const CometChatSingleSelect = (props: CometChatSingleSelectInterface) => {
 
     return (
         <View style={{ marginBottom: 12 }}>
-            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }] as TextStyle}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
             <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap" }}>
                 {data.getOptions().map((option, index) => (
                     <TouchableOpacity style={{
                         width: data.getOptions().length > 2 ? "100%" : "50%",
                         padding: 8, borderRadius: 5, marginTop: 2,
                         alignItems: "center", justifyContent: "center",
-                        borderWidth: border.borderWidth, borderColor: showError ? theme.palette.getError() : border.borderColor,
+                        borderWidth: border?.borderWidth, borderColor: showError ? theme.palette.getError() : border?.borderColor,
                     }}
                         key={index}
                         onPress={() => onChange(option.getValue())}
                     >
                         <Text style={[optionFont, {
                             color: selectedOption === option.getValue() ? optionColorActive : optionColorInactive
-                        }]}>{option.getLabel()}</Text>
+                        }] as TextStyle}>{option.getLabel()}</Text>
                     </TouchableOpacity>
                 ))}
             </View>

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { View, Text } from 'react-native'
+import { View, Text, ViewProps, TextStyle } from 'react-native'
 import { ImageType } from '../../base'
 import { CometChatCardStyle, CometChatCardStyleInterface } from './CometChatCardStyle'
 import { CometChatContext } from '../../CometChatContext'
@@ -49,11 +49,11 @@ export const CometChatCard = (props: CometChatCardInterface) => {
   return (
     <View key={id} style={[
       Style.container,
-      { height, width, backgroundColor, borderRadius, paddingBottom: 32 },
+      { height, width, backgroundColor, borderRadius, paddingBottom: 32 } as ViewProps,
       border
     ]}>
       <View style={{alignItems: "center"}}>
-        <Text style={[{ color: titleColor, marginBottom: 8 }, titleFont]}>{title}</Text>
+        <Text style={[{ color: titleColor, marginBottom: 8 }, titleFont] as TextStyle}>{title?.trim()}</Text>
         {
           SubtitleView && <SubtitleView />
         }

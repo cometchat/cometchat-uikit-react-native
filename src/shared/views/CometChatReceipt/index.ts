@@ -1,9 +1,11 @@
-import { CometChatReceipt, CometChatReceiptInterface } from "./CometChatReceipt";
-import { ReceiptConfiguration, ReceiptConfigurationInterface } from "./MessageConfiguration";
+import {
+  CometChatReceipt,
+  CometChatReceiptInterface,
+} from "./CometChatReceipt";
+import {
+  ReceiptConfiguration,
+  ReceiptConfigurationInterface,
+} from "./MessageConfiguration";
 
-export {
-    CometChatReceipt,
-    ReceiptConfiguration,
-    CometChatReceiptInterface,
-    ReceiptConfigurationInterface
-}
+export { CometChatReceipt, ReceiptConfiguration };
+export type { CometChatReceiptInterface, ReceiptConfigurationInterface };

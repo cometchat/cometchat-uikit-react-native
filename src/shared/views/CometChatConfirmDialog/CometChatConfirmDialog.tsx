@@ -31,12 +31,12 @@ export const CometChatConfirmDialog = (
     cancelButtonText,
     confirmButtonText,
   } = props;
-  const onClick = (option) => {
+  const onClick = (option: any) => {
     if (option === 'confirm') {
-      onConfirm();
+      onConfirm && onConfirm();
     }
     if (option === 'cancel') {
-      onCancel();
+      onCancel && onCancel();
     }
   };
 
@@ -56,7 +56,7 @@ export const CometChatConfirmDialog = (
               Style.titleTextStyle,
               { color: style?.messageTextColor ?? theme.palette.getAccent() },
               style?.titleTextStyle ?? theme.typography.text1,
-            ]}
+            ] as TextStyle}
           >
             {title}
           </Text>
@@ -67,7 +67,7 @@ export const CometChatConfirmDialog = (
                 color: style?.messageTextColor ?? theme.palette.getAccent700(),
               },
               style?.messageTextStyle ?? theme.typography.subtitle1,
-            ]}
+            ] as TextStyle}
           >
             {messageText}
           </Text>
@@ -90,9 +90,9 @@ export const CometChatConfirmDialog = (
                       theme.palette.getPrimary(),
                   },
                   style?.cancelButtonTextFont ?? theme.typography.text2,
-                ]}
+                ] as TextStyle}
               >
-                {cancelButtonText.toUpperCase()}
+                {cancelButtonText?.toUpperCase()}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -113,9 +113,9 @@ export const CometChatConfirmDialog = (
                       theme.palette.getPrimary(),
                   },
                   style?.confirmButtonTextFont ?? theme.typography.text2,
-                ]}
+                ] as TextStyle}
               >
-                {confirmButtonText.toUpperCase()}
+                {confirmButtonText?.toUpperCase()}
               </Text>
             </TouchableOpacity>
           </View>

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Animated, Dimensions, Easing, SafeAreaView } from "react-native";
 import { Style } from "./style";
+//@ts-ignore
 import heart from "./resources/heart.png";
 import { LiveReactionStyles, LiveReactionStylesInterface } from "./LiveReactionstyles";
 import { ImageType } from "../../base";
@@ -64,19 +65,22 @@ const AnimteReaction = ({ left = 0, timeout = 0, onComplete = () => { }, reactio
       left,
       ...style
     }}>
-      <Animated.Image
-        source={reactionIcon}
-        style={{
-          resizeMode: 'contain',
-          height: 25,
-          width: 25,
-          opacity: opacity,
-          transform: [
-            { translateX: signWave },
-            { translateY: signWaveY }
-          ]
-        }}>
-      </Animated.Image>
+      {
+        //@ts-ignore
+        <Animated.Image
+          source={reactionIcon}
+          style={{
+            resizeMode: 'contain',
+            height: 25,
+            width: 25,
+            opacity: opacity,
+            transform: [
+              { translateX: signWave },
+              { translateY: signWaveY }
+            ]
+          }}>
+        </Animated.Image>
+      }
     </View>
   )
 }

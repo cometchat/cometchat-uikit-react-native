@@ -1,6 +1,7 @@
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import React, { useContext, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, StyleProp, Text, TouchableOpacity, View, ViewStyle } from 'react-native'
+import { ActivityIndicator, FlatList, Image, StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native'
 import { DatePattern, ImageType } from '../../shared/base/Types'
 import { CometChatContext, CometChatDate, CometChatListItem, CometChatOptions, ListItemStyleInterface, localize } from '../../shared'
 import { CallLogHistoryStyle, CallLogHistoryStyleInterface } from './CallLogHistoryStyle'
@@ -125,19 +126,19 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
     separatorColor
   } = _style;
 
-  const [list, setList] = useState([]);
+  const [list, setList] = useState<any[]>([]);
   const [listState, setListState] = useState<"loading" | "error" | "done">("loading");
 
-  const activeSwipeRows = React.useRef({});
-  const loggedInUser = useRef(null);
-  const callRequestBuilderRef = useRef(null);
+  const activeSwipeRows = React.useRef<any>({});
+  const loggedInUser = useRef<CometChat.User | any>(null);
+  const callRequestBuilderRef = useRef<any>(null);
 
   function setRequestBuilder() {
     callRequestBuilderRef.current
     let builder = callLogHistoryRequestBuilder ?? new CometChatCalls.CallLogRequestBuilder()
       .setLimit(30)
       // .setUid("superhero2")
-      .setAuthToken(loggedInUser.current.getAuthToken() || "")
+      .setAuthToken(loggedInUser.current?.getAuthToken() || "")
       // .setHasRecording(true)
       .setCallCategory("call")
       // .setCallDirection("outgoing")
@@ -156,14 +157,14 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
   const fetchCallLogHistory = () => {
     setListState("loading");
     callRequestBuilderRef.current.fetchNext()
-      .then(CallLogHistory => {
+      .then((CallLogHistory: any) => {
         console.log(CallLogHistory.length);
         if (CallLogHistory.length > 0) {
           setList([...list, ...CallLogHistory]);
         }
         setListState("done");
       })
-      .catch(err => {
+      .catch((err: any) => {
         onError && onError(err);
         setListState("error");
       });
@@ -171,17 +172,17 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
 
   useEffect(() => {
     CometChat.getLoggedinUser()
-      .then(u => {
+      .then((u: any) => {
         loggedInUser.current = u;
         setRequestBuilder();
         fetchCallLogHistory();
       })
-      .catch(e => {
-        onError(e);
+      .catch((e: any) => {
+        onError && onError(e);
       });
   }, []);
 
-  const DefaultSubtitleView = ({ call }) => {
+  const DefaultSubtitleView = ({ call }: any) => {
 
     if (SubtitleView)
       return SubtitleView(call);
@@ -190,7 +191,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
         <View style={{ width: 70 }}>
           <CometChatDate timeStamp={call['initiatedAt'] * 1000} pattern={datePattern || 'timeFormat'} style={{ textColor: dateTextColor, textFont: dateTextFont }} />
         </View>
-        <Text style={[{ color: callStatusTextColor, marginStart: 2 }, callStatusTextFont]}>
+        <Text style={[{ color: callStatusTextColor, marginStart: 2 }, callStatusTextFont] as TextStyle}>
           {
             CallUtils.getCallStatus(call as CometChat.Call, loggedInUser.current)
           }
@@ -199,10 +200,10 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
     );
   }
 
-  const DefaultTailView = ({ call }) => {
+  const DefaultTailView = ({ call }: any) => {
     return (
       <View style={[Style.row, { alignItems: "center" }]}>
-        <Text style={[{ color: callDurationTextColor, marginStart: 2 }, callDurationTextFont]}>
+        <Text style={[{ color: callDurationTextColor, marginStart: 2 }, callDurationTextFont] as TextStyle}>
           {
             CallUtils.convertMinutesToHoursMinutesSeconds(call['totalDurationInMinutes'])
           }
@@ -211,21 +212,21 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
     )
   }
 
-  const onPress = (item) => {
+  const onPress = (item: any) => {
     onItemPress && onItemPress(item);
     return;
   }
 
-  const getInitiatedAtTimestamp = (item) => {
+  const getInitiatedAtTimestamp = (item: { [x: string]: number }) => {
     return item['initiatedAt'] * 1000;
   }
 
-  const _render = ({ item, index }) => {
+  const _render = ({ item, index }: any) => {
 
     if (ListItemView)
       return <ListItemView call={item} />
 
-    let seperatorView = null;
+    let seperatorView: JSX.Element | null = null;
     const previousMessageDate = list[index - 1] ? new Date(getInitiatedAtTimestamp(list[index - 1])) : null;
     const currentMessageDate = new Date(getInitiatedAtTimestamp(item));
 
@@ -264,7 +265,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
           SubtitleView ? <SubtitleView {...item} /> : <DefaultSubtitleView call={item} />
         }
         TailView={TailView ? () => <TailView call={item} /> : () => <DefaultTailView call={item} />}
-        options={() => options && options(item)}
+        options={() => options && options(item) || []}
         activeSwipeRows={activeSwipeRows.current}
         rowOpens={(id) => {
             Object.keys(activeSwipeRows.current).forEach(key => {
@@ -286,7 +287,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
       return <EmptyStateView />
     return (
       <View style={[Style.container]}>
-        <Text style={[{ color: emptyTextColor, ...emptyTextFont }]}>{emptyStateText || localize("NO_CALL_HISTORY")}</Text>
+        <Text style={[{ color: emptyTextColor, ...emptyTextFont }] as TextStyle}>{emptyStateText || localize("NO_CALL_HISTORY")}</Text>
       </View>
     )
   }
@@ -296,7 +297,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
     if (ErrorStateView)
       return <ErrorStateView />
     return <View style={[Style.container]}>
-      <Text style={[{ color: errorTextColor, ...errorTextFont }]}>{errorStateText || localize("SOMETHING_WRONG")}</Text>
+      <Text style={[{ color: errorTextColor, ...errorTextFont }] as TextStyle}>{errorStateText || localize("SOMETHING_WRONG")}</Text>
     </View>
   }
 
@@ -309,7 +310,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
   }
 
   return (
-    <View style={{ backgroundColor, height, width, borderRadius, ...border }}>
+    <View style={{ backgroundColor, height, width, borderRadius, ...border } as ViewStyle}>
       <View style={[Style.row, Style.headerStyle, { height: 60 }]}>
         <View style={Style.row}>
           {
@@ -322,7 +323,7 @@ export const CometChatCallLogHistory = (props: CometChatCallLogHistoryInterface)
                 />
               </TouchableOpacity> : null
           }
-          <Text style={[{ color: titleColor, ...titleFont }]}>{title}</Text>
+          <Text style={[{ color: titleColor, ...titleFont }] as TextStyle}>{title}</Text>
         </View>
         <View style={Style.row}>
           {

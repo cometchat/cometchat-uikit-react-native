@@ -57,7 +57,7 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
         panelHeightValue._value === 0 ? contentHeight - sliderMinHeight : 0,
       useNativeDriver: false,
     }).start(() => {
-      onClose();
+      onClose && onClose();
     });
     return true;
   };
@@ -72,11 +72,11 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
     return isOpen;
   };
 
-  const _handleScrollEndDrag = ({ nativeEvent }) => {
+  const _handleScrollEndDrag = ({ nativeEvent }: any) => {
     nativeEvent.contentOffset.y === 0 && togglePanel();
   };
 
-  const _setSize = ({ nativeEvent }) => {
+  const _setSize = ({ nativeEvent }: any) => {
     setContentHeight(nativeEvent.layout.height);
   };
 
@@ -115,53 +115,56 @@ const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, r
             style={Styles.greyWrapperStyle}
             onStartShouldSetResponder={() => togglePanel()}
           />
-          <Animated.View
-            onLayout={_setSize}
-            {..._parentPanResponder?.panHandlers}
-            style={{
-              ...Styles.containerStyle,
-              backgroundColor:
-                style?.backgroundColor ?? theme.palette.getBackgroundColor(),
-              shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
-              maxHeight: sliderMaxHeight,
-              minHeight: sliderMinHeight,
-              transform: [
-                { translateY: panelHeightValue },
-                { scale: isOpen ? 1 : 0 },
-              ],
-              paddingHorizontal: style?.paddingHorizontal || 5,
-              borderTopLeftRadius: style?.borderRadius || 30,
-              borderTopRightRadius: style?.borderRadius || 30,
-            }}
-          >
-            <View
-              style={Styles.outerContentStyle}
-              // {..._childPanResponder?.panHandlers}
+          {
+            //@ts-ignore
+            <Animated.View
+              onLayout={_setSize}
+              {..._parentPanResponder?.panHandlers}
+              style={{
+                ...Styles.containerStyle,
+                backgroundColor:
+                  style?.backgroundColor ?? theme.palette.getBackgroundColor(),
+                shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
+                maxHeight: sliderMaxHeight,
+                minHeight: sliderMinHeight,
+                transform: [
+                  { translateY: panelHeightValue },
+                  { scale: isOpen ? 1 : 0 },
+                ],
+                paddingHorizontal: style?.paddingHorizontal || 5,
+                borderTopLeftRadius: style?.borderRadius || 30,
+                borderTopRightRadius: style?.borderRadius || 30,
+              }}
             >
-              <TouchableOpacity
-                onPress={togglePanel.bind(this)}
-                activeOpacity={1}
-                style={{ height: style.lineHeight || 30 }}
+              <View
+                style={Styles.outerContentStyle}
+                // {..._childPanResponder?.panHandlers}
               >
-                <View style={Styles.lineContainerStyle}>
-                  <View
-                    style={[
-                      Styles.lineStyle,
-                      {
-                        backgroundColor:
-                          style?.lineColor ?? theme.palette.getAccent200(),
-                      },
-                    ]}
-                  />
+                <TouchableOpacity
+                  onPress={togglePanel.bind(this)}
+                  activeOpacity={1}
+                  style={{ height: style?.lineHeight || 30 }}
+                >
+                  <View style={Styles.lineContainerStyle}>
+                    <View
+                      style={[
+                        Styles.lineStyle,
+                        {
+                          backgroundColor:
+                            style?.lineColor ?? theme.palette.getAccent200(),
+                        },
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+                <View style={Styles.innerContentStyle}>
+                  {typeof children === 'function'
+                    ? children(_handleScrollEndDrag)
+                    : children}
                 </View>
-              </TouchableOpacity>
-              <View style={Styles.innerContentStyle}>
-                {typeof children === 'function'
-                  ? children(_handleScrollEndDrag)
-                  : children}
               </View>
-            </View>
-          </Animated.View>
+            </Animated.View>
+          }
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -175,8 +178,8 @@ CometChatBottomSheet.defaultProps = {
   sliderMinHeight: 50,
   animation: Easing.quad,
   animationDuration: 200,
-  onOpen: null,
-  onClose: null,
+  onOpen: undefined,
+  onClose: undefined,
   style: {},
 };
 

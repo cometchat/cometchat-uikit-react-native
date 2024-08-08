@@ -1,10 +1,11 @@
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextStyle } from 'react-native';
 import React, { useContext, useLayoutEffect, useRef, useState } from 'react';
 import { FontStyle } from '../../shared/base';
 import { CometChatContext } from "../../shared/CometChatContext";
 import { makeExtentionCall } from '../../shared/utils/CometChatMessageHelper';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { anyObject } from '../../shared/utils';
 
 export interface PollsBubbleStyleInterface {
   questionTextStyle: FontStyle;
@@ -90,17 +91,17 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
     pollsBubbleStyle,
   } = props;
   const { theme } = useContext(CometChatContext);
-  const [optionsList, setOptionsList] = useState([]);
+  const [optionsList, setOptionsList] = useState<any[]>([]);
   const [isResultVisible, setIsResultVisible] = useState(false);
   const [result, setResult] = useState<any>({});
   const [optionsMetaData, setOptionsMetaData] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
   const maxScore = useRef(0);
 
-  const getResult = (self, metadata) => {
-    let allOptions = {};
+  const getResult = (self: boolean, metadata: any) => {
+    let allOptions: anyObject = {};
     if (metadata.results?.options) {
-      for (const [key, value] of Object.entries(metadata.results?.options)) {
+      for (const [key, value] of Object.entries(metadata.results?.options) as any[]) {
         if (typeof value === 'object') {
           if (maxScore.current < value['count'])
             maxScore.current = value['count'];
@@ -119,7 +120,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
 
   const handleResult = ({ id }: any) => {
     let newOptionsMetaData = { ...optionsMetaData };
-    if (loggedInUser['uid'] == senderUid || (newOptionsMetaData.results?.options[id]?.["voters"]?.[loggedInUser['uid']]))
+    if (loggedInUser && ((loggedInUser as any)['uid'] == senderUid || (newOptionsMetaData.results?.options[id]?.["voters"]?.[(loggedInUser as any)['uid']])))
       return;
     setIsLoading(true);
     choosePoll && choosePoll(id);
@@ -127,18 +128,18 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
       vote: id,
       id: pollId ?? optionsMetaData.id,
     })
-      .then((s) => {
+      .then((s: any) => {
         console.log('success', s);
         getResult(false, optionsMetaData);
         setIsLoading(false);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.log(error);
         setIsLoading(false);
       });
   };
 
-  const OptionItem = ({ id, value }) => {
+  const OptionItem = ({ id, value }: any) => {
     return (
       <TouchableOpacity
         key={id}
@@ -147,7 +148,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           style.optionItemContainer,
           {
             backgroundColor:
-              pollsBubbleStyle.pollOptionsBackgroundColor ??
+              pollsBubbleStyle?.pollOptionsBackgroundColor ??
               theme.palette.getBackgroundColor(),
           },
         ]}
@@ -160,9 +161,9 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
               borderBottomRightRadius: result[id]['percent'] > 99 ? 6 : 0,
               backgroundColor:
                 maxScore.current === result[id]['count']
-                  ? pollsBubbleStyle.selectedOptionColor ??
+                  ? pollsBubbleStyle?.selectedOptionColor ??
                   'rgba(51, 153, 255,0.2)'
-                  : pollsBubbleStyle.unSelectedOptionColor ??
+                  : pollsBubbleStyle?.unSelectedOptionColor ??
                   theme.palette.getAccent200(),
               width: result[id] ? `${result[id]['percent']}%` : 0,
             },
@@ -174,7 +175,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
               style.optionsOption,
               {
                 backgroundColor:
-                  pollsBubbleStyle.radioButtonColor ??
+                  pollsBubbleStyle?.radioButtonColor ??
                   theme.palette.getAccent200(),
               },
             ]}
@@ -184,12 +185,12 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
               style.valueText,
               {
                 color:
-                  pollsBubbleStyle.pollOptionsTextColor ??
+                  pollsBubbleStyle?.pollOptionsTextColor ??
                   theme.palette.getAccent(),
               },
               theme.typography.subtitle1,
-              pollsBubbleStyle.pollOptionsTextStyle,
-            ]}
+              pollsBubbleStyle?.pollOptionsTextStyle,
+            ] as TextStyle}
           >
             {value}
           </Text>
@@ -198,25 +199,25 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           style.valueText,
           {
             color:
-              pollsBubbleStyle.pollOptionsTextColor ??
+              pollsBubbleStyle?.pollOptionsTextColor ??
               theme.palette.getAccent(),
           },
           theme.typography.subtitle1,
-          pollsBubbleStyle.pollOptionsTextStyle,
-        ]}>
+          pollsBubbleStyle?.pollOptionsTextStyle,
+        ] as TextStyle}>
           {optionsMetaData.results.options[id].count}
         </Text>
       </TouchableOpacity>
     );
   };
 
-  const getVoters = (metadata) => {
-    let voters: {};
+  const getVoters = (metadata: object) => {
+    let voters: {} = {};
     if (metadata)
       for (const value of Object.values(metadata)) {
         if (typeof value === 'object') {
-          for (const value2 of Object.values(value)) {
-            for (const value3 of Object.values(value2)) {
+          for (const value2 of Object.values(value as object)) {
+            for (const value3 of Object.values(value2) as any) {
               if (value3['voters']) {
                 let votersKey = Object.keys(value3['voters'])[0];
                 voters = {
@@ -233,7 +234,8 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
   };
 
   useLayoutEffect(() => {
-    let allOptions = [];
+    let allOptions: any[] = [];
+    if(options)
     for (const [key, value] of Object.entries(options)) {
       allOptions.push({ id: key, value });
     }
@@ -241,9 +243,9 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
     if (metadata) {
       setOptionsMetaData(metadata);
 
-      loggedInUser['uid'] == senderUid && getResult(true, metadata);
-      let voters = getVoters(metadata);
-      if (voters) voters[loggedInUser['uid']] && getResult(true, metadata);
+      if(loggedInUser) loggedInUser.getUid() == senderUid && getResult(true, metadata);
+      let voters: any = getVoters(metadata);
+      if (voters && loggedInUser) voters[loggedInUser.getUid()] && getResult(true, metadata);
     }
   }, []);
 
@@ -254,11 +256,11 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           theme.typography.subtitle1,
           {
             color:
-              pollsBubbleStyle.questionTextColor ?? theme.palette.getAccent(),
+              pollsBubbleStyle?.questionTextColor ?? theme.palette.getAccent(),
           },
           style.questionText,
-          pollsBubbleStyle.questionTextStyle,
-        ]}
+          pollsBubbleStyle?.questionTextStyle,
+        ] as TextStyle}
       >
         {pollQuestion}
       </Text>
@@ -272,11 +274,11 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           style.voteText,
           {
             color:
-              pollsBubbleStyle.voteCountTextColor ??
+              pollsBubbleStyle?.voteCountTextColor ??
               theme.palette.getAccent600(),
           },
-          pollsBubbleStyle.voteCountTextStyle,
-        ]}
+          pollsBubbleStyle?.voteCountTextStyle,
+        ] as TextStyle}
       >
         {optionsMetaData.results?.total} people voted
       </Text>

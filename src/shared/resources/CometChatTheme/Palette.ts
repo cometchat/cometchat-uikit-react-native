@@ -1,3 +1,5 @@
+import { anyObject } from "../../utils";
+
 type modeType = 'light' | 'dark'
 const modes = {
   light: 'light',
@@ -43,7 +45,7 @@ const opacity = {
   },
 };
 
-const getAccentOpacity = (colorCode, opacity) => {
+const getAccentOpacity = (colorCode: string, opacity: any) => {
   if (colorCode.startsWith('#')) {
     return hexToRGBA(colorCode, opacity);
   }
@@ -51,7 +53,7 @@ const getAccentOpacity = (colorCode, opacity) => {
   return RGBToRGBA(colorCode, opacity);
 };
 
-const hexToRGBA = (hex, opacity) => {
+const hexToRGBA = (hex: string, opacity: string) => {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
@@ -59,7 +61,7 @@ const hexToRGBA = (hex, opacity) => {
   return 'rgba(' + +r + ',' + +g + ',' + +b + ',' + opacity + ')';
 };
 
-const RGBToRGBA = (rgb, opacity) => {
+const RGBToRGBA = (rgb: any, opacity: string) => {
   // Choose correct separator
   let sep = rgb.indexOf(',') > -1 ? ',' : ' ';
   // Turn "rgb(r,g,b)" into [r,g,b]
@@ -80,7 +82,7 @@ const RGBToRGBA = (rgb, opacity) => {
 class PaletteItem {
   light: string
   dark: string
-  constructor({ light = '', dark = '' }) {
+  constructor({ light = '', dark = '' }: anyObject) {
     this.light = light;
     this.dark = dark;
   }
@@ -257,129 +259,129 @@ class Palette {
    * Getters
    */
   getAccent = (mode?: modeType) => {
-    return this.accent[mode || this.mode];
+    return this.accent[mode || this.mode as keyof PaletteItem];
   };
   getAccent50 = (mode?: modeType) => {
-    return this.accent50[mode || this.mode];
+    return this.accent50[mode || this.mode as keyof PaletteItem];
   };
   getAccent100 = (mode?: modeType) => {
-    return this.accent100[mode || this.mode];
+    return this.accent100[mode || this.mode as keyof PaletteItem];
   };
   getAccent200 = (mode?: modeType) => {
-    return this.accent200[mode || this.mode];
+    return this.accent200[mode || this.mode as keyof PaletteItem];
   };
   getAccent300 = (mode?: modeType) => {
-    return this.accent300[mode || this.mode];
+    return this.accent300[mode || this.mode as keyof PaletteItem];
   };
   getAccent400 = (mode?: modeType) => {
-    return this.accent400[mode || this.mode];
+    return this.accent400[mode || this.mode as keyof PaletteItem];
   };
   getAccent500 = (mode?: modeType) => {
-    return this.accent500[mode || this.mode];
+    return this.accent500[mode || this.mode as keyof PaletteItem];
   };
   getAccent600 = (mode?: modeType) => {
-    return this.accent600[mode || this.mode];
+    return this.accent600[mode || this.mode as keyof PaletteItem];
   };
   getAccent700 = (mode?: modeType) => {
-    return this.accent700[mode || this.mode];
+    return this.accent700[mode || this.mode as keyof PaletteItem];
   };
   getAccent800 = (mode?: modeType) => {
-    return this.accent800[mode || this.mode];
+    return this.accent800[mode || this.mode as keyof PaletteItem];
   };
   getAccent900 = (mode?: modeType) => {
-    return this.accent900[mode || this.mode];
+    return this.accent900[mode || this.mode as keyof PaletteItem];
   };
   getSuccess = (mode?: modeType) => {
-    return this.success[mode || this.mode];
+    return this.success[mode || this.mode as keyof PaletteItem];
   };
   getError = (mode?: modeType) => {
-    return this.error[mode || this.mode];
+    return this.error[mode || this.mode as keyof PaletteItem];
   };
   getPrimary = (mode?: modeType) => {
-    return this.primary[mode || this.mode];
+    return this.primary[mode || this.mode as keyof PaletteItem];
   };
   getPrimary13 = (mode?: modeType) => {
-    return this.primary13[mode || this.mode];
+    return this.primary13[mode || this.mode as keyof PaletteItem];
   };
   getPrimary40 = (mode?: modeType) => {
-    return this.primary40[mode || this.mode];
+    return this.primary40[mode || this.mode as keyof PaletteItem];
   }
   getPrimary150 = (mode?: modeType) => {
-    return this.primary150[mode || this.mode];
+    return this.primary150[mode || this.mode as keyof PaletteItem];
   }
   getPrimary500 = (mode?: modeType) => {
-    return this.primary500[mode || this.mode];
+    return this.primary500[mode || this.mode as keyof PaletteItem];
   }
   getSecondary = (mode?: modeType) => {
-    return this.secondary[mode || this.mode];
+    return this.secondary[mode || this.mode as keyof PaletteItem];
   };
   getTertiary = (mode?: modeType) => {
-    return this.tertiary[mode || this.mode];
+    return this.tertiary[mode || this.mode as keyof PaletteItem];
   };
   getBackgroundColor = (mode?: modeType) => {
-    return this.backgroundColor[mode || this.mode];
+    return this.backgroundColor[mode || this.mode as keyof PaletteItem];
   };
 
 
-  setMode(mode) {
+  setMode(mode: string) {
     this.mode = mode;
   }
 
-  setBackground(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setBackground(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.backgroundColor = colorset;
     }
   }
 
-  setPrimary(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setPrimary(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.primary = colorset;
     }
   }
 
-  setPrimary13(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setPrimary13(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.primary13 = colorset;
     }
   }
 
-  setPrimary40(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setPrimary40(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.primary40 = colorset;
     }
   }
 
-  setSecondary(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setSecondary(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.secondary = colorset;
     }
   }
 
-  setTertiary(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setTertiary(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.tertiary = colorset;
     }
   }
 
-  setPrimary150(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setPrimary150(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.primary150 = colorset;
     }
   }
 
-  setPrimary500(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setPrimary500(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.primary500 = colorset;
     }
   }
 
-  setError(colorset) {
-    if (colorset && colorset[modes.light] && colorset[modes.dark]) {
+  setError(colorset: PaletteItem) {
+    if (colorset && colorset[modes.light as keyof PaletteItem] && colorset[modes.dark as keyof PaletteItem]) {
       this.error = colorset;
     }
   }
 
-  setAccent(colorset) {
+  setAccent(colorset: { [x: string]: any; light: any; dark: any; }) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.setAccent900({
         [modes.light]: colorset[modes.dark],
@@ -487,7 +489,7 @@ class Palette {
     }
   }
 
-  setAccent50(colorset) {
+  setAccent50(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent50 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -496,7 +498,7 @@ class Palette {
     }
   }
 
-  setAccent100(colorset) {
+  setAccent100(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent100 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -505,7 +507,7 @@ class Palette {
     }
   }
 
-  setAccent200(colorset) {
+  setAccent200(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent200 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -514,7 +516,7 @@ class Palette {
     }
   }
 
-  setAccent300(colorset) {
+  setAccent300(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent300 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -523,7 +525,7 @@ class Palette {
     }
   }
 
-  setAccent400(colorset) {
+  setAccent400(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent400 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -532,7 +534,7 @@ class Palette {
     }
   }
 
-  setAccent500(colorset) {
+  setAccent500(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent500 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -541,7 +543,7 @@ class Palette {
     }
   }
 
-  setAccent600(colorset) {
+  setAccent600(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent600 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -550,7 +552,7 @@ class Palette {
     }
   }
 
-  setAccent700(colorset) {
+  setAccent700(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent700 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -559,7 +561,7 @@ class Palette {
     }
   }
 
-  setAccent800(colorset) {
+  setAccent800(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent800 = new PaletteItem({
         [modes.light]: colorset[modes.light],
@@ -568,7 +570,7 @@ class Palette {
     }
   }
 
-  setAccent900(colorset) {
+  setAccent900(colorset: any) {
     if (colorset && colorset[modes.light] && colorset[modes.dark]) {
       this.accent900 = new PaletteItem({
         [modes.light]: colorset[modes.light],

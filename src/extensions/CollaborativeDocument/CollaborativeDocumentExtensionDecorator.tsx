@@ -1,5 +1,6 @@
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 // @ts-ignore
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MetadataConstants, MessageCategoryConstants, ReceiverTypeConstants } from "../../shared/constants/UIKitConstants";
 import { CometChatTheme } from "../../shared/resources/CometChatTheme";
@@ -93,7 +94,7 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
                 id: "document",
                 title: localize("COLLABORATIVE_DOCUMENT"),
                 iconUrl: DOCUMENTICON,
-                onPress: (user, group) => {
+                onPress: (user: any, group: any) => {
                     this.shareCollaborativedocument(user, group);
                 },
             });
@@ -106,8 +107,8 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
             isBottomSheetVisible: false,
         });
         
-        let receiverId :string;
-        let receiverType: string;
+        let receiverId: string = '';
+        let receiverType: string = '';
 
         if(user!=undefined){
             
@@ -129,9 +130,9 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
             receiver: receiverId,
             receiverType: receiverType,
           }
-        ).then(response => {
+        ).then((response: any) => {
            console.log("extension sent ",response )
-        }).catch((error) => {
+        }).catch((error: object) => {
             console.log("error", error);
             CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageError, error);
         });
@@ -148,17 +149,17 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
         templateList.push(new CometChatMessageTemplate({
             type: ExtensionTypeConstants.document,
             category: MessageCategoryConstants.custom,
-            ContentView: (message: CometChat.BaseMessage, _alignment: MessageBubbleAlignmentType) => {
+            ContentView: (message: CometChat.BaseMessage, _alignment?: MessageBubbleAlignmentType) => {
                 if (this.isDeletedMessage(message)) {
                     return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
                 } else {
                     return this.getCollaborativeBubble(message, _alignment);
                 }
             },
-            options: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group: CometChat.Group)=>
+            options: (loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group)=>
 
             ChatConfigurator.dataSource.getMessageOptions(loggedInUser, messageObject,group),
-            BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+            BottomView: (message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType) => {
                 return ChatConfigurator.dataSource.getBottomView(message, alignment);
             }
         }));
@@ -168,7 +169,7 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
     }
 
 
-    getCollaborativeBubble(message: CometChat.BaseMessage, _alignment: MessageBubbleAlignmentType){
+    getCollaborativeBubble(message: CometChat.BaseMessage, _alignment?: MessageBubbleAlignmentType){
         if (message) {
 
 

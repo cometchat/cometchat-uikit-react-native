@@ -1,10 +1,18 @@
+//@ts-ignore
 import Activity from "./resources/activity.png";
+//@ts-ignore
 import Animals from "./resources/animals.png";
+//@ts-ignore
 import Smileys from "./resources/smileys.png";
+//@ts-ignore
 import Symbols from "./resources/symbols.png";
+//@ts-ignore
 import Objects from "./resources/objects.png";
+//@ts-ignore
 import Travel from "./resources/travel.png";
+//@ts-ignore
 import Flags from "./resources/flags.png";
+//@ts-ignore
 import Food from "./resources/food.png";
 
 export const Emojis = [

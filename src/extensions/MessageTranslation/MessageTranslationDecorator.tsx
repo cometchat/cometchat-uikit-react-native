@@ -22,10 +22,12 @@ import { ICONS } from './resources';
 import { CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, MentionTextStyle } from '../../shared';
 import { CommonUtils } from '../../shared/utils/CommonUtils';
 import { AdditionalBubbleStylingParams, MessageBubbleAlignmentType } from '../../shared/base/Types';
+import { TextStyle } from 'react-native';
+import { anyObject } from '../../shared/utils';
 export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
   messageTranslationConfiguration?: MessageTranslationConfigurationInterface;
 
-  translatedMessage = {};
+  translatedMessage: anyObject = {};
   constructor(
     dataSource: DataSource,
     messageTranslationConfiguration?: MessageTranslationConfigurationInterface
@@ -54,7 +56,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     return optionsList;
   }
 
-  getTranslateOption(messageObject): CometChatMessageOption {
+  getTranslateOption(messageObject: any): CometChatMessageOption {
     return {
       id: MessageOptionConstants.translateMessage,
       title: localize('TRANSLATE'),
@@ -65,7 +67,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     };
   }
 
-  getSetMetaData = (messageObj, messageTranslation) => {
+  getSetMetaData = (messageObj: any, messageTranslation: any) => {
     let metaData = messageObj.getMetadata();
     if (!metaData) {
       metaData = {};
@@ -127,7 +129,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
       metaData: metaData['@injected']['extensions']['translate'],
     };
   };
-  translateMessage = (message) => {
+  translateMessage = (message: any) => {
     const messageId = message.id;
     const messageText = message.text;
     let translateToLanguage = CometChatLocalize.getLocale();
@@ -144,7 +146,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
         languages: [translateToLanguage],
       }
     )
-      .then((result) => {
+      .then((result: any) => {
         if (
           result?.hasOwnProperty('translations') &&
           result['translations']['length']
@@ -171,7 +173,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
           );
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.log(error);
       });
   };
@@ -182,9 +184,9 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     alignment: MessageBubbleAlignmentType,
     theme: CometChatTheme,
     additionalParams?: AdditionalBubbleStylingParams
-  ): JSX.Element {
-    let tempTranslatedMsg = {};
-    let translatedMetaData = message.getMetadata();
+  ): JSX.Element | null{
+    let tempTranslatedMsg: anyObject = {};
+    let translatedMetaData: any = message.getMetadata();
     if (
       translatedMetaData &&
       translatedMetaData['@injected'] &&
@@ -199,7 +201,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     let mentionedUsers = message.getMentionedUsers();
     let textFormatters = [...(additionalParams?.textFormatters || [])] || [];
 
-    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser);
+    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser as any);
     linksTextFormatter.setMessage(message);
     linksTextFormatter.setId("ccDefaultUrlsFormatterId")
     textFormatters.push(linksTextFormatter);
@@ -207,8 +209,8 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     if (!additionalParams?.disableMentions && mentionedUsers && mentionedUsers.length) {
 
       let mentionsTextFormatter =
-        ChatConfigurator.getDataSource().getMentionsFormatter(loggedInUser);
-      mentionsTextFormatter.setLoggedInUser(loggedInUser);
+        ChatConfigurator.getDataSource().getMentionsFormatter(loggedInUser as any);
+      loggedInUser && mentionsTextFormatter.setLoggedInUser(loggedInUser);
       mentionsTextFormatter.setMessage(message);
       mentionsTextFormatter.setId("ccDefaultMentionFormatterId")
       let isUserSentMessage = alignment === "right";
@@ -218,11 +220,11 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
             loggedInUserTextStyle: {
               color: theme.palette.getTertiary(),
               ...theme.typography.title2,
-            },
+            } as TextStyle,
             textStyle: {
               color: theme.palette.getTertiary(),
               ...theme.typography.subtitle1,
-            },
+            }  as TextStyle,
           })
         );
       } else {
@@ -231,11 +233,11 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
             loggedInUserTextStyle: {
               color: theme.palette.getPrimary(),
               ...theme.typography.title2,
-            },
+            } as TextStyle,
             textStyle: {
               color: theme.palette.getPrimary(),
               ...theme.typography.subtitle1,
-            },
+            } as TextStyle,
           })
         );
       }
@@ -243,7 +245,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
       textFormatters.push(mentionsTextFormatter);
 
     }
-    let finalFormatters = [];
+    let finalFormatters: any[] = [];
 
     let customerHasPassedUrlsFormatter;
 

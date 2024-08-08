@@ -1,9 +1,11 @@
 import {
   ReactNativeZoomableViewState,
   ReactNativeZoomableViewWithGesturesProps,
+  ZoomableViewEvent,
 } from './types';
 import React from 'react';
 import ReactNativeZoomableView from './ReactNativeZoomableView';
+import { GestureResponderEvent, PanResponderGestureState } from 'react-native';
 
 export const swipeDirections = {
   SWIPE_UP: 'SWIPE_UP',
@@ -23,7 +25,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
     this.zoomableViewRef = React.createRef<ReactNativeZoomableView>();
   }
 
-  _onShiftingEnd = (e, gestureState, zoomableViewState) => {
+  _onShiftingEnd = (e: GestureResponderEvent, gestureState: PanResponderGestureState, zoomableViewState: ZoomableViewEvent) => {
     if (this.props.onShiftingEnd) {
       this.props.onShiftingEnd(e, gestureState, zoomableViewState);
     }
@@ -42,7 +44,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    * @returns {*}
    * @private
    */
-  _couldCallSwipeEvent(zoomableViewState) {
+  _couldCallSwipeEvent(zoomableViewState: { zoomLevel: number; }) {
     const {
       onSwipe,
       onSwipeUp,
@@ -72,7 +74,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    *
    * @private
    */
-  _validateSwipe(gestureState) {
+  _validateSwipe(gestureState: any) {
     const { onSwipeUp, onSwipeDown, onSwipeLeft, onSwipeRight } = this.props;
     const swipeDirection = this._getSwipeDirection(gestureState);
     const { SWIPE_LEFT, SWIPE_RIGHT, SWIPE_UP, SWIPE_DOWN } = swipeDirections;
@@ -92,7 +94,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    * @param gestureState
    * @private
    */
-  _triggerSwipeHandlers(swipeDirection, gestureState) {
+  _triggerSwipeHandlers(swipeDirection: any, gestureState: PanResponderGestureState) {
     const { onSwipe, onSwipeUp, onSwipeDown, onSwipeLeft, onSwipeRight } =
       this.props;
     const { SWIPE_LEFT, SWIPE_RIGHT, SWIPE_UP, SWIPE_DOWN } = swipeDirections;
@@ -126,7 +128,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    * @returns {*}
    * @private
    */
-  _getSwipeDirection(gestureState) {
+  _getSwipeDirection(gestureState: any) {
     const { swipeLengthThreshold } = this.props;
     const { SWIPE_LEFT, SWIPE_RIGHT, SWIPE_UP, SWIPE_DOWN } = swipeDirections;
     const { dx, dy } = gestureState;
@@ -156,7 +158,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    *
    * @private
    */
-  _isValidHorizontalSwipe(gestureState) {
+  _isValidHorizontalSwipe(gestureState: { vx: any; dy: any; }) {
     const { vx, dy } = gestureState;
     const { swipeVelocityThreshold, swipeDirectionalThreshold } = this.props;
     return this._isValidSwipe(
@@ -175,7 +177,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    *
    * @private
    */
-  _isValidVerticalSwipe(gestureState) {
+  _isValidVerticalSwipe(gestureState: { vy: any; dx: any; }) {
     const { vy, dx } = gestureState;
     const { swipeVelocityThreshold, swipeDirectionalThreshold } = this.props;
     return this._isValidSwipe(
@@ -199,10 +201,10 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
    * @private
    */
   _isValidSwipe(
-    velocity,
-    swipeVelocityThreshold,
-    directionalOffset,
-    swipeDirectionalThreshold
+    velocity: number,
+    swipeVelocityThreshold: any,
+    directionalOffset: number,
+    swipeDirectionalThreshold: any
   ) {
     return (
       Math.abs(velocity) > swipeVelocityThreshold &&

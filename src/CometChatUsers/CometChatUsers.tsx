@@ -88,7 +88,7 @@ export interface CometChatUsersInterface
    * Function which have {item: userObject, index: number } as prop and returns a JSX Element to render in place of tail view in list item
    *
    */
-  ListItemView?: ListRenderItem<CometChat.User>;
+  ListItemView?: (item: any) => JSX.Element | null;
 }
 
 export interface CometChatUsersActionsInterface
@@ -124,26 +124,26 @@ export const CometChatUsers = React.forwardRef<
       new CometChat.UserListener({
         onUserOnline: (onlineUser: any) => {
           /* when someuser/friend comes online, user will be received here */
-          userRef.current.updateList(onlineUser);
+          userRef.current?.updateList(onlineUser);
         },
         onUserOffline: (offlineUser: any) => {
           /* when someuser/friend went offline, user will be received here */
-          userRef.current.updateList(offlineUser);
+          userRef.current?.updateList(offlineUser);
         },
       })
     );
     return () => CometChat.removeUserListener(userListenerId);
   }, []);
 
-  const handleccUserBlocked = ({ user }) => {
-    userRef.current.updateList({
+  const handleccUserBlocked = ({ user }: any) => {
+    userRef.current?.updateList({
       ...user,
       blockedByMe: true,
       hasBlockedMe: true,
     });
   };
-  const handleccUserUnBlocked = ({ user }) => {
-    userRef.current.updateList({
+  const handleccUserUnBlocked = ({ user }: any) => {
+    userRef.current?.updateList({
       ...user,
       blockedByMe: false,
       hasBlockedMe: false,
@@ -152,8 +152,8 @@ export const CometChatUsers = React.forwardRef<
 
   useEffect(() => {
     CometChatUIEventHandler.addUserListener(userListenerId, {
-      ccUserBlocked: (item) => handleccUserBlocked(item),
-      ccUserUnBlocked: (item) => handleccUserUnBlocked(item),
+      ccUserBlocked: (item: any) => handleccUserBlocked(item),
+      ccUserUnBlocked: (item: any) => handleccUserUnBlocked(item),
     });
     return () => {
       CometChatUIEventHandler.removeUserListener(userListenerId);
@@ -163,12 +163,12 @@ export const CometChatUsers = React.forwardRef<
   return (
     <View style={{ flex: 1, width: '100%', height: '100%' }}>
       <CometChatList
-        listItemKey="uid"
         ref={userRef}
         title={'Users'}
         requestBuilder={usersRequestBuilder}
         listStyle={usersStyle}
-        {...newProps}
+        {...newProps as CometChatListProps}
+        listItemKey="uid"
       />
     </View>
   );

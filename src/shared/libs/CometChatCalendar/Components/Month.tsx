@@ -1,4 +1,5 @@
 import React from 'react';
+//@ts-ignore
 import dayjs from 'dayjs';
 import { Text, TouchableOpacity } from 'react-native';
 import { ThemeContext } from '../Contexts';

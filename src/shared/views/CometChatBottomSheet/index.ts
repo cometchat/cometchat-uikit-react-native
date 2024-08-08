@@ -1,3 +1,7 @@
-import { CometChatBottomSheet, CometChatBottomSheetInterface } from "./CometChatBottomSheet";
+import {
+  CometChatBottomSheet,
+  CometChatBottomSheetInterface,
+} from "./CometChatBottomSheet";
 
-export { CometChatBottomSheet, CometChatBottomSheetInterface }
+export { CometChatBottomSheet };
+export type { CometChatBottomSheetInterface };

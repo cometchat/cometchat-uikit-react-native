@@ -2,6 +2,7 @@ import { ExtensionsDataSource, ChatConfigurator, DataSource } from "../../shared
 import { TextModerationExtensionDecorator } from "./TextModerationExtensionDecorator";
 import { TextModerationConfiguration, TextModerationConfigurationInterface } from "./TextModerationConfiguration";
 import { ExtensionConstants } from "../ExtensionConstants";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 
 

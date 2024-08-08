@@ -1,4 +1,5 @@
 import { StickerKeyboardStyle, StickerKeyboardStyleInterface } from "./StickerKeyboardStyle";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 
 /**
@@ -11,7 +12,7 @@ import { CometChat } from "@cometchat/chat-sdk-react-native";
 class StickerKeyboardConfiguration {
   onPress: (item: CometChat.CustomMessage) => void
   style: StickerKeyboardStyleInterface
-  constructor({ onPress = null, style = new StickerKeyboardStyle({}) }) {
+  constructor({ onPress, style = new StickerKeyboardStyle({}) }: any) {
     this.onPress = onPress;
     this.style = new StickerKeyboardStyle(style ?? {});
   }

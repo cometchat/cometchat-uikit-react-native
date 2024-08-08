@@ -1,7 +1,7 @@
 interface IThis {
   safeAreaInsets: {
-    top: number | null;
-    bottom: number | null;
+    top: number | null | any;
+    bottom: number | null | any;
   }
 }
 

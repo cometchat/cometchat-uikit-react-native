@@ -1,3 +1,4 @@
+//@ts-ignore
 import {CometChat} from '@cometchat/chat-sdk-react-native'
 import { emptyIcon, errorIcon, loadingIcon } from "./resources";
 export class AIBaseConfiguration {

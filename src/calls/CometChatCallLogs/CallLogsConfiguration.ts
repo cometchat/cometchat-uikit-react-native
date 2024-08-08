@@ -1,4 +1,5 @@
-import { StyleProp, ViewStyle } from "react-native/types";
+import { StyleProp, ViewStyle } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { AvatarStyleInterface, CometChatOptions, ImageType, ListItemStyleInterface } from "../../shared";
 import { CallLogsStyleInterface } from "./CallLogsStyle";
@@ -48,8 +49,8 @@ export class CallLogsConfiguration implements CallLogsConfigurationInterface {
     AppBarOptions?: () => JSX.Element
     options?: (param: { message: CometChat.BaseMessage }) => CometChatOptions[]
     callRequestBuilder?: any
-    datePattern?: DatePattern
-    dateSeparatorPattern?: DatePattern
+    datePattern!: DatePattern
+    dateSeparatorPattern!: DatePattern;
     hideSeperator?: boolean
     BackButton?: JSX.Element
     showBackButton?: boolean
@@ -80,6 +81,7 @@ export class CallLogsConfiguration implements CallLogsConfigurationInterface {
     constructor(props: CallLogsConfigurationInterface) {
         if (props) {
             for (const [key, value] of Object.entries(props)) {
+                //@ts-ignore
                 this[key] = value;
             }
         }

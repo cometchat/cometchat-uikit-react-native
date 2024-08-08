@@ -1,6 +1,5 @@
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
-import { CometChatTextFormatter } from '../views';
 
 export const USER_ONLINE_STATUS = 'online'
 export const NO_USERS_FOUND = "no_users_found";
@@ -50,6 +49,8 @@ export const ON_CONVERSATION_ITEM_CLICK = "onConversationItemClicked"
 
 export const PRIVATE_GROUP_COLOR = "rgb(0, 200, 111)";
 export const PASSWORD_GROUP_COLOR = "rgb(247, 165, 0)";
+
+export const IMAGE_PREFETCH_MAX_ATTEMPTS = 5;
 
 const wordBoundary = {
 	start: `(?:^|:|;|'|"|,|{|}|\\.|\\s|\\!|\\?|\\(|\\)|\\[|\\]|\\*)`,
@@ -113,6 +114,20 @@ export const GroupMemberOptionConstants = {
 	leave: 'leave',
 	transferOwnership: 'transferOwnership',
 };
+
+export const groupMemberAction = Object.freeze({
+	ROLE: "role",
+	BLOCK: "block",
+	REMOVE: "remove",
+	JOINED: CometChat.ACTION_TYPE.MEMBER_JOINED,
+	LEFT: CometChat.ACTION_TYPE.MEMBER_LEFT,
+	ADDED: CometChat.ACTION_TYPE.MEMBER_ADDED,
+	BANNED: CometChat.ACTION_TYPE.MEMBER_BANNED,
+	UNBANNED: CometChat.ACTION_TYPE.MEMBER_UNBANNED,
+	KICKED: CometChat.ACTION_TYPE.MEMBER_KICKED,
+	INVITED: CometChat.ACTION_TYPE.MEMBER_INVITED,
+	SCOPE_CHANGE: CometChat.ACTION_TYPE.MEMBER_SCOPE_CHANGED,
+})
 
 export const UserOptionConstants = {
 	blockUnblock: "blockUnblock",

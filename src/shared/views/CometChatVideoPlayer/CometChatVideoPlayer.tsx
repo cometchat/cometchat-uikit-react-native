@@ -78,7 +78,7 @@ export const CometChatVideoPlayer = (props:CometChatVideoPlayer) => {
             paused={isPaused} 
             onLoadStart={handleLoadStart}
             onLoad={handleLoad}
-            onError={(e) => {
+            onError={(e: any) => {
               console.warn("Video Error: ", e.error);
               handleClose();
             }}

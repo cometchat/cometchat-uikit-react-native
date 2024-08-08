@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react'
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { View, Text, TextInput, Dimensions, TouchableOpacity, Image, FlatList } from 'react-native'
+import { View, Text, TextInput, Dimensions, TouchableOpacity, Image, FlatList, TextStyle } from 'react-native'
 import { AIAssistBotConfiguration } from './configuration';
 import { CometChatBottomSheet, CometChatContext, CometChatContextType, CometChatDate, CometChatListItem, CometChatReceipt, CometChatTextBubble, CometChatTheme, localize } from '../../shared';
 import { CloseIcon } from './resources';
@@ -11,13 +12,14 @@ import { CometChatMessageBubble } from '../../shared/views/CometChatMessageBubbl
 import { ReceiverTypeConstants } from '../../shared/constants/UIKitConstants';
 import { AIBotMessageBubbleStyle, AISenderMessageBubbleStyle } from './AIAssistBotStyle';
 import { MessageBubbleAlignmentType } from '../../shared/base/Types';
+import { TextInputStyle } from '../../shared/views/CometChatTextInput/TextInputStyle';
 
 interface AIAssistBotViewProps {
     title: string;
-    configuration: AIAssistBotConfiguration;
+    configuration?: AIAssistBotConfiguration;
     closeCallback: () => void,
     bot: CometChat.User,
-    sender: CometChat.User,
+    sender: CometChat.User | any,
     onSend: (question: string, bot: CometChat.User) => Promise<any>
 }
 
@@ -27,7 +29,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
     const { theme } = useContext<CometChatContextType>(CometChatContext);
 
     const [question, setQuestion] = useState("");
-    const [messages, setMessages] = useState([]);
+    const [messages, setMessages] = useState<any[]>([]);
 
     const style = {
         titleColor: configuration?.style?.titleColor || theme.palette.getAccent(),
@@ -66,7 +68,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
         message.setMuid(String(getUnixTimestampInMilliseconds()));
         message.setSender(bot);
 
-        let newMessages = [...messages];
+        let newMessages: any[] = [...messages];
         newMessages.unshift(message);
 
         setMessages(newMessages);
@@ -103,7 +105,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
 
         onSend(question, bot)
             .then(botReply => {
-                const message = new CometChat.TextMessage(
+                const message: any = new CometChat.TextMessage(
                     sender?.getUid(),
                     botReply,
                     ReceiverTypeConstants.user
@@ -136,11 +138,11 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
         setQuestion("")
     }
 
-    const RenderMessageItem = ({ item, index }) => {
+    const RenderMessageItem = ({ item, index }: any) => {
         const contentView = (message: any,
             theme: CometChatTheme,
             alignment: MessageBubbleAlignmentType,
-            configuration: AIAssistBotConfiguration): JSX.Element => {
+            configuration?: AIAssistBotConfiguration): JSX.Element => {
             let style: AIBotMessageBubbleStyle | AISenderMessageBubbleStyle = {};
 
             if (alignment === "right") {
@@ -180,7 +182,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
                 return "left";
             }
         }
-        function getMessageBubbleStyle(message: CometChat.TextMessage, theme: CometChatTheme, sender: CometChat.User, configuration: AIAssistBotConfiguration): any {
+        function getMessageBubbleStyle(message: CometChat.TextMessage | any, theme: CometChatTheme, sender: CometChat.User, configuration?: AIAssistBotConfiguration): any {
             if (message.sender?.getUid() === sender?.getUid()) {
                 const style = configuration?.senderMessageBubbleStyle || {};
                 return {
@@ -201,7 +203,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
             }
         };
 
-        const getFooterView = (item: CometChat.BaseMessage, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
+        const getFooterView = (item: CometChat.BaseMessage | any, bubbleAlignment: MessageBubbleAlignmentType): JSX.Element => {
 
             let isSender = (item.getSender()?.getUid() || item['sender']['uid']) == (sender?.getUid() || sender['uid']);
 
@@ -236,7 +238,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
         )
     }
 
-    const keyExtractor = useCallback((item) => `${item.getMuid()}`, [])
+    const keyExtractor = useCallback((item: any) => `${item.getMuid()}`, [])
 
     return (
         <CometChatBottomSheet
@@ -253,7 +255,7 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
                         avatarStyle={configuration?.avatarStyle}
                         avatarName={title || bot.getName()}
                         avatarURL={bot.getAvatar() ? { uri: bot.getAvatar() } : undefined}
-                        SubtitleView={() => <Text style={[{ color: subtitleColor }, subtitleFont]}>{localize("COMETCHAT_ASK_BOT_SUBTITLE")}</Text>}
+                        SubtitleView={() => <Text style={[{ color: subtitleColor }, subtitleFont] as TextStyle}>{localize("COMETCHAT_ASK_BOT_SUBTITLE")}</Text>}
                         TailView={() => <TouchableOpacity onPress={onClose}>
                             <Image style={{ width: 20, height: 20, tintColor: closeIconTint }} source={configuration?.closeIconURL || CloseIcon} />
                         </TouchableOpacity>}
@@ -280,10 +282,10 @@ const AIAssistBotView = (props: AIAssistBotViewProps) => {
                             style={[{
                                 padding: 8, flex: 1, borderWidth: 1, borderColor: theme.palette.getAccent500(), borderRadius: 20,
                                 marginLeft: 10, color: style.messageInputStyle.textColor,
-                            }, style.messageInputStyle.placeholderTextFont, style.messageInputStyle.textFont]}
+                            }, style.messageInputStyle.placeholderTextFont, style.messageInputStyle.textFont] as TextInputStyle}
                             onChangeText={onChangeText}
                         />
-                        <TouchableOpacity activeOpacity={!question && 1} onPress={onMsgSend}>
+                        <TouchableOpacity  onPress={onMsgSend} {...(question? {activeOpacity: 1} : {})}>
                             <Image style={{ width: 30, height: 30, tintColor: sendIconTint, marginHorizontal: 10 }} source={configuration?.sendIconURL || ICONS.SEND} />
                         </TouchableOpacity>
                     </View>

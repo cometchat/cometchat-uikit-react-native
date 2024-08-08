@@ -1,16 +1,15 @@
 import {
-    CometChatThreadedMessages,
-    CometChatThreadedMessagesInterface,
-    ThreadedMessagesStyleInterface
-} from './CometChatThreadedMessages';
+  CometChatThreadedMessages,
+  CometChatThreadedMessagesInterface,
+  ThreadedMessagesStyleInterface,
+} from "./CometChatThreadedMessages";
 import {
-    ThreadedMessagesConfiguration,
-    ThreadedMessagesConfigurationInterface
+  ThreadedMessagesConfiguration,
+  ThreadedMessagesConfigurationInterface,
 } from "./ThreadedMessagesConfiguration";
-export {
-    CometChatThreadedMessages,
-    CometChatThreadedMessagesInterface,
-    ThreadedMessagesConfiguration,
-    ThreadedMessagesConfigurationInterface,
-    ThreadedMessagesStyleInterface,
+export { CometChatThreadedMessages, ThreadedMessagesConfiguration };
+export type {
+  CometChatThreadedMessagesInterface,
+  ThreadedMessagesConfigurationInterface,
+  ThreadedMessagesStyleInterface,
 };

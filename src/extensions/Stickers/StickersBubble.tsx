@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Image } from "react-native";
+import { Image, ImageStyle } from "react-native";
 import { StickerStyle, StickerStyleInterface } from "./StickerStyle";
 import { CometChatContext } from "../../shared/CometChatContext";
 
@@ -46,9 +46,9 @@ export const CometChatStickerBubble = (props: CometChatStickerBubbleProps) => {
             style={{
                 height, width,
                 borderRadius,
-                borderWidth: border.borderWidth,
-                borderColor: border.borderColor
-            }}
+                borderWidth: border?.borderWidth,
+                borderColor: border?.borderColor
+            } as ImageStyle}
         />
     )
 }

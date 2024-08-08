@@ -8,11 +8,15 @@ import {
   ViewStyle,
   Image,
   FlatList,
+  TextProps,
+  TextStyle,
+  ViewProps,
   //@ts-ignore
 } from 'react-native';
 import { CometChatAvatar } from "../../views/CometChatAvatar";
 import { CometChatStatusIndicator } from '../../views/CometChatStatusIndicator';
 import { CometChatContext } from "../../CometChatContext";
+//@ts-ignore
 import SwipeRow from '../../helper/SwipeRow';
 import { ListItemStyle } from './ListItemStyle';
 import { Style } from './style';
@@ -20,6 +24,7 @@ import { ImageType } from '../../base';
 import { AvatarStyleInterface } from '../CometChatAvatar/AvatarStyle';
 import { CometChatOptions } from '../../modals';
 import { CometChatContextType } from '../../base/Types';
+import { anyObject } from '../../utils';
 
 /**
  *
@@ -35,9 +40,9 @@ export interface CometChatListItemInterface {
   statusIndicatorIcon?: ImageType;
   statusIndicatorStyle?: StyleProp<ViewStyle>;
   title?: string;
-  SubtitleView?: React.FC;
+  SubtitleView?: React.FC | null;
   options?: () => CometChatOptions[];
-  TailView?: React.FC;
+  TailView?: React.FC | null;
   hideSeparator?: boolean;
   separatorColor?: string;
   listItemStyle?: ListItemStyle;
@@ -46,7 +51,7 @@ export interface CometChatListItemInterface {
   headViewContainerStyle?: StyleProp<ViewStyle>;
   tailViewContainerStyle?: StyleProp<ViewStyle>;
   bodyViewContainerStyle?: StyleProp<ViewStyle>;
-  activeSwipeRows?: Object;
+  activeSwipeRows?: anyObject;
   rowOpens?: (id: string | number) => void;
 }
 export const CometChatListItem = (props: CometChatListItemInterface) => {
@@ -77,7 +82,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
     activeSwipeRows
   } = props;
   
-  const swipeRowRef = useRef(null)
+  const swipeRowRef = useRef<any>(null)
   const defaultlistItemStyleProps = new ListItemStyle({
     backgroundColor: theme.palette.getBackgroundColor(),
     titleColor: theme.palette.getAccent(),
@@ -96,7 +101,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
     },
   };
 
-  const [swipeRowOptions, setSwipeRowOptions] = useState([]);
+  const [swipeRowOptions, setSwipeRowOptions] = useState<any[]>([]);
   let cancelClick = false;
 
   useEffect(() => {
@@ -154,9 +159,9 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
               color: listItemStyle.titleColor,
             },
             listItemStyle.titleFont,
-          ]}
+          ] as StyleProp<TextStyle> }
         >
-          {title}
+          {title?.trim()}
         </Text>
       </View>
     );
@@ -185,7 +190,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
   };
 
   const rowOpened = () => {
-    activeSwipeRows[id] = swipeRowRef
+    if(activeSwipeRows) activeSwipeRows[id] = swipeRowRef
     rowOpens && rowOpens(id)
     cancelClick = true;
   };
@@ -200,7 +205,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
   const TailViewFc = () => {
     return (
       <View style={[Style.tailViewStyle, tailViewContainerStyle ?? {}]}>
-        <TailView />
+       {Boolean(TailView) && typeof(TailView) === 'function'  && <TailView />}
       </View>
     );
   };
@@ -208,7 +213,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
   /**
    * Component to be display the Options in list after swipe
    */
-  const OptionsListItem = ({ item }) => {
+  const OptionsListItem = ({ item }: any) => {
     return (
       <TouchableOpacity
         onPress={() => item.onPress(id)}
@@ -245,7 +250,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
     );
   };
 
-  let ListComponent = ((onPress && typeof onPress == 'function') || (onLongPress && typeof onLongPress == 'function')) ? TouchableOpacity : View;
+  let ListComponent: any = ((onPress && typeof onPress == 'function') || (onLongPress && typeof onLongPress == 'function')) ? TouchableOpacity : View;
   let listComponentProps = ((onPress && typeof onPress == 'function') || (onLongPress && typeof onLongPress == 'function')) ? {
     activeOpacity: 1,
     onPress: clickHandler,
@@ -273,7 +278,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
           {
             height: listItemStyle.height ?? 50,
           },
-        ]}
+        ] as ViewProps}
       >
         <View onLayout={onLayout} style={Style.optionStyleContainer}>
           {swipeRowOptions.length !== 0 && (
@@ -309,7 +314,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
         >
           <View style={[Style.middleViewStyle, bodyViewContainerStyle ?? {}]}>
             {Boolean(title) && <TitleView />}
-            {Boolean(SubtitleView) && <SubtitleView />}
+            {Boolean(SubtitleView) && typeof(SubtitleView) === 'function' && <SubtitleView />}
           </View>
           {Boolean(TailView) && <TailViewFc />}
         </View>

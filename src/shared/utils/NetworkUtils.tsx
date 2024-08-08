@@ -19,7 +19,7 @@ export class CometChatNetworkUtils {
 
 }
 
-export function isHttpUrl(string) {
+export function isHttpUrl(string: string | undefined) {
     if (String(string).startsWith('https://') || String(string).startsWith('http://')) {
         return true
     } else {

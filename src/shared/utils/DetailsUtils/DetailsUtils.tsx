@@ -9,6 +9,7 @@ import {
 
 import { CometChatDetailsOption, CometChatOptions, CometChatDetailsTemplate } from '../../modals';
 import { localize } from '../../resources/CometChatLocalize';
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { ICONS } from "./resources";
 import { CometChatTheme } from '../../resources/CometChatTheme';
@@ -135,7 +136,7 @@ export const getCometChatDetailsTemplate = (
   return props;
 };
 
-export const getDefaultGroupMemberOptions = (group: CometChat.Group, groupMember: CometChat.GroupMember, theme: CometChatTheme) => {
+export const getDefaultGroupMemberOptions = (group: CometChat.Group | any, groupMember: CometChat.GroupMember | any, theme: CometChatTheme) => {
   let arr: CometChatOptions[] = [];
   if (validateGroupMemberOptions(group['scope'], groupMember['scope'], GroupMemberOptionBan))
     arr.push({
@@ -170,7 +171,7 @@ export function validateGroupMemberOptions(
   return undefined;
 }
 
-var _allowedGroupMemberOptions = new Map();
+var _allowedGroupMemberOptions: any = new Map();
 
 //participant
 _allowedGroupMemberOptions[

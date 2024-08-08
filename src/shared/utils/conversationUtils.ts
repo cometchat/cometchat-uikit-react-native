@@ -1,7 +1,9 @@
 import { localize } from "../resources/CometChatLocalize";
 import { CometChatOptions } from "../modals/CometChatOptions";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MessageTypeConstants } from "../constants/UIKitConstants";
+import { MessageUtils } from "./MessageUtils";
 
 export class CometChatConversationUtils {
 
@@ -15,7 +17,7 @@ export class CometChatConversationUtils {
         return options;
     }
 
-    static getLastMessage(conversation: CometChat.Conversation): CometChat.BaseMessage {
+    static getLastMessage(conversation: CometChat.Conversation): CometChat.BaseMessage | undefined {
         let msg = conversation?.getLastMessage && conversation?.getLastMessage();
         if (!msg) {
             return undefined;
@@ -70,18 +72,18 @@ export class CometChatConversationUtils {
                 if ((lastMessage as CometChat.Action)?.getAction() === CometChat.ACTION_TYPE.MESSSAGE_DELETED) {
                     return localize("THIS_MESSAGE_DELETED");
                 }
-                msgText = (lastMessage as CometChat.Action).getMessage();
+                msgText = MessageUtils.getActionMessage(lastMessage);
             } else if (lastMessage.getCategory() === CometChat.CATEGORY_INTERACTIVE) {
                 msgText = lastMessage.getType() === "form" 
                     ? `${localize('FORM')} 📋` 
                     : lastMessage.getType() === MessageTypeConstants.scheduler 
-                    ? (lastMessage?.interactiveData?.title ? 
-                        `🗓️ ${lastMessage?.interactiveData?.title}` 
+                    ? ((lastMessage as any)?.interactiveData?.title ? 
+                        `🗓️ ${(lastMessage as any)?.interactiveData?.title}` 
                         : `🗓️ ${localize('MEET_WITH')} ${lastMessage?.getSender()?.getName()}`)
                     : `${localize('CARD')} 🪧`;
             }
             else {
-                msgText = lastMessage['metaData']?.pushNotification;
+                msgText = (lastMessage as any)['metaData']?.pushNotification;
             }
             return (msgText)
         } else {

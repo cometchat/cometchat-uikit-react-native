@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+//@ts-ignore
 import type { Dayjs } from 'dayjs';
 
 import type { DateProperties, Theme, DayComponentType } from '../Entities';

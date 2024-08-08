@@ -4,14 +4,14 @@ import { ICONS } from './resources';
 import { ImageType } from '../../shared';
 
 interface HeaderInterface {
-  title: string;
-  titleStyle: any;
-  closeIconTint: string;
-  createIconTint: string;
-  joinIcon: ImageType;
-  closeIcon: ImageType;
-  onCancel: () => void;
-  onSubmit: () => void;
+  title?: string;
+  titleStyle?: any;
+  closeIconTint?: string;
+  createIconTint?: string;
+  joinIcon?: ImageType;
+  closeIcon?: ImageType;
+  onCancel?: () => void;
+  onSubmit?: () => void;
 }
 const Header = (props: HeaderInterface) => {
   const {

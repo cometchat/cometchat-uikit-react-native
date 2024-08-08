@@ -5,7 +5,8 @@ import { CometChatContext, CometChatTheme, localize } from '../../shared';
 import { AIConversationSummaryConfiguration } from './configuration';
 import { CometChatPanel } from '../../shared/views/CometChatPanel/CometChatPanel';
 import CometChatAICard from '../../shared/views/CometChatAICard/CometChatAICard';
-
+//@ts-ignore
+import { CometChat } from "@cometchat/chat-sdk-react-native";
 interface IAIConversationSummaryProps {
     getConversationSummaryCallback?: (theme?: CometChatTheme) => Promise<string>
     editReplyCallback?: (reply: string) => void
@@ -106,7 +107,7 @@ const AIConversationSummaryView = (props: IAIConversationSummaryProps) => {
 
             <CometChatAICard
                 state={States.loading}
-                style={props.configuration?.conversationSummaryStyle}
+                style={props.configuration?.conversationSummaryStyle || {}}
                 loadingIconURL={props.configuration?.loadingIconURL}
                 loadingStateText={loadingStateText}
             >
@@ -123,7 +124,7 @@ const AIConversationSummaryView = (props: IAIConversationSummaryProps) => {
         return (
             <CometChatAICard
                 state={States.error}
-                style={props.configuration?.conversationSummaryStyle}
+                style={props.configuration?.conversationSummaryStyle || {}}
                 errorIconURL={props.configuration?.errorIconURL}
                 errorStateText={errorStateText}
             >
@@ -140,7 +141,7 @@ const AIConversationSummaryView = (props: IAIConversationSummaryProps) => {
         return (
             <CometChatAICard
                 state={States.empty}
-                style={props.configuration?.conversationSummaryStyle}
+                style={props.configuration?.conversationSummaryStyle || {}}
                 emptyIconURL={props.configuration?.emptyIconURL}
                 emptyStateText={emptyStateText}
             >

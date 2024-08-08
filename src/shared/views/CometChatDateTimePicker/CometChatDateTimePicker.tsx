@@ -5,20 +5,23 @@ import {
   Image,
   TouchableOpacity,
   Platform,
+  TextStyle,
 } from "react-native";
 import React, { useState, useContext, useLayoutEffect } from "react";
 import DateTimePickerModal from "../../libs/datePickerModal";
 import { ICONS } from "../../assets/images";
 import { CometChatContextType } from "../../base";
 import { CometChatContext } from "../../CometChatContext";
+//@ts-ignore
 import { DateTime } from "../../libs/luxon/src/luxon";
 import { convertToATimeZone } from "../../utils/SchedulerUtils";
+//@ts-ignore
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { styles } from "./DateTimePickerStyle";
+import { DatePickerStyleInterface, styles } from "./DateTimePickerStyle";
 import { DateTimeElement } from "../../modals";
 
 export interface CometChatDateTimePickerInterface {
-  style: object;
+  style: DatePickerStyleInterface;
   data: DateTimeElement;
   showError: boolean;
   onChange: (selectedDateTime: string) => void;
@@ -35,14 +38,14 @@ export const CometChatDateTimePicker = (
 
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
-  const [defaultTime, setDefaultTime] = useState(data.getDefaultValue() ?? "");
-  const [selectedDate, setSelectedDate] = useState();
-  const [fromDateTime, setFromDateTime] = useState(
+  const [defaultTime, setDefaultTime] = useState<string | DateTime>(data.getDefaultValue() ?? "");
+  const [selectedDate, setSelectedDate] = useState<string | DateTime | Date>();
+  const [fromDateTime, setFromDateTime] = useState<string | DateTime>(
     data.getFromDateTime() ?? ""
   );
-  const [toDateTime, setToDateTime] = useState(data.getToDateTime() ?? "");
+  const [toDateTime, setToDateTime] = useState<string | DateTime>(data.getToDateTime() ?? "");
 
-  const onDateSelected = (e) => {
+  const onDateSelected = (e: any) => {
     setSelectedDate(() => {
       if (mode === "time" && Platform.OS === "ios") {
         return selectedDate;
@@ -55,14 +58,14 @@ export const CometChatDateTimePicker = (
     }
     if (mode === "time") {
       if (Platform.OS === "ios") {
-        e = DateTime.fromJSDate(selectedDate).toFormat("HH:mm");
+        e = DateTime.fromJSDate(selectedDate as Date).toFormat("HH:mm");
       } else e = DateTime.fromISO(e).toFormat("HH:mm");
     }
 
     onChange && onChange(e);
   };
 
-  const formatDate = (time, fromJSDate = false) => {
+  const formatDate = (time: any, fromJSDate = false) => {
     if (time && format) {
       if (fromJSDate)
         return DateTime.fromJSDate(new Date(time)).toFormat(format);
@@ -71,7 +74,7 @@ export const CometChatDateTimePicker = (
     return "";
   };
 
-  const convertToATimeZoneWithModes = (time) => {
+  const convertToATimeZoneWithModes = (time: any) => {
     switch (mode) {
       case "dateTime":
         return convertToATimeZone(time, timeZone, "toISO", "fromISO");
@@ -121,13 +124,13 @@ export const CometChatDateTimePicker = (
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           date={
-            selectedDate instanceof Date ? selectedDate : new Date(selectedDate)
+            selectedDate instanceof Date ? selectedDate : new Date(selectedDate as string)
           }
-          mode={mode?.toLowerCase() || "datetime"}
+          mode={(mode?.toLowerCase() || "datetime") as "date" | "time" | "datetime"}
           onConfirm={onDateSelected}
           onCancel={() => setDatePickerVisibility(false)}
-          minimumDate={new Date(fromDateTime)}
-          maximumDate={new Date(toDateTime)}
+          minimumDate={new Date(fromDateTime as string)}
+          maximumDate={new Date(toDateTime as string)}
           display={Platform.OS === "ios" ? "inline" : "default"}
           {...(Platform.OS === "ios" && mode?.toLowerCase() === "time"
             ? {
@@ -136,12 +139,12 @@ export const CometChatDateTimePicker = (
                     value={
                       selectedDate instanceof Date
                         ? selectedDate
-                        : new Date(selectedDate)
+                        : new Date(selectedDate as string)
                     }
                     mode="time"
                     is24Hour={true}
                     display="spinner"
-                    onChange={(event, date) => {
+                    onChange={(event: any, date: any) => {
                       setSelectedDate(date);
                     }}
                   />
@@ -155,7 +158,7 @@ export const CometChatDateTimePicker = (
           theme.typography.subtitle1,
           { color: theme.palette.getAccent800() ?? style.titleColor, marginBottom: 4 },
           style.titleFont || {},
-        ]}
+        ] as TextStyle}
       >
         {data.getLabel()}
         {!data.getOptional() && "*"}

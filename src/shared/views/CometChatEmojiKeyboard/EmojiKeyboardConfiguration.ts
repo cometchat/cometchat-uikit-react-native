@@ -10,8 +10,9 @@ import { EmojiKeyboardStyle } from "./EmojiKeyboardStyle";
 
 class EmojiKeyboardConfiguration {
   // hideSearch?: boolean;
-  onClick?: (emoji: string) => void;
+  onClick?: null | ((emoji: string) => void);
   style?: EmojiKeyboardStyle;
+  theme?: {};
   constructor({
     hideSearch = true,
     onClick = null,

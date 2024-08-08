@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 import { CallLogDetailsConfigurationInterface } from "../CometChatCallLogDetails";
 import { CallLogsConfigurationInterface } from "../CometChatCallLogs/CallLogsConfiguration";

@@ -1,4 +1,4 @@
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, Text, TextStyle, View, ViewProps, ViewStyle } from 'react-native';
 import React, { useContext, useEffect, useState } from 'react';
 import {
   CometChatContext,
@@ -42,8 +42,8 @@ export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
   const [formattedTranslatedText, setFormattedTranslatedText] = useState<string>();
 
   useEffect(() => {
-    let _formattedText = text;
-    let _formattedTranslatedText = text;
+    let _formattedText: string = text || '';
+    let _formattedTranslatedText: string = text || '';
     if (textFormatters && textFormatters.length) {
         if (textFormatters) {
             for (let i = 0; i < textFormatters.length; i++) {
@@ -122,13 +122,13 @@ export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
           },
           border,
           textContainerStyle,
-        ]}
+        ] as ViewProps}
       >
-        <Text style={[{ color: textColor }, textFont ]}>{formattedText}</Text>
-        <Text style={[styles.textsPadding, style.translatedTextStyle]}>
+        <Text style={[{ color: textColor }, textFont ] as TextStyle}>{formattedText}</Text>
+        <Text style={[styles.textsPadding, style.translatedTextStyle] as TextStyle}>
           {formattedTranslatedText}
         </Text>
-        <Text style={[styles.textsPadding, style.translatedMsgStyle]}>
+        <Text style={[styles.textsPadding, style.translatedMsgStyle] as TextStyle}>
           Translated Message
         </Text>
       </View>

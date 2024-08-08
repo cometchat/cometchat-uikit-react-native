@@ -26,3 +26,5 @@ export {
   getDefaultGroupMemberOptions,
   validateGroupMemberOptions,
 };
+
+export type { anyObject } from './TypeUtils'

@@ -1,3 +1,4 @@
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { DetailsConfigurationInterface } from "../CometChatDetails";
 import { MessageComposerConfigurationInterface } from "../CometChatMessageComposer";
@@ -47,6 +48,7 @@ export class MessagesConfiguration implements MessagesConfigurationInterface {
     constructor(props: MessagesConfigurationInterface) {
         if (props)
             for (const [key, value] of Object.entries(props)) {
+                //@ts-ignore
                 this[key] = value;
             }
     }

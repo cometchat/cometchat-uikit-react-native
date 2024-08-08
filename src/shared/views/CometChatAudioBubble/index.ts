@@ -1,16 +1,12 @@
 import {
-    AudioBubbleStyle,
-    AudioBubbleStyleInterface
+  AudioBubbleStyle,
+  AudioBubbleStyleInterface,
 } from "./AudioBubbleStyle";
 
-import { 
-    CometChatAudioBubble,
-    CometChatAudioBubbleInterface
- } from "./CometChatAudioBubble";
+import {
+  CometChatAudioBubble,
+  CometChatAudioBubbleInterface,
+} from "./CometChatAudioBubble";
 
- export {
-    AudioBubbleStyle,
-    AudioBubbleStyleInterface,
-    CometChatAudioBubble,
-    CometChatAudioBubbleInterface
- }
+export { AudioBubbleStyle, CometChatAudioBubble };
+export type { AudioBubbleStyleInterface, CometChatAudioBubbleInterface };

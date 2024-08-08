@@ -9,6 +9,8 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ViewProps,
+  TextStyle,
 } from 'react-native';
 import { EmojiKeyboardConfiguration } from './EmojiKeyboardConfiguration';
 
@@ -44,7 +46,7 @@ const CategoryList = React.forwardRef<
       updateCategory: updateCategory
     }
   });
-  const updateCategory = (newCategory, index) => {
+  const updateCategory = (newCategory: any, index: any) => {
     setActiveCategory(newCategory);
   }
 
@@ -94,30 +96,19 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
 
   const { onClick, style } = props;
 
-  const {
-    categoryBackground,
-    categoryIconTint,
-    sectionHeaderColor,
-    sectionHeaderFont,
-    selectedCategoryIconTint,
-    backgroundColor,
-    height,
-    width
-  } = style;
+  const emojiRef = useRef<any>(null);
+  const categoryRef = useRef<any>(null);
 
-  const emojiRef = useRef(null);
-  const categoryRef = useRef(null);
-
-  const changeCategory = (id, index) => {
+  const changeCategory = (id: string, index: number | undefined) => {
     if (index != undefined && index >= 0)
-      emojiRef.current.scrollToIndex({ index, animated: true });
+      emojiRef.current?.scrollToIndex({ index, animated: true });
   };
 
   const handleEvent = (emoji: string) => {
     onClick && onClick(emoji);
   };
 
-  const emojiRender = useCallback(({ item }) => {
+  const emojiRender = useCallback(({ item }: any) => {
     return (
       <TouchableOpacity
         onPress={handleEvent.bind(this, item.char)}
@@ -125,7 +116,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           Styles.listStyle,
           {
             backgroundColor:
-              backgroundColor ||
+              style?.backgroundColor ||
               theme?.palette?.getBackgroundColor(),
           },
         ]}
@@ -136,7 +127,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
             {
               color: theme?.palette?.getPrimary(),
             },
-          ]}
+          ] as TextStyle}
         >
           {item.char}
         </Text>
@@ -144,7 +135,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
     );
   }, []);
 
-  const emojiListRender = useCallback(({ item }) => {
+  const emojiListRender = useCallback(({ item }: any) => {
     let keys = Object.keys(item);
     const { id, name, emojis } = item[keys[0]];
     let emojiList = Object.values(emojis);
@@ -155,9 +146,9 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           style={[
             Styles.emojiCategoryTitle,
             theme?.typography?.caption1,
-            sectionHeaderFont,
-            { color: sectionHeaderColor || theme?.palette?.getAccent500() },
-          ]}
+            style?.sectionHeaderFont,
+            { color: style?.sectionHeaderColor || theme?.palette?.getAccent500() },
+          ] as TextStyle}
         >
           {name}
         </Text>
@@ -172,7 +163,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
     );
   }, []);
 
-  const categoryKeyExtractor = useCallback((item) => {
+  const categoryKeyExtractor = useCallback((item: any) => {
     let id = item[Object.keys(item)[0]].id;
     return id;
   }, []);
@@ -182,12 +173,12 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
       style={[
         Styles.emojiContainerStyle,
         {
-          width: width,
-          height: height,
+          width: style?.width,
+          height: style?.height,
           backgroundColor:
-            backgroundColor ||
+            style?.backgroundColor ||
             theme?.palette?.getBackgroundColor(),
-        },
+        } as ViewProps,
       ]}
     >
       <FlatList
@@ -216,11 +207,11 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
         style={[
           Styles.emojiTabLsitStyle,
           {
-            width: width,
+            width: style?.width,
             backgroundColor:
-              categoryBackground ||
+              style?.categoryBackground ||
               theme?.palette?.getBackgroundColor(),
-          },
+          } as ViewProps,
         ]}
       >
         <CategoryList
@@ -228,8 +219,8 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           theme={theme}
           onCategorySelected={(id, index) => changeCategory(id, index)}
           style={{
-            categoryIconTint: categoryIconTint,
-            selectedCategoryIconTint: selectedCategoryIconTint,
+            categoryIconTint: style?.categoryIconTint,
+            selectedCategoryIconTint: style?.selectedCategoryIconTint,
           }}
         />
       </View>

@@ -1,5 +1,6 @@
 // @ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { anyObject } from './TypeUtils';
 
 export class CommonUtils {
 
@@ -102,4 +103,79 @@ export class CommonUtils {
         return true;
     }
 
+    /**
+     * 
+     * @param {number} timestamp
+     * @returns {string} - ${Today/Yesterday/Week Of the Day/DD MONTH}, ${Year if not equal to current year} HH:MM AM/PM
+     * 
+     * Example return values:
+     * - "Today 5:15 PM"
+     * - "Yesterday 11:45 AM"
+     * - "Wed 2:30 PM"
+     * - "17 July 2:30 PM"
+     * - "17 July, 2023 2:30 PM"
+     */
+    static getFormattedDateTime = (timestamp: number) => {
+        const monthNames = [
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December',
+          ];
+        const weekNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+        const date = new Date(timestamp * 1000);
+    
+        const getWeekOfDay = () => {
+          const weekDay = date.getDay();
+          return weekNames[weekDay];
+        };
+    
+        const getMonthAndDay = () => {
+          const day = date.getDate();
+          const month = monthNames[date.getMonth()];
+          return `${day} ${month}`;
+        };
+    
+        const getMonthDayAndYear = () => {
+          const day = date.getDate();
+          const month = monthNames[date.getMonth()];
+          const year = date.getFullYear();
+          return `${day} ${month}, ${year}`;
+        };
+    
+        const getTimeFormat = () => {
+          let hours = date.getHours();
+          const minutes =
+            date.getMinutes() < 10 ? `0${date.getMinutes()}` : date.getMinutes();
+          const postString = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12 || 12;
+          return `${hours}:${minutes} ${postString}`;
+        };
+    
+        const today = new Date();
+        const diff = today.getTime() - date.getTime();
+        const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const isCurrentYear = today.getFullYear() === date.getFullYear();
+    
+        if (diffDays === 0) {
+          return `Today ${getTimeFormat()}`;
+        } else if (diffDays === 1) {
+          return `Yesterday ${getTimeFormat()}`;
+        } else if (diffDays < 7) {
+          return `${getWeekOfDay()} ${getTimeFormat()}`;
+        } else if (isCurrentYear) {
+          return `${getMonthAndDay()} ${getTimeFormat()}`;
+        } else {
+          return `${getMonthDayAndYear()} ${getTimeFormat()}`;
+        }
+      };
 }

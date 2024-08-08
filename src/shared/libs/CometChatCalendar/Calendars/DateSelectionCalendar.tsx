@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
+//@ts-ignore
 import dayjs from 'dayjs';
+//@ts-ignore
 import utc from 'dayjs/plugin/utc';
 
 import BaseCalendarWrappedInProviders from './Providers';

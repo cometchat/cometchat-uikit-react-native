@@ -3,11 +3,11 @@ export class SuggestionItem {
     /**
      * Unique identifier of item
      */
-    id: string;
+    id!: string;
     /**
      * Name to be displayed in the list
      */
-    name: string;
+    name!: string;
     /**
      * Avatar Icon Url
      */
@@ -24,18 +24,18 @@ export class SuggestionItem {
     /**
      * Name to be displayed in the composer
      */
-    promptText: string;
+    promptText!: string;
     /**
      * underlying text
      * @example <@uid:superhero1>
      */
-    underlyingText: string;
+    underlyingText!: string;
     /**
      * set a tracking character.
      * @description string length has be 1.
      * @example '@' | '#' etc.
     */
-    trackingCharacter: string
+    trackingCharacter!: string;
     /**
      * extra data to be passed in JSON format
      */

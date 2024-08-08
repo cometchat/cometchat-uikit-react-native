@@ -1,6 +1,6 @@
 import React from 'react';
 // @ts-ignore
-import { Image, View, StyleProp, ViewStyle } from 'react-native';
+import { Image, View, StyleProp, ViewStyle, ViewProps, ImageStyle } from 'react-native';
 import { Styles } from './styles';
 import { StatusIndicatorStyle } from './StatusIndicatorStyle';
 import { ImageType } from '../../base';
@@ -39,20 +39,20 @@ export const CometChatStatusIndicator = (
         source = { uri: backgroundImage };
       else source = backgroundImage;
       return (
-        <View style={[Styles.getStyle, style]}>
+        <View style={[Styles.getStyle, style as ViewProps]}>
           <Image
             style={[
               Styles.imageStyles,
               {
                 height: style?.height,
                 width: style?.width,
-              },
+              } as ImageStyle,
             ]}
             source={source}
           />
         </View>
       );
-    } else return <View style={[Styles.getStyle, style]} />;
+    } else return <View style={[Styles.getStyle, style as ViewProps]} />;
   };
 
   return getView();

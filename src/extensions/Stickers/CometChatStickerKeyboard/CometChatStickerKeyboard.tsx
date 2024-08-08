@@ -5,12 +5,14 @@ import { Styles } from "./style";
 import { localize } from "../../../shared/resources/CometChatLocalize";
 import { CometChatTheme } from "../../../shared/resources/CometChatTheme";
 import { ExtensionConstants } from "../../ExtensionConstants";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
+import { anyObject } from "../../../shared/utils";
 
 export interface CometChatStickerKeyboardInterface {
   loadingText?: string,
   theme?: CometChatTheme,
-  onPress?: (item: CometChat.CustomMessage) => void,
+  onPress?: (item: CometChat.CustomMessage | anyObject) => void,
   emptyText?: string,
   errorText?: string,
 }
@@ -27,8 +29,8 @@ export interface CometChatStickerKeyboardInterface {
  */
 
 export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterface) => {
-  const [stickerList, setStickerList] = React.useState([]);
-  const [stickerSet, setStickerSet] = React.useState(null);
+  const [stickerList, setStickerList] = React.useState<any>([]);
+  const [stickerSet, setStickerSet] = React.useState<any>(null);
   const [activeStickerList, setActiveStickerList] = React.useState([]);
   const [activeStickerSetName, setActiveStickerSetName] = React.useState();
   const [decoratorMessage, setDecoratorMessage] = React.useState(
@@ -36,25 +38,25 @@ export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterfac
   );
 
   const theme = new CometChatTheme(props?.theme || {});
-  const sendStickerMessage = (stickerItem) => {
+  const sendStickerMessage = (stickerItem: { stickerUrl: any; stickerSetName: any; }) => {
     if(stickerItem && typeof stickerItem === 'object')
-      props?.onPress({
+      props?.onPress && props?.onPress({
         ...stickerItem,
         sticker_url: stickerItem?.stickerUrl,
         sticker_name: stickerItem?.stickerSetName
       });
   };
 
-  const onStickerSetClicked = (sectionItem) => {
+  const onStickerSetClicked = (sectionItem: any) => {
     setActiveStickerList(stickerSet[sectionItem]);
     setActiveStickerSetName(sectionItem);
   };
 
   const getStickerList = () => {
-    let activeStickers = [];
+    let activeStickers: any[] = [];
     if (activeStickerList && activeStickerList?.length) {
       const stickerList = [...activeStickerList];
-      activeStickers = stickerList.map((stickerItem, key) => {
+      activeStickers = stickerList.map((stickerItem: any, key) => {
         return (
           <TouchableOpacity
             key={key}
@@ -74,7 +76,7 @@ export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterfac
   };
 
   const getStickerCategory = () => {
-    let sectionItems = null;
+    let sectionItems: any = null;
     if (stickerSet && Object.keys(stickerSet).length) {
       sectionItems = Object.keys(stickerSet).map((sectionItem, key) => {
         const stickerSetThumbnail =
@@ -97,7 +99,7 @@ export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterfac
   };
 
   const getDecoratorMessage = () => {
-    let messageContainer = null;
+    let messageContainer: any = null;
     if (activeStickerList?.length === 0) {
       messageContainer = (
         <View style={Styles.stickerMsgStyle}>

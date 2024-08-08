@@ -7,7 +7,7 @@
  */
 export class FontStyle {
   fontFamily?: string | undefined;
-  fontWeight?: 'normal'| 'bold'| '100'| '200'| '300'| '400'| '500'| '600'| '700'| '800'| '900';
+  fontWeight?: 'normal'| 'bold'| '100'| '200'| '300'| '400'| '500'| '600'| '700'| '800'| '900' | string;
   fontSize?: number;
 
   constructor({
@@ -22,6 +22,6 @@ export class FontStyle {
 }
 export interface FontStyleInterface {
   fontFamily?: string | undefined;
-  fontWeight?: 'normal'| 'bold'| '100'| '200'| '300'| '400'| '500'| '600'| '700'| '800'| '900';
+  fontWeight?: 'normal'| 'bold'| '100'| '200'| '300'| '400'| '500'| '600'| '700'| '800'| '900' | string;
   fontSize?: number;
 }

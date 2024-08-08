@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import React from 'react';
 import { ICONS } from './resources';
 
-const Header = (props) => {
+const Header = (props: any) => {
   const {
     title,
     titleStyle,

@@ -1,9 +1,11 @@
-import { CometChatImageBubble, CometChatImageBubbleInterface} from "./CometChatImageBubble";
-import { ImageBubbleStyle, ImageBubbleStyleInterface} from "./ImageBubbleStyle";
+import {
+  CometChatImageBubble,
+  CometChatImageBubbleInterface,
+} from "./CometChatImageBubble";
+import {
+  ImageBubbleStyle,
+  ImageBubbleStyleInterface,
+} from "./ImageBubbleStyle";
 
-export {
-    CometChatImageBubble,
-    CometChatImageBubbleInterface,
-    ImageBubbleStyle,
-    ImageBubbleStyleInterface,
-}
+export { CometChatImageBubble, ImageBubbleStyle };
+export type { CometChatImageBubbleInterface, ImageBubbleStyleInterface };

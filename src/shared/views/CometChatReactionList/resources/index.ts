@@ -1,3 +1,4 @@
+//@ts-ignore
 import LoadingIcon from "./Spineer.png";
 
 export {

@@ -30,11 +30,11 @@ import { FontStyle } from "../../../shared/base";
  */
 
 class Typography {
-  fontFamily
-  fontWeightRegular: "400"
-  fontWeightMedium: "500"
-  fontWeightSemibold: "600"
-  fontWeightBold: "700"
+  fontFamily: any
+  fontWeightRegular: string | "400"
+  fontWeightMedium: string | "500"
+  fontWeightSemibold: string | "600"
+  fontWeightBold: string | "700"
   heading: FontStyle
   heading2: FontStyle
   heading3: FontStyle
@@ -165,7 +165,7 @@ class Typography {
       fontWeight: fontWeightRegular,
       fontSize: 17,
     }),
-  }) {
+  }: any) {
     this.fontFamily = fontFamily;
     this.fontWeightRegular = fontWeightRegular;
     this.fontWeightMedium = fontWeightMedium;
@@ -190,29 +190,29 @@ class Typography {
     this.caption2 = new FontStyle(caption2);
     this.caption3 = new FontStyle(caption3);
     this.body = new FontStyle(body);
-  }
+  } 
 
-  setFontFamily(fontFamily) {
+  setFontFamily(fontFamily: any[]) {
     this.fontFamily = fontFamily.join(',');
   }
 
-  setFontWeightRegular(fontWeightRegular) {
+  setFontWeightRegular(fontWeightRegular: string) {
     this.fontWeightRegular = fontWeightRegular;
   }
 
-  setFontWeightMedium(fontWeightMedium) {
+  setFontWeightMedium(fontWeightMedium: string) {
     this.fontWeightMedium = fontWeightMedium;
   }
 
-  setFontWeightSemibold(fontWeightSemibold) {
+  setFontWeightSemibold(fontWeightSemibold: string) {
     this.fontWeightSemibold = fontWeightSemibold;
   }
 
-  setFontWeightBold(fontWeightBold) {
+  setFontWeightBold(fontWeightBold: string) {
     this.fontWeightBold = fontWeightBold;
   }
 
-  setHeading(headingFont) {
+  setHeading(headingFont: any) {
     if (headingFont && headingFont.fontSize) {
       this.heading.fontSize = headingFont.fontSize;
     }
@@ -222,7 +222,7 @@ class Typography {
     }
   }
 
-  setHeading2(headingFont) {
+  setHeading2(headingFont: any) {
     if (headingFont && headingFont.fontSize) {
       this.heading2.fontSize = headingFont.fontSize;
     }
@@ -232,7 +232,7 @@ class Typography {
     }
   }
 
-  setHeading3(headingFont) {
+  setHeading3(headingFont: any) {
     if (headingFont && headingFont.fontSize) {
       this.heading3.fontSize = headingFont.fontSize;
     }
@@ -242,7 +242,7 @@ class Typography {
     }
   }
 
-  setName(nameFont) {
+  setName(nameFont: any) {
     if (nameFont && nameFont.fontSize) {
       this.name.fontSize = nameFont.fontSize;
     }
@@ -252,7 +252,7 @@ class Typography {
     }
   }
 
-  setTitle1(titleFont) {
+  setTitle1(titleFont: any) {
     if (titleFont && titleFont.fontSize) {
       this.title1.fontSize = titleFont.fontSize;
     }
@@ -262,7 +262,7 @@ class Typography {
     }
   }
 
-  setTitle2(titleFont) {
+  setTitle2(titleFont: any) {
     if (titleFont && titleFont.fontSize) {
       this.title2.fontSize = titleFont.fontSize;
     }
@@ -272,7 +272,7 @@ class Typography {
     }
   }
 
-  setSubtitle1(subtitleFont) {
+  setSubtitle1(subtitleFont: any) {
     if (subtitleFont && subtitleFont.fontSize) {
       this.subtitle1.fontSize = subtitleFont.fontSize;
     }
@@ -282,7 +282,7 @@ class Typography {
     }
   }
 
-  setSubtitle2(subtitleFont) {
+  setSubtitle2(subtitleFont: any) {
     if (subtitleFont && subtitleFont.fontSize) {
       this.subtitle2.fontSize = subtitleFont.fontSize;
     }
@@ -292,7 +292,7 @@ class Typography {
     }
   }
 
-  setSubtitle3(subtitleFont) {
+  setSubtitle3(subtitleFont: any) {
     if (subtitleFont && subtitleFont.fontSize) {
       this.subtitle3.fontSize = subtitleFont.fontSize;
     }
@@ -302,7 +302,7 @@ class Typography {
     }
   }
 
-  setSubtitle4(subtitleFont) {
+  setSubtitle4(subtitleFont: any) {
     if (subtitleFont && subtitleFont.fontSize) {
       this.subtitle4.fontSize = subtitleFont.fontSize;
     }
@@ -312,7 +312,7 @@ class Typography {
     }
   }
 
-  setSubtitle5(subtitleFont) {
+  setSubtitle5(subtitleFont: any) {
     if (subtitleFont && subtitleFont.fontSize) {
       this.subtitle5.fontSize = subtitleFont.fontSize;
     }
@@ -322,7 +322,7 @@ class Typography {
     }
   }
 
-  setSubtitle6(subtitleFont) {
+  setSubtitle6(subtitleFont: any) {
     if (subtitleFont && subtitleFont.fontSize) {
       this.subtitle6.fontSize = subtitleFont.fontSize;
     }
@@ -332,7 +332,7 @@ class Typography {
     }
   }
 
-  setText1(textFont) {
+  setText1(textFont: any) {
     if (textFont && textFont.fontSize) {
       this.text1.fontSize = textFont.fontSize;
     }
@@ -342,7 +342,7 @@ class Typography {
     }
   }
 
-  setText2(textFont) {
+  setText2(textFont: any) {
     if (textFont && textFont.fontSize) {
       this.text2.fontSize = textFont.fontSize;
     }
@@ -352,7 +352,7 @@ class Typography {
     }
   }
 
-  setCaption1(captionFont) {
+  setCaption1(captionFont: any) {
     if (captionFont && captionFont.fontSize) {
       this.caption1.fontSize = captionFont.fontSize;
     }
@@ -362,7 +362,7 @@ class Typography {
     }
   }
 
-  setCaption2(captionFont) {
+  setCaption2(captionFont: any) {
     if (captionFont && captionFont.fontSize) {
       this.caption2.fontSize = captionFont.fontSize;
     }
@@ -372,7 +372,7 @@ class Typography {
     }
   }
 
-  setCaption3(captionFont) {
+  setCaption3(captionFont: any) {
     if (captionFont && captionFont.fontSize) {
       this.caption3.fontSize = captionFont.fontSize;
     }
@@ -382,7 +382,7 @@ class Typography {
     }
   }
 
-  setBody(bodyFont) {
+  setBody(bodyFont: any) {
     if (bodyFont && bodyFont.fontSize) {
       this.body.fontSize = bodyFont.fontSize;
     }

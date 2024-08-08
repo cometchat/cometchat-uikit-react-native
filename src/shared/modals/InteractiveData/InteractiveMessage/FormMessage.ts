@@ -1,4 +1,5 @@
 import { ButtonElement } from "../InteractiveElements/index";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { ElementEntity } from "../InteractiveEntities/ElementEntity";
 import { MessageTypeConstants } from "../../../constants/UIKitConstants";

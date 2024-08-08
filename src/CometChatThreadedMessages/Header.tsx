@@ -14,10 +14,10 @@ import { ICONS } from './resources';
 import { FontStyleInterface, ImageType } from '../shared';
 
 const Header = (props: {
-  title: string;
+  title?: string;
   showCloseButton?: boolean;
   closeButtonIcon?: ImageType;
-  onPress: (event: GestureResponderEvent) => void;
+  onPress?: (event: GestureResponderEvent) => void;
   titleStyle?: TextStyle;
   closeIconTint?: string;
 }) => {

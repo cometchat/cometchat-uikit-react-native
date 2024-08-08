@@ -3,10 +3,6 @@ import { QuickReactionsStyle, QuickReactionsStyleInterface } from './QuickReacti
 import { QuickReactionsConfiguration, QuickReactionsConfigurationInterface } from './QuickReactionsConfiguration';
 
 export {
-    CometChatQuickReactions,
-    CometChatQuickReactionsInterface,
-    QuickReactionsStyle,
-    QuickReactionsStyleInterface,
-    QuickReactionsConfiguration,
-    QuickReactionsConfigurationInterface
-}
+    CometChatQuickReactions, QuickReactionsStyle, QuickReactionsConfiguration
+};
+export type { CometChatQuickReactionsInterface, QuickReactionsStyleInterface, QuickReactionsConfigurationInterface };

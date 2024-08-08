@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, TextStyle } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native"
 import { CometChatCallLogDetailsTemplate, CometChatDate, CometChatListItem, CometChatTheme, localize } from "../shared"
 import { CometChatCallButtons } from "./CometChatCallButtons";
@@ -32,13 +33,13 @@ export class CallingDetailsUtils {
                     <View style={{ marginTop: 2, flexDirection: "row", justifyContent: "space-between" }}>
                         <View style={{ flexDirection: "row" }}>
                             <CometChatDate timeStamp={callLog['initiatedAt'] * 1000} pattern={'timeFormat'} style={{ textColor: theme.palette.getAccent600(), textFont: theme.typography.subtitle1 }} />
-                            <Text style={[{ marginHorizontal: 10, color: theme.palette.getAccent() }, theme.typography.subtitle1]}>
+                            <Text style={[{ marginHorizontal: 10, color: theme.palette.getAccent() }, theme.typography.subtitle1] as TextStyle}>
                                 {
                                     CallUtils.getCallStatus(callLog as CometChat.Call, loggedInUser)
                                 }
                             </Text>
                         </View>
-                        <Text style={[{ marginHorizontal: 10, color: theme.palette.getAccent() }, theme.typography.subtitle1]}>{CallUtils.convertMinutesToHoursMinutesSeconds(callLog['totalDurationInMinutes'])}</Text>
+                        <Text style={[{ marginHorizontal: 10, color: theme.palette.getAccent() }, theme.typography.subtitle1] as TextStyle}>{CallUtils.convertMinutesToHoursMinutesSeconds(callLog['totalDurationInMinutes'])}</Text>
                     </View>
                 </View>
             )
@@ -91,7 +92,7 @@ export class CallingDetailsUtils {
                         id={'history'}
                         SubtitleView={() => (
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 10 }}>
-                                <Text style={[{ color: theme.palette.getAccent() }, theme.typography.title2]}>{localize("CALL_HISTORY")}</Text>
+                                <Text style={[{ color: theme.palette.getAccent() }, theme.typography.title2] as TextStyle}>{localize("CALL_HISTORY")}</Text>
                                 <Image source={NextArrowIcon} style={{ height: 16, width: 16, alignSelf: "center", tintColor: theme.palette.getPrimary() }} />
                             </View>
                         )}
@@ -110,9 +111,9 @@ export class CallingDetailsUtils {
                         id={'recordings'}
                         SubtitleView={() => (
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 10 }}>
-                                <Text style={[{ color: theme.palette.getAccent() }, theme.typography.title2]}>{localize("RECORDINGS")}</Text>
+                                <Text style={[{ color: theme.palette.getAccent() }, theme.typography.title2] as TextStyle}>{localize("RECORDINGS")}</Text>
                                 <View style={{ flexDirection: "row" }}>
-                                    <Text style={[{ color: theme.palette.getAccent(), marginRight: 5 }, theme.typography.title2]}>{callLog?.recordings?.length}</Text>
+                                    <Text style={[{ color: theme.palette.getAccent(), marginRight: 5 }, theme.typography.title2] as TextStyle}>{callLog?.recordings?.length}</Text>
                                     <Image source={NextArrowIcon} style={{ height: 16, width: 16, alignSelf: "center", tintColor: theme.palette.getPrimary() }} />
                                 </View>
                             </View>
@@ -133,9 +134,9 @@ export class CallingDetailsUtils {
                         id={'participants'}
                         SubtitleView={() => (
                             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 10 }}>
-                                <Text style={[{ color: theme.palette.getAccent() }, theme.typography.title2]}>{localize("PARTICIPANTS")}</Text>
+                                <Text style={[{ color: theme.palette.getAccent() }, theme.typography.title2] as TextStyle}>{localize("PARTICIPANTS")}</Text>
                                 <View style={{ flexDirection: "row" }}>
-                                    <Text style={[{ color: theme.palette.getAccent(), marginRight: 5 }, theme.typography.title2]}>{callLog?.participants?.length}</Text>
+                                    <Text style={[{ color: theme.palette.getAccent(), marginRight: 5 }, theme.typography.title2] as TextStyle}>{callLog?.participants?.length}</Text>
                                     <Image source={NextArrowIcon} style={{ height: 16, width: 16, alignSelf: "center", tintColor: theme.palette.getPrimary() }} />
                                 </View>
                             </View>

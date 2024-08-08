@@ -6,7 +6,7 @@ const wordBoundary = {
   end: `(?=$|:|;|'|"|,|{|}|\\.|\\s|\\!|\\?|\\(|\\)|\\[|\\]|\\*)`,
 };
 
-export const makeExtentionCall = (extentionType, callMethod, extentionAction, parameters) => {
+export const makeExtentionCall = (extentionType: string, callMethod: string, extentionAction: string, parameters: any) => {
   return CometChat.callExtension(extentionType, callMethod, extentionAction, parameters);
 }
 
@@ -46,7 +46,7 @@ export const getUnixTimestampInMilliseconds = () => {
   return Math.round(+new Date());
 }
 
-export const formatBytes = (bytes, decimals = 2) => {
+export const formatBytes = (bytes: number, decimals = 2) => {
   if (bytes === 0) return "0 Bytes";
 
   const k = 1024;

@@ -50,7 +50,7 @@ export interface MessageListConfigurationInterface {
   scrollToBottomOnNewMessage?: boolean;
   onThreadRepliesPress?: (
     messageObject: CometChat.BaseMessage,
-    messageBubbleView: () => JSX.Element
+    messageBubbleView: () => JSX.Element | null
   ) => void;
   HeaderView?: ({
     user,
@@ -109,33 +109,33 @@ export interface MessageListConfigurationInterface {
 }
 export class MessageListConfiguration
   implements MessageListConfigurationInterface {
-  ErrorStateView: (e: CometChat.CometChatException) => JSX.Element;
+  ErrorStateView!: (e: CometChat.CometChatException) => JSX.Element;
   errorStateText?: String;
   hideError?: boolean;
-  EmptyStateView: () => JSX.Element;
+  EmptyStateView!: () => JSX.Element;
   emptyStateText?: String;
-  LoadingStateView: () => JSX.Element;
-  readIcon: ImageType;
-  deliveredIcon: ImageType;
-  sentIcon: ImageType;
-  waitIcon: ImageType;
-  errorIcon: ImageType;
-  alignment: MessageListAlignmentType;
-  showAvatar: boolean;
+  LoadingStateView!: () => JSX.Element;
+  readIcon!: ImageType;
+  deliveredIcon!: ImageType;
+  sentIcon!: ImageType;
+  waitIcon!: ImageType;
+  errorIcon!: ImageType;
+  alignment!: MessageListAlignmentType;
+  showAvatar!: boolean;
   /**
    * This function returns a string for custom date representation based on the provided message object.
    * 
    * @param baseMessage - The message object.
    * @returns The string for custom date representation.
    */
-  datePattern: (baseMessage: CometChat.BaseMessage) => string;
-  timestampAlignment: MessageTimeAlignmentType;
-  templates: CometChatMessageTemplate[];
-  messageRequestBuilder: CometChat.MessagesRequestBuilder;
-  scrollToBottomOnNewMessage: boolean;
+  datePattern!: (baseMessage: CometChat.BaseMessage) => string;
+  timestampAlignment!: MessageTimeAlignmentType;
+  templates!: CometChatMessageTemplate[];
+  messageRequestBuilder!: CometChat.MessagesRequestBuilder;
+  scrollToBottomOnNewMessage!: boolean;
   onThreadRepliesPress?: (
     messageObject: CometChat.BaseMessage,
-    messageBubbleView: () => JSX.Element
+    messageBubbleView: () => JSX.Element | null
   ) => void;
   HeaderView?: ({
     user,
@@ -155,13 +155,13 @@ export class MessageListConfiguration
     group?: CometChat.Group;
     id?: { uid?: string; guid?: string; parentMessageId?: string };
   }) => JSX.Element;
-  avatarStyle: AvatarStyleInterface;
-  dateSeperatorStyle: DateStyleInterface;
-  wrapperMessageBubbleStyle: MessageStyleInterface;
-  actionSheetStyle: ActionSheetStylesInterface;
-  messageListStyle: MessageListStyleInterface;
-  disableReceipt: boolean;
-  dateSeparatorPattern: (item: number) => DatePattern;
+  avatarStyle!: AvatarStyleInterface;
+  dateSeperatorStyle!: DateStyleInterface;
+  wrapperMessageBubbleStyle!: MessageStyleInterface;
+  actionSheetStyle!: ActionSheetStylesInterface;
+  messageListStyle!: MessageListStyleInterface;
+  disableReceipt!: boolean;
+  dateSeparatorPattern!: (item: number) => DatePattern;
   /**
    * Hides the header of the action sheet
    */
@@ -187,7 +187,7 @@ export class MessageListConfiguration
    */
   disableReactions?: boolean;
 
-  disableMentions: boolean;
+  disableMentions!: boolean;
   /**
    * Collection of text formatter class
    * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
@@ -197,6 +197,7 @@ export class MessageListConfiguration
   constructor(props: MessageListConfigurationInterface) {
     if (props) {
       for (const [key, value] of Object.entries(props)) {
+        //@ts-ignore
         this[key] = value;
       }
     }

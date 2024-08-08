@@ -1,7 +1,7 @@
 //@ts-ignore
 import { StyleSheet } from 'react-native';
 
-export const Styles = (props) =>
+export const Styles = (props: any) =>
   StyleSheet.create({
     containerStyle: {
       backgroundColor: props.backgroundColor || 'transparent',

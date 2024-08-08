@@ -1,11 +1,15 @@
-import { CometChatSuggestionList, CometChatSuggestionListInterface } from './CometChatSuggestionList';
-import { SuggestionItem } from './SuggestionItem';
-import { SuggestionListConfiguration, SuggestionListConfigurationInterface } from './SuggestionListConfiguration';
+import {
+  CometChatSuggestionList,
+  CometChatSuggestionListInterface,
+} from "./CometChatSuggestionList";
+import { SuggestionItem } from "./SuggestionItem";
+import {
+  SuggestionListConfiguration,
+  SuggestionListConfigurationInterface,
+} from "./SuggestionListConfiguration";
 
-export {
-    CometChatSuggestionList,
-    CometChatSuggestionListInterface,
-    SuggestionItem,
-    SuggestionListConfiguration,
-    SuggestionListConfigurationInterface
-}
+export { CometChatSuggestionList, SuggestionItem, SuggestionListConfiguration };
+export type {
+  CometChatSuggestionListInterface,
+  SuggestionListConfigurationInterface,
+};

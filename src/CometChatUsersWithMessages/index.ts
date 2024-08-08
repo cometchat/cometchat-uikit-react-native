@@ -1,5 +1,6 @@
-import { CometChatUsersWithMessages, CometChatUsersWithMessagesInterface } from "./CometChatUsersWithMessages";
-export {
-    CometChatUsersWithMessages,
-    CometChatUsersWithMessagesInterface,
-}
+import {
+  CometChatUsersWithMessages,
+  CometChatUsersWithMessagesInterface,
+} from "./CometChatUsersWithMessages";
+export { CometChatUsersWithMessages };
+export type { CometChatUsersWithMessagesInterface };

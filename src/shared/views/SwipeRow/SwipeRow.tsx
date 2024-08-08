@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 
 import { View, Text, TouchableOpacity, Image, FlatList } from 'react-native';
 import { CometChatContext } from '../../CometChatContext';
+//@ts-ignore
 import SwipeRow from '../../helper/SwipeRow';
 import { Style } from './style';
 import { CometChatOptions } from '../../modals';
@@ -13,7 +14,7 @@ export interface CometChatSwipeRowInterface {
   options?: () => CometChatOptions[];
   listItemStyle?: any;
 }
-export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface> = (
+export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface | any> = (
   props
 ) => {
   //state for translateX
@@ -30,7 +31,7 @@ export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface> = (
     ...props.listItemStyle,
   };
 
-  const [swipeRowOptions, setSwipeRowOptions] = useState([]);
+  const [swipeRowOptions, setSwipeRowOptions] = useState<any[]>([]);
   let cancelClick = false;
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface> = (
   /**
    * Component to be display the Options in list after swipe
    */
-  const OptionsListItem = ({ item }) => {
+  const OptionsListItem = ({ item }: any) => {
     return (
       <TouchableOpacity
         onPress={() => item.onPress(id)}

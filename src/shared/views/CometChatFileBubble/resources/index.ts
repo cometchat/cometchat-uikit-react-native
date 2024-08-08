@@ -1,4 +1,6 @@
+//@ts-ignore
 import downloadIcon from "./download.png";
+//@ts-ignore
 import fileIcon from "./file_upload.png";
 
 export {

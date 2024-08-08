@@ -1,3 +1,7 @@
-import { ThumbnailGenerationExtension, ThumbnailGenerationConfigurationInterface } from './ThumbnailGenerationExtension';
+import {
+  ThumbnailGenerationExtension,
+  ThumbnailGenerationConfigurationInterface,
+} from "./ThumbnailGenerationExtension";
 
-export { ThumbnailGenerationExtension, ThumbnailGenerationConfigurationInterface };
+export { ThumbnailGenerationExtension };
+export type { ThumbnailGenerationConfigurationInterface };

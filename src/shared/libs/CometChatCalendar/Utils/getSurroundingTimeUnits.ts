@@ -1,3 +1,4 @@
+//@ts-ignore
 import dayjs from 'dayjs';
 
 const getSurroundingTimeUnits = (visibleDate: string) => {

@@ -14,6 +14,7 @@ import { FontStyleInterface } from '../../base';
 import { localize } from '../../resources/CometChatLocalize';
 import { CometChatContext } from '../../CometChatContext';
 import { CometChatContextType } from '../../base/Types';
+import { TextInputStyle } from '../CometChatTextInput/TextInputStyle';
 
 export interface CometChatMessageInputStyleInterface {
   baseStyle?: StyleProp<ViewStyle>;
@@ -122,23 +123,23 @@ export const CometChatMessageInput = (
   } = props;
 
   return (
-    <View style={{ backgroundColor: style.inputBackground ?? theme.palette.getAccent100(), marginHorizontal: 8, borderRadius: 8 }}>
+    <View style={{ backgroundColor: style?.inputBackground ?? theme.palette.getAccent100(), marginHorizontal: 8, borderRadius: 8 }}>
       <TextInput
         ref={messageInputRef}
         style={[
           styles.textInput,
           {
-            color: style.textColor ?? theme.palette.getAccent(),
+            color: style?.textColor ?? theme.palette.getAccent(),
             maxHeight: maxHeight ?? 25 * 3,
           },
-          text.length
-            ? style.textFont ?? theme.typography.body
-            : style.placeholderTextFont ?? theme.typography.body,
-        ]}
+          text?.length
+            ? style?.textFont ?? theme.typography.body
+            : style?.placeholderTextFont ?? theme.typography.body,
+        ] as TextInputStyle}
         onChangeText={onChangeText}
         placeholderTextColor={
-          style.placeholderTextColor
-            ? style.placeholderTextColor
+          style?.placeholderTextColor
+            ? style?.placeholderTextColor
             : theme.palette.getAccent600()
         }
         multiline
@@ -154,7 +155,7 @@ export const CometChatMessageInput = (
           justifyContent: 'space-between',
           paddingHorizontal: 6,
           borderTopWidth: 1,
-          borderTopColor: style.dividerTint
+          borderTopColor: style?.dividerTint
             ? style.dividerTint
             : theme.palette.getAccent200(),
         }}

@@ -1,4 +1,4 @@
-import { View, Text, TextInput } from 'react-native'
+import { View, Text, TextInput, TextStyle } from 'react-native'
 import React, { useContext, useEffect, useState, useRef } from 'react'
 import { TextInputElement } from '../../modals/InteractiveData';
 import { CometChatContextType } from '../../base';
@@ -47,7 +47,7 @@ const CometChatTextInput = (props: CometChatTextInputInterface) => {
 
     return (
         <View style={{ marginBottom: 12 }}>
-            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }]}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
+            <Text style={[titleFont, { color: titleColor, marginBottom: 4 }] as TextStyle}>{data.getLabel()}{!data.getOptional() && "*"}</Text>
             <TextInput
                 // autoFocus={true}
                 value={value}

@@ -35,8 +35,8 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     return 'ThumbnailGeneration';
   }
 
-  checkThumbnail(message) {
-    let image: { uri: string } = { uri: null };
+  checkThumbnail(message: any) {
+    let image: { uri: string | null } = { uri: null };
     let thumbnailData = getExtentionData(
       message,
       ExtensionConstants.thumbnailGeneration
@@ -66,7 +66,7 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     theme: CometChatTheme,
     videoBubbleStyle: VideoBubbleStyleInterface
   ) {
-    const image = this.checkThumbnail(message);
+    const image: any = this.checkThumbnail(message);
     return (
       <CometChatVideoBubble
         videoUrl={videoUrl}
@@ -92,9 +92,9 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     caption: string,
     style: ImageBubbleStyleInterface,
     message: CometChat.MediaMessage,
-    theme
+    theme: CometChatTheme
   ): JSX.Element {
-    const image = this.checkThumbnail(message);
+    const image: any = this.checkThumbnail(message);
     return (
       <CometChatImageBubble
         imageUrl={imageUrl ? { uri: imageUrl } : image}

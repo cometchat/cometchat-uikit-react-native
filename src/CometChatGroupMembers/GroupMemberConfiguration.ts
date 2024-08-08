@@ -88,7 +88,7 @@ export class GroupMemberConfiguration implements GroupMemberConfigurationInterfa
 
     constructor(params: GroupMemberConfigurationInterface) {
         this.SubtitleView = params.SubtitleView;
-        this.disableUsersPresence = [false, true].includes(params.disableUsersPresence) ? params.disableUsersPresence : params.disableUserPresence;
+        this.disableUsersPresence = params.disableUsersPresence ? [false, true].includes(params.disableUsersPresence) ? params.disableUsersPresence : params.disableUserPresence : params.disableUserPresence;
         this.ListItemView = params.ListItemView;
         this.AppBarOptions = params.AppBarOptions;
         this.options = params.options;

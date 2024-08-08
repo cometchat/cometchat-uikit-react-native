@@ -1,4 +1,4 @@
-import { View, Text } from 'react-native'
+import { View, Text, ViewProps, TextStyle } from 'react-native'
 import React, { useContext } from 'react'
 import { QuickViewStyle, QuickViewStyleInterface } from './QuickViewStyle'
 import { CometChatContextType } from '../../base'
@@ -46,18 +46,18 @@ const CometChatQuickView = (props: CometChatQuickViewInterface) => {
                 width: width,
                 backgroundColor: backgroundColor,
                 borderRadius: borderRadius,
-                borderColor: border.borderColor,
-                borderWidth: border.borderWidth,
+                borderColor: border?.borderColor,
+                borderWidth: border?.borderWidth,
                 flexDirection: "row",
-            }}
+            } as ViewProps}
         >
             <View style={{
                 width: leadingBarWidth, backgroundColor: leadingBarTint,
                 borderTopLeftRadius: borderRadius, borderBottomLeftRadius: borderRadius
             }} />
             <View style={{ padding: 5 }}>
-                <Text style={{ ...titleFont, color: titleColor, marginBottom: 5 }}>{title}</Text>
-                <Text style={{ ...subtitlFont, color: subtitleColor }}>{subtitle}</Text>
+                <Text style={{ ...titleFont, color: titleColor, marginBottom: 5 } as TextStyle}>{title}</Text>
+                <Text style={{ ...subtitlFont, color: subtitleColor } as TextStyle}>{subtitle}</Text>
             </View>
         </View>
     )

@@ -14,6 +14,7 @@ export class ListItemConfiguration {
   constructor(props: ListItemConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {
+        //@ts-ignore
         this[key] = value;
       }
   }

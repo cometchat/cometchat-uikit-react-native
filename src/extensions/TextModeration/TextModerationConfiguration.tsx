@@ -15,7 +15,7 @@ export interface TextModerationConfigurationInterface
   
    }
 export class TextModerationConfiguration implements TextModerationConfigurationInterface {
-  textBubbleStyle: TextBubbleStyleInterface;
+  textBubbleStyle?: TextBubbleStyleInterface;
 
   constructor({
     textBubbleStyle = undefined,}:

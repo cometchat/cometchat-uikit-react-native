@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View } from 'react-native';
+//@ts-ignore
 import dayjs from 'dayjs';
-
+//@ts-ignore
 import localeData from 'dayjs/plugin/localeData';
+//@ts-ignore
 import localizedFormat from 'dayjs/plugin/localizedFormat';
+//@ts-ignore
 import utc from 'dayjs/plugin/utc';
 
 import { getSurroundingTimeUnits } from '../Utils';
@@ -88,7 +91,7 @@ const BaseCalendar: React.FC<Props> = ({
   const { month, year } = useSurroundingTimeUnits(visibleDate);
 
   const verifyUnitIsPastMaxDate = useCallback(
-    (unit) => {
+    (unit: any) => {
       if (maxDate) {
         if (unit.isAfter(maxDate)) {
           disableRightArrow(true);
@@ -101,7 +104,7 @@ const BaseCalendar: React.FC<Props> = ({
   );
 
   const verifyUnitIsBeforeMinDate = useCallback(
-    (unit) => {
+    (unit: any) => {
       if (minDate) {
         if (unit.isBefore(minDate)) {
           disableLeftArrow(true);

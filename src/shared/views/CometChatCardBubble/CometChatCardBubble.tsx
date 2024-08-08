@@ -1,7 +1,8 @@
-import { View, Text, NativeModules } from 'react-native'
+import { View, Text, NativeModules, TextStyle } from 'react-native'
 import React, { useEffect, useContext } from 'react'
 import { APIAction, ButtonElement, CardMessage, URLNavigationAction } from '../../modals/InteractiveData'
 import { CometChatImageBubble } from '../CometChatImageBubble';
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatContextType } from '../../base';
 import { CometChatContext } from '../../CometChatContext';
@@ -23,7 +24,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
   } = props;
 
   const { theme } = useContext<CometChatContextType>(CometChatContext);
-  const [loggedInUser, setLoggedInUser] = React.useState<CometChat.User>(null);
+  const [loggedInUser, setLoggedInUser] = React.useState<CometChat.User | any>(null);
 
   const [interactedElements, setInteractedElements] = React.useState<CometChat.Interaction[]>([]);
 
@@ -62,10 +63,10 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
 
   useEffect(() => {
     CometChat.getLoggedinUser()
-      .then(u => {
+      .then((u: any) => {
         setLoggedInUser(u);
       })
-      .catch(e => {
+      .catch((e: any) => {
         console.log("Error while getting loggedInUser");
         setLoggedInUser(null);
       });
@@ -82,7 +83,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
 
       let allowInteraction = isSender ? message?.["data"]?.["allowSenderInteraction"] : true;
 
-      let disableAfterInteracted: boolean;
+      let disableAfterInteracted!: boolean;
       if (data.getDisableAfterInteracted()) {
         disableAfterInteracted = interactedElements?.some(
           (element) => element.getElementId() === data.getElementId()
@@ -96,7 +97,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
         <CometChatButton
           onPress={isDisabled() ? () => { } : onClick}
           text={data.getButtonText()}
-          style={{...buttonStyle, textColor: isDisabled() ? theme.palette.getAccent600() : buttonStyle.textColor }}
+          style={{...buttonStyle, textColor: isDisabled() ? theme.palette.getAccent600() : buttonStyle?.textColor }}
         />
       </View>
     );
@@ -104,7 +105,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
 
   function markAsInteracted(elementId: string) {
     CometChat.markAsInteracted(message?.getId(), elementId).then(
-      (response) => {
+      (response: any) => {
         const interaction = new CometChat.Interaction(
           elementId,
           new Date().getTime()
@@ -114,7 +115,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
         setInteractedElements(clonedInteractedElements);
       }
     )
-      .catch((error) => {
+      .catch((error: any) => {
         console.log("error while markAsInteracted", error);
       });
   }
@@ -129,7 +130,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
         CometChatNetworkUtils.fetcher({
           url: (action as APIAction).getURL(),
           method: (action as APIAction).getMethod() || HTTPSRequestMethods.POST,
-          body: { ...action.getPayload(), cometchatSenderUid: loggedInUser?.['uid'] || "" },
+          body: { ...(action as APIAction).getPayload(), cometchatSenderUid: loggedInUser?.['uid'] || "" },
           headers: (action as APIAction).getHeaders(),
         })
           .then((response) => {
@@ -165,7 +166,7 @@ export const CometChatCardBubble = (props: CometChatCardBubbleInterface) => {
             resizeMode={imageResizeMode}
           />
         }
-        <Text style={[textFont, { marginVertical: 10, color: textColor }]}>{message.getText()}</Text>
+        <Text style={[textFont, { marginVertical: 10, color: textColor }] as TextStyle}>{message.getText()}</Text>
       </View>
       {(message.getCardActions())?.map((action, index) => <React.Fragment key={index}>{_renderButton(action)}</React.Fragment>)}
     </View>

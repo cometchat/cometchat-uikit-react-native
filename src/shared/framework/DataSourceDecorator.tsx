@@ -10,6 +10,7 @@ import { CardBubbleStyle } from "../views/CometChatCardBubble/CardBubbleStyle";
 import { FormBubbleStyle } from "../views/CometChatFormBubble/FormBubbleStyle";
 import { SchedulerBubbleStyles } from "../views/CometChatSchedulerBubble";
 import { DataSource } from "./DataSource";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 
 export class DataSourceDecorator implements DataSource {
@@ -139,7 +140,7 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getFileMessageContentView(message, alignment, theme);
    }
 
-   getTextMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate {
+   getTextMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalBubbleStylingParams): CometChatMessageTemplate | null {
       return this.dataSource.getTextMessageTemplate(theme, additionalParams)
    }
 
@@ -175,7 +176,7 @@ export class DataSourceDecorator implements DataSource {
       return this.dataSource.getAllMessageTemplates(theme, additionalParams);
    }
 
-   getMessageTemplate(messageType: string, MessageCategory: string, theme: CometChatTheme): CometChatMessageTemplate {
+   getMessageTemplate(messageType: string, MessageCategory: string, theme: CometChatTheme): CometChatMessageTemplate | null {
       return this.dataSource.getMessageTemplate(messageType, MessageCategory, theme);
    }
 

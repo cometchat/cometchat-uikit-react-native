@@ -2,6 +2,7 @@
 import React from 'react';
 // @ts-ignore
 import { View, Image, Text, NativeModules } from 'react-native';
+//@ts-ignore
 import whiteboard from "./resources/whiteboard.png";
 import { Styles } from "./styles";
 import { CollaborativeBubbleStyle } from "./CollaborativeBubbleStyle"; 

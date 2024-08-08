@@ -1,4 +1,5 @@
-import { StyleProp, ViewStyle } from "react-native/types";
+import { StyleProp, ViewStyle } from "react-native";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { AvatarStyleInterface, CometChatOptions, ImageType, ListItemStyleInterface } from "../../shared";
 import { StatusIndicatorStyleInterface } from "../../shared/views/CometChatStatusIndicator/StatusIndicatorStyle";
@@ -58,6 +59,7 @@ export class CallLogHistoryConfiguration implements CallLogHistoryConfigurationI
     constructor(props: CallLogHistoryConfigurationInterface) {
         if (props) {
             for (const [key, value] of Object.entries(props)) {
+                //@ts-ignore
                 this[key] = value;
             }
         }

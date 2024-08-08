@@ -29,6 +29,7 @@ export class CometChatConfirmDialogStyle implements CometChatConfirmDialogStyleI
   constructor(props: CometChatConfirmDialogStyleInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {
+        //@ts-ignore
         this[key] = value;
       }
   }

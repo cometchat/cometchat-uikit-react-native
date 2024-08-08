@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+//@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { CometChatMessageTemplate } from "../../shared/modals";
 import { localize } from "../../shared/resources";
@@ -19,7 +20,7 @@ import { getUnixTimestampInMilliseconds } from "../../shared/utils/CometChatMess
 
 export class StickersExtensionDecorator extends DataSourceDecorator {
 
-  configuration: StickerConfigurationInterface
+  configuration?: StickerConfigurationInterface
 
   constructor(props: { dataSource: DataSource, configration?: StickerConfigurationInterface }) {
     super(props.dataSource);
@@ -36,7 +37,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
       new CometChatMessageTemplate({
         type: ExtensionTypeConstants.sticker,
         category: MessageCategoryConstants.custom,
-        ContentView: (message: CometChat.CustomMessage, _alignment: MessageBubbleAlignmentType) => {
+        ContentView: (message: CometChat.CustomMessage | any, _alignment?: MessageBubbleAlignmentType) => {
           if (this.isDeletedMessage(message)) {
             return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
           } else {
@@ -46,7 +47,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
         options: (loggedInuser, message, group) => {
           return ChatConfigurator.dataSource.getMessageOptions(loggedInuser, message, group);
         },
-        BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+        BottomView: (message: CometChat.BaseMessage, alignment?: MessageBubbleAlignmentType) => {
             return ChatConfigurator.dataSource.getBottomView(message, alignment);
         }
       })
@@ -54,7 +55,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
     return templates;
   }
 
-  getStickerBubble(message: CometChat.CustomMessage, alignment: MessageBubbleAlignmentType) {
+  getStickerBubble(message: CometChat.CustomMessage, alignment?: MessageBubbleAlignmentType) {
     let url = message?.['data']?.['customData']?.['stickerUrl'] || message?.['data']?.['customData']?.['sticker_url'];
     return <CometChatStickerBubble
       url={url}
@@ -66,16 +67,16 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
     />;
   }
 
-  getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id?: Map<string, any>) {
+  getAuxiliaryOptions(user: CometChat.User, group: CometChat.Group, id: Map<string, any>) {
 
     const [showKeyboard, setShowKeyboard] = useState(false);
-    const loggedInUser = useRef(null);
+    const loggedInUser = useRef<CometChat.User | null>(null);
 
     useEffect(() => {
-      CometChat.getLoggedinUser().then(u => loggedInUser.current = u);
+      CometChat.getLoggedinUser().then((u: any) => loggedInUser.current = u);
     },[]);
 
-    const sendCustomMessage = (sticker) => {
+    const sendCustomMessage = (sticker: CometChat.CustomMessage) => {
       let receiverId = user?.getUid() || group?.getGuid();
       let receiverType = user ? CometChat.RECEIVER_TYPE.USER : group ? CometChat.RECEIVER_TYPE.GROUP : undefined;
       let customType = ExtensionTypeConstants.sticker;
@@ -90,7 +91,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
       customMessage.setCategory(CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory);
       customMessage.setParentMessageId(parentId);
       customMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-      customMessage.setSender(loggedInUser.current);
+      loggedInUser.current && customMessage.setSender(loggedInUser.current);
       customMessage.setReceiver(user || group);
       customMessage.shouldUpdateConversation(true);
       customMessage.setMetadata({ incrementUnreadCount: true });
@@ -117,7 +118,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
           isOpen={showKeyboard}
           onClose={() => setShowKeyboard(false)}
         >
-          <CometChatStickerKeyboard onPress={(sticker) => {
+          <CometChatStickerKeyboard onPress={(sticker: any) => {
             sendCustomMessage(sticker);
             setShowKeyboard(false);
           }} />
