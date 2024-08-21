@@ -12,7 +12,13 @@ import { BadgeStyleInterface } from "../shared/views/CometChatBadge";
 
 export interface ConversationsConfigurationInterface {
     disableUsersPresence?: boolean,
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.18 due to newer property 'hideReceipt'. It will be removed in subsequent versions.
+    */
     disableReceipt?: boolean,
+    hideReceipt?: boolean,
     disableTyping?: boolean,
     disableSoundForMessages?: boolean,
     customSoundForMessages?: string,
@@ -66,7 +72,13 @@ export interface ConversationsConfigurationInterface {
  */
 export class ConversationsConfiguration implements ConversationsConfigurationInterface {
     disableUsersPresence?: boolean;
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.18 due to newer property 'hideReceipt'. It will be removed in subsequent versions.
+    */
     disableReceipt?: boolean;
+    hideReceipt?: boolean;
     disableTyping?: boolean;
     disableSoundForMessages?: boolean;
     customSoundForMessages?: string;
@@ -117,6 +129,7 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
     constructor({
         disableUsersPresence = false,
         disableReceipt = false,
+        hideReceipt=false,
         disableTyping = false,
         disableSoundForMessages = false,
         customSoundForMessages = undefined,
@@ -159,6 +172,7 @@ export class ConversationsConfiguration implements ConversationsConfigurationInt
     }: ConversationsConfigurationInterface) {
         this.disableUsersPresence = disableUsersPresence;
         this.disableReceipt = disableReceipt;
+        this.hideReceipt=hideReceipt;
         this.disableTyping = disableTyping;
         this.disableSoundForMessages = disableSoundForMessages;
         this.customSoundForMessages = customSoundForMessages;

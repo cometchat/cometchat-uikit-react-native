@@ -246,6 +246,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 groupRef.current && groupRef.current?.removeItemFromList(user.uid);
                 removeMemerFromSelectionList(user['uid']);
                 let action: CometChat.Action = new CometChat.Action(group['guid'], MessageTypeConstants.groupMember, CometChat.RECEIVER_TYPE.GROUP, CometChat.CATEGORY_ACTION as CometChat.MessageCategory);
+                action.setAction(CometChatUiKitConstants.groupMemberAction.BANNED)
                 action.setActionBy(loggedInUser.current);
                 action.setActionOn(user);
                 action.setActionFor(group);
@@ -276,6 +277,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                 group.setMembersCount(group.getMembersCount() - 1);
 
                 let action: CometChat.Action = new CometChat.Action(group['guid'], MessageTypeConstants.groupMember, CometChat.RECEIVER_TYPE.GROUP, CometChat.CATEGORY_ACTION as CometChat.MessageCategory);
+                action.setAction(CometChatUiKitConstants.groupMemberAction.KICKED)
                 action.setActionBy(loggedInUser.current);
                 action.setActionOn(user);
                 action.setActionFor(group);
@@ -416,6 +418,7 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                     groupRef.current?.updateList(updatedMember);
                     setShowChangeScope(false);
                     let action: CometChat.Action = new CometChat.Action(group['guid'], "groupMember", CometChat.RECEIVER_TYPE.GROUP, CometChat.CATEGORY_ACTION as CometChat.MessageCategory);
+                    action.setAction(CometChatUiKitConstants.groupMemberAction.SCOPE_CHANGE)
                     action.setActionBy(loggedInUser.current);
                     action.setActionOn(member);
                     action.setActionFor(group);
@@ -424,6 +427,13 @@ export const CometChatGroupsMembers = (props: CometChatGroupsMembersInterface) =
                     action.setMuid(String(getUnixTimestampInMilliseconds()));
                     action.setSender(loggedInUser.current);
                     action.setReceiver(group);
+                    action.setData({
+                        extras: {
+                            scope: {
+                              new: newScope,
+                            },
+                          },
+                    })
                     CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberScopeChanged, { action, updatedUser: updatedMember, scopeChangedTo: newScope, scopeChangedFrom: member.scope, group });
                 })
                 .catch((err: any) => {

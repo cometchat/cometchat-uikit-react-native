@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { View, ViewProps } from "react-native";
 import { CometChatContext } from "../../CometChatContext";
 import { CometChatContextType, BaseStyleInterface } from "../../base";
-import { MessageBubbleStyle } from "./MessageBubbleStyle";
+import { MessageBubbleStyle, MessageBubbleStyleInterface } from "./MessageBubbleStyle";
 import { memo } from "react";
 import { MessageBubbleAlignmentType } from "../../base/Types";
 
@@ -61,7 +61,7 @@ export interface CometChatMessageBubbleInterface {
      * The style of the message bubble.
      * @type BaseStyleInterface
      */
-    style?: BaseStyleInterface,
+    style?: MessageBubbleStyleInterface,
 }
 
 export const CometChatMessageBubble = memo(({
@@ -90,7 +90,8 @@ export const CometChatMessageBubble = memo(({
         border,
         borderRadius,
         height,
-        width
+        width,
+        alignSelf
     } = _style;
 
     return (
@@ -119,9 +120,8 @@ export const CometChatMessageBubble = memo(({
                             ...border,
                             borderRadius,
                             backgroundColor,
-                            ...(alignment === "left" && { alignSelf: "flex-start" }),
-                            ...(alignment === "right" && { alignSelf: "flex-end" })
-                        }}>
+                            ...(alignSelf && { alignSelf })
+                        } as ViewProps} >
                         {
                             ContentView && <ContentView />
                         }

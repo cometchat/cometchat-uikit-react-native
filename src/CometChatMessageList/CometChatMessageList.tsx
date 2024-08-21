@@ -3,7 +3,7 @@ import { View, FlatList, Text, Image, TouchableOpacity, ActivityIndicator, Modal
 //@ts-ignore
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { LeftArrowCurve, RightArrowCurve } from "./resources";
-import { BaseStyle, BaseStyleInterface, CometChatContext, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUIKit, CometChatUrlsFormatter, ImageType, SuggestionItem } from "../shared";
+import { CometChatContext, CometChatMentionsFormatter, CometChatTextFormatter, CometChatUIKit, CometChatUiKitConstants, CometChatUrlsFormatter, ImageType, SuggestionItem } from "../shared";
 import { MessageBubbleStyle, MessageBubbleStyleInterface } from "../shared/views/CometChatMessageBubble/MessageBubbleStyle";
 import { AvatarStyle, AvatarStyleInterface } from "../shared";
 import { CometChatAvatar, CometChatDate, CometChatReceipt, DateStyle } from "../shared";
@@ -52,7 +52,13 @@ export interface CometChatMessageListProps {
     errorStateText?: String,
     hideError?: boolean,
     LoadingStateView?: () => JSX.Element,
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.18 due to newer property 'hideReceipt'. It will be removed in subsequent versions.
+    */
     disableReceipt?: boolean,
+    hideReceipt?: boolean,
     disableSoundForMessages?: boolean,
     customSoundForMessages?: string,
     readIcon?: ImageType,
@@ -146,6 +152,7 @@ export const CometChatMessageList = memo(forwardRef<
             hideError,
             LoadingStateView,
             disableReceipt = false,
+            hideReceipt= false,
             disableSoundForMessages,
             customSoundForMessages,
             readIcon,
@@ -290,7 +297,7 @@ export const CometChatMessageList = memo(forwardRef<
         })).current;
 
         // refs
-        const currentScrollPosition = useRef({ y: null, scrollViewHeight: 0, layoutHeight: 0 });
+        const currentScrollPosition = useRef({ y: null, scrollViewHeight: 0, layoutHeight: 0, contentHeight: 0 });
         const previousScrollPosition = useRef({ y: 0, scrollViewHeight: 0 });
         const messagesLength = useRef(0);
         const prevMessagesLength = useRef(0);
@@ -326,6 +333,16 @@ export const CometChatMessageList = memo(forwardRef<
         let lastID = useRef(0);
 
         const scrollHandler = (event: any) => {
+            /********************************************************************************
+             * layoutMeasurement.height: The height of the visible area within the ScrollView.
+             * contentOffset.y: The current vertical scroll position (distance from the top of the content).
+                                The y value in contentOffset indicates how far the top edge of the visible area is from the top of the scrollable content.
+                                The x value (if applicable) indicates how far the left edge of the visible area is from the left of the scrollable content.
+                                For example:
+                                   If contentOffset.y is 0, the top of the visible area is aligned with the top of the content.
+                                   If contentOffset.y is 50, the top of the visible area is 50 units (pixels) below the top of the content.
+             * contentSize.height: The total height of the scrollable content.
+            *********************************************************************************/
             const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
             const screenHeight = Dimensions.get('window').height;
 
@@ -334,6 +351,7 @@ export const CometChatMessageList = memo(forwardRef<
             const scrollEndPosition = contentSize.height - screenHeight;
 
             currentScrollPosition.current.y = contentOffset.y;
+            currentScrollPosition.current.contentHeight = contentSize.height;
 
             if (currentScrollPosition.current.layoutHeight != layoutMeasurement.height) {
                 currentScrollPosition.current.layoutHeight = layoutMeasurement.height;
@@ -465,9 +483,7 @@ export const CometChatMessageList = memo(forwardRef<
                 .fetchNext()
                 .then((newMessages: any[]) => {
                     let cleanUpdatedList = [...updatedList];
-
-                    let finalOutput = CommonUtils.mergeArrays(cleanUpdatedList, newMessages, "muid");
-
+                    let finalOutput = CommonUtils.mergeArrays(cleanUpdatedList, newMessages, "id");
                     let tmpList = [...finalOutput];
                     tmpList = tmpList.map((item: CometChat.BaseMessage, index) => {
                         if (item.getCategory() === MessageCategoryConstants.interactive) {
@@ -485,7 +501,12 @@ export const CometChatMessageList = memo(forwardRef<
                     }
                     messagesContentListRef.current = tmpList;
                     setMessagesList(tmpList);
-                    bottomHandler(tmpList[tmpList.length - 1], true);
+                    for(let i = newMessages.length - 1; i >= 0; i--) {
+                        if(newMessages[i].getSender().getUid() !== loggedInUser.current.getUid()) {
+                           bottomHandler(newMessages[i], true);
+                           break;
+                        }
+                     }
                     if (newMessages.length === 30) {
                         getNewMessages(tmpList);
                     }
@@ -649,7 +670,8 @@ export const CometChatMessageList = memo(forwardRef<
                     group?.getGuid() == message.getReceiverId() || false);
         }
         function checkSameConversation(message: CometChat.BaseMessage): boolean {
-            return message.getConversationId() == conversationId.current || message.getSender()?.['uid'] === user?.getUid();
+            return message.getConversationId() == conversationId.current || 
+                  (message.getSender()?.['uid'] === user?.getUid() && message.getReceiverType() == CometChatUiKitConstants.ReceiverTypeConstants.user);
         }
 
         function isNearBottom() {
@@ -671,12 +693,14 @@ export const CometChatMessageList = memo(forwardRef<
                 newMessage = InteractiveMessageUtils.convertInteractiveMessage(baseMessage);
             }
             if (checkSameConversation(baseMessage) || checkMessageInSameConversation(baseMessage) || messageToSameConversation(baseMessage)) {
+                if(!disableReceipt) {
+                  CometChat.markAsDelivered(newMessage);
+                }
                 //need to add
                 if (newMessage.getParentMessageId()) {
                     if (parentMessageId && newMessage.getParentMessageId() == parseInt(parentMessageId)) {
                         // add to list
                         messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
-                        inProgressMessages.current = [...inProgressMessages.current, newMessage]
                         setMessagesList(prev => [...prev, newMessage]);
                     } else {
                         //increase count
@@ -690,11 +714,10 @@ export const CometChatMessageList = memo(forwardRef<
                         tmpList[index] = oldMsg;
                         messagesContentListRef.current = tmpList;
                         setMessagesList(tmpList);
-                        inProgressMessages.current = [...inProgressMessages.current, newMessage]
+                        return;
                     }
                 } else if (parentMessageId == undefined) {
                     messagesContentListRef.current = [...messagesContentListRef.current, newMessage];
-                    inProgressMessages.current = [...inProgressMessages.current, newMessage]
                     setMessagesList(prev => [...prev, newMessage]);
                 }
                 bottomHandler(newMessage, isReceived);
@@ -703,32 +726,45 @@ export const CometChatMessageList = memo(forwardRef<
             playNotificationSound(newMessage);
         }
 
-        const bottomHandler = (newMessage: CometChat.BaseMessage | any, isReceived?: boolean) => {
+        const isAtBottom = () => {
+            if(
+                [null, undefined].includes(currentScrollPosition.current.y) 
+                || !currentScrollPosition.current.layoutHeight
+                || !currentScrollPosition.current.contentHeight
+            ) {
+                return true;
+            } 
+            else if (currentScrollPosition.current.layoutHeight + currentScrollPosition.current.y! >= currentScrollPosition.current.contentHeight) {
+                return true;
+            }
 
-            // if scroll is not at bottom
-            if (!scrollToBottomOnNewMessages && currentScrollPosition.current.y && (Math.round(currentScrollPosition.current.y) <= currentScrollPosition.current.scrollViewHeight)) {
-                if ((parentMessageId && newMessage.getParentMessageId() == parseInt(parentMessageId)) || (!parentMessageId && !newMessage.getParentMessageId() && (newMessage.getSender()?.getUid() || newMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid'])) {
-                    scrollToBottom();
-                    return;
-                }
-                CometChat.markAsDelivered(newMessage);
-                if (newMessage?.getReceiverType() == ReceiverTypeConstants.user) {
-                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageDelivered, { message: newMessage });
-                }
-                if (isNearBottom()) {
-                    scrollToBottom();
-                    if (isReceived) {
-                        markMessageAsRead(newMessage);
-                        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message: newMessage });
-                    }
-                } else if ((!parentMessageId && !(newMessage.getParentMessageId())) || (parentMessageId && newMessage.getParentMessageId() == parseInt(parentMessageId))) {
-                    setUnreadCount(unreadCount + 1);
-                }
-            } else {
+            return false;
+        }
+
+        const bottomHandler = (newMessage: CometChat.BaseMessage | any, isReceived?: boolean) => {
+            if ((newMessage.getSender()?.getUid() || newMessage?.['sender']?.['uid']) == loggedInUser.current?.['uid']) {
                 scrollToBottom();
-                if (isReceived) {
+                return;
+            }
+            if(!isReceived) {
+                return;
+            }
+            if (
+                (!parentMessageId && newMessage.getParentMessageId()) 
+                || (parentMessageId && !newMessage.getParentMessageId()) 
+                || (parentMessageId && newMessage.getParentMessageId() && parentMessageId != newMessage.getParentMessageId())
+            ) {
+                return;
+            }
+            if (isAtBottom() || isNearBottom()) {
+                 scrollToBottom();
+                 markMessageAsRead(newMessage)
+            } else {
+                if(scrollToBottomOnNewMessages) {
+                    scrollToBottom();
                     markMessageAsRead(newMessage);
-                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message: newMessage });
+                } else {
+                    setUnreadCount(unreadCount + 1);
                 }
             }
         }
@@ -913,6 +949,7 @@ export const CometChatMessageList = memo(forwardRef<
                         newMessage(message);
                     },
                     onGroupMemberUnbanned: (message: any) => {
+                        newMessage(message);
                     },
                     onMemberAddedToGroup: (message: any) => {
                         newMessage(message);
@@ -928,6 +965,7 @@ export const CometChatMessageList = memo(forwardRef<
                 {
                     ccMessageSent: ({ message, status }: any) => {
                         if (status == MessageStatusConstants.inprogress) {
+                            inProgressMessages.current = [...inProgressMessages.current, message]
                             newMessage(message, false);
                         }
 
@@ -1022,6 +1060,7 @@ export const CometChatMessageList = memo(forwardRef<
                             message['message'] = `${loggedInUser.current?.getName()} added ${user.name}`;
                             message['muid'] = String(getUnixTimestamp());
                             message['sentAt'] = getUnixTimestamp();
+                            message['actionOn'] = user;
                             newMessage(message, false);
                         })
                     },
@@ -1093,7 +1132,9 @@ export const CometChatMessageList = memo(forwardRef<
                 connectionListenerId,
                 new CometChat.ConnectionListener({
                     onConnected: () => {
-                        getUpdatedPreviousMessages();
+                        if(lastID.current) {
+                           getUpdatedPreviousMessages();
+                        }
                     },
                     inConnecting: () => {
                     },
@@ -1300,7 +1341,7 @@ export const CometChatMessageList = memo(forwardRef<
                     dateAlignment="center"
                 />
                 {
-                    (!disableReceipt && alignment !== "leftAligned") && isSender ?
+                    (!(disableReceipt || hideReceipt) && alignment !== "leftAligned") && isSender ?
                         <View style={{ marginLeft: 2, alignItems: "center", justifyContent: "center" }}>
                             <CometChatReceipt
                                 receipt={messageState}
@@ -1475,8 +1516,8 @@ export const CometChatMessageList = memo(forwardRef<
             });
         };
 
-        const getStyle = useCallback((item: CometChat.BaseMessage | any): BaseStyleInterface => {
-            let _style = new BaseStyle({
+        const getStyle = useCallback((item: CometChat.BaseMessage | any): MessageBubbleStyleInterface => {
+            let _style = new MessageBubbleStyle({
                 ..._messageBubbleStyle,
                 backgroundColor: theme?.palette.getAccent50()
             });
@@ -1485,6 +1526,8 @@ export const CometChatMessageList = memo(forwardRef<
                 if (item.getType() === MessageTypeConstants.form || item.getType() === MessageTypeConstants.card) {
                     _style.width = "100%"
                 }
+            } else {
+                _style.alignSelf =  getAlignment(item) === "left" ? "flex-start" :  "flex-end";
             }
 
             if ((item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current?.['uid'])

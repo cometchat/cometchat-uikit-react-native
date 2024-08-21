@@ -8,7 +8,7 @@ import {
   CometChatUsersInterface,
   CometChatUsersActionsInterface,
 } from '../CometChatUsers';
-import { CometChatListStylesInterface, localize } from '../shared';
+import { CometChatListStylesInterface, CometChatUiKitConstants, localize } from '../shared';
 import { CometChatGroupsEvents } from '../shared/events';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 import { MessageTypeConstants } from '../shared/constants/UIKitConstants';
@@ -54,6 +54,7 @@ export const CometChatAddMembers = (props: CometChatAddMembersInterface) => {
             CometChat.RECEIVER_TYPE.GROUP,
             CometChat.CATEGORY_ACTION as CometChat.MessageCategory
           );
+          action.setAction(CometChatUiKitConstants.groupMemberAction.ADDED);
           action.setConversationId((group as any)['conversationId'])
           action.setActionBy(loggedInUser.current);
           action.setActionFor(group);

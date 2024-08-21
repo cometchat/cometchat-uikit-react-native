@@ -29,7 +29,13 @@ export interface MessageListConfigurationInterface {
   EmptyStateView?: () => JSX.Element;
   emptyStateText?: String;
   LoadingStateView?: () => JSX.Element;
+  /**
+    * @deprecated
+    * 
+    * This property is deprecated as of version 4.3.18 due to newer property 'hideReceipt'. It will be removed in subsequent versions.
+  */
   disableReceipt?: boolean;
+  hideReceipt?: boolean;
   readIcon?: ImageType;
   deliveredIcon?: ImageType;
   sentIcon?: ImageType;
@@ -47,7 +53,13 @@ export interface MessageListConfigurationInterface {
   timestampAlignment?: MessageTimeAlignmentType;
   templates?: CometChatMessageTemplate[];
   messageRequestBuilder?: CometChat.MessagesRequestBuilder;
+  /**
+   * @deprecated
+   * 
+   * This property is deprecated as of version 4.3.18 due to newer property 'scrollToBottomOnNewMessages'. It will be removed in subsequent versions.
+  */
   scrollToBottomOnNewMessage?: boolean;
+  scrollToBottomOnNewMessages?: boolean;
   onThreadRepliesPress?: (
     messageObject: CometChat.BaseMessage,
     messageBubbleView: () => JSX.Element | null
@@ -132,7 +144,13 @@ export class MessageListConfiguration
   timestampAlignment!: MessageTimeAlignmentType;
   templates!: CometChatMessageTemplate[];
   messageRequestBuilder!: CometChat.MessagesRequestBuilder;
+  /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.18 due to newer property 'scrollToBottomOnNewMessages'. It will be removed in subsequent versions.
+    */
   scrollToBottomOnNewMessage!: boolean;
+  scrollToBottomOnNewMessages!: boolean;
   onThreadRepliesPress?: (
     messageObject: CometChat.BaseMessage,
     messageBubbleView: () => JSX.Element | null
@@ -160,7 +178,13 @@ export class MessageListConfiguration
   wrapperMessageBubbleStyle!: MessageStyleInterface;
   actionSheetStyle!: ActionSheetStylesInterface;
   messageListStyle!: MessageListStyleInterface;
-  disableReceipt!: boolean;
+  /**
+    * @deprecated
+    * 
+    * This property is deprecated as of version 4.3.18 due to newer property 'hideReceipt'. It will be removed in subsequent versions.
+  */
+  disableReceipt?: boolean;
+  hideReceipt?: boolean;
   dateSeparatorPattern!: (item: number) => DatePattern;
   /**
    * Hides the header of the action sheet

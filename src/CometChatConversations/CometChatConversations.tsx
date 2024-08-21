@@ -57,13 +57,12 @@ export interface ConversationInterface {
      */
     disableUsersPresence?: boolean,
     /**
-     * toggle react receipt view
-     */
-    disableReadReceipt?: boolean,
-    /**
-     * disable message receipts
-     */
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.18 due to newer property 'hideReceipt'. It will be removed in subsequent versions.
+    */
     disableReceipt?: boolean,
+    hideReceipt?: boolean,
     /**
      * toggle typing indicator
      */
@@ -250,8 +249,8 @@ export const CometChatConversations = (props: ConversationInterface) => {
      */
     const {
         disableUsersPresence = false,
-        disableReadReceipt = false,
         disableReceipt = false,
+        hideReceipt = false,
         disableTyping = false,
         disableSoundForMessages = false,
         customSoundForMessages,
@@ -432,48 +431,74 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
 
-    /**
-     *  Check if last message/unread count should be updated
-     * 
-     *  @param newMessage message object
-     */
-    const shouldUpdateLastMessageAndUnreadCount = (message: CometChat.BaseMessage) => {
-
-        /****Start: Should Threaded Messages Update Conversation? */
-        if (message.getParentMessageId() && !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnMessageReplies()) {
-            return false;
-        }
-        /****END: Should Threaded Messages Update Conversation? */
-
-        /****Start: Should Custom Message Update Conversation? */
-        if (message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.custom) {
-            let customMessage = message as CometChat.CustomMessage;
-            if (!customMessage.willUpdateConversation() &&
-                !(customMessage.getMetadata() && (customMessage.getMetadata() as any)["incrementUnreadCount"]) &&
-                !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCustomMessages()) {
-                return false;
-            }
-        }
-        /****End: Should Custom Message Update Conversation? */
-
-        /****Start: Should Group Actions sent update conversation? */
-        if (message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.action
-            && message.getReceiverType() == CometChatUiKitConstants.ReceiverTypeConstants.group
-        ) {
-            return CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions();
-        }
-        /****End: Should Group Actions sent update conversation? */
-
-        /****Start: Should Call Actions sent Update Conversation? */
-        if (message.getCategory() == CometChatUiKitConstants.MessageCategoryConstants.call
-            && !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()
-        ) {
-            return false;
-        }
-        /****End: Should Call Actions sent Update Conversation */
-
-        return true;
+  /**
+   *  Check if last message/unread count should be updated
+   *
+   *  @param newMessage message object
+   */
+  const shouldUpdateLastMessageAndUnreadCount = (
+    message: CometChat.BaseMessage
+  ) => {
+    const messageReceiverType = message.getReceiverType();
+    if (
+      conversationsRequestBuilder &&
+      conversationsRequestBuilder.build().getConversationType() &&
+      conversationsRequestBuilder.build().getConversationType() !=
+        messageReceiverType
+    ) {
+      return false;
     }
+    /****Start: Should Threaded Messages Update Conversation? */
+    if (
+      message.getParentMessageId() &&
+      !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnMessageReplies()
+    ) {
+      return false;
+    }
+    /****END: Should Threaded Messages Update Conversation? */
+
+    /****Start: Should Custom Message Update Conversation? */
+    if (
+      message.getCategory() ==
+      CometChatUiKitConstants.MessageCategoryConstants.custom
+    ) {
+      let customMessage = message as CometChat.CustomMessage;
+      if (
+        !customMessage.willUpdateConversation() &&
+        !(
+          customMessage.getMetadata() &&
+          (customMessage.getMetadata() as any)['incrementUnreadCount']
+        ) &&
+        !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCustomMessages()
+      ) {
+        return false;
+      }
+    }
+    /****End: Should Custom Message Update Conversation? */
+
+    /****Start: Should Group Actions sent update conversation? */
+    if (
+      message.getCategory() ==
+        CometChatUiKitConstants.MessageCategoryConstants.action &&
+      message.getReceiverType() ==
+        CometChatUiKitConstants.ReceiverTypeConstants.group
+    ) {
+      return CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnGroupActions();
+    }
+    /****End: Should Group Actions sent update conversation? */
+
+    /****Start: Should Call Actions sent Update Conversation? */
+    if (
+      message.getCategory() ==
+        CometChatUiKitConstants.MessageCategoryConstants.call &&
+      !CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()
+    ) {
+      return false;
+    }
+    /****End: Should Call Actions sent Update Conversation */
+
+    return true;
+  };
 
     /**
      * Find conversation from state and udpate its last message object.
@@ -582,7 +607,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
      */
     const messageEventHandler = (...args: any[]) => {
         let message = args[0];
-        !disableReadReceipt && markMessageAsDelivered(message);
+        !disableReceipt && markMessageAsDelivered(message);
         updateLastMessage(message);
     }
 
@@ -591,6 +616,14 @@ export const CometChatConversations = (props: ConversationInterface) => {
      * @param {obj} message
      */
     const groupHandler = (message: any, otherDetails: {action?: string, actionOn?: CometChat.User, actionBy?: CometChat.User, group?: CometChat.Group} = {}) => {
+        if (
+            conversationsRequestBuilder &&
+            conversationsRequestBuilder.build().getConversationType() &&
+            conversationsRequestBuilder.build().getConversationType() !=
+              CometChatUiKitConstants.ReceiverTypeConstants.group
+        ) {
+            return;
+        }
         let conversation : CometChat.Conversation = (conversationListRef.current?.getListItem(message['conversationId']) as unknown as CometChat.Conversation); 
         let {action, actionOn, actionBy, group} = otherDetails;
           if (conversation) {
@@ -763,7 +796,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
             </View>
         }
 
-        if (lastMessage && !disableReadReceipt && lastMessage['sender']['uid'] == loggedInUser.current?.uid && !lastMessage.getDeletedAt()) {
+        if (lastMessage && lastMessage['sender']['uid'] == loggedInUser.current?.uid && !lastMessage.getDeletedAt()) {
             let status: MessageReceipt = "ERROR";
             if (lastMessage?.hasOwnProperty('readAt'))
                 status = "READ";
@@ -771,7 +804,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 status = "DELIVERED";
             else if (lastMessage?.hasOwnProperty("sentAt"))
                 status = "SENT";
-            readReceipt = disableReceipt ? null : <CometChatReceipt
+            readReceipt = (disableReceipt || hideReceipt) ? null : <CometChatReceipt
                 receipt={status}
                 deliveredIcon={props.deliveredIcon}
                 errorIcon={props.errorIcon}
@@ -1079,10 +1112,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     checkAndUpdateLastMessage(editedMessage)
                 },
                 onMessagesRead: (messageReceipt: any) => {
-                    messageEventHandler(messageReceipt);
+                    updateMessageReceipt(messageReceipt);
                 },
                 onMessagesDelivered: (messageReceipt: any) => {
-                    messageEventHandler(messageReceipt);
+                    updateMessageReceipt(messageReceipt);
                 },
                 onMessagesDeliveredToAll: (messageReceipt: CometChat.MessageReceipt) => {
                   updateMessageReceipt(messageReceipt);
@@ -1184,6 +1217,9 @@ export const CometChatConversations = (props: ConversationInterface) => {
             userListenerId,
             {
                 ccUserBlocked: ({ user }: any) => {
+                    if(conversationsRequestBuilder && conversationsRequestBuilder.build().isIncludeBlockedUsers()) {
+                        return;
+                    }
                     conversationListRef?.current?.removeItemFromList(user['conversationId']);
                     removeItemFromSelectionList(user['conversationId']);
                 }

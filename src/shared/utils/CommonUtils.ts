@@ -66,14 +66,22 @@ export class CommonUtils {
         let map = new Map();
 
         arr1.forEach(obj => {
+            if(!obj[key]) {
+                map.set(Date.now(), obj);
+                return;
+            }
             map.set(obj[key], obj);
         });
 
         arr2.forEach(obj => {
-            if (map.has(obj[key])) {
+            if (map.has(obj[key]) && obj[key]) {
                 let mergedObj = this.mergeObjects(map.get(obj[key]), obj);
                 map.set(obj[key], mergedObj);
             } else {
+                if(!obj[key]) {
+                    map.set(Date.now(), obj);
+                    return;
+                }
                 map.set(obj[key], obj);
             }
         });

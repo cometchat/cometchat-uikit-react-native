@@ -222,6 +222,7 @@ export const CometChatConversationsWithMessages = (props: CometChatConversations
                                 undefined
                         }
                         {..._messagesConfig}
+                        threadedMessagesConfiguration={_messagesConfig.threadedMessageConfiguration ? _messagesConfig.threadedMessageConfiguration : {}}
                     />
                 </View>
             }

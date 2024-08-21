@@ -11,6 +11,7 @@ import {
   CometChatListProps,
   CometChatListStylesInterface,
   CometChatOptions,
+  CometChatUiKitConstants,
 } from '../shared';
 import { localize, ImageType } from '../shared';
 import { CometChatGroupsEvents } from '../shared/events';
@@ -69,9 +70,11 @@ export const CometChatBannedMembers = (
           CometChat.RECEIVER_TYPE.GROUP,
           CometChat.CATEGORY_ACTION as CometChat.MessageCategory
         );
+        action.setAction(CometChatUiKitConstants.groupMemberAction.UNBANNED)
         action.setActionBy(loggedUserRef.current);
         action.setMessage(`${loggedUserRef.current['name']} unbanned ${user['name']}}`)
         action.setActionFor(group);
+        action.setActionOn(user)
         action.setSender(loggedUserRef.current);
 
         CometChatUIEventHandler.emitGroupEvent(
