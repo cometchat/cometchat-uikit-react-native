@@ -67,7 +67,7 @@ export class CommonUtils {
 
         arr1.forEach(obj => {
             if(!obj[key]) {
-                map.set(Date.now(), obj);
+                map.set("" + Date.now() + Math.random(), obj);
                 return;
             }
             map.set(obj[key], obj);
@@ -79,7 +79,7 @@ export class CommonUtils {
                 map.set(obj[key], mergedObj);
             } else {
                 if(!obj[key]) {
-                    map.set(Date.now(), obj);
+                    map.set("" + Date.now() + Math.random(), obj);
                     return;
                 }
                 map.set(obj[key], obj);

@@ -417,14 +417,18 @@ export const CometChatConversations = (props: ConversationInterface) => {
    *
    * @param newMessage message object
    */
-    const checkAndUpdateLastMessage = (newMessage: CometChat.BaseMessage) => {
+    const checkAndUpdateLastMessage = (newMessage: CometChat.BaseMessage, resetUnreadCount = false) => {
         CometChat.CometChatHelper.getConversationFromMessage(newMessage)
             .then((conversation: any) => {
                 let conver: any = conversationListRef.current?.getListItem(conversation.getConversationId())
                 if (!conver) return;
                 let lastMessageId = conver['lastMessage']['id']
                 if (lastMessageId == newMessage['id']) {
-                    conversationListRef.current?.updateList(conversation)
+                    if(resetUnreadCount) {
+                       conver.setUnreadMessageCount(0);
+                    }
+                    conver.setLastMessage(newMessage)
+                    conversationListRef.current?.updateList(conver)
                 }
             })
 
@@ -635,7 +639,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     return;
                 }
                 conversation.setLastMessage(message);
-                conversationListRef.current?.updateList(conversation);
+                conversationListRef.current?.updateAndMoveToFirst(conversation);
             }
           } else {
               CometChat.CometChatHelper.getConversationFromMessage(message)
@@ -1076,13 +1080,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     }
                 },
                 ccMessageRead: ({ message }: any) => {
-                    checkAndUpdateLastMessage(message)
+                    checkAndUpdateLastMessage(message, true)
                 },
                 ccMessageDeleted: ({ message }: any) => {
-                    checkAndUpdateLastMessage(message)
+                    checkAndUpdateLastMessage(message, true)
                 },
                 ccMessageEdited: ({ message }: any) => {
-                    checkAndUpdateLastMessage(message)
+                    checkAndUpdateLastMessage(message, true)
                 },
                 onTextMessageReceived: (textMessage: any) => {
                     if(!shouldUpdateLastMessageAndUnreadCount(textMessage)) {
@@ -1106,10 +1110,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
                     !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
                 },
                 onMessageDeleted: (deletedMessage: any) => {
-                    checkAndUpdateLastMessage(deletedMessage)
+                    checkAndUpdateLastMessage(deletedMessage, false)
                 },
                 onMessageEdited: (editedMessage: any) => {
-                    checkAndUpdateLastMessage(editedMessage)
+                    checkAndUpdateLastMessage(editedMessage, false)
                 },
                 onMessagesRead: (messageReceipt: any) => {
                     updateMessageReceipt(messageReceipt);

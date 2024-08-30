@@ -545,6 +545,8 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
     NSString *uri = [NSString stringWithFormat:@"%@", urls[0]];
     NSString *type = [self getMimeType:urls[0]];
     NSString *name = [urls[0] lastPathComponent];
+    if (!name) name = @"Unknown";
+    if (!type) type = @"Unknown";
     callback(@[@{@"name": name, @"type": type, @"uri": uri}]);
 }
 

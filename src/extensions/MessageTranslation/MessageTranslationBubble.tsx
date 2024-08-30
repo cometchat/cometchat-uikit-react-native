@@ -43,7 +43,7 @@ export const MessageTranslationBubble = (props: MessageTranslationBubble) => {
 
   useEffect(() => {
     let _formattedText: string = text || '';
-    let _formattedTranslatedText: string = text || '';
+    let _formattedTranslatedText: string = translatedText || '';
     if (textFormatters && textFormatters.length) {
         if (textFormatters) {
             for (let i = 0; i < textFormatters.length; i++) {

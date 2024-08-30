@@ -109,7 +109,7 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
       let rowOptions = options();
       if (rowOptions) setSwipeRowOptions(rowOptions);
     }
-  }, []);
+  }, [options]);
   /**
    * Component to be display the user status
    */

@@ -608,7 +608,7 @@ export const CometChatMessageComposer = React.forwardRef(
     const messageInputRef = React.useRef<any>(null);
     const chatRef = React.useRef<any>(chatWith);
     const inputValueRef = React.useRef<any>(null);
-    const plainTextInput = React.useRef<string>("");
+    const plainTextInput = React.useRef<string>(text ?? "");
     let mentionMap = React.useRef<Map<string, SuggestionItem>>(new Map());
     let trackingCharacters = React.useRef<string[]>([])
     let allFormatters = React.useRef<Map<string, CometChatTextFormatter | CometChatMentionsFormatter>>(new Map());
@@ -1131,7 +1131,7 @@ export const CometChatMessageComposer = React.forwardRef(
     };
 
     const shouldShowAIOptions = () => {
-      return AIOptionItems.length > 0;
+      return !parentMessageId && AIOptionItems.length > 0;
     }
 
     const AuxiliaryButtonViewElem = () => {
@@ -1316,7 +1316,11 @@ export const CometChatMessageComposer = React.forwardRef(
             if (typeof item.onPress == 'function')
               return {
                 ...item,
-                onPress: () => item.onPress?.(user, group),
+                onPress: () => {
+                  setShowActionSheet(false);
+                  item.onPress?.(user, group)
+                }
+                  ,
               };
             return {
               ...item,
@@ -1390,6 +1394,7 @@ export const CometChatMessageComposer = React.forwardRef(
           bottomSheetRef.current?.togglePanel();
 
           inputValueRef.current = text?.text;
+          plainTextInput.current = text?.text;
           setInputMessage(text?.text)
 
         },

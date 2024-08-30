@@ -331,6 +331,7 @@ export const CometChatMessageList = memo(forwardRef<
         const bottomSheetRef = useRef<any>(null)
         const conversationId = useRef(null)
         let lastID = useRef(0);
+        let isKeyBoardVisible = useRef(false);
 
         const scrollHandler = (event: any) => {
             /********************************************************************************
@@ -377,7 +378,7 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const newMsgIndicatorPressed = () => {
-            scrollToBottom();
+            messageListRef.current?.scrollToEnd({ animated: true });
             markUnreadMessageAsRead();
         };
 
@@ -494,7 +495,7 @@ export const CometChatMessageList = memo(forwardRef<
                     })
                     if (inProgressMessages.current.length) {
                         const filteredInProgressMessages = inProgressMessages.current.filter(secondItem =>
-                            !tmpList.some(firstItem => firstItem.muid === secondItem.muid)
+                            tmpList.some(firstItem => firstItem.muid === secondItem.muid)
                         );
                         const combinedArray = CommonUtils.mergeArrays(tmpList, filteredInProgressMessages, "muid");
                         tmpList = combinedArray
@@ -788,7 +789,7 @@ export const CometChatMessageList = memo(forwardRef<
             let condition: (value: any, index: number, obj: any[]) => unknown;
             if (withMuid) {
                 condition = (msg) => msg['muid'] == editedMessage['muid']
-                inProgressMessages.current = inProgressMessages.current.filter((item: anyObject) => item.muid !== editedMessage['muid'])
+                //inProgressMessages.current = inProgressMessages.current.filter((item: anyObject) => item.muid !== editedMessage['muid'])
             }
             else
                 condition = (msg) => msg.getId() == editedMessage.getId()
@@ -1196,8 +1197,20 @@ export const CometChatMessageList = memo(forwardRef<
                     Keyboard_Height = keyboardHeight;
                     scrollPos = (currentScrollPosition.current.y + Keyboard_Height) - ((commonVars.safeAreaInsets.top as number) / 2);
                     messageListRef.current.scrollTo({ y: scrollPos, animated: false })
+                    isKeyBoardVisible.current = true;
                 } else {
-                    messageListRef.current.scrollTo({ y: scrollPos - Keyboard_Height + ((commonVars.safeAreaInsets.top as number) / 2), animated: false })
+                    isKeyBoardVisible.current = false;
+                    /**
+                     * Do not have to scroll back if the list is at the bottom because we are already adjusting 
+                       for the change in contentSize when we are at bottom which means if the list is at the bottom
+                       and we open the keyboard, the following line 
+                       (`messageListRef.current.scrollTo({ y: scrollPos, animated: false })`) in the above "if" 
+                       condition already puts the list at the bottom again.
+                       Hence, running the below for isAtBottom() will scroll to a wrong position.
+                     */
+                    if(!isAtBottom()) {
+                       messageListRef.current.scrollTo({ y: scrollPos - Keyboard_Height + ((commonVars.safeAreaInsets.top as number) / 2), animated: false });
+                    }
                 }
             }
         }
@@ -1900,6 +1913,51 @@ export const CometChatMessageList = memo(forwardRef<
                 if (currentScrollPosition.current.scrollViewHeight !== contentHeight) {
                     previousScrollPosition.current.scrollViewHeight = currentScrollPosition.current.scrollViewHeight;
                     currentScrollPosition.current.scrollViewHeight = contentHeight;
+                }
+            }
+            
+            /**
+             * If Keyboard is open, recalculate the scroll position when content size changes
+             */
+            if(isKeyBoardVisible.current == true) {
+                /**
+                 * WITHOUT the isAtBottom() check, the following will happen:
+                 *   1. nearToBottom() is true (which is up to 2 messages from bottom)
+                 *   2. A new message is received (or any event that changes the content size) 
+                        but the UI issue is mainly with a new message
+                 *   3. Since the content size has increased, we are not nearToBotom() anymore
+                        and so the unread banner will be displayed to click and scroll to bottom
+                 *   4. If there's not isAtBottomCheck() below, `onKeyboardVisibilityChange()` runs
+                        to adjust for the change in content size and this triggers a scroll
+                        messageListRef.current.scrollTo({ y: scrollPos, animated: false })
+                 *   5. And the nearToBottom() is true again since we have accounted for the change
+                        in contentSize and the banner disappears and the list scrolls to the bottom
+                 *
+                 * The above breaks the UI!
+                 */
+
+                /**
+                 * Why not do this for isAtBottom() || !isNearBottom()?
+                 *    - (isAtBottom() || !isNearBottom()) means notAtBottom() and notNearBottom()
+                         This means there's content under the keyboard but that's not the end. 
+                         Everytime a new message is received contentSize will change and that will
+                         trigger a position recalculation and a scroll and the list will keep scrolling
+                         till we reach bottom (that is if we keep receiving messages).
+                 * 
+                 */
+                if (isAtBottom()) {            
+                   /** 
+                    *  Why is this required?
+                    *    1. Let's say the scroll is nearToBottom() and the keyboard is open
+                    *    2. User receives a new message and the content size changes.
+                    *    3. The Message List scrolls to the bottom since the scroll was nearToBottom()
+                    *    4. User closes the keyboard and the list scrolls back to the previous message
+                    *       that was nearToBottom()
+                    *    5. The position to scroll back to needs to be recalculated since the contentSize
+                            has changed. Calling `onKeyboardVisibiltyChange()` does this.
+                    *  
+                    */       
+                    onKeyboardVisibiltyChange(true, Keyboard_Height);
                 }
             }
         }, [])

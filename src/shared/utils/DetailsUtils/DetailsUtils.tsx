@@ -387,7 +387,7 @@ const _allowedGroupDetailsOptions: { [key: string]: { [key: string]: boolean } }
     [GroupOptionConstants.bannedMembers]: true,
     [GroupOptionConstants.viewMembers]: true,
     [GroupOptionConstants.addMembers]: true,
-    [GroupOptionConstants.delete]: false,
+    [GroupOptionConstants.delete]: true,
   },
   [GroupMemberScope.owner]: {
     [GroupOptionConstants.leave]: true,

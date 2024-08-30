@@ -61,6 +61,10 @@ function isDeletedMessage(message: CometChat.BaseMessage): boolean {
     return message.getDeletedBy() != null;
 }
 
+function isMessageSent(message: CometChat.BaseMessage): boolean {
+    return message.getSentAt() ? true : false;
+}
+
 export class MessageDataSource implements DataSource {
 
     getEditOption(): CometChatMessageOption {
@@ -139,7 +143,7 @@ export class MessageDataSource implements DataSource {
         let messageOptionList: CometChatMessageOption[] = [];
 
 
-        if (isDeletedMessage(messageObject))
+        if (isDeletedMessage(messageObject) || !isMessageSent(messageObject))
             return messageOptionList;
 
 
@@ -174,52 +178,52 @@ export class MessageDataSource implements DataSource {
 
     getFormMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
 
     getSchedulerMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
 
     getCardMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
 
     getAudioMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
     getVideoMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList
     }
     getImageMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
     getFileMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (!isDeletedMessage(messageObject))
+        if (!isDeletedMessage(messageObject) && isMessageSent(messageObject))
             optionsList.push(...ChatConfigurator.dataSource.getCommonOptions(loggedInUser, messageObject, group));
         return optionsList;
     }
     getMessageOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let optionsList: Array<CometChatMessageOption> = [];
-        if (isDeletedMessage(messageObject))
+        if (isDeletedMessage(messageObject) || !isMessageSent(messageObject))
             return optionsList;
         if (messageObject.getCategory() == MessageCategoryConstants.message) {
             let type: string = messageObject.getType();
@@ -307,7 +311,7 @@ export class MessageDataSource implements DataSource {
     getCommonOptions(loggedInUser: CometChat.User, messageObject: CometChat.BaseMessage, group?: CometChat.Group): CometChatMessageOption[] {
         let messageOptionList: CometChatMessageOption[] = [];
 
-        if (isDeletedMessage(messageObject)) return messageOptionList;
+        if (isDeletedMessage(messageObject) || !isMessageSent(messageObject)) return messageOptionList;
 
         if (this.validateOption(loggedInUser, messageObject, MessageOptionConstants.replyInThread, group)) {
             messageOptionList.push(this.getReplyInThreadOption());
