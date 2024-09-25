@@ -147,7 +147,6 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
             return list;
         } catch (error: any) {
             console.log("error while fetching reactions", error)
-            if (error?.code === "REQUEST_IN_PROGRESS") return;
             setState("error");
             return [];
         }

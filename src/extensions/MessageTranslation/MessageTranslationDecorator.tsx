@@ -199,7 +199,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
 
     let loggedInUser = CometChatUIKit.loggedInUser;
     let mentionedUsers = message.getMentionedUsers();
-    let textFormatters = [...(additionalParams?.textFormatters || [])] || [];
+    let textFormatters = [...(additionalParams?.textFormatters ?? [])];
 
     let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser as any);
     linksTextFormatter.setMessage(message);

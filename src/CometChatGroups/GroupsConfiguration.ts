@@ -9,7 +9,6 @@ import {
 import { GroupsStyle, GroupsStyleInterface } from './GroupsStyle';
 import {
   backIcon,
-  searchIcon,
   passwordGroupIcon,
   privateGroupIcon,
 } from './resources';
@@ -60,23 +59,23 @@ export class GroupsConfiguration implements GroupsConfigurationInterface {
   ListItemView!: (item: CometChat.Group) => JSX.Element;
   AppBarOption!: () => JSX.Element;
   options!: (item: CometChat.Group) => CometChatOptions[];
-  hideSeparator: boolean;
-  searchPlaceholderText: string;
-  backButton: ImageType;
-  showBackButton: boolean;
-  selectionMode: 'none' | 'single' | 'multiple';
+  hideSeparator?: boolean;
+  searchPlaceholderText?: string;
+  backButton?: ImageType;
+  showBackButton?: boolean;
+  selectionMode?: 'none' | 'single' | 'multiple';
   onSelection!: (items: Array<CometChat.Group>) => void;
-  searchBoxIcon: ImageType;
-  hideSearch: boolean;
-  title: string;
+  searchBoxIcon?: ImageType;
+  hideSearch?: boolean;
+  title?: string;
   EmptyStateView!: () => JSX.Element;
   ErrorStateView!: () => JSX.Element;
   LoadingStateView!: () => JSX.Element;
   groupsRequestBuilder: CometChat.GroupsRequestBuilder | undefined;
-  searchKeyword: string;
-  privateGroupIcon: ImageType;
-  passwordGroupIcon: ImageType;
-  hideError: boolean;
+  searchKeyword?: string;
+  privateGroupIcon?: ImageType;
+  passwordGroupIcon?: ImageType;
+  hideError?: boolean;
   onItemPress?: (item: CometChat.Group) => void;
   onItemLongPress?: (item: CometChat.Group) => void;
   onError?: (e: CometChat.CometChatException) => void;
@@ -89,8 +88,6 @@ export class GroupsConfiguration implements GroupsConfigurationInterface {
 
   constructor(props: GroupsConfigurationInterface) {
     if (props)
-      for (const [key, value] of Object.entries(props)) {
-        this[key] = value;
-      }
+      Object.assign(this, props);
   }
 }

@@ -25,7 +25,7 @@ import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandle
 import { ActionSheetStylesInterface } from "../shared/views/CometChatActionSheet/ActionSheetStyle";
 import { CometChatMessageInformation } from "../CometChatMessageInformation/CometChatMessageInformation";
 // import { CometChatContacts, ForwardMessageConfigurationInterface } from "../CometChatContacts";
-import { MessageInformationConfigurationInterface } from "../CometChatMessageInformation";
+import { CometChatMessageInformationConfigurationInterface } from "../CometChatMessageInformation";
 import { InteractiveMessageUtils } from "../shared/utils/InteractiveMessageUtils";
 import { CometChatEmojiKeyboard, EmojiKeyboardStyle } from "../shared/views/CometChatEmojiKeyboard";
 import { CometChatReactionList, ReactionListConfigurationInterface } from "../shared/views/CometChatReactionList";
@@ -93,9 +93,14 @@ export interface CometChatMessageListProps {
     onError?: (e: CometChat.CometChatException) => void,
     onBack?: () => void,
     // forwardMessageConfiguration?: ForwardMessageConfigurationInterface,
-    messageInformationConfiguration?: MessageInformationConfigurationInterface,
+    messageInformationConfiguration?: CometChatMessageInformationConfigurationInterface,
     /**
      * Hide the header of the action sheet
+     */
+    /**
+     * @deprecated
+     * 
+     * This property is deprecated as of version 4.3.20, as it is no longer needed. It will be removed in subsequent versions.
      */
     hideActionSheetHeader?: boolean,
     /**
@@ -181,7 +186,7 @@ export const CometChatMessageList = memo(forwardRef<
             onBack,
             // forwardMessageConfiguration
             messageInformationConfiguration,
-            hideActionSheetHeader,
+            hideActionSheetHeader = true,
             reactionsConfiguration,
             disableReactions,
             reactionListConfiguration,
@@ -672,7 +677,7 @@ export const CometChatMessageList = memo(forwardRef<
         }
         function checkSameConversation(message: CometChat.BaseMessage): boolean {
             return message.getConversationId() == conversationId.current || 
-                  (message.getSender()?.['uid'] === user?.getUid() && message.getReceiverType() == CometChatUiKitConstants.ReceiverTypeConstants.user);
+                  (message.getSender()?.getUid() === user?.getUid() && message.getReceiverType() == CometChatUiKitConstants.ReceiverTypeConstants.user);
         }
 
         function isNearBottom() {
@@ -865,7 +870,7 @@ export const CometChatMessageList = memo(forwardRef<
         }
 
         const handlePannel = (item: any) => {
-            if (item.alignment === ViewAlignment.messageListBottom && user && group && CommonUtils.checkIdBelongsToThisComponent(item.id, user, group, parentMessageId || '')) {
+            if (item.alignment === ViewAlignment.messageListBottom && (user || group) && CommonUtils.checkIdBelongsToThisComponent(item.id, user, group, parentMessageId || '')) {
                 if (item.child)
                     setCustomListHeader(() => item.child)
                 else
@@ -1321,9 +1326,11 @@ export const CometChatMessageList = memo(forwardRef<
             if (timeStampAlignment == "top" || item['category'] == "action" || item['deletedAt']) return null
 
             let isSender = (item.getSender()?.getUid() || item?.['sender']?.['uid']) == loggedInUser.current?.getUid();
-            let messageState;
-            const nextItemIsRead = messagesContentListRef.current[currentIndex + 1] && messagesContentListRef.current[currentIndex + 1].getReadAt();
-            const nextItemIsDelivered = messagesContentListRef.current[currentIndex + 1] && messagesContentListRef.current[currentIndex + 1].getDeliveredAt();
+            let messageState, nextItemIsRead, nextItemIsDelivered;
+            if(currentIndex !== undefined) {
+                nextItemIsRead = messagesContentListRef.current[currentIndex + 1] && messagesContentListRef.current[currentIndex + 1].getReadAt();
+                nextItemIsDelivered = messagesContentListRef.current[currentIndex + 1] && messagesContentListRef.current[currentIndex + 1].getDeliveredAt();
+            }
             if (item.getReadAt() || nextItemIsRead)
                 messageState = "READ";
             else if (item.getDeliveredAt() || nextItemIsDelivered)
@@ -1638,7 +1645,7 @@ export const CometChatMessageList = memo(forwardRef<
         const openOptionsForMessage = useCallback((item: CometChat.BaseMessage | any, template: CometChatMessageTemplate) => {
             let options = template?.options ? loggedInUser.current ? template.options(loggedInUser.current, item, group) : [] : [];
             let optionsWithPressHandling = options.map(option => {
-                if (!option.onPress)
+                if (!option.onPress){
                     switch (option.id) {
                         case MessageOptionConstants.messageInformation:
                             option.onPress = openMessageInfo.bind(this, item);
@@ -1665,6 +1672,14 @@ export const CometChatMessageList = memo(forwardRef<
                             option.onPress = shareMedia.bind(this, item);
                             break;
                     }
+                }else{
+                    // If overriding `onPress`, make sure to pass `item` explicitly
+                    const customOnPress = option.onPress;
+                    option.onPress = () =>{
+                        customOnPress(item);
+                        setShowMessageOptions([]);
+                    } 
+                }
                 if (option.id === MessageOptionConstants.reactToMessage) {
                     option.onPress = () => {
                         if (option.CustomView) {

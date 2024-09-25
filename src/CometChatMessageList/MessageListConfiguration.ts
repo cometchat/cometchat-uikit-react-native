@@ -21,6 +21,7 @@ import { ReactionsConfigurationInterface } from '../shared/views/CometChatReacti
 import { ReactionListConfigurationInterface } from '../shared/views/CometChatReactionList';
 import { QuickReactionsConfigurationInterface } from '../shared/views/CometChatQuickReactions';
 import { EmojiKeyboardStyle } from '../shared/views/CometChatEmojiKeyboard';
+import { CometChatMessageInformationConfigurationInterface } from '../CometChatMessageInformation/MessageInformationConfiguration';
 
 export interface MessageListConfigurationInterface {
   ErrorStateView?: (e: CometChat.CometChatException) => JSX.Element;
@@ -91,6 +92,11 @@ export interface MessageListConfigurationInterface {
   /**
    * Hides the header of the action sheet
    */
+  /**
+   * @deprecated
+   * 
+   * This property is deprecated as of version 4.3.20, as it is no longer needed. It will be removed in subsequent versions.
+  */
   hideActionSheetHeader?: boolean;
   /**
    * Message Reaction Configuration @ReactionsConfigurationInterface
@@ -118,6 +124,11 @@ export interface MessageListConfigurationInterface {
    * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
   */
   textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
+
+  /**
+   * Message Information Configuration @CometChatMessageInformationConfigurationInterface
+  */
+  messageInformationConfiguration?: CometChatMessageInformationConfigurationInterface;
 }
 export class MessageListConfiguration
   implements MessageListConfigurationInterface {
@@ -189,6 +200,11 @@ export class MessageListConfiguration
   /**
    * Hides the header of the action sheet
    */
+  /**
+   * @deprecated
+   * 
+   * This property is deprecated as of version 4.3.20, as it is no longer needed. It will be removed in subsequent versions.
+  */
   hideActionSheetHeader?: boolean;
   /**
    * Message Reaction Configuration @ReactionsConfigurationInterface
@@ -217,6 +233,11 @@ export class MessageListConfiguration
    * @type {Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>}
   */
   textFormatters?: Array<CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter>;
+
+  /**
+   * Message Information Configuration @CometChatMessageInformationConfigurationInterface
+  */
+  messageInformationConfiguration?: CometChatMessageInformationConfigurationInterface;
 
   constructor(props: MessageListConfigurationInterface) {
     if (props) {

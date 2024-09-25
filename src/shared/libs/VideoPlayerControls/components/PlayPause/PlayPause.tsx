@@ -5,7 +5,7 @@ import {NullControl} from '../NullControl';
 import type {VideoAnimations} from '../../types';
 import {styles} from './styles';
 
-export const playPauseRef = createRef<TouchableHighlight>();
+export const playPauseRef = createRef<any>();
 
 interface PlayPauseProps {
   animations: VideoAnimations;

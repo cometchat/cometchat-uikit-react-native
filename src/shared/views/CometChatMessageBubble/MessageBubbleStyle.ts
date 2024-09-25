@@ -1,11 +1,11 @@
 import { BaseStyle, BaseStyleInterface, BorderStyle } from "../../base";
 
 export interface MessageBubbleStyleInterface extends BaseStyleInterface {
-    alignSelf?: string;
+    alignSelf?: string | null;
 }
 
 export class MessageBubbleStyle extends BaseStyle {
-    alignSelf?: string;
+    alignSelf?: string | null;
     constructor({
         backgroundColor = "rgba(20,20,20,0.4)",
         border = new BorderStyle({}),

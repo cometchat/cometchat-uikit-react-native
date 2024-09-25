@@ -65,7 +65,7 @@ export class CommonUtils {
     static mergeArrays(arr1: Array<object>, arr2: Array<object>, key: string) {
         let map = new Map();
 
-        arr1.forEach(obj => {
+        arr1.forEach((obj: any) => {
             if(!obj[key]) {
                 map.set("" + Date.now() + Math.random(), obj);
                 return;
@@ -73,7 +73,7 @@ export class CommonUtils {
             map.set(obj[key], obj);
         });
 
-        arr2.forEach(obj => {
+        arr2.forEach((obj: any) => {
             if (map.has(obj[key]) && obj[key]) {
                 let mergedObj = this.mergeObjects(map.get(obj[key]), obj);
                 map.set(obj[key], mergedObj);
@@ -89,24 +89,24 @@ export class CommonUtils {
         return Array.from(map.values());
     }
 
-    static getComponentIdFromMessage(message: CometChat.BaseMessage): Object {
-        let id = {};
-        if (message.receiver instanceof CometChat.User) {
-            id['uid'] = (message.sender as CometChat.User).uid;
-        } else if (message.receiver instanceof CometChat.Group) {
-            id['guid'] = (message.receiver as CometChat.Group).guid;
+    static getComponentIdFromMessage(message :  CometChat.BaseMessage):Object{
+        let id: anyObject = {};
+        if (message.getReceiver() instanceof CometChat.User) {
+          id['uid'] = (message.getSender() as any).uid;
+        } else if (message.getReceiver() instanceof CometChat.Group) {
+          id['guid'] = (message.getReceiver() as any).guid;
         }
-        if (message.parentMessageId && message.parentMessageId !== 0) {
-            id['parentMessageId'] = message.parentMessageId;
+        if (message.getParentMessageId() && message.getParentMessageId() !== 0) {
+          id['parentMessageId'] = message.getParentMessageId();
         }
         return id;
     }
 
-    static checkIdBelongsToThisComponent(id, user: CometChat.User, group: CometChat.Group, parentMessageId: string | number): boolean {
-        if (id) {
-            if (id['parentMessageId'] && (id['parentMessageId'] != parentMessageId)) return false
-            if ((id['uid'] || user) && id['uid'] != user?.uid) return false;
-            if ((id['guid'] || group) && id['guid'] != group?.guid) return false;
+    static checkIdBelongsToThisComponent(id: anyObject, user :CometChat.User | any, group: CometChat.Group | any, parentMessageId :string| number): boolean{
+        if(id){
+          if(id['parentMessageId']  && ( id['parentMessageId'] != parentMessageId ))return false
+          if((id['uid']  ||  user) && id['uid'] != user?.uid) return false;
+          if( (id['guid'] ||  group)    && id['guid'] != group?.guid) return false;
         }
         return true;
     }

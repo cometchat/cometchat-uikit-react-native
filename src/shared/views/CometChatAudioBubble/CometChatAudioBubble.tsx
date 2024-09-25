@@ -54,7 +54,7 @@ export const CometChatAudioBubble = ({
     const { theme } = useContext<CometChatContextType>(CometChatContext);
 
     const callCount = useRef(0);
-    const timerId = useRef(null);
+    const timerId = useRef<any>(null);
     const threshold = 10; 
     const timeframe = 1000; 
 

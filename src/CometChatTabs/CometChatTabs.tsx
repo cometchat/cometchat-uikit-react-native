@@ -27,7 +27,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
         keepAlive = false,
         tabAlignment = "bottom",
     } = props;
-
+    
     const { theme } = React.useContext(CometChatContext);
 
     const [views, setViews] = useState<Array<ViewType>>([]);
@@ -45,7 +45,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
     },[props.tabs]);
 
     useEffect(() => {
-          loadActiveTab();
+        loadActiveTab();
     }, [])
 
     const getStyleFor = (tab: TabItem) => {
@@ -67,8 +67,8 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
             titleTextColor: style?.tabTitleTextColor || theme?.palette.getAccent(),
             titleTextFont: style?.tabTitleTextFont || theme?.typography.body,
             activeIconTint: theme?.palette.getPrimary(),
-            activeTitleTextColor: style?.activeTabTitleTextColor || theme?.palette.getPrimary(),
-            activeBackgroundColor: style?.activeTabBackgroundColor || theme?.palette.getSecondary(),
+            activeTitleTextColor: style?.activeTabTitleTextColor || theme?.palette.getSecondary(),
+            activeBackgroundColor: style?.activeTabBackgroundColor || theme?.palette.getPrimary(),
             iconTint: theme?.palette.getAccent600(),
             activeTitleTextFont: theme?.typography.body,
             borderRadius: style?.borderRadius,
@@ -80,7 +80,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
             width: tabs.length <= 4 ? (screenWidth - 30) / tabs.length : width,
             border: tab.isActive ? style?.activeTabBorder : undefined,
             borderRadius: style?.borderRadius,
-            backgroundColor: tab.isActive ? activeBackgroundColor : style?.backgroundColor,
+            backgroundColor: tab.isActive ? activeBackgroundColor : "transparent",
             tintColor: tab.isActive ? activeIconTint : iconTint,
             color: tab.isActive ? activeTitleTextColor : titleTextColor,
             titleFont: tab.isActive ? activeTitleTextFont : titleTextFont,
@@ -126,9 +126,9 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
         setTabs(newTabState);
     }
 
-    const TabItemView = ({ item }) => {
+    const TabItemView = ({ item }: {item: any}) => {
         let style = getStyleFor(item);
-        
+
         return (
             <TouchableOpacity
                 style={[style, { justifyContent: "center", alignItems: "center" }] as ViewProps}
@@ -146,7 +146,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
 
     const TabsList = () => {
         return (
-            <View style={{flexDirection: 'row', backgroundColor: style.backgroundColor, borderRadius: style.borderRadius, margin: 15, marginTop: 0}}>
+            <View style={{flexDirection: 'row', backgroundColor: style?.backgroundColor, borderRadius: style?.borderRadius, margin: 15, marginTop: 0}}>
                 { tabs.map(item=> <TabItemView item={item}/>) }
             </View>
         )

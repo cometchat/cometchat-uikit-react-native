@@ -134,7 +134,7 @@ class ReactNativeZoomableViewWithGestures extends React.Component<
     const { dx, dy } = gestureState;
 
     if (!swipeLengthThreshold) {
-      return;
+      return null;
     }
 
     if (this._isValidHorizontalSwipe(gestureState)) {

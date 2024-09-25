@@ -367,11 +367,11 @@ export const CometChatConversations = (props: ConversationInterface) => {
     const userEventHandler = (...args: any[]) => {
         const { uid, blockedByMe, status } = args[0];
         if (!blockedByMe) {
-            let item: CometChat.Conversation | any = conversationListRef.current?.getListItem(`${uid}_user_${loggedInUser.current?.uid}`) || conversationListRef.current?.getListItem(`${loggedInUser.current?.uid}_user_${uid}`);
+            let item: CometChat.Conversation | any = conversationListRef.current?.getListItem(`${uid}_user_${loggedInUser.current?.uid}`) as unknown as CometChat.Conversation || conversationListRef.current?.getListItem(`${loggedInUser.current?.uid}_user_${uid}`) as unknown as CometChat.Conversation;
             if (item) {
                 let updatedConversation = CommonUtils.clone(item);
                 updatedConversation.setConversationWith(args[0]);
-                conversationListRef.current.updateList(updatedConversation);
+                conversationListRef.current?.updateList(updatedConversation);
             }
         }
     }
@@ -566,18 +566,18 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
     const updateMessageReceipt = (receipt: CometChat.MessageReceipt) => {
-      const conv: CometChat.Conversation = 
+      const conv: CometChat.Conversation | boolean = 
         receipt?.getReceiverType() === ReceiverTypeConstants.user
-          ? conversationListRef.current.getListItem(
+          ? conversationListRef.current?.getListItem(
               `${receipt?.getReceiver()}_user_${receipt?.getSender().getUid()}`
-            ) || 
-            conversationListRef.current.getListItem(
+            ) as unknown as CometChat.Conversation || 
+            conversationListRef.current?.getListItem(
               `${receipt?.getSender()?.getUid()}_user_${receipt?.getReceiver()}`
-            )
+            ) as unknown as CometChat.Conversation
           : [receipt.RECEIPT_TYPE.DELIVERED_TO_ALL_RECEIPT, receipt.RECEIPT_TYPE.READ_BY_ALL_RECEIPT].includes(receipt?.getReceiptType()) &&
-            conversationListRef.current.getListItem(
+            conversationListRef.current?.getListItem(
               `group_${receipt?.getReceiver()}`
-            );
+            ) as unknown as CometChat.Conversation;
     
       if (
         conv &&
@@ -590,17 +590,17 @@ export const CometChatConversations = (props: ConversationInterface) => {
       if (
         conv &&
         conv?.getLastMessage &&
-        (conv.getLastMessage().id == receipt['messageId'] ||
-          conv.getLastMessage().messageId == receipt['messageId'])
+        (conv.getLastMessage().id == receipt.getMessageId() ||
+          conv.getLastMessage().messageId == receipt.getMessageId())
       ) {
         let newConversation = CommonUtils.clone(conv);
-        if (receipt['readAt']) {
-          newConversation.getLastMessage().setReadAt(receipt['readAt']);
+        if (receipt.getReadAt()) {
+          newConversation.getLastMessage().setReadAt(receipt.getReadAt());
         }
-        if (receipt['deliveredAt']) {
-          newConversation.getLastMessage().setDeliveredAt(receipt['deliveredAt']);
+        if (receipt.getDeliveredAt()) {
+          newConversation.getLastMessage().setDeliveredAt(receipt.getDeliveredAt());
         }
-        conversationListRef.current.updateList(newConversation);
+        conversationListRef.current?.updateList(newConversation);
       }
     };
     
@@ -749,7 +749,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     function getFormattedText(message: CometChat.BaseMessage, subtitle: string) {
         let messageTextTmp = subtitle;
-        let allFormatters = [...(textFormatters || [])] || [];
+        let allFormatters = [...(textFormatters ?? [])];
 
         if (!disableMentions && message.getMentionedUsers().length) {
             let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
@@ -1057,14 +1057,8 @@ export const CometChatConversations = (props: ConversationInterface) => {
             {
                 ccConversationDeleted:
                     ({ conversation }: { conversation: CometChat.Conversation | any }) => {
-                        CometChat.deleteConversation(conversation.getConversationId(), conversation.getConversationType())
-                            .then((res: any) => {
-                                conversationListRef.current?.removeItemFromList(conversation);
-                                removeItemFromSelectionList(conversation.getConversationId())
-                            })
-                            .catch((err: any) => {
-                                console.log("Error", err);
-                            });
+                        conversationListRef.current?.removeItemFromList(conversation.getConversationId());
+                        removeItemFromSelectionList(conversation.getConversationId())
                     }
             }
         );

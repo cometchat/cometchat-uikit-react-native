@@ -556,6 +556,7 @@ class ReactNativeZoomableView extends Component<
         this._handleShifting(gestureState);
       }
     }
+    return false;
   };
 
   /**

@@ -45,7 +45,12 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
         ccActiveChatChanged: ({message}: any) => {
           if(message && message['sender']?.['uid'] != this.loggedInUser?.getUid())
             this.getReplies(message);
-        },
+        }
+      }
+    );
+    CometChat.addMessageListener(
+      Date.now()+"",
+      {
         onTextMessageReceived: (textMessage: any) => {
           if(textMessage && textMessage['sender']?.['uid'] != this.loggedInUser?.getUid())
           this.getReplies(textMessage);
@@ -62,7 +67,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     return 'SmartReply';
   }
 
-  getReplies(message: any) {
+  getReplies(message: CometChat.BaseMessage) {
 
     let id = CommonUtils.getComponentIdFromMessage(message);
     const smartReplyData = getExtentionData(
@@ -95,7 +100,7 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
     });
   }
 
-  handleSendMessage = (message: any, smartReply: any) => {
+  handleSendMessage = (message: CometChat.BaseMessage, smartReply: any) => {
     let chatWithId = '';
     let id = CommonUtils.getComponentIdFromMessage(message)
     let chatWith;
@@ -103,11 +108,11 @@ export class SmartRepliesDecorator extends DataSourceDecorator {
       return;
     }
     if (typeof message !== 'object') return;
-    if (message?.receiverType === ReceiverTypeConstants.user) {
-      chatWithId = message?.sender?.uid;
+    if (message?.getReceiverType() === ReceiverTypeConstants.user) {
+      chatWithId = message?.getSender()?.getUid();
       chatWith = ReceiverTypeConstants.user;
     } else {
-      chatWithId = message?.receiverId;
+      chatWithId = message?.getReceiverId();
       chatWith = ReceiverTypeConstants.group;
     }
     let textMessage = new CometChat.TextMessage(

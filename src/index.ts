@@ -183,6 +183,8 @@ import {
   CometChatUsers,
   CometChatUsersActionsInterface,
   CometChatUsersInterface,
+  UsersStyle,
+  UsersStyleInterface,
   UsersConfigurationInterface,
 } from "./CometChatUsers";
 
@@ -266,7 +268,8 @@ import {
 import {
   CometChatMessageInformation,
   CometChatMessageInformationInterface,
-  MessageInformationConfigurationInterface,
+  CometChatMessageInformationConfigurationInterface,
+  CometChatMessageInformationConfiguration,
   MessageInformationStyleInterface,
 } from "./CometChatMessageInformation";
 
@@ -465,6 +468,7 @@ export {
   CometChatMessageComposer,
   CometChatDetails,
   CometChatUsers,
+  UsersStyle,
   CometChatAddMembers,
   CometChatBannedMembers,
   //
@@ -577,6 +581,7 @@ export {
   /* Text Formatters */
   DateTimeElement,
   CometChatDateTimePicker,
+  CometChatMessageInformationConfiguration
 };
 export type {
   ThumbnailGenerationConfigurationInterface,
@@ -635,6 +640,7 @@ export type {
   CometChatUsersActionsInterface,
   CometChatUsersInterface,
   UsersConfigurationInterface,
+  UsersStyleInterface,
   BannedMembersConfigurationInterface,
   CometChatBannedMembersInterface,
   AddMembersConfigurationInterface,
@@ -714,7 +720,6 @@ export type {
   ContactsStyleInterface,
   StartConversationConfigurationInterface,
   CometChatMessageInformationInterface,
-  MessageInformationConfigurationInterface,
   MessageInformationStyleInterface,
   CometChatFormBubbleInterface,
   CometChatCardBubbleInterface,
@@ -748,6 +753,7 @@ export type {
   SuggestionListConfigurationInterface,
   CometChatDateTimePickerInterface,
   DatePickerStyleInterface,
+  CometChatMessageInformationConfigurationInterface,
 };
 
 // AI

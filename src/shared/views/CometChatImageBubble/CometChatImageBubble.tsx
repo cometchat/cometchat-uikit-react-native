@@ -62,7 +62,7 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
 
 
     const callCount = useRef(0);
-    const timerId = useRef(null);
+    const timerId = useRef<any>(null);
     const threshold = 10; 
     const timeframe = 1000; 
 
@@ -232,13 +232,13 @@ export const CometChatImageBubble = (props: CometChatImageBubbleInterface) => {
                                     height,
                                     width,
                                     backgroundColor,
-                                }}
+                                } as ImageStyle}
                             />
                         </View>
                     :
                         <Image
                             resizeMode={resizeMode || "cover"}
-                            source={getImage(thumbnailUrl) || getImage(imageUrl)} 
+                            source={thumbnailUrl ? getImage(thumbnailUrl) : getImage(imageUrl!)} 
                             style={{
                                 height,
                                 width,

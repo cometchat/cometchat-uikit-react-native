@@ -77,7 +77,7 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
     const [isVideoPlayerVisible, setIsVideoPlayerVisible] = useState(false);
 
     const callCount = useRef(0);
-    const timerId = useRef(null);
+    const timerId = useRef<any>(null);
     const threshold = 10; 
     const timeframe = 1000; 
 

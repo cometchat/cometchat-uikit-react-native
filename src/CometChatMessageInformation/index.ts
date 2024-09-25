@@ -2,12 +2,15 @@ import {
   CometChatMessageInformation,
   CometChatMessageInformationInterface,
 } from "./CometChatMessageInformation";
-import { MessageInformationConfigurationInterface } from "./MessageInformationConfiguration";
+import { 
+  CometChatMessageInformationConfigurationInterface,
+  CometChatMessageInformationConfiguration
+ } from "./MessageInformationConfiguration";
 import { MessageInformationStyleInterface } from "./MessageInformationStyle";
 
-export { CometChatMessageInformation };
+export { CometChatMessageInformation, CometChatMessageInformationConfiguration };
 export type {
   CometChatMessageInformationInterface,
-  MessageInformationConfigurationInterface,
+  CometChatMessageInformationConfigurationInterface,
   MessageInformationStyleInterface,
 };

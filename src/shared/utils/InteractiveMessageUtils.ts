@@ -24,7 +24,7 @@ export class InteractiveMessageUtils {
         let completed = false;
         let neededInteractionElement = interactionGoal?.getElementIds() || [];
         let neededInteractionElementCondition: string = interactionGoal?.getType() || "";
-        let _interactedElements = [...interactedElements] || [];
+        let _interactedElements = [...(interactedElements ?? [])];
 
         switch (neededInteractionElementCondition) {
             case goalType.anyOf.toString():

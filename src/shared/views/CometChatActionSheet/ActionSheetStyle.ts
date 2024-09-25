@@ -20,15 +20,15 @@ export interface ActionSheetStylesInterface extends BaseStyleInterface {
  */
 
 export class ActionSheetStyles extends BaseStyle {
-    layoutModeIconTint: string;
-    titleFont: FontStyleInterface;
-    titleColor: string;
-    listItemIconTint: string;
-    listItemTitleFont: FontStyleInterface;
-    listItemTitleColor: string;
-    listItemIconBackground: string;
-    listItemIconBorderRadius: number;
-    actionSheetSeparatorTint: string;
+    layoutModeIconTint?: string;
+    titleFont?: FontStyleInterface;
+    titleColor?: string;
+    listItemIconTint?: string;
+    listItemTitleFont?: FontStyleInterface;
+    listItemTitleColor?: string;
+    listItemIconBackground?: string;
+    listItemIconBorderRadius?: number;
+    actionSheetSeparatorTint?: string;
     paddingHorizontal?: number;
     optionsSeparatorTint?:string;
     /**
@@ -56,8 +56,6 @@ export class ActionSheetStyles extends BaseStyle {
             borderRadius: props.borderRadius,
         });
         if (props)
-          for (const [key, value] of Object.entries(props)) {
-            this[key] = value;
-          }
+            Object.assign(this, props);
     }
 }

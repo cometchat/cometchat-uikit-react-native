@@ -42,7 +42,7 @@ export const CometChatFileBubble = ({
     const { theme } = useContext<CometChatContextType>(CometChatContext);
 
     const callCount = useRef(0);
-    const timerId = useRef(null);
+    const timerId = useRef<any>(null);
     const threshold = 10; 
     const timeframe = 1000; 
 
@@ -118,7 +118,7 @@ export const CometChatFileBubble = ({
     };
 
 
-    const wrapperPressTime = useRef(0);
+    const wrapperPressTime = useRef<any>(0);
     let viewProps = Platform.OS === "ios" ? {
         onTouchStart: () => {
             wrapperPressTime.current = Date.now();

@@ -31,7 +31,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
     const [imageSource, setImageSource] = useState({ uri: image.startsWith("https:") ? image : `https:${image.split("http:")[1]}` });
 
     const callCount = useRef(0);
-    const timerId = useRef(null);
+    const timerId = useRef<any>(null);
     const threshold = 10; 
     const timeframe = 1000; 
 

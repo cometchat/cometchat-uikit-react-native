@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 //@ts-ignore
 import { Text, TextStyle, View, ViewProps } from "react-native";
 import {
-    backIcon, searchIcon,
+    backIcon,
     passwordGroupIcon, privateGroupIcon,
     checkIcon,
 } from "./resources";
@@ -595,7 +595,7 @@ CometChatGroups.defaultProps = {
     title: localize("GROUPS"),
     searchPlaceHolderText: localize("SEARCH"),
     showBackButton: false,
-    searchBoxIcon: searchIcon,
+    searchBoxIcon: undefined,
     hideSearch: false,
     listItemStyle: undefined,
     avatarStyle: undefined,

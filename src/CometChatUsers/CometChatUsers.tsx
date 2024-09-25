@@ -4,12 +4,16 @@ import React, { useRef, useEffect, useImperativeHandle } from 'react';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
+  BorderStyle,
+  CometChatContext,
+  CometChatContextType,
   CometChatList,
   CometChatListActionsInterface,
   CometChatListProps,
   CometChatListStylesInterface,
   CometChatOptions,
 } from '../shared';
+import {UsersStyle, UsersStyleInterface} from './UsersStyle'
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 
 export interface CometChatUsersInterface
@@ -61,10 +65,10 @@ export interface CometChatUsersInterface
   usersRequestBuilder?: CometChat.UsersRequestBuilder;
   /**
    *
-   * @type {CometChatListStylesInterface}
+   * @type {UsersStyleInterface}
    * pass custom styling for user
    */
-  usersStyle?: CometChatListStylesInterface;
+  usersStyle?: UsersStyleInterface;
   /**
    *
    * Function which have user object as prop and takes a to render in place of subtitle view in list item
@@ -103,18 +107,43 @@ export const CometChatUsers = React.forwardRef<
   const ccUserUnBlockedId = 'ccUserBlocked_' + new Date().getTime();
 
   const { usersRequestBuilder, usersStyle, ...newProps } = props;
+
+  //context values
+  const { theme } = React.useContext<CometChatContextType>(CometChatContext);
+
   const userRef = useRef<CometChatUsersActionsInterface>(null);
+
+  const _usersStyle = new UsersStyle({
+    backgroundColor: theme?.palette.getBackgroundColor(),
+    backIconTint: theme?.palette.getPrimary(),
+    emptyTextColor: theme?.palette.getAccent400(),
+    emptyTextFont: theme?.typography.caption2,
+    errorTextColor: theme?.palette.getError(),
+    errorTextFont: theme?.typography.subtitle1,
+    searchBackgroundColor: theme?.palette.getAccent600(),
+    searchBorder: new BorderStyle({
+        borderColor: theme?.palette.getAccent700(),
+        ...usersStyle?.border,
+    }),
+    separatorColor: theme?.palette.getAccent100(),
+    subtitleTextColor: theme?.palette.getAccent600(),
+    subtitleTextFont: theme?.typography.text1,
+    titleColor: theme?.palette.getAccent(),
+    titleFont: theme?.typography.title1,
+    loadingIconTint: theme?.palette.getPrimary(),
+    ...usersStyle
+});
   
   useImperativeHandle(ref, () => {
     return {
-      updateList: userRef.current.updateList,
-      addItemToList: userRef.current.addItemToList,
-      removeItemFromList: userRef.current.removeItemFromList,
-      getListItem: userRef.current.getListItem,
-      updateAndMoveToFirst: userRef.current.updateAndMoveToFirst,
-      getSelectedItems: userRef.current.getSelectedItems,
-      getAllListItems: userRef.current.getAllListItems,
-      clearSelection: userRef.current.clearSelection
+      updateList: userRef.current!.updateList,
+      addItemToList: userRef.current!.addItemToList,
+      removeItemFromList: userRef.current!.removeItemFromList,
+      getListItem: userRef.current!.getListItem,
+      updateAndMoveToFirst: userRef.current!.updateAndMoveToFirst,
+      getSelectedItems: userRef.current!.getSelectedItems,
+      getAllListItems: userRef.current!.getAllListItems,
+      clearSelection: userRef.current!.clearSelection
     };
   });
 
@@ -166,7 +195,7 @@ export const CometChatUsers = React.forwardRef<
         ref={userRef}
         title={'Users'}
         requestBuilder={usersRequestBuilder}
-        listStyle={usersStyle}
+        listStyle={{ ..._usersStyle, background: _usersStyle.backgroundColor }}
         {...newProps as CometChatListProps}
         listItemKey="uid"
       />

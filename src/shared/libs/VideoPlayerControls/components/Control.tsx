@@ -5,7 +5,7 @@ import {styles} from './styles';
 interface ControlProps extends ViewProps {
   children: ReactNode;
   callback?: () => void;
-  controlRef?: RefObject<TouchableHighlight>;
+  controlRef?: RefObject<any>;
   disabled?: boolean;
   style?: any;
   resetControlTimeout?: () => void;

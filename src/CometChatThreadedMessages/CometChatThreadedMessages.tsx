@@ -257,7 +257,7 @@ export const CometChatThreadedMessages = (
         titleStyle={({
             ...theme.typography.heading,
             color: theme.palette.getAccent(),
-            ...threadedMessagesStyle.titleStyle
+            ...threadedMessagesStyle?.titleStyle
           }) as TextStyle
         }
         closeIconTint={
@@ -304,6 +304,7 @@ export const CometChatThreadedMessages = (
               user={user}
               group={group}
               onError={onError && onError}
+              hideActionSheetHeader={true}
               {...(messageListConfiguration ? messageListConfiguration : {})}
             />
         )}

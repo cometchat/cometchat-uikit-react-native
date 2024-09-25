@@ -236,6 +236,7 @@ let recordedTime = 0, timerIntervalId = null;
 export interface MessageComposerStyleInterface extends BaseStyle {
   attachIconTint?: string;
   sendIconTint?: string;
+  voiceRecordingIconTint?: string;
   inputBackground?: string;
   inputBorder?: BorderStyleInterface;
   dividerTint?: string;
@@ -1210,7 +1211,10 @@ export const CometChatMessageComposer = React.forwardRef(
     const RecordAudioButtonView = () => {
       return <ImageButton
         image={voiceRecordingIconURL || ICONS.MICROPHONE}
-        imageStyle={Style.imageStyle}
+        imageStyle={[
+          Style.imageStyle,
+          messageComposerStyle?.voiceRecordingIconTint ? { tintColor: messageComposerStyle?.voiceRecordingIconTint } : {},
+        ]}
         onClick={() => setShowRecordAudio(true)}
       />
     }
@@ -1228,7 +1232,7 @@ export const CometChatMessageComposer = React.forwardRef(
     //fetch logged in user
     useEffect(() => {
       CometChat.getLoggedinUser().then((user: any) => (loggedInUser.current = user));
-      let _formatter = [...(textFormatters || [])] || [];
+      let _formatter = [...(textFormatters ?? [])];
 
       if (!disableMentions) {
         let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();

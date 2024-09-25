@@ -3,8 +3,6 @@ import backIcon from "./back.png";
 //@ts-ignore
 import createIcon from "./create.png";
 //@ts-ignore
-import searchIcon from "./search.png";
-//@ts-ignore
 import passwordGroupIcon from "./password.png";
 //@ts-ignore
 import privateGroupIcon from "./private.png";
@@ -22,7 +20,6 @@ import checkIcon from './check.png';
 export  {
     backIcon,
     createIcon,
-    searchIcon,
     passwordGroupIcon,
     privateGroupIcon,
     loadingIcon,

@@ -393,7 +393,7 @@ export class MessageDataSource implements DataSource {
         let loggedInUser = CometChatUIKit.loggedInUser;
         if(loggedInUser) {
             let mentionedUsers = message.getMentionedUsers();
-            let textFormatters = [...(additionalParams?.textFormatters || [])] || [];
+            let textFormatters = [...(additionalParams?.textFormatters ?? [])];
     
             let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser);
             linksTextFormatter.setMessage(message);

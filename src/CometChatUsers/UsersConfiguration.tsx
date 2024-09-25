@@ -1,7 +1,6 @@
 import { ListRenderItem, StyleProp, ViewStyle } from 'react-native';
 import {
   AvatarStyleInterface,
-  CometChatListStylesInterface,
   CometChatOptions,
   ImageType,
   ListItemStyleInterface,
@@ -10,6 +9,7 @@ import { StatusIndicatorStyleInterface } from '../shared/views/CometChatStatusIn
 import { CometChatUsersInterface } from './CometChatUsers';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { UsersStyleInterface } from './UsersStyle'
 
 export interface UsersConfigurationInterface
   extends Omit<
@@ -48,7 +48,7 @@ export class UsersConfiguration {
   TailView?: (item: CometChat.User) => JSX.Element;
   tailViewContainerStyle?: StyleProp<ViewStyle>;
   usersRequestBuilder?: CometChat.UsersRequestBuilder;
-  usersStyle?: CometChatListStylesInterface;
+  usersStyle?: UsersStyleInterface;
   constructor(props: UsersConfigurationInterface) {
     if (props)
       for (const [key, value] of Object.entries(props)) {

@@ -426,9 +426,9 @@ export const CometChatSchedulerBubble = memo(
       }
     };
 
-    const getQuickSelectSlots = async (date, shouldViewNext = true) => {
+    const getQuickSelectSlots = async (date: Date, shouldViewNext = true) => {
       let day = DateTime.fromJSDate(date).toFormat("EEEE");
-      date = DateTime.fromJSDate(date).toFormat(dateFormats.date);
+      let dateString = DateTime.fromJSDate(date).toFormat(dateFormats.date);
 
       let newQuickObj: anyObject = {};
       getConvertedAvailablityObjectForDate(date, day, newQuickObj);
@@ -445,15 +445,15 @@ export const CometChatSchedulerBubble = memo(
       });
 
       tempQuickSelectRange.current = range;
-      if (range.length && newQuickObj[date]) {
-        newQuickObj[date].availability = range;
+      if (range.length && newQuickObj[dateString]) {
+        newQuickObj[dateString].availability = range;
       }
       // Ensure range is an Array
       if (!Array.isArray(range)) {
         range = [];
       }
 
-      if (range.length < 2 && shouldViewNext) await getNextQuickSlots(date, newQuickObj);
+      if (range.length < 2 && shouldViewNext) await getNextQuickSlots(dateString, newQuickObj);
 
       let quickSlotsArray: any[] = [];
 
