@@ -16,11 +16,11 @@ import styles from './styles';
  *
  */
 interface CometChatBadgeProps {
-  count: number;
+  count?: number;
   style?: BadgeStyle;
 }
 
-export const CometChatBadge = (props: CometChatBadgeProps) => {
+export const CometChatBadge = ({ count = 0, style = new BadgeStyle({}) }: CometChatBadgeProps) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
 
   const defaultStyleProps = new BadgeStyle({
@@ -62,9 +62,4 @@ export const CometChatBadge = (props: CometChatBadgeProps) => {
       </Text>
     </View>
   );
-};
-
-CometChatBadge.defaultProps = {
-  count: 0,
-  style: new BadgeStyle({}),
 };
