@@ -147,7 +147,7 @@ export const CometChatTabs = (props: CometChatTabsInterface) => {
     const TabsList = () => {
         return (
             <View style={{flexDirection: 'row', backgroundColor: style?.backgroundColor, borderRadius: style?.borderRadius, margin: 15, marginTop: 0}}>
-                { tabs.map(item=> <TabItemView item={item}/>) }
+                {tabs.map(item => <TabItemView key={item.id} item={item} />)}
             </View>
         )
     }
