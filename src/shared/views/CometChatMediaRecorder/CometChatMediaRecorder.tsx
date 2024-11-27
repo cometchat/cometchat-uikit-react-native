@@ -1,11 +1,12 @@
 import React, { useContext, useEffect } from 'react';
 import { CometChatContext, CometChatContextType, ImageType, localize } from "../..";
-import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert, Platform, Linking, TextStyle, ViewProps } from "react-native";
+import { View, TouchableOpacity, Text, Image, NativeModules, FlatList, PermissionsAndroid, Alert, Platform, Linking, TextStyle, ViewProps, AppState } from "react-native";
 import { Style } from "./style";
 import { ICONS } from '../../framework/resources';
 import { MediaRecorderStyle, MediaRecorderStyleInterface } from './MediaRecorderStyle';
 
 let recordedTime = 0, stopRecordingIntervalId: any = null;
+let recordingStatedAt = 0;
 export interface CometChatMediaRecorderInterface {
     onClose?: Function;
     onPlay?: Function;
@@ -70,6 +71,18 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
         }
     }, [])
 
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'background') {
+                _onStop();
+            }
+        });
+    
+        return () => {
+            subscription.remove();
+        };
+    }, []);
+
     function permissionAlert() {
         Alert.alert('', localize("MICROPHONE_PERMISSION"), [
             {
@@ -114,6 +127,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     }
 
     const startInterval = () => {
+        recordingStatedAt = Date.now();
         timerIntervalId = setInterval(timer, 1000);
     }
 
@@ -131,7 +145,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
     const _onStop = () => {
         NativeModules.FileManager.releaseMediaResources((result: string) => {
             console.log(time, "Filepath _stopRecorderAudio", result);
-            recordedTime = time;
+            recordedTime = Date.now() - recordingStatedAt;
             setRecordedFile(JSON.parse(result)?.file);
             onStop && onStop(JSON.parse(result)?.file);
         })
@@ -164,7 +178,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
                 onPause && onPause();
                 setRecordedPlaying(false);
                 clearTimeout(stopRecordingIntervalId);
-            }, recordedTime * 1000)
+            }, recordedTime)
         })
     }
 
@@ -246,7 +260,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
                 <View style={[Style.timerContainer, { flexDirection: Boolean(recordedFile) ? "row-reverse" : "row" }]}>
                     <Text style={[
                         timerTextFont && { fontFamily: timerTextFont },
-                        timerTextColor && { color: timerTextColor },
+                        timerTextColor ? { color: timerTextColor } : { color: "#000" },
                         timerTextstyle && { fontStyle: timerTextstyle },
                         !Boolean(recordedFile) && { marginRight: 10 }
                     ] as TextStyle}>{formatTime(time)}</Text>
