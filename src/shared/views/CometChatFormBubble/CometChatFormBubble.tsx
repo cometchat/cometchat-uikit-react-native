@@ -505,7 +505,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                     subtitle={message.getTitle()}
                     quickViewStyle={quickViewStyle}
                 />
-                <Text style={[{ marginTop: 10, color: goalCompletionTextColor }, goalCompletionTextFont] as TextStyle}>{message.getGoalCompletionText() || localize("FORM_COMPLETION_MESSAGE")}</Text>
+                <Text style={[{ marginTop: 10, color: goalCompletionTextColor }, goalCompletionTextFont] as TextStyle[]}>{message.getGoalCompletionText() || localize("FORM_COMPLETION_MESSAGE")}</Text>
             </View>
             :
             <View style={{
@@ -524,7 +524,7 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
                                         color: titleColor,
                                     },
                                     titleFont,
-                                ] as TextStyle}
+                                ] as TextStyle[]}
                             >{message.getTitle()}</Text>
                         </View>
                     }
@@ -540,8 +540,3 @@ export const CometChatFormBubble = memo((props: CometChatFormBubbleInterface) =>
         }
     </View>
 })
-
-//@ts-ignore
-CometChatFormBubble.defaultProps = {
-    message: {}
-}

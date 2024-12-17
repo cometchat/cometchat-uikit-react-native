@@ -66,24 +66,26 @@ export interface CometChatDateInterface {
    */
   style?: DateStyleInterface;
   /**
-   * 
+   *
    */
-  dateAlignment?: "auto" | "left" | "right" | "center" | "justify" | undefined;
+  dateAlignment?: 'auto' | 'left' | 'right' | 'center' | 'justify' | undefined;
 }
 
 export const CometChatDate = (props: CometChatDateInterface) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
-  const { timeStamp, pattern, customDateString, dateAlignment } = props;
+  const {
+    dateAlignment,
+    timeStamp = 0,
+    pattern = patterns.timeFormat,
+    customDateString = null,
+    style: styleProps = new DateStyle({}),
+  } = props;
 
-  const defaultStyleProps = new DateStyle({
+  const style = new DateStyle({
     textFont: theme.typography.caption1,
     textColor: theme.palette.getAccent500(),
+    ...styleProps,
   });
-
-  const style = {
-    ...defaultStyleProps,
-    ...props.style,
-  };
 
   let date = new Date(timeStamp);
 
@@ -175,17 +177,16 @@ export const CometChatDate = (props: CometChatDateInterface) => {
       ]}
     >
       <Text
-        style={[Style.textStyle, style.textFont, { color: style.textColor, textAlign: dateAlignment }] as TextStyle}
+        style={
+          [
+            Style.textStyle,
+            style.textFont,
+            { color: style.textColor, textAlign: dateAlignment },
+          ] as TextStyle[]
+        }
       >
         {customDateString ? customDateString : getFormattedDate()}
       </Text>
     </View>
   );
-};
-
-CometChatDate.defaultProps = {
-  timeStamp: 0,
-  pattern: patterns.timeFormat,
-  customDateString: null,
-  style: new DateStyle({}),
 };

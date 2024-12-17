@@ -161,21 +161,21 @@ export interface CometChatCreatePollInterface {
 export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
   const {
-    title,
     closeIcon,
     createIcon,
-    questionPlaceholderText,
     onError,
-    createPollsStyle,
     user,
     group,
     onClose,
-    answerPlaceholderText,
     answerHelpText,
     addAnswerText,
     deleteIcon,
     createPollIcon,
-    defaultAnswers,
+    title= localize('CREATE_POLL'),
+    questionPlaceholderText= localize('NAME'),
+    answerPlaceholderText= localize('ANSWER'),
+    createPollsStyle= {},
+    defaultAnswers= 2,
   } = props;
 
   const [question, setQuestion] = React.useState('');
@@ -256,7 +256,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
               styles.errorTextTitle,
               theme.typography.body,
               { color: theme.palette.getError() },
-            ] as TextStyle}
+            ] as TextStyle[]}
           >
             {error?.length > 0 ? error : ''}
           </Text>
@@ -265,7 +265,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
               styles.errorText,
               theme.typography.body,
               { color: theme.palette.getError() },
-            ] as TextStyle}
+            ] as TextStyle[]}
           >
             {localize('TRY_AGAIN_LATER')}
           </Text>
@@ -353,7 +353,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
             {
               color: theme.palette.getPrimary(),
             },
-          ] as TextStyle}
+          ] as TextStyle[]}
         >
           {addAnswerText ?? localize('ADD_ANOTHER_ANSWER')}
         </Text>
@@ -480,12 +480,4 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
       </View>}
     </KeyboardAvoidingView>
   );
-};
-
-CometChatCreatePoll.defaultProps = {
-  title: 'Create Polls',
-  questionPlaceholderText: localize('NAME'),
-  answerPlaceholderText: localize('ANSWER'),
-  createPollsStyle: {},
-  defaultAnswers: 2,
 };

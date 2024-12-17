@@ -1,6 +1,13 @@
 import React from 'react';
 // @ts-ignore
-import { Image, View, StyleProp, ViewStyle, ViewProps, ImageStyle } from 'react-native';
+import {
+  Image,
+  View,
+  StyleProp,
+  ViewStyle,
+  ViewProps,
+  ImageStyle,
+} from 'react-native';
 import { Styles } from './styles';
 import { StatusIndicatorStyle } from './StatusIndicatorStyle';
 import { ImageType } from '../../base';
@@ -23,13 +30,18 @@ export interface CometChatStatusIndicatorInterface {
 export const CometChatStatusIndicator = (
   props: CometChatStatusIndicatorInterface
 ) => {
-  const { backgroundImage, backgroundColor } = props;
+  const {
+    backgroundColor,
+
+    backgroundImage = undefined,
+    style: styleProp = new StatusIndicatorStyle({}),
+  } = props;
 
   const defaultStyleProps = new StatusIndicatorStyle({});
   const style = {
     ...defaultStyleProps,
-    ...(props.style as object),
     ...(backgroundColor ? { backgroundColor } : {}),
+    ...styleProp as {}
   };
 
   const getView = () => {
@@ -56,9 +68,4 @@ export const CometChatStatusIndicator = (
   };
 
   return getView();
-};
-
-CometChatStatusIndicator.defaultProps = {
-  backgroundImage: '',
-  style: new StatusIndicatorStyle({}),
 };

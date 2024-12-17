@@ -24,27 +24,21 @@ interface CometChatAvatarProps {
 }
 
 export const CometChatAvatar = (props: CometChatAvatarProps) => {
+  const {
+    image = undefined,
+    name: rawName = '',
+    style: propsStyle = new AvatarStyle({}),
+  } = props;
   const {theme} = useContext<CometChatContextType>(CometChatContext);
 
-  const defaultStyleProps = new AvatarStyle({
+  const style = new AvatarStyle({
     backgroundColor : theme.palette.getAccent400(),
     nameTextColor : theme.palette.getAccent800(),
     nameTextFont : theme.typography.body,
+    ...propsStyle
   });
   
-  const { image, name: rawName } = props;
   const name = rawName.trim();
-
-  const style = {
-    ...defaultStyleProps,
-    ...props.style,
-    border: { ...defaultStyleProps.border, ...props.style?.border },
-    nameTextFont: {
-      ...defaultStyleProps.nameTextFont,
-      ...props.style?.nameTextFont,
-    },
-    outerView: { ...defaultStyleProps.outerView, ...props.style?.outerView },
-  };
 
   const getImageView = () => {
     let isImage = Boolean(image);
@@ -61,7 +55,7 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
               color: style.nameTextColor,
             },
             style.nameTextFont ?? {},
-          ] as TextStyle}
+          ] as TextStyle[]}
         >
           {name.length >= 2 ? name.substring(0, 2).toUpperCase() : name}
         </Text>
@@ -118,10 +112,4 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
       {getImageView()}
     </View>
   );
-};
-
-CometChatAvatar.defaultProps = {
-  image: '',
-  name: '',
-  style: new AvatarStyle({}),
 };

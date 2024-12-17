@@ -73,10 +73,10 @@ export const CometChatMessageBubble = memo(({
     LeadingView,
     BottomView,
     ThreadView,
-    alignment,
+    alignment = 'left',
     id,
     style
-}: CometChatMessageBubbleInterface) => {
+}: CometChatMessageBubbleInterface ) => {
 
     const {theme} = useContext<CometChatContextType>(CometChatContext);
 
@@ -144,8 +144,3 @@ export const CometChatMessageBubble = memo(({
         </View>
     )
 })
-
-//@ts-ignore
-CometChatMessageBubble.defaultProps = {
-    alignment: "left"
-}

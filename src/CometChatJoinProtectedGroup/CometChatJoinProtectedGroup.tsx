@@ -126,19 +126,20 @@ export const CometChatJoinProtectedGroup = (
 ) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
   const {
-    group,
     title = localize("PROTECTED_GROUP"),
     joinIcon,
     closeIcon,
     passwordPlaceholderText = localize("GROUP_PASSWORD"),
     description,
     onJoinClick,
-    hasError,
     errorText,
     onError,
     onBack,
-    joinProtectedGroupStyle,
+    hasError= true,
+    joinProtectedGroupStyle= {},
+    group= undefined
   } = props;
+  
   const [password, setPassword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -238,7 +239,7 @@ export const CometChatJoinProtectedGroup = (
           joinProtectedGroupStyle?.descriptionTextStyle ??
             theme.typography.subtitle1,
           { color: theme.palette.getAccent() },
-        ] as TextStyle}
+        ] as TextStyle[]}
       >
         {description ?? `Enter password to access ${group?.['name']} Group.`}
       </Text>
@@ -264,8 +265,4 @@ export const CometChatJoinProtectedGroup = (
       />
     </View>
   );
-};
-CometChatJoinProtectedGroup.defaultProps = {
-  hasError: true,
-  joinProtectedGroupStyle: {},
 };

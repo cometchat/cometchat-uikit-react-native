@@ -7,12 +7,9 @@ import {
   StyleSheet,
   Text,
 } from 'react-native';
-import {
-  FontStyleInterface,
-  ImageType,
-} from '../../shared/base';
-import { CometChatSoundManager } from "../../shared/resources";
-import { CometChatContext } from "../../shared/CometChatContext";
+import { FontStyleInterface, ImageType } from '../../shared/base';
+import { CometChatSoundManager } from '../../shared/resources';
+import { CometChatContext } from '../../shared/CometChatContext';
 import { ICONS } from './resources';
 import { TextStyle } from 'react-native';
 
@@ -33,13 +30,13 @@ export interface SmartRepliesInterface {
 }
 const SmartRepliesView = (props: SmartRepliesInterface) => {
   const {
-    customOutgoingMessageSound,
-    enableSoundForMessages,
     onClose,
-    replies,
-    style,
     onClick,
     closeIcon,
+    customOutgoingMessageSound = null,
+    enableSoundForMessages = false,
+    style = {},
+    replies = [],
   } = props;
   const { theme } = useContext(CometChatContext);
 
@@ -108,12 +105,14 @@ const SmartRepliesView = (props: SmartRepliesInterface) => {
               ]}
             >
               <Text
-                style={[
-                  style?.textFont || theme?.typography?.subtitle1,
-                  {
-                    color: style?.textColor || theme?.palette?.getAccent(),
-                  },
-                ] as TextStyle}
+                style={
+                  [
+                    style?.textFont || theme?.typography?.subtitle1,
+                    {
+                      color: style?.textColor || theme?.palette?.getAccent(),
+                    },
+                  ] as TextStyle[]
+                }
               >
                 {option}
               </Text>
@@ -210,10 +209,5 @@ const Styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-SmartRepliesView.defaultProps = {
-  customOutgoingMessageSound: null,
-  enableSoundForMessages: false,
-  style: {},
-  replies: [],
-};
+
 export { SmartRepliesView };

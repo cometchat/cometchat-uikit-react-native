@@ -117,13 +117,13 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
     title = localize("NEW_GROUP"),
     closeIcon,
     createIcon,
-    passwordPlaceholderText,
-    namePlaceholderText,
+    namePlaceholderText= localize('NAME'),
+    passwordPlaceholderText= localize('ENTER_YOUR_PASSWORD'),
+    createGroupStyle= {},
     disableCloseButton,
     onCreatePress,
     onError,
     onBack,
-    createGroupStyle,
   } = props;
   const [password, setPassword] = useState('');
   const [groupType, setGroupType] = React.useState(GroupTypeConstants.public);
@@ -160,7 +160,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
                   ...(createGroupStyle?.tabTextStyle &&
                     createGroupStyle?.tabTextStyle),
                 },
-          ] as TextStyle}
+          ] as TextStyle[]}
         >
           {name}
         </Text>
@@ -259,7 +259,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
               styles.errorTextTitle,
               theme.typography.body,
               { color: theme.palette.getError() },
-            ] as TextStyle}
+            ] as TextStyle[]}
           >
             {error?.length > 0 ? error : localize('ERROR_GROUP_CREATE')}
           </Text>
@@ -268,7 +268,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
               styles.errorText,
               theme.typography.body,
               { color: theme.palette.getError() },
-            ] as TextStyle}
+            ] as TextStyle[]}
           >
             {localize('TRY_AGAIN_LATER')}
           </Text>
@@ -354,7 +354,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
           groupName?.length > 0
             ? createGroupStyle?.namePlaceholderTextStyle
             : createGroupStyle?.nameInputTextStyle,
-        ] as TextStyle}
+        ] as TextStyle[]}
       />
       {groupType === GroupTypeConstants.password && (
         <TextInput
@@ -372,7 +372,7 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
             password?.length > 0
               ? createGroupStyle?.passwordPlaceholderTextStyle
               : createGroupStyle?.passwordInputTextStyle,
-          ] as TextStyle}
+          ] as TextStyle[]}
         />
       )}
       <ErrorView />
@@ -380,8 +380,3 @@ export const CometChatCreateGroup = (props: CometChatCreateGroupInterface) => {
   );
 };
 
-CometChatCreateGroup.defaultProps = {
-  namePlaceholderText: localize('NAME'),
-  passwordPlaceholderText: localize('ENTER_YOUR_PASSWORD'),
-  createGroupStyle: {},
-};

@@ -25,13 +25,20 @@ export interface CometChatReceiptInterface {
   style?: {
     height?: string | number;
     width?: string | number;
-    tintColor?: string
-  }
+    tintColor?: string;
+  };
 }
 
 export const CometChatReceipt = (props: CometChatReceiptInterface) => {
-  const { waitIcon, sentIcon, deliveredIcon, readIcon, errorIcon, receipt, style } =
-    props;
+  const {
+    style,
+    waitIcon = ICONS.WAITING,
+    sentIcon = ICONS.GREY_TICK,
+    deliveredIcon = ICONS.GREY_DOUBLE_TICK,
+    readIcon = ICONS.BLUE_DOUBLE_TICK,
+    errorIcon = ICONS.ERROR_TICK,
+    receipt = null,
+  } = props;
 
   const { theme } = useContext<CometChatContextType>(CometChatContext);
 
@@ -74,16 +81,17 @@ export const CometChatReceipt = (props: CometChatReceiptInterface) => {
     } else if (typeof icon === 'number') {
       imageSource = icon;
     }
-    return <Image source={imageSource} style={[styles.tickImageStyle, { tintColor: tintColor, width, height }] as ImageStyle} />;
+    return (
+      <Image
+        source={imageSource}
+        style={
+          [
+            styles.tickImageStyle,
+            { tintColor: tintColor, width, height },
+          ] as ImageStyle
+        }
+      />
+    );
   }
   return null;
-};
-
-CometChatReceipt.defaultProps = {
-  waitIcon: ICONS.WAITING,
-  sentIcon: ICONS.GREY_TICK,
-  deliveredIcon: ICONS.GREY_DOUBLE_TICK,
-  readIcon: ICONS.BLUE_DOUBLE_TICK,
-  errorIcon: ICONS.ERROR_TICK,
-  receipt: null,
 };

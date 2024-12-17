@@ -125,7 +125,6 @@ export const CometChatThreadedMessages = (
 
   const {
     parentMessage,
-    title,
     closeIcon,
     BubbleView,
     MessageActionView,
@@ -136,7 +135,8 @@ export const CometChatThreadedMessages = (
     threadedMessagesStyle,
     hideMessageComposer,
     MessageComposerView,
-    MessageListView
+    MessageListView,
+    title= localize('THREAD'),
   } = props;
 
   const loggedInUser = useRef<CometChat.User | null>(null);
@@ -286,7 +286,7 @@ export const CometChatThreadedMessages = (
               {
                 color: theme.palette.getAccent600(),
               },
-            ] as TextStyle}
+            ] as TextStyle[]}
           >
             {replyCount ?? 0} {replyCount > 1 ? localize("REPLIES") : localize("REPLY")}
           </Text>
@@ -342,9 +342,4 @@ export const CometChatThreadedMessages = (
       )}
     </View>
   );
-};
-CometChatThreadedMessages.defaultProps = {
-  title: localize('THREAD'),
-  threadedMessagesStyle: {},
-  parentMessage: {},
 };

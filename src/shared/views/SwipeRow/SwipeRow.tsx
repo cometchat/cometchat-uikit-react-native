@@ -21,15 +21,12 @@ export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface | any> = (
   const [translate, setTranslate] = useState(0);
   const { theme } = useContext<CometChatContextType>(CometChatContext);
 
-  const { id, options, children } = props;
-
-  //   const defaultlistItemStyleProps = new ListItemStyle({
-  // backgroundColor: theme.palette.getBackgroundColor(),
-  // titleColor: theme.palette.getAccent(),
-  //   });
-  const listItemStyle = {
-    ...props.listItemStyle,
-  };
+  const {
+    id,
+    options,
+    children,
+    listItemStyle= {},
+  } = props;
 
   const [swipeRowOptions, setSwipeRowOptions] = useState<any[]>([]);
   let cancelClick = false;
@@ -119,7 +116,6 @@ export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface | any> = (
               data={swipeRowOptions.slice(0, 3)}
               renderItem={OptionsListItem}
               keyExtractor={(_, i) => _.id ?? i}
-              
             />
           )}
         </View>
@@ -127,8 +123,4 @@ export const CometChatSwipeRow: React.FC<CometChatSwipeRowInterface | any> = (
       {children}
     </SwipeRow>
   );
-};
-
-CometChatSwipeRow.defaultProps = {
-  listItemStyle: {},
 };

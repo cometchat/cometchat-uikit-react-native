@@ -27,7 +27,7 @@ export interface CometChatMediaRecorderInterface {
 let timerIntervalId: any = null;
 export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) => {
     const {
-        onClose, style, onPause, onPlay, onSend, onStop, onStart, mediaRecorderStyle,
+        onClose, style = new MediaRecorderStyle({}), onPause, onPlay, onSend, onStop, onStart, mediaRecorderStyle,
         pauseIconUrl, playIconUrl, recordIconUrl, deleteIconUrl, stopIconUrl, submitIconUrl
     } = props;
 
@@ -263,7 +263,7 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
                         timerTextColor ? { color: timerTextColor } : { color: "#000" },
                         timerTextstyle && { fontStyle: timerTextstyle },
                         !Boolean(recordedFile) && { marginRight: 10 }
-                    ] as TextStyle}>{formatTime(time)}</Text>
+                    ] as TextStyle[]}>{formatTime(time)}</Text>
                     <FlatList
                         data={soundBars}
                         keyExtractor={(item) => item.toString()}
@@ -308,8 +308,4 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
             </View>
         </View>
     )
-}
-
-CometChatMediaRecorder.defaultProps = {
-    style: new MediaRecorderStyle({}),
 }

@@ -190,7 +190,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
               },
               theme.typography.subtitle1,
               pollsBubbleStyle?.pollOptionsTextStyle,
-            ] as TextStyle}
+            ] as TextStyle[]}
           >
             {value}
           </Text>
@@ -204,7 +204,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           },
           theme.typography.subtitle1,
           pollsBubbleStyle?.pollOptionsTextStyle,
-        ] as TextStyle}>
+        ] as TextStyle[]}>
           {optionsMetaData.results.options[id].count}
         </Text>
       </TouchableOpacity>
@@ -260,7 +260,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
           },
           style.questionText,
           pollsBubbleStyle?.questionTextStyle,
-        ] as TextStyle}
+        ] as TextStyle[]}
       >
         {pollQuestion}
       </Text>
@@ -278,7 +278,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
               theme.palette.getAccent600(),
           },
           pollsBubbleStyle?.voteCountTextStyle,
-        ] as TextStyle}
+        ] as TextStyle[]}
       >
         {optionsMetaData.results?.total} people voted
       </Text>
@@ -343,8 +343,3 @@ const style = StyleSheet.create({
     zIndex: 1,
   }
 });
-PollsBubble.defaultProps = {
-  options: {},
-  loggedInUser: {},
-  pollsBubbleStyle: {},
-};

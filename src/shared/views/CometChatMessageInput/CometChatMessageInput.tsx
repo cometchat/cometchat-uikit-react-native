@@ -109,33 +109,41 @@ export const CometChatMessageInput = (
 ) => {
   const { theme } = useContext<CometChatContextType>(CometChatContext);
   const {
-    text,
-    placeHolderText,
     onChangeText,
-    style,
     maxHeight,
     SecondaryButtonView,
     AuxiliaryButtonView,
-    auxiliaryButtonAlignment,
     PrimaryButtonView,
     onSelectionChange,
-    messageInputRef
+    messageInputRef,
+    placeHolderText = localize('ENTER_YOUR_MESSAGE_HERE'),
+    auxiliaryButtonAlignment = 'right',
+    style = {},
+    text = '',
   } = props;
 
   return (
-    <View style={{ backgroundColor: style?.inputBackground ?? theme.palette.getAccent100(), marginHorizontal: 8, borderRadius: 8 }}>
+    <View
+      style={{
+        backgroundColor: style?.inputBackground ?? theme.palette.getAccent100(),
+        marginHorizontal: 8,
+        borderRadius: 8,
+      }}
+    >
       <TextInput
         ref={messageInputRef}
-        style={[
-          styles.textInput,
-          {
-            color: style?.textColor ?? theme.palette.getAccent(),
-            maxHeight: maxHeight ?? 25 * 3,
-          },
-          text?.length
-            ? style?.textFont ?? theme.typography.body
-            : style?.placeholderTextFont ?? theme.typography.body,
-        ] as TextInputStyle}
+        style={
+          [
+            styles.textInput,
+            {
+              color: style?.textColor ?? theme.palette.getAccent(),
+              maxHeight: maxHeight ?? 25 * 3,
+            },
+            text?.length
+              ? style?.textFont ?? theme.typography.body
+              : style?.placeholderTextFont ?? theme.typography.body,
+          ] as TextInputStyle
+        }
         onChangeText={onChangeText}
         placeholderTextColor={
           style?.placeholderTextColor
@@ -175,11 +183,4 @@ export const CometChatMessageInput = (
       </View>
     </View>
   );
-};
-
-CometChatMessageInput.defaultProps = {
-  placeHolderText: localize('ENTER_YOUR_MESSAGE_HERE'),
-  auxiliaryButtonAlignment: 'right',
-  style: {},
-  text: '',
 };

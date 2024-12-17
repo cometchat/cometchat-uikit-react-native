@@ -1,4 +1,10 @@
-import React, { useCallback, useImperativeHandle, useRef, useState, useContext } from 'react';
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+  useContext,
+} from 'react';
 import PropTypes from 'prop-types';
 import { Emojis } from './emojis';
 import { Styles } from './style';
@@ -18,65 +24,64 @@ const emojiValues = Object.values(Emojis);
 
 const viewConfig = {
   waitForInteraction: true,
-  viewAreaCoveragePercentThreshold: 30
-}
+  viewAreaCoveragePercentThreshold: 30,
+};
 
 type CategoryListInterface = {
-  theme: CometChatTheme,
-  onCategorySelected: (id: string, index: number) => void,
+  theme: CometChatTheme;
+  onCategorySelected: (id: string, index: number) => void;
   style?: {
-    categoryIconTint?: string
-    selectedCategoryIconTint?: string
-  }
-}
+    categoryIconTint?: string;
+    selectedCategoryIconTint?: string;
+  };
+};
 
 type CategoryListActions = {
-  updateCategory: (newCateory: string, index: number) => void
-}
+  updateCategory: (newCateory: string, index: number) => void;
+};
 
 const CategoryList = React.forwardRef<
   CategoryListActions,
   CategoryListInterface
->((
-  { theme, onCategorySelected, style }, ref) => {
+>(({ theme, onCategorySelected, style }, ref) => {
   const [activeCategory, setActiveCategory] = useState('people');
 
   useImperativeHandle(ref, () => {
     return {
-      updateCategory: updateCategory
-    }
+      updateCategory: updateCategory,
+    };
   });
   const updateCategory = (newCategory: any, index: any) => {
     setActiveCategory(newCategory);
-  }
+  };
 
   return (
     <>
-      {
-        Emojis.map((value, index) => {
-          let emojiCategory = Object.values(value)[0];
-          return (
-            <TouchableOpacity
-              style={[Styles.getListStyle]}
-              key={emojiCategory.id}
-              onPress={() => {
-                onCategorySelected && onCategorySelected(emojiCategory.id, index);
+      {Emojis.map((value, index) => {
+        let emojiCategory = Object.values(value)[0];
+        return (
+          <TouchableOpacity
+            style={[Styles.getListStyle]}
+            key={emojiCategory.id}
+            onPress={() => {
+              onCategorySelected && onCategorySelected(emojiCategory.id, index);
+            }}
+          >
+            <Image
+              style={{
+                tintColor:
+                  activeCategory == emojiCategory.id
+                    ? style?.selectedCategoryIconTint ||
+                      theme?.palette?.getPrimary()
+                    : style?.categoryIconTint || theme?.palette?.getAccent600(),
               }}
-            >
-              <Image
-                style={{
-                  tintColor: activeCategory == emojiCategory.id
-                    ? (style?.selectedCategoryIconTint || theme?.palette?.getPrimary())
-                    : (style?.categoryIconTint || theme?.palette?.getAccent600()),
-                }}
-                source={emojiCategory.symbol}
-              />
-            </TouchableOpacity>
-          );
-        })
-      }
+              source={emojiCategory.symbol}
+            />
+          </TouchableOpacity>
+        );
+      })}
     </>
-  )
+  );
 });
 
 /**
@@ -94,7 +99,15 @@ const CategoryList = React.forwardRef<
 const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
   const theme: CometChatTheme = new CometChatTheme(props?.theme ?? {});
 
-  const { onClick, style } = props;
+  const {
+    onClick = () => {},
+    style = {
+      width: '100%',
+      height: 310,
+      border: {},
+      borderRadius: 8,
+    },
+  } = props;
 
   const emojiRef = useRef<any>(null);
   const categoryRef = useRef<any>(null);
@@ -116,18 +129,19 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           Styles.listStyle,
           {
             backgroundColor:
-              style?.backgroundColor ||
-              theme?.palette?.getBackgroundColor(),
+              style?.backgroundColor || theme?.palette?.getBackgroundColor(),
           },
         ]}
       >
         <Text
-          style={[
-            theme?.typography?.heading,
-            {
-              color: theme?.palette?.getPrimary(),
-            },
-          ] as TextStyle}
+          style={
+            [
+              theme?.typography?.heading,
+              {
+                color: theme?.palette?.getPrimary(),
+              },
+            ] as TextStyle[]
+          }
         >
           {item.char}
         </Text>
@@ -143,12 +157,17 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
     return (
       <View key={id} style={Styles.emojiCategoryWrapper}>
         <Text
-          style={[
-            Styles.emojiCategoryTitle,
-            theme?.typography?.caption1,
-            style?.sectionHeaderFont,
-            { color: style?.sectionHeaderColor || theme?.palette?.getAccent500() },
-          ] as TextStyle}
+          style={
+            [
+              Styles.emojiCategoryTitle,
+              theme?.typography?.caption1,
+              style?.sectionHeaderFont,
+              {
+                color:
+                  style?.sectionHeaderColor || theme?.palette?.getAccent500(),
+              },
+            ] as TextStyle[]
+          }
         >
           {name}
         </Text>
@@ -176,8 +195,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           width: style?.width,
           height: style?.height,
           backgroundColor:
-            style?.backgroundColor ||
-            theme?.palette?.getBackgroundColor(),
+            style?.backgroundColor || theme?.palette?.getBackgroundColor(),
         } as ViewProps,
       ]}
     >
@@ -200,7 +218,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           }
         }}
         windowSize={50}
-        onScrollToIndexFailed={(error) => { }}
+        onScrollToIndexFailed={(error) => {}}
         renderItem={emojiListRender}
       />
       <View
@@ -209,8 +227,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
           {
             width: style?.width,
             backgroundColor:
-              style?.categoryBackground ||
-              theme?.palette?.getBackgroundColor(),
+              style?.categoryBackground || theme?.palette?.getBackgroundColor(),
           } as ViewProps,
         ]}
       >
@@ -228,20 +245,7 @@ const CometChatEmojiKeyboard = (props: EmojiKeyboardConfiguration) => {
   );
 };
 
-// Specifies the default values for props:
-CometChatEmojiKeyboard.defaultProps = {
-  // hideSearch: false,
-  onClick: () => { },
-  style: {
-    width: '100%',
-    height: 310,
-    border: {},
-    borderRadius: 8,
-  },
-};
-
 CometChatEmojiKeyboard.propTypes = {
-  // hideSearch: PropTypes.bool,
   onClick: PropTypes.func,
   style: PropTypes.object,
 };

@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, Image } from "react-native";
 // import { getExtentionData, ExtensionConstants, CometChatTheme } from "../../shared";
 import { Styles } from "./style";
 import closeIcon from "./resources/close.png";
+import { MessagePreviewStyle } from "./MessagePreviewStyle";
 
 /**
  *
@@ -14,14 +15,35 @@ import closeIcon from "./resources/close.png";
  * @copyright © 2022 CometChat Inc.
  *
  */
-const CometChatMessagePreview = (props) => {
-  let messageText = props?.messagePreviewSubtitle;
+const CometChatMessagePreview = ({
+  messagePreviewTitle = "",
+  messagePreviewSubtitle = "",
+  closeIconURL = closeIcon,
+  onCloseClick = null,
+  style = new MessagePreviewStyle({
+    width: "100%",
+    height: "auto",
+    border: {
+      borderWidth: 3,
+      borderStyle: "solid",
+      borderColor: "rgba(20, 20, 20, 0.8)",
+    },
+    backgroundColor: "rgb(255,255,255)",
+    borderRadius: 0,
+    messagePreviewTitleFont: {},
+    messagePreviewTitleColor: "",
+    messagePreviewSubtitleColor: "",
+    messagePreviewSubtitleFont: {},
+    closeIconTint: "",
+  }),
+}) => {
+  let messageText = messagePreviewSubtitle;
   const theme ={}
-  // = new CometChatTheme(props?.theme || {});
+  // = new CometChatTheme(theme || {});
 
   //xss extensions data
   // const xssData = getExtentionData(
-  //   props?.messageObject,
+  //   messageObject,
   //   ExtensionConstants.xssFilter
   // );
   // if (
@@ -34,7 +56,7 @@ const CometChatMessagePreview = (props) => {
 
   //datamasking extensions data
   // const maskedData = getExtentionData(
-  //   props?.messageObject,
+  //   messageObject,
   //   ExtensionConstants.dataMasking
   // );
   // if (
@@ -48,7 +70,7 @@ const CometChatMessagePreview = (props) => {
 
   //profanity extensions data
   // const profaneData = getExtentionData(
-  //   props?.messageObject,
+  //   messageObject,
   //   ExtensionConstants.profanityFilter
   // );
   // if (
@@ -60,58 +82,28 @@ const CometChatMessagePreview = (props) => {
   // }
 
   let imageSource
-  if (props?.closeIconURL) {
-    if (typeof props?.closeIconURL === 'string' && props?.closeIconURL.length > 0) imageSource = { uri: props?.closeIconURL }
+  if (closeIconURL) {
+    if (typeof closeIconURL === 'string' && closeIconURL.length > 0) imageSource = { uri: closeIconURL }
     else imageSource = closeIcon
   }
 
   return (
-    <View style={Styles.editPreviewContainerStyle(props?.style, theme)}>
-      <View style={Styles.leftBar(props?.style, theme)} />
+    <View style={Styles.editPreviewContainerStyle(style, theme)}>
+      <View style={Styles.leftBar(style, theme)} />
       <View style={Styles.previewHeadingStyle()}>
-        <Text style={Styles.previewTitleStyle(props?.style, theme)}>
-          {props?.messagePreviewTitle}
+        <Text style={Styles.previewTitleStyle(style, theme)}>
+          {messagePreviewTitle}
         </Text>
         <TouchableOpacity
-          style={Styles.previewCloseStyle(props?.style)}
-          onPress={props?.onCloseClick}
+          style={Styles.previewCloseStyle(style)}
+          onPress={onCloseClick}
         >
-          <Image style={Styles.previewCloseIconStyle(props?.style)} source={imageSource} />
+          <Image style={Styles.previewCloseIconStyle(style)} source={imageSource} />
         </TouchableOpacity>
       </View>
-      <Text numberOfLines={1} ellipsizeMode="tail" style={Styles.previewSubTitleStyle(props?.style, theme)}>{messageText}</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail" style={Styles.previewSubTitleStyle(style, theme)}>{messageText}</Text>
     </View>
   );
 };
 
-CometChatMessagePreview.defaultProps = {
-  messagePreviewTitle: "",
-  messagePreviewSubtitle: "",
-  closeIconURL: closeIcon,
-  onCloseClick: null,
-  style: {
-    widht: "100%",
-    height: "auto",
-    border: {
-      borderWidth: 3,
-      borderStyle: "solid",
-      borderColor: "rgba(20, 20, 20, 0.8)"
-    },
-    backgroundColor: "rgb(255,255,255)",
-    borderRadius: 0,
-    messagePreviewTitleFont: {},
-    messagePreviewTitleColor: "",
-    messagePreviewSubtitleColor: "",
-    messagePreviewSubtitleFont: {},
-    closeIconTint: "",
-  },
-};
-
-CometChatMessagePreview.propTypes = {
-  messagePreviewTitle: PropTypes.string,
-  messagePreviewSubtitle: PropTypes.string,
-  closeIconURL: PropTypes.any,
-  onCloseClick: PropTypes.func,
-  style: PropTypes.object,
-};
 export { CometChatMessagePreview };

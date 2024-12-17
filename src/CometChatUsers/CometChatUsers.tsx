@@ -13,7 +13,7 @@ import {
   CometChatListStylesInterface,
   CometChatOptions,
 } from '../shared';
-import {UsersStyle, UsersStyleInterface} from './UsersStyle'
+import { UsersStyle, UsersStyleInterface } from './UsersStyle';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
 
 export interface CometChatUsersInterface
@@ -31,8 +31,6 @@ export interface CometChatUsersInterface
     | 'listItemKey'
     | 'onSelection'
   > {
-   
-
   /**
    *
    *
@@ -106,7 +104,18 @@ export const CometChatUsers = React.forwardRef<
   const ccUserBlockedId = 'ccUserBlocked_' + new Date().getTime();
   const ccUserUnBlockedId = 'ccUserBlocked_' + new Date().getTime();
 
-  const { usersRequestBuilder, usersStyle, ...newProps } = props;
+  const {
+    usersRequestBuilder = new CometChat.UsersRequestBuilder()
+      .setLimit(30)
+      .hideBlockedUsers(false)
+      .setRoles([])
+      .friendsOnly(false)
+      .setStatus('')
+      .setTags([])
+      .setUIDs([]),
+    usersStyle,
+    ...newProps
+  } = props;
 
   //context values
   const { theme } = React.useContext<CometChatContextType>(CometChatContext);
@@ -122,8 +131,8 @@ export const CometChatUsers = React.forwardRef<
     errorTextFont: theme?.typography.subtitle1,
     searchBackgroundColor: theme?.palette.getAccent600(),
     searchBorder: new BorderStyle({
-        borderColor: theme?.palette.getAccent700(),
-        ...usersStyle?.border,
+      borderColor: theme?.palette.getAccent700(),
+      ...usersStyle?.border,
     }),
     separatorColor: theme?.palette.getAccent100(),
     subtitleTextColor: theme?.palette.getAccent600(),
@@ -131,9 +140,9 @@ export const CometChatUsers = React.forwardRef<
     titleColor: theme?.palette.getAccent(),
     titleFont: theme?.typography.title1,
     loadingIconTint: theme?.palette.getPrimary(),
-    ...usersStyle
-});
-  
+    ...usersStyle,
+  });
+
   useImperativeHandle(ref, () => {
     return {
       updateList: userRef.current!.updateList,
@@ -143,7 +152,7 @@ export const CometChatUsers = React.forwardRef<
       updateAndMoveToFirst: userRef.current!.updateAndMoveToFirst,
       getSelectedItems: userRef.current!.getSelectedItems,
       getAllListItems: userRef.current!.getAllListItems,
-      clearSelection: userRef.current!.clearSelection
+      clearSelection: userRef.current!.clearSelection,
     };
   });
 
@@ -195,21 +204,13 @@ export const CometChatUsers = React.forwardRef<
         ref={userRef}
         title={'Users'}
         requestBuilder={usersRequestBuilder}
-        listStyle={{ ..._usersStyle, background: _usersStyle.backgroundColor }}
-        {...newProps as CometChatListProps}
+        listStyle={{
+          ..._usersStyle,
+          background: _usersStyle.backgroundColor,
+        }}
+        {...(newProps as CometChatListProps)}
         listItemKey="uid"
       />
     </View>
   );
 });
-
-CometChatUsers.defaultProps = {
-  usersRequestBuilder: new CometChat.UsersRequestBuilder()
-    .setLimit(30)
-    .hideBlockedUsers(false)
-    .setRoles([])
-    .friendsOnly(false)
-    .setStatus('')
-    .setTags([])
-    .setUIDs([]),
-};

@@ -149,6 +149,15 @@ interface CometChatActionSheetInterface {
   hideHeader?: boolean;
 }
 export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
+  const {
+    title= localize('ADD_TO_CHAT'),
+    layoutModeIconURL= undefined,
+    layoutMode= layoutType['list'],
+    hideLayoutMode= false,
+    actions= [],
+    style: propsStyle = {},
+    hideHeader= false,
+  } = props;
   const { theme } = useContext<CometChatContextType>(CometChatContext);
   const style: any = {
     ...new ActionSheetStyles({
@@ -157,15 +166,15 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
       listItemTitleColor: theme.palette.getAccent(),
       titleColor: theme.palette.getAccent(),
       titleFont: theme.typography.name,
-      backgroundColor: props.style?.backgroundColor,
-      paddingHorizontal: props.style?.paddingHorizontal
+      backgroundColor: propsStyle?.backgroundColor,
+      paddingHorizontal: propsStyle?.paddingHorizontal
     }),
-    ...props.style,
-    listItemTitleFont: {...theme.typography.subtitle1, ...(props.style.listItemTitleFont ?? {})},
+    ...propsStyle,
+    listItemTitleFont: {...theme.typography.subtitle1, ...(propsStyle.listItemTitleFont ?? {})},
   };
 
   const [listMode, setListMode] = React.useState(true);
-  const [actionList, setActionList] = React.useState(props.actions);
+  const [actionList, setActionList] = React.useState(actions);
 
   Hooks(props, setActionList);
 
@@ -193,7 +202,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
                 style={{
                   height: 1,
                   backgroundColor:
-                    props.style?.actionSheetSeparatorTint || props.style?.optionsSeparatorTint ||
+                    style.actionSheetSeparatorTint || style.optionsSeparatorTint ||
                     theme.palette.getAccent200(),
                 }}
               />
@@ -215,8 +224,8 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
   };
 
   const getLayoutModeIcon = () => {
-    if (props.hideLayoutMode) return null;
-    let img = props.layoutModeIconURL;
+    if (hideLayoutMode) return null;
+    let img = layoutModeIconURL;
     if (img == undefined) {
       img = listMode ? ICONS.GRID : ICONS.LIST;
     }
@@ -248,7 +257,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
         style?.border,
       ]}
     >
-      {!props.hideHeader && <View style={Style.headerStyle}>
+      {!hideHeader && <View style={Style.headerStyle}>
         <Text
           style={[
             Style.titleStyle,
@@ -261,20 +270,11 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
             },
           ]}
         >
-          {props.title}
+          {title}
         </Text>
         {getLayoutModeIcon()}
       </View>}
       {getList()}
     </View>
   );
-};
-
-CometChatActionSheet.defaultProps = {
-  title: localize('ADD_TO_CHAT'),
-  layoutModeIconURL: undefined,
-  layoutMode: layoutType['list'],
-  hideLayoutMode: false,
-  actions: [],
-  style: null,
 };

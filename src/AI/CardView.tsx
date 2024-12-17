@@ -1,8 +1,12 @@
-import {  useState } from 'react';
-import {   contentContainerStyle, getButtonStyles, getPopoverStyle } from './style';
+import { useState } from 'react';
+import {
+  contentContainerStyle,
+  getButtonStyles,
+  getPopoverStyle,
+} from './style';
 import { CardViewStyle } from './CardViewStyle';
 import { CometChatTheme } from '../shared';
-import { TouchableOpacity,Text,ScrollView, TextStyle } from 'react-native';
+import { TouchableOpacity, Text, ScrollView, TextStyle } from 'react-native';
 import React from 'react';
 import { View } from 'react-native';
 import { AIButtonsStyle } from './utils';
@@ -10,72 +14,70 @@ export type Card = {
   title?: string;
   id?: string;
   onClick?: (id: string) => void;
-  style?:AIButtonsStyle;
+  style?: AIButtonsStyle;
 };
-interface CardProps  {
+interface CardProps {
   buttons?: Card[];
-  backCallback?:(callback:()=>void) => void;
-  cardViewStyle?:CardViewStyle;
-};
-
-const defaultProps:CardProps = {
-  buttons: undefined,
-  backCallback:undefined,
-  cardViewStyle:undefined
+  backCallback?: (callback: () => void) => void;
+  cardViewStyle?: CardViewStyle;
 }
 
-
-export const CardView = (props:CardProps) => {
+export const CardView = (
+  {
+    buttons= undefined,
+    backCallback= undefined,
+    cardViewStyle= undefined,
+  }: CardProps
+) => {
   const [currentSection, setCurrentSection] = useState<string | null>(null);
 
-function fetchButtonContent(button:Card){
-
-
-  setCurrentSection(button?.id!)
-  if(button && button.onClick){
-    button.onClick(button.id!)
+  function fetchButtonContent(button: Card) {
+    setCurrentSection(button?.id!);
+    if (button && button.onClick) {
+      button.onClick(button.id!);
+    }
   }
-}
 
-
-  
-function getButtons():JSX.Element | null{
-  return (
-    <View style={{
-      width:"100%",
-      backgroundColor: "transparent",
-    }}>
-    {props.buttons?.map(item => (
-      <TouchableOpacity
-        key={item.id} // Make sure to set a unique key for each item
-        onPress={() => fetchButtonContent(item)}
-       
+  function getButtons(): JSX.Element | null {
+    return (
+      <View
+        style={{
+          width: '100%',
+          backgroundColor: 'transparent',
+        }}
       >
-        <Text style={getButtonStyles(new CometChatTheme({}),item?.style || {}) as TextStyle}>{item.title}</Text>
-      </TouchableOpacity>
-      
-    ))}
-  </View>)
-
-}
+        {buttons?.map((item) => (
+          <TouchableOpacity
+            key={item.id} // Make sure to set a unique key for each item
+            onPress={() => fetchButtonContent(item)}
+          >
+            <Text
+              style={
+                getButtonStyles(
+                  new CometChatTheme({}),
+                  item?.style || {}
+                ) as TextStyle
+              }
+            >
+              {item.title}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }
 
   return (
-    <View style={getPopoverStyle(props.cardViewStyle || {}) as TextStyle}>
-      
+    <View style={getPopoverStyle(cardViewStyle || {}) as TextStyle}>
       <View style={contentContainerStyle as TextStyle}>
-        {!currentSection && props.buttons &&  (
-          <ScrollView  style={{height:"100%",width:"100%"}}>
-
-            { getButtons()}
+        {!currentSection && buttons && (
+          <ScrollView style={{ height: '100%', width: '100%' }}>
+            {getButtons()}
           </ScrollView>
-          
-         
         )}
-       
       </View>
     </View>
   );
 };
 
-CardView.defaultProps = defaultProps
 export default CardView;

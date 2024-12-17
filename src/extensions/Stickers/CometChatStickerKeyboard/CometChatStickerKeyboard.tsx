@@ -1,20 +1,27 @@
-import React from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Dimensions } from "react-native";
-import { Hooks } from "./hooks";
-import { Styles } from "./style";
-import { localize } from "../../../shared/resources/CometChatLocalize";
-import { CometChatTheme } from "../../../shared/resources/CometChatTheme";
-import { ExtensionConstants } from "../../ExtensionConstants";
+import React from 'react';
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
+import { Hooks } from './hooks';
+import { Styles } from './style';
+import { localize } from '../../../shared/resources/CometChatLocalize';
+import { CometChatTheme } from '../../../shared/resources/CometChatTheme';
+import { ExtensionConstants } from '../../ExtensionConstants';
 //@ts-ignore
-import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { anyObject } from "../../../shared/utils";
+import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { anyObject } from '../../../shared/utils';
 
 export interface CometChatStickerKeyboardInterface {
-  loadingText?: string,
-  theme?: CometChatTheme,
-  onPress?: (item: CometChat.CustomMessage | anyObject) => void,
-  emptyText?: string,
-  errorText?: string,
+  loadingText?: string;
+  theme?: CometChatTheme;
+  onPress?: (item: CometChat.CustomMessage | anyObject) => void;
+  emptyText?: string;
+  errorText?: string;
 }
 
 /**
@@ -28,23 +35,35 @@ export interface CometChatStickerKeyboardInterface {
  *
  */
 
-export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterface) => {
+export const CometChatStickerKeyboard = (
+  props: CometChatStickerKeyboardInterface
+) => {
+  const {
+    emptyText = localize('NO_STICKERS_FOUND'),
+    errorText = localize('SOMETHING_WRONG'),
+    loadingText = localize('LOADING'),
+    theme = new CometChatTheme({}),
+    onPress,
+  } = props;
   const [stickerList, setStickerList] = React.useState<any>([]);
   const [stickerSet, setStickerSet] = React.useState<any>(null);
   const [activeStickerList, setActiveStickerList] = React.useState([]);
   const [activeStickerSetName, setActiveStickerSetName] = React.useState();
   const [decoratorMessage, setDecoratorMessage] = React.useState(
-    props?.loadingText || localize("LOADING")
+    loadingText || localize('LOADING')
   );
 
-  const theme = new CometChatTheme(props?.theme || {});
-  const sendStickerMessage = (stickerItem: { stickerUrl: any; stickerSetName: any; }) => {
-    if(stickerItem && typeof stickerItem === 'object')
-      props?.onPress && props?.onPress({
-        ...stickerItem,
-        sticker_url: stickerItem?.stickerUrl,
-        sticker_name: stickerItem?.stickerSetName
-      });
+  const sendStickerMessage = (stickerItem: {
+    stickerUrl: any;
+    stickerSetName: any;
+  }) => {
+    if (stickerItem && typeof stickerItem === 'object')
+      onPress &&
+        onPress({
+          ...stickerItem,
+          sticker_url: stickerItem?.stickerUrl,
+          sticker_name: stickerItem?.stickerSetName,
+        });
   };
 
   const onStickerSetClicked = (sectionItem: any) => {
@@ -103,11 +122,7 @@ export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterfac
     if (activeStickerList?.length === 0) {
       messageContainer = (
         <View style={Styles.stickerMsgStyle}>
-          <Text
-            style={Styles.stickerMsgTxtStyle}
-          >
-            {decoratorMessage}
-          </Text>
+          <Text style={Styles.stickerMsgTxtStyle}>{decoratorMessage}</Text>
         </View>
       );
     }
@@ -124,36 +139,21 @@ export const CometChatStickerKeyboard = (props: CometChatStickerKeyboardInterfac
     setActiveStickerList,
     setActiveStickerSetName,
     setDecoratorMessage,
-    decoratorMessage,
+    decoratorMessage
   );
 
   return (
-    <View
-      style={Styles.stickerWrapperStyle}
-    >
-      {activeStickerList?.length > 0 ?
-        <ScrollView
-          style={Styles.stickerSectionListStyle}
-          horizontal
-        >
+    <View style={Styles.stickerWrapperStyle}>
+      {activeStickerList?.length > 0 ? (
+        <ScrollView style={Styles.stickerSectionListStyle} horizontal>
           {getStickerCategory()}
         </ScrollView>
-        : getDecoratorMessage()}
+      ) : (
+        getDecoratorMessage()
+      )}
       <ScrollView contentContainerStyle={Styles.stickerListStyle}>
         {getStickerList()}
       </ScrollView>
     </View>
   );
-};
-
-// Specifies the default values for props:
-CometChatStickerKeyboard.defaultProps = {
-  emptyText: localize("NO_STICKERS_FOUND"),
-  errorText: localize("SOMETHING_WRONG"),
-  loadingText: localize("LOADING"),
-  style: {
-    width: "100%",
-    height: Dimensions.get("screen").height * 0.5,
-    borderRadius: 8,
-  },
 };

@@ -1,4 +1,10 @@
-import React, { forwardRef, useContext, useEffect, useImperativeHandle, useState } from 'react';
+import React, {
+  forwardRef,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import {
   Animated,
   BackHandler,
@@ -7,7 +13,10 @@ import {
   PanResponder,
   TouchableOpacity,
   View,
-  Modal, ScrollView, KeyboardAvoidingView, Platform
+  Modal,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Styles } from './style';
 import { CometChatContext } from '../../CometChatContext';
@@ -26,161 +35,153 @@ export interface CometChatBottomSheetInterface {
     shadowColor?: string;
     backgroundColor?: string;
     lineColor?: string;
-    lineHeight?: number,
-    paddingHorizontal?: number,
-    borderRadius?: number,
+    lineHeight?: number;
+    paddingHorizontal?: number;
+    borderRadius?: number;
   };
 }
-const CometChatBottomSheet = forwardRef((props: CometChatBottomSheetInterface, ref) => {
-  const { theme } = useContext<CometChatContextType>(CometChatContext);
-  const {
-    sliderMaxHeight,
-    animationDuration,
-    animation,
-    sliderMinHeight,
-    children,
-    isOpen,
-    onOpen,
-    onClose,
-    style,
-  } = props;
+const CometChatBottomSheet = forwardRef(
+  (props: CometChatBottomSheetInterface, ref) => {
+    const { theme } = useContext<CometChatContextType>(CometChatContext);
+    const {
+      children = <View />,
+      isOpen = true,
+      sliderMaxHeight = Dimensions.get('screen').height * 0.9,
+      sliderMinHeight = 50,
+      animation = Easing.quad,
+      animationDuration = 200,
+      onOpen = undefined,
+      onClose = undefined,
+      style = {},
+    } = props;
 
-  const [contentHeight, setContentHeight] = useState(null);
-  const panelHeightValue = new Animated.Value(0);
+    const [contentHeight, setContentHeight] = useState(null);
+    const panelHeightValue = new Animated.Value(0);
 
-  const togglePanel = () => {
-    Animated.timing(panelHeightValue, {
-      duration: animationDuration,
-      easing: animation,
-      toValue:
-        //@ts-ignore
-        panelHeightValue._value === 0 ? contentHeight - sliderMinHeight : 0,
-      useNativeDriver: false,
-    }).start(() => {
-      onClose && onClose();
+    const togglePanel = () => {
+      Animated.timing(panelHeightValue, {
+        duration: animationDuration,
+        easing: animation,
+        toValue:
+          //@ts-ignore
+          panelHeightValue._value === 0 ? contentHeight - sliderMinHeight : 0,
+        useNativeDriver: false,
+      }).start(() => {
+        onClose && onClose();
+      });
+      return true;
+    };
+
+    useImperativeHandle(ref, () => {
+      return {
+        togglePanel,
+      };
     });
-    return true;
-  };
-
-  useImperativeHandle(ref, () => {
-    return {
-      togglePanel
+    const _onBackPress = () => {
+      isOpen && togglePanel();
+      return isOpen;
     };
-  });
-  const _onBackPress = () => {
-    isOpen && togglePanel();
-    return isOpen;
-  };
 
-  const _handleScrollEndDrag = ({ nativeEvent }: any) => {
-    nativeEvent.contentOffset.y === 0 && togglePanel();
-  };
-
-  const _setSize = ({ nativeEvent }: any) => {
-    setContentHeight(nativeEvent.layout.height);
-  };
-
-  let _parentPanResponder = PanResponder.create({
-    onMoveShouldSetPanResponderCapture: () => !isOpen,
-    onPanResponderRelease: () => togglePanel(),
-  });
-
-  let _childPanResponder = PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, gestureState) =>
-      gestureState.dy > 15,
-    onPanResponderRelease: (_, gestureState) =>
-      gestureState.dy > 0 && togglePanel(),
-  });
-
-  useEffect(() => {
-
-    BackHandler.addEventListener('hardwareBackPress', _onBackPress);
-    // onOpen ? onOpen() : () => {};
-
-    return () => {
-      BackHandler.removeEventListener('hardwareBackPress', _onBackPress);
+    const _handleScrollEndDrag = ({ nativeEvent }: any) => {
+      nativeEvent.contentOffset.y === 0 && togglePanel();
     };
-  }, []);
 
-  return (
-    <Modal
-      transparent={true}
-      visible={isOpen}
-      onRequestClose={() => togglePanel()}
-    >
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    const _setSize = ({ nativeEvent }: any) => {
+      setContentHeight(nativeEvent.layout.height);
+    };
+
+    let _parentPanResponder = PanResponder.create({
+      onMoveShouldSetPanResponderCapture: () => !isOpen,
+      onPanResponderRelease: () => togglePanel(),
+    });
+
+    let _childPanResponder = PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+        gestureState.dy > 15,
+      onPanResponderRelease: (_, gestureState) =>
+        gestureState.dy > 0 && togglePanel(),
+    });
+
+    useEffect(() => {
+      BackHandler.addEventListener('hardwareBackPress', _onBackPress);
+      // onOpen ? onOpen() : () => {};
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', _onBackPress);
+      };
+    }, []);
+
+    return (
+      <Modal
+        transparent={true}
+        visible={isOpen}
+        onRequestClose={() => togglePanel()}
       >
-        <View style={Styles.wrapperStyle}>
-          <View
-            style={Styles.greyWrapperStyle}
-            onStartShouldSetResponder={() => togglePanel()}
-          />
-          {
-            //@ts-ignore
-            <Animated.View
-              onLayout={_setSize}
-              {..._parentPanResponder?.panHandlers}
-              style={{
-                ...Styles.containerStyle,
-                backgroundColor:
-                  style?.backgroundColor ?? theme.palette.getBackgroundColor(),
-                shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
-                maxHeight: sliderMaxHeight,
-                minHeight: sliderMinHeight,
-                transform: [
-                  { translateY: panelHeightValue },
-                  { scale: isOpen ? 1 : 0 },
-                ],
-                paddingHorizontal: style?.paddingHorizontal || 5,
-                borderTopLeftRadius: style?.borderRadius || 30,
-                borderTopRightRadius: style?.borderRadius || 30,
-              }}
-            >
-              <View
-                style={Styles.outerContentStyle}
-                // {..._childPanResponder?.panHandlers}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={Styles.wrapperStyle}>
+            <View
+              style={Styles.greyWrapperStyle}
+              onStartShouldSetResponder={() => togglePanel()}
+            />
+            {
+              //@ts-ignore
+              <Animated.View
+                onLayout={_setSize}
+                {..._parentPanResponder?.panHandlers}
+                style={{
+                  ...Styles.containerStyle,
+                  backgroundColor:
+                    style?.backgroundColor ??
+                    theme.palette.getBackgroundColor(),
+                  shadowColor: style?.shadowColor ?? theme.palette.getAccent(),
+                  maxHeight: sliderMaxHeight,
+                  minHeight: sliderMinHeight,
+                  transform: [
+                    { translateY: panelHeightValue },
+                    { scale: isOpen ? 1 : 0 },
+                  ],
+                  paddingHorizontal: style?.paddingHorizontal || 5,
+                  borderTopLeftRadius: style?.borderRadius || 30,
+                  borderTopRightRadius: style?.borderRadius || 30,
+                }}
               >
-                <TouchableOpacity
-                  onPress={togglePanel.bind(this)}
-                  activeOpacity={1}
-                  style={{ height: style?.lineHeight || 30 }}
+                <View
+                  style={Styles.outerContentStyle}
+                  // {..._childPanResponder?.panHandlers}
                 >
-                  <View style={Styles.lineContainerStyle}>
-                    <View
-                      style={[
-                        Styles.lineStyle,
-                        {
-                          backgroundColor:
-                            style?.lineColor ?? theme.palette.getAccent200(),
-                        },
-                      ]}
-                    />
+                  <TouchableOpacity
+                    onPress={togglePanel.bind(this)}
+                    activeOpacity={1}
+                    style={{ height: style?.lineHeight || 30 }}
+                  >
+                    <View style={Styles.lineContainerStyle}>
+                      <View
+                        style={[
+                          Styles.lineStyle,
+                          {
+                            backgroundColor:
+                              style?.lineColor ?? theme.palette.getAccent200(),
+                          },
+                        ]}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                  <View style={Styles.innerContentStyle}>
+                    {typeof children === 'function'
+                      ? children(_handleScrollEndDrag)
+                      : children}
                   </View>
-                </TouchableOpacity>
-                <View style={Styles.innerContentStyle}>
-                  {typeof children === 'function'
-                    ? children(_handleScrollEndDrag)
-                    : children}
                 </View>
-              </View>
-            </Animated.View>
-          }
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-});
-
-CometChatBottomSheet.defaultProps = {
-  children: <View />,
-  isOpen: true,
-  sliderMaxHeight: Dimensions.get('screen').height * 0.9,
-  sliderMinHeight: 50,
-  animation: Easing.quad,
-  animationDuration: 200,
-  onOpen: undefined,
-  onClose: undefined,
-  style: {},
-};
+              </Animated.View>
+            }
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    );
+  }
+);
 
 export { CometChatBottomSheet };

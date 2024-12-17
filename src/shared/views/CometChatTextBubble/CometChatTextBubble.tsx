@@ -55,7 +55,7 @@ export interface CometChatTextBubbleInterface {
 export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
 
     const {
-        text,
+        text = "",
         textContainerStyle,
         textFormatters
     } = props;
@@ -103,11 +103,7 @@ export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
         border,
         textContainerStyle
     ] as ViewProps}>
-        <Text style={[{ color: textColor }, textFont] as TextStyle}>{formattedText}</Text>
+        <Text style={[{ color: textColor }, textFont] as TextStyle[]}>{formattedText}</Text>
 
     </View>
-}
-
-CometChatTextBubble.defaultProps = {
-    text: ""
 }
