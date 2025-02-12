@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import {
   View,
@@ -194,13 +194,13 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
   /**
    * Component to be display the Tail section
    */
-  const TailViewFc = () => {
+  const TailViewFc = useCallback(() => {
     return (
       <View style={[Style.tailViewStyle, tailViewContainerStyle ?? {}]}>
         {Boolean(TailView) && typeof TailView === 'function' && <TailView />}
       </View>
     );
-  };
+  }, [tailViewContainerStyle, tailViewContainerStyle, TailView]);
 
   /**
    * Component to be display the Options in list after swipe

@@ -2,7 +2,8 @@ import React, { useState, useContext, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  TextStyle
+  TextStyle,
+  Modal
 } from 'react-native';
 //@ts-ignore
 import { CometChat } from '@cometchat/chat-sdk-react-native';
@@ -214,7 +215,14 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
   }, []);
 
   return (
-    <>
+    <Modal
+          transparent
+          animated
+          animationType="fade"
+          onRequestClose={() => {
+            return;
+          }}
+        >
       {
         showCallScreen ?
           <CometChatOngoingCall
@@ -277,6 +285,6 @@ export const CometChatIncomingCall = (props: CometChatIncomingCallInterface) => 
             }}
           />
       }
-    </>
+    </Modal>
   )
 };

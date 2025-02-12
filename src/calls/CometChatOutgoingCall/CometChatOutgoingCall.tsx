@@ -221,7 +221,12 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface) => 
       transparent
       animated
       animationType="fade"
-      onRequestClose={() => onDeclineButtonPressed && onDeclineButtonPressed(call as CometChat.Call)}
+      onRequestClose={() => {
+        if (isCallConnected) {
+          return;
+        }
+        onDeclineButtonPressed && onDeclineButtonPressed(call as CometChat.Call)
+      }}
     >
       <SafeAreaView>
         {

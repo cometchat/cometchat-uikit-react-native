@@ -9,7 +9,13 @@ import {
   ViewProps,
   //@ts-ignore
 } from 'react-native';
-import React, { useEffect, useState, useRef, useContext } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useContext,
+  useCallback,
+} from 'react';
 import { AvatarStyle, CometChatContext, CometChatListItem } from '../shared';
 import { localize } from '../shared';
 import { ICONS } from './resources';
@@ -400,6 +406,17 @@ export const CometChatMessageHeader = (
     };
   }, []);
 
+  const AppBarOptionsView = useCallback(() => {
+    if (AppBarOptions) {
+      return (
+        <AppBarOptions
+          {...(user ? { user } : groupObj ? { group: groupObj } : {})}
+        />
+      );
+    }
+    return null;
+  }, [user?.getUid(), groupObj?.getGuid()]);
+
   return (
     <View
       style={
@@ -498,19 +515,7 @@ export const CometChatMessageHeader = (
                   : null
                 : null
             }
-            TailView={
-              AppBarOptions
-                ? () => (
-                    <AppBarOptions
-                      {...(user
-                        ? { user }
-                        : groupObj
-                        ? { group: groupObj }
-                        : {})}
-                    />
-                  )
-                : null
-            }
+            TailView={AppBarOptionsView}
             headViewContainerStyle={headViewContainerStyle}
             tailViewContainerStyle={tailViewContainerStyle}
             avatarStyle={_avatarStyle}
