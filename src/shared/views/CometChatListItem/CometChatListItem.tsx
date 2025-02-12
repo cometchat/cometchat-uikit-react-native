@@ -261,7 +261,6 @@ export const CometChatListItem = (props: CometChatListItemInterface) => {
   let wrapperComponentProps = swipeRowOptions.length
     ? {
         ref: swipeRowRef,
-        key: id,
         onRowDidOpen: rowOpened,
         onRowDidClose: rowClosed,
         disableRightSwipe: true,

@@ -1046,7 +1046,7 @@ export const CometChatMessageComposer = React.forwardRef(
       );
 
       localMessage.setSender(loggedInUser.current);
-      localMessage.setReceiver(receiverType);
+      localMessage.setReceiver(user ?? group);
       localMessage.setType(messageType);
       localMessage.setMuid(String(getUnixTimestampInMilliseconds()));
       localMessage.setData({

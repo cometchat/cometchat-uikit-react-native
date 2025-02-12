@@ -27,9 +27,7 @@ import { AISmartRepliesExtension } from "../../AI/AISmartReplies/AISmartReplies"
 import { AIConversationSummaryExtension } from "../../AI/AIConversationSummary/AIConversationSummaryExtension";
 import { AIAssistBotExtension } from "../../AI/AIAssistBot/AIAssistBotExtension";
 import { permissionUtil } from "../utils/PermissionUtil";
-import {
-    getUnixTimestamp,
-} from '../../shared/utils/CometChatMessageHelper';
+import { AtLeastOne } from "../base/Types";
 
 export class CometChatUIKit {
     static uiKitSettings: UIKitSettings;
@@ -196,17 +194,14 @@ export class CometChatUIKit {
         }
     }
 
-    static async login({ uid, authToken }: { uid?: string, authToken?: string }): Promise<CometChat.User> {
+    static async login({ uid, authToken }: AtLeastOne<{ uid: string, authToken: string }>): Promise<CometChat.User> {
         if (CometChatUIKit.checkAuthSettings(Promise.reject)) null
-        if (uid) {
-            let user = await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch((e: any) => Promise.reject(e));
+        if (uid || authToken) {
+            let user = uid 
+                ? await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch((e: any) => Promise.reject(e))
+                : await CometChat.login(authToken).catch((e: any) => Promise.reject(e));
             CometChatUIKit.setLoggedInUser(user);
             CometChatUIKit.setConversationUpdateSettings(await CometChat.getConversationUpdateSettings());
-            this.enableExtensions()
-            return user;
-        }
-        if (authToken) {
-            let user = await CometChat.login(authToken).catch((e: any) => Promise.reject(e));
             this.enableExtensions()
             return user;
         }

@@ -31,3 +31,8 @@ export type AdditionalBubbleStylingParams = {
 	textFormatters?: CometChatTextFormatter[],
 	disableMentions?: boolean
  }
+
+export type AtLeastOne<T, Keys extends keyof T = keyof T> = 
+  Keys extends keyof T ? 
+  Pick<T, Keys> & Partial<Omit<T, Keys>> 
+  : never;
