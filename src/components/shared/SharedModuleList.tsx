@@ -5,7 +5,7 @@ import { AppStyle } from '../../AppStyle'
 import { CardView } from '../common/CardView'
 import { AudioBubble, AvatarIc, BadgeCount, Card, FileBubble, Form, ImageBubble, List, Message, MessageReceipt, Microphone, RightArrow, Scheduler, SoundManger, StatusIndicator, Theme, Translate, VideoBubble } from '../../resources'
 
-const SharedModuleFeaturesList = {
+const SharedModuleFeaturesList: any = {
     "Resources": [
         {
             id: "SoundManager",
@@ -114,18 +114,18 @@ const SharedModuleFeaturesList = {
     ],
 }
 
-export const SharedModuleList = (props) => {
+export const SharedModuleList = (props: any) => {
     return (
         <View style={[AppStyle.container, { marginBottom: 16 }]}>
             <AppTopBar title={"Shared"} navigation={props.navigation} />
             <ScrollView>
                 {
-                    Object.keys(SharedModuleFeaturesList).map(feature => {
+                    Object.keys(SharedModuleFeaturesList).map((feature: any) => {
                         return <View key={feature}>
                             <Text style={{ marginStart: 16, fontSize: 18 }}>{feature}</Text>
                             <CardView>
                                 {
-                                    SharedModuleFeaturesList[feature].map(item => {
+                                    SharedModuleFeaturesList[feature].map((item: any) => {
                                         const { image, id, name, info } = item;
                                         return <TouchableOpacity key={id} onPress={() => props.navigation.navigate(id)}>
                                             <View style={AppStyle.row}>

@@ -3,6 +3,11 @@ import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView } from 'rea
 import { AppStyle } from '../../AppStyle';
 import { CallLogs, Call, RightArrow, CallParticipants, CallRecording, CallHistory } from '../../resources';
 import { CardView } from '../common/CardView';
+import { NavigationProp } from '@react-navigation/native';
+
+interface CallLogsModuleListProps {
+    navigation: NavigationProp<any>;
+}
 
 const CallLogsModules = [
     {
@@ -43,7 +48,7 @@ const CallLogsModules = [
     }
 ];
 
-export const CallLogsModuleList = ({ navigation }) => {
+export const CallLogsModuleList = ({ navigation } : CallLogsModuleListProps) => {
     return (
         <View style={AppStyle.container}>
             <TouchableOpacity style={{ flexDirection: "row", marginBottom: 16 }} onPress={() => navigation.goBack()}>

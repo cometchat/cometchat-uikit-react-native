@@ -37,11 +37,11 @@ const UiKitModules = [
     },
 ];
 
-export const Home = ({ navigation }) => {
+export const Home = ({ navigation }: any) => {
 
     const { setGroup, setUser, setCall } = useContext(UserContext);
 
-    const Navigate = (to) => {
+    const Navigate = (to: any) => {
         navigation.navigate(`${to}Module`);
     }
 
@@ -63,7 +63,7 @@ export const Home = ({ navigation }) => {
             })
 
         userRequest.fetchNext()
-            .then(res => {
+            .then((res: any) => {
                 console.log("setting user", res[0]['uid']);
                 if (res.length > 0)
                     setUser?.(res[0]);

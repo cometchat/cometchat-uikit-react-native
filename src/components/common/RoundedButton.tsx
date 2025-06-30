@@ -1,18 +1,24 @@
-import React from "react";
-import { TouchableOpacity } from "react-native";
+import React, { ReactNode } from "react";
+import { StyleProp, TouchableOpacity, ViewStyle } from "react-native";
 
-export const RoudedButton = ({style, onPress, children}) => {
+interface RoundedButtonProps {
+    style?: StyleProp<ViewStyle>;
+    onPress: () => void;
+    children: ReactNode;
+}
+
+const base: ViewStyle = {
+  borderRadius: 16,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+
+export const RoundedButton = ({ style, onPress, children }: RoundedButtonProps) => {
     return (
-        <TouchableOpacity style={{
-            borderRadius: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            ...style
-        }}
-            onPress={onPress}
-        >
+        <TouchableOpacity style={[base, style]} onPress={onPress}>
             {children}
         </TouchableOpacity>
-    )
+    );
 }

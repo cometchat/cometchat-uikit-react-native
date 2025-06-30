@@ -3,6 +3,11 @@ import { Image, View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { AppStyle } from "../../AppStyle";
 import { CardView } from "../common/CardView";
 import { Component1, Component2, RightArrow } from "../../resources";
+import { NavigationProp } from "@react-navigation/native";
+
+interface ConversationComponentListProps {
+    navigation: NavigationProp<any>;
+}
 
 const ConversationModule = [
     {
@@ -25,7 +30,7 @@ const ConversationModule = [
     },
 ];
 
-export const ConversationComponentList = (props) => {
+export const ConversationComponentList = (props: ConversationComponentListProps) => {
 
     return (
         <View style={AppStyle.container}>

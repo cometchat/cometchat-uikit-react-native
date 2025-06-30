@@ -6,7 +6,7 @@ import {
 import { RightArrow } from "../../resources";
 import { AppStyle } from "../../AppStyle";
 
-export const CardView = (props: { name?: string, info?: string, image?: any, onPress?: ((event: GestureResponderEvent) => void), children?, hideRightArrow?: boolean}) => {
+export const CardView = (props: { name?: string, info?: string, image?: any, onPress?: ((event: GestureResponderEvent) => void), children?: React.ReactNode, hideRightArrow?: boolean}) => {
     const {
         children,
         info,

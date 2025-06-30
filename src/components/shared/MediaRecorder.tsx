@@ -1,15 +1,19 @@
-import { View, Text } from 'react-native'
+import { View } from 'react-native'
 import React from 'react'
 import { CometChatBottomSheet, CometChatMediaRecorder } from '@cometchat/chat-uikit-react-native'
+import { NavigationProp } from '@react-navigation/native';
 
-const MediaRecorder = (props) => {
+interface MediaRecorderProps {
+    navigation: NavigationProp<any>;
+}
+
+
+const MediaRecorder = (props: MediaRecorderProps) => {
 
     return (
         <View style={{ flex: 1, alignItems: "flex-end" }}>
             <CometChatBottomSheet
-                // ref={sheetRef}
                 onClose={props.navigation.goBack}
-            // style={cometChatBottomSheetStyle}
             >
                 <CometChatMediaRecorder
                     onClose={props.navigation.goBack}

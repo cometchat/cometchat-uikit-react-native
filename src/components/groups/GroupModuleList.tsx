@@ -62,7 +62,7 @@ const GroupModules = [
     }
 ];
 
-export const GroupModuleList = ({ navigation }) => {
+export const GroupModuleList = ({ navigation }: any) => {
     return (
         <View style={AppStyle.container}>
             <AppTopBar navigation={navigation} title={"Groups"} />

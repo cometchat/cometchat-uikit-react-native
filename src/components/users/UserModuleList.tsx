@@ -25,7 +25,7 @@ const UserModules = [
     }
 ];
 
-export const UserModuleList = ({ navigation }) => {
+export const UserModuleList = ({ navigation }: any) => {
     return (
         <View style={AppStyle.container}>
             <TouchableOpacity style={{ flexDirection: "row", marginBottom: 16 }} onPress={() => navigation.goBack()}>

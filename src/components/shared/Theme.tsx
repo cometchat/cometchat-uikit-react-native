@@ -11,7 +11,7 @@ customTheme.palette.accent50 = { light: "grey", dark: "cyan" };
 customTheme.palette.accent600 = { light: "rgb(100,100,100)", dark: "grey" };
 customTheme.palette.backgroundColor = { light: "rgba(50,250,250,1)", dark: "black" };
 
-export const Theme = (props) => {
+export const Theme = (props: any) => {
 
   const { theme, applyTheme } = useContext(CometChatContext);
 

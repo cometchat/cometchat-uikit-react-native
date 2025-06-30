@@ -4,7 +4,11 @@ import { AppStyle } from '../../AppStyle'
 import { AppTopBar } from '../common/AppTopBar'
 import ModuleFeatures from '../common/ModuleFeatures'
 import { CallBubble, CallButton, IncomingCall, OutgoingCall } from '../../resources'
+import { NavigationProp } from '@react-navigation/native'
 
+interface CallFeatureListProps {
+    navigation: NavigationProp<any>;
+}
 const CallModules = [
     {
         id: "IncomingCall",
@@ -32,7 +36,7 @@ const CallModules = [
     },
 ]
 
-export const CallFeatureList = (props) => {
+export const CallFeatureList = (props: CallFeatureListProps) => {
     return (
         <View style={AppStyle.container}>
             <AppTopBar navigation={props.navigation} title={"Calls"} />

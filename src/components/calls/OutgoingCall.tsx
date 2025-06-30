@@ -3,7 +3,13 @@ import { View } from 'react-native'
 import { AppStyle } from '../../AppStyle'
 import { CometChatOutgoingCall } from '@cometchat/chat-uikit-react-native'
 
-export const OutgoingCall = (props) => {
+interface OutgoingCallProps {
+  navigation: {
+    goBack: () => void;
+  };
+}
+
+export const OutgoingCall = (props: OutgoingCallProps) => {
 
     let msgObj = {
         "action": "initiated",
@@ -50,12 +56,9 @@ export const OutgoingCall = (props) => {
     return (
         <View style={[AppStyle.container, AppStyle.center]}>
             <CometChatOutgoingCall
-                // onAccept={props.navigation.goBack()}
                 onDeclineButtonPressed={props.navigation.goBack}
-                // onError={() => props.navigation.goBack()}
                 call={msgObj}
             />
-            {/* } */}
         </View>
     )
 }

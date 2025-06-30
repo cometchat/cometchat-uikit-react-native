@@ -1,11 +1,16 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useContext } from "react"
 import { StyleSheet, View, Text, TextInput, Modal, ActivityIndicator, Image } from "react-native"
-import { RoudedButton } from "../../components/common/RoundedButton"
+import { RoundedButton } from "../../components/common/RoundedButton"
 import { AppConstants } from "../../../AppConstants";
 import { CometChatContext, CometChatUIKit } from "@cometchat/chat-uikit-react-native";
+import { NavigationProp } from "@react-navigation/native";
 
-export const SignUp = (props) => {
+interface SignUpProps {
+    navigation: NavigationProp<any>;
+}
+
+export const SignUp = (props: SignUpProps) => {
     const [uid, setUID] = React.useState("");
     const [name, setName] = React.useState("");
     const [isLoginInProgress, setLoginInProgress] = React.useState(false);
@@ -43,7 +48,7 @@ export const SignUp = (props) => {
             <View style={{flex: 1}} />
 
             <View>
-                <RoudedButton
+                <RoundedButton
                     style={{ width: "100%", backgroundColor: "rgb(50,150,255)", marginBottom: 8 }}
                     onPress={() => {
                         if (uid.length == 0 && name.length == 0)
@@ -62,7 +67,7 @@ export const SignUp = (props) => {
                             })
                     }}>
                     <Text style={{margin: 8, color: "white"}}>CREATE USER</Text>
-                </RoudedButton>
+                </RoundedButton>
             </View>
         </View>
     )

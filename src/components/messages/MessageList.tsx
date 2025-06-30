@@ -4,7 +4,7 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 
 export const MessageList = () => {
 
-  let user: CometChat.User = {
+  let user: CometChat.User =  new CometChat.User({
     name: 'Spiderman',
     uid: 'superhero1',
     avatar:
@@ -21,7 +21,7 @@ export const MessageList = () => {
     getLastActiveAt: () => 1686810809,
     getName: () => "Spiderman",
     getRole: () => "default",
-  };
+  });
 
   return (
     <CometChatMessageList user={user} />

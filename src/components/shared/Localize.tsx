@@ -4,12 +4,17 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { CometChatContext, CometChatLocalize } from "@cometchat/chat-uikit-react-native";
 import { AppStyle } from "../../AppStyle";
 import { CardView } from "../common/CardView";
+import { NavigationProp } from '@react-navigation/native';
 
-export const Localize = (props) => {
+interface LocalizeProps {
+    navigation: NavigationProp<any>;
+}
+
+export const Localize = (props: LocalizeProps) => {
 
   const { changeLocalise } = useContext(CometChatContext);
 
-  const [selectedLanguage, setSelectedLangauge] = useState(CometChatLocalize.getLocale());
+  const [selectedLanguage, setSelectedLanguage] = useState(CometChatLocalize.getLocale());
 
   return (
     <View style={[AppStyle.container, AppStyle.center]}>
@@ -26,8 +31,8 @@ export const Localize = (props) => {
                   backgroundColor: selectedLanguage == "en" ? "white" : "transparent"
                 }}
                 onPress={() => {
-                  changeLocalise("en");
-                  setSelectedLangauge("en");
+                  changeLocalise && changeLocalise("en");
+                  setSelectedLanguage("en");
                 }}>
                 <Text>English</Text>
               </TouchableOpacity>
@@ -37,8 +42,8 @@ export const Localize = (props) => {
                   backgroundColor: selectedLanguage == "hi" ? "white" : "transparent"
                 }}
                 onPress={() => {
-                  changeLocalise("hi");
-                  setSelectedLangauge("hi")
+                  changeLocalise && changeLocalise("hi");
+                  setSelectedLanguage("hi")
                 }}>
                 <Text>Hindi</Text>
               </TouchableOpacity>

@@ -19,6 +19,7 @@ export const ListItem = () => {
         <View>
           <Text style={{ color: "black", fontWeight: "bold" }}>Group</Text>
           <CometChatListItem
+            id={group?.getGuid()!}
             SubtitleView={() => <Text>8 members</Text>}
             hideSeparator={false}
             title={group?.getName()}
@@ -29,6 +30,7 @@ export const ListItem = () => {
         <View>
           <Text style={{ color: "black", fontWeight: "bold" }}>User</Text>
           <CometChatListItem
+            id={user?.getUid()!}
             SubtitleView={() => <Text>{user?.getStatus()}</Text>}
             hideSeparator={false}
             title={user?.getName()}
@@ -40,6 +42,7 @@ export const ListItem = () => {
         <View>
           <Text style={{ color: "black", fontWeight: "bold" }}>Conversation</Text>
           <CometChatListItem
+            id={user?.getUid()!}
             SubtitleView={() => <Text>Hi there</Text>}
             hideSeparator={false}
             title={user?.getName()}

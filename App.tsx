@@ -1,22 +1,31 @@
-
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, PermissionsAndroid, Platform, SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
-import { CometChat } from "@cometchat/chat-sdk-react-native";
-import { AppConstants } from './AppConstants';
-import { CometChatContextProvider, CometChatLocalize } from '@cometchat/chat-uikit-react-native';
-import { CometChatTheme } from '@cometchat/chat-uikit-react-native';
-import { CometChatUIKit } from '@cometchat/chat-uikit-react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  ActivityIndicator,
+  PermissionsAndroid,
+  Platform,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {CometChat} from '@cometchat/chat-sdk-react-native';
+import {AppConstants} from './AppConstants';
+import {
+  CometChatContextProvider,
+  CometChatLocalize,
+} from '@cometchat/chat-uikit-react-native';
+import {CometChatTheme} from '@cometchat/chat-uikit-react-native';
+import {CometChatUIKit} from '@cometchat/chat-uikit-react-native';
 import StackNavigator from './src/StackNavigator';
-import { UserContextProvider } from './UserContext';
-import { CometChatIncomingCall } from '@cometchat/chat-uikit-react-native';
-import { CometChatUIEventHandler } from '@cometchat/chat-uikit-react-native';
-import { metaInfo } from './src/metaInfo';
-var listnerID = "UNIQUE_LISTENER_ID";
+import {UserContextProvider} from './UserContext';
+import {CometChatIncomingCall} from '@cometchat/chat-uikit-react-native';
+import {CometChatUIEventHandler} from '@cometchat/chat-uikit-react-native';
+import {metaInfo} from './src/metaInfo';
+import {SafeAreaView} from 'react-native-safe-area-context';
+const listenerID = 'UNIQUE_LISTENER_ID';
 
 const App = () => {
-
   const getPermissions = () => {
-    if (Platform.OS == "android") {
+    if (Platform.OS === 'android') {
       PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
@@ -25,11 +34,11 @@ const App = () => {
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
       ]);
     }
-  }
+  };
 
   const [callReceived, setCallReceived] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const incomingCall = useRef(null);
+  const incomingCall = useRef<CometChat.Call | null>(null);
 
   useEffect(() => {
     getPermissions();
@@ -39,8 +48,10 @@ const App = () => {
       region: AppConstants.REGION,
     })
       .then(() => {
-        CometChatLocalize.setLocale("en");
-        try{CometChat.setDemoMetaInfo(metaInfo)}catch(err){}
+        CometChatLocalize.setLocale('en');
+        try {
+          CometChat.setDemoMetaInfo(metaInfo);
+        } catch (err) {}
         if (CometChat.setSource) {
           CometChat.setSource('ui-kit', Platform.OS, 'react-native');
         }
@@ -51,24 +62,24 @@ const App = () => {
       });
 
     CometChat.addCallListener(
-      listnerID,
+      listenerID,
       new CometChat.CallListener({
-        onIncomingCallReceived: (call) => {
+        onIncomingCallReceived: (call: CometChat.Call) => {
           incomingCall.current = call;
           setCallReceived(true);
         },
-        onOutgoingCallRejected: (call) => {
+        onOutgoingCallAccepted: (call: CometChat.Call) => {
           incomingCall.current = null;
           setCallReceived(false);
         },
-        onIncomingCallCancelled: (call) => {
+        onIncomingCallCancelled: (call: CometChat.Call) => {
           incomingCall.current = null;
           setCallReceived(false);
         }
-      })
+      }),
     );
 
-    CometChatUIEventHandler.addCallListener(listnerID, {
+    CometChatUIEventHandler.addCallListener(listenerID, {
       ccCallEnded: () => {
         incomingCall.current = null;
         setCallReceived(false);
@@ -76,33 +87,32 @@ const App = () => {
     });
 
     return () => {
-      CometChatUIEventHandler.removeCallListener(listnerID);
-      CometChat.removeCallListener(listnerID)
-    }
-
+      CometChatUIEventHandler.removeCallListener(listenerID);
+      CometChat.removeCallListener(listenerID);
+    };
   }, []);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {isInitialized ? (
-        <SafeAreaView style={{ flex: 1 }}>
-          <StatusBar backgroundColor={"white"} barStyle={"dark-content"} />
+        <>
+          <StatusBar backgroundColor={'white'} barStyle={'dark-content'} />
           {callReceived && (
             <CometChatIncomingCall
               call={incomingCall.current}
-              onDecline={(call) => {
+              onDecline={call => {
                 setCallReceived(false);
               }}
-              onError={(error) => {
+              onError={error => {
                 setCallReceived(false);
               }}
               incomingCallStyle={{
-                backgroundColor: "white",
-                titleColor: "black",
-                subtitleColor: "gray",
+                backgroundColor: 'white',
+                titleColor: 'black',
+                subtitleColor: 'gray',
                 titleFont: {
                   fontSize: 20,
-                  fontWeight: "bold",
+                  fontWeight: 'bold',
                 },
               }}
             />
@@ -112,21 +122,26 @@ const App = () => {
               <StackNavigator />
             </CometChatContextProvider>
           </UserContextProvider>
-        </SafeAreaView>
+        </>
       ) : (
-        <View style={[styles.container, {justifyContent: "center"}]}>
+        <View style={styles.loading}>
           <ActivityIndicator />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
-  }
-})
+    backgroundColor: '#fff',
+  },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default App;

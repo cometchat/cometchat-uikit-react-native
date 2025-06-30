@@ -3,6 +3,11 @@ import { Component1, Component2, Component3, Info, List, RightArrow } from "../.
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppStyle } from "../../AppStyle";
 import { CardView } from "../common/CardView";
+import { NavigationProp } from "@react-navigation/native";
+
+interface MessageModuleListProps {
+    navigation: NavigationProp<any>;
+}
 
 const MessageModules = [
     {
@@ -37,7 +42,7 @@ const MessageModules = [
     }
 ];
 
-export const MessageModuleList = ({ navigation }) => {
+export const MessageModuleList = ({ navigation }: MessageModuleListProps) => {
 
     return (
         <View style={AppStyle.container}>

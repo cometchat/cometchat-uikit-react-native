@@ -1,29 +1,24 @@
-import React, { useContext } from 'react'
-import { CometChatDetails } from '@cometchat/chat-uikit-react-native'
-import { UserContext } from '../../../UserContext'
+import React, {useContext} from 'react';
+import {CometChatDetails} from '@cometchat/chat-uikit-react-native';
+import {UserContext} from '../../../UserContext';
+import {CometChat} from '@cometchat/chat-sdk-react-native';
 
-export const GroupDetails = (props) => {
+export const GroupDetails = (props: any) => {
+  let group: CometChat.Group = new CometChat.Group('supergroup');
+  group.setName("Comic Heros' Hangout");
+  group.setType('public');
+  group.setScope('admin');
+  group.setCreatedAt(Date.now());
+  group.setMembersCount(8);
+  group.setJoinedAt(Date.now() + '');
+  group.setHasJoined(true);
+  group.setOwner('superhero1');
+  group.setUpdatedAt(Date.now());
+  group.setIcon(
+    'https://data-us.cometchat.io/assets/images/avatars/supergroup.png',
+  );
 
-    let group: CometChat.Group = {
-        "guid": "supergroup",
-        "name": "Comic Heros' Hangout",
-        "icon": "https://data-us.cometchat.io/assets/images/avatars/supergroup.png",
-        "type": "public",
-        "scope": "admin",
-        "membersCount": 8,
-        "joinedAt": 1684307929,
-        "conversationId": "group_supergroup",
-        "hasJoined": true,
-        "createdAt": 1684307929,
-        "owner": "superhero1",
-        "updatedAt": 1692784318,
-        "onlineMembersCount": 30,
-        getName: () => "test group",
-        getIcon: () => "https://data-us.cometchat.io/assets/images/avatars/supergroup.png",
-        getType: () => "public",
-    }
-    
-    return (
-        <CometChatDetails group={group} onBack={() => props.navigation.goBack()} />
-    )
-}
+  return (
+    <CometChatDetails group={group} onBack={() => props.navigation.goBack()} />
+  );
+};

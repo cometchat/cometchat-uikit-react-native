@@ -35,7 +35,7 @@ export const BadgeCount = () => {
             style={{ borderWidth: 1, borderRadius: 16, marginTop: 8, paddingStart: 16 }}
             keyboardType="numeric"
             placeholder="Enter Badge Count"
-            onChangeText={txt => setBadgeCount(parseInt(txt.length > 1 ? txt : 1))}
+            onChangeText={txt => setBadgeCount(parseInt(txt.length > 1 ? txt : "1"))}
             returnKeyType='done'
           />
           <View style={{ marginTop: 16 }}>

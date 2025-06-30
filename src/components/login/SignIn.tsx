@@ -1,10 +1,15 @@
 import React, { useContext } from "react";
 import { View, Text, TextInput, StyleSheet, Alert, Modal, Image, ActivityIndicator, StatusBar } from "react-native";
-import { RoudedButton } from "../../components/common/RoundedButton";
+import { RoundedButton } from "../../components/common/RoundedButton";
 import { Create } from "./Create";
 import { CometChatContext, CometChatUIKit } from "@cometchat/chat-uikit-react-native";
+import { NavigationProp } from "@react-navigation/native";
 
-export const SignIn = (props) => {
+interface SignInProps {
+    navigation: NavigationProp<any>;
+}
+
+export const SignIn = (props: SignInProps) => {
     const [uid, setUID] = React.useState("");
     const [isLoginInProgress, setLoginInProgress] = React.useState(false);
     
@@ -36,7 +41,7 @@ export const SignIn = (props) => {
             <View style={{flex: 1}} />
 
             <View>
-                <RoudedButton
+                <RoundedButton
                     style={Style.signInButton}
                     onPress={() => {
                         setLoginInProgress(true);
@@ -46,12 +51,12 @@ export const SignIn = (props) => {
                                 setLoginInProgress(false);
                             })
                             .catch(err => {
-                                Alert.alert("Error", "Unable to login")
+                                Alert.alert("Error", "Unable to login");
                                 setLoginInProgress(false);
                             })
                      }}>
                     <Text style={Style.signInText}>Sign In</Text>
-                </RoudedButton>
+                </RoundedButton>
                 <Create navigator={props.navigation} />
             </View>
         </View>

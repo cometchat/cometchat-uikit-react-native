@@ -1,10 +1,16 @@
-import React, { useContext, useEffect } from 'react'
-import { View, Text, BackHandler } from 'react-native'
+import React, { useEffect } from 'react'
+import { View, BackHandler } from 'react-native'
 import { AppStyle } from '../../AppStyle'
 import { CometChatIncomingCall, CometChatSoundManager } from '@cometchat/chat-uikit-react-native'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 
-export const IncomingCall = (props) => {
+interface IncomingCallProps {
+  navigation: {
+    goBack: () => void;
+  };
+}
+
+export const IncomingCall = (props: IncomingCallProps) => {
 
     useEffect(() => {
         const backAction = () => {

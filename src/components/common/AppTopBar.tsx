@@ -3,7 +3,14 @@ import { Image, StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { AppStyle } from '../../AppStyle'
 import { RightArrow } from '../../resources'
 
-export const AppTopBar = ({navigation, title}) => {
+interface AppTopBarProps {
+    navigation: {
+        goBack: () => void;
+    };
+    title: string;
+}
+
+export const AppTopBar = ({ navigation, title }: AppTopBarProps) => {
     return (
         <TouchableOpacity style={{ flexDirection: "row", marginBottom: 16 }} onPress={() => navigation.goBack()}>
             <Image style={[Style.image, { transform: [{ rotate: '180deg' }] }]} source={RightArrow} />

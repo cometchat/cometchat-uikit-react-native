@@ -1,8 +1,13 @@
 import { View, ScrollView } from 'react-native'
 import React from 'react'
 import { CometChatCardBubble, CardMessage } from '@cometchat/chat-uikit-react-native'
+import { NavigationProp } from '@react-navigation/native';
 
-const CardBubble = (props) => {
+interface CardBubbleProps {
+    navigation: NavigationProp<any>;
+}
+
+const CardBubble = (props: CardBubbleProps) => {
 
     function getCardMessage() {
         const json = {

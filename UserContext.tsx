@@ -12,7 +12,11 @@ export const UserContext = createContext<{
     setProtectedGroup?: (group: CometChat.Group)=>void,
 }>({});
 
-export const UserContextProvider = (props) => {
+interface UserContextProviderProps {
+  children: React.ReactNode;
+}
+
+export const UserContextProvider = (props: UserContextProviderProps) => {
 
   const {children} = props;
 

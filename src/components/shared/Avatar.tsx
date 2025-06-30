@@ -11,7 +11,7 @@ export const Avatar = () => {
 
   const { user } = useContext(UserContext);
 
-  const [borderRadius, setBorderRaius] = React.useState(0);
+  const [borderRadius, setBorderRadius] = React.useState(0);
   const [avatarImage, setAvatarImage] = React.useState(Ironman);
 
   return (
@@ -30,7 +30,7 @@ export const Avatar = () => {
             style={{ borderWidth: 1, borderRadius: 16, marginTop: 8, paddingStart: 16 }}
             keyboardType="numeric"
             placeholder="Enter BorderRadius"
-            onChangeText={txt => setBorderRaius(parseInt(txt.length > 0 ? txt : 0))}
+            onChangeText={txt => setBorderRadius(parseInt(txt.length > 0 ? txt : "0"))}
           />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
             <Text style={{ textAlign: 'center' }}>Avatar</Text>

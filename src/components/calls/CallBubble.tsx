@@ -1,12 +1,15 @@
-import React, { useContext } from 'react'
-import { View, Text } from 'react-native'
+import React from 'react'
+import { View } from 'react-native'
 import { AppStyle } from '../../AppStyle'
 import { CometChatCallBubble } from '@cometchat/chat-uikit-react-native'
-import { VideoIcon } from '@cometchat/chat-uikit-react-native/src/calls/resources'
 import { VideoCall } from '../../resources'
-// import { VideoIcon } from '@cometchat/chat-uikit-react-native/src/calls/resources'
+import { NavigationProp } from '@react-navigation/native'
 
-export const CallBubble = (props) => {
+interface CallBubbleProps {
+    navigation: NavigationProp<any>;
+}
+
+export const CallBubble = (props: CallBubbleProps) => {
     let primary = 'rgb(51, 153, 255)';
     let accent = 'rgb(20, 20, 20)';
     let secondary = 'rgba(248, 248, 248, 0.92)';

@@ -26,12 +26,12 @@ import CallLogRecordings from "./components/callLogs/CometChatCallLogRecordings"
 import CallLogHistory from "./components/callLogs/CometChatCallLogHistory";
 import SchedulerBubble from "./components/shared/SchedulerBubble";
 
-function StackNavigator(props) {
+function StackNavigator() {
   const Stack = createStackNavigator();
 
   return (
     <NavigationContainer>
-      <Stack.Navigator headerMode="none" initialRouteName="Login">
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="SignIn" component={SignIn} />
         <Stack.Screen name="SignUp" component={SignUp} />

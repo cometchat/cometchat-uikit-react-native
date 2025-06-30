@@ -1,7 +1,12 @@
 import React from "react";
 import { View, Text } from "react-native";
+import { NavigationProp } from "@react-navigation/native";
 
-export const Create = ({ navigator }) => {
+interface CreateProps {
+    navigator: NavigationProp<any>;
+}
+
+export const Create = ({ navigator }: CreateProps) => {
     return (
         <View style={{ flexDirection: 'row', width: "100%", justifyContent: 'center' }}>
             <Text>

@@ -18,7 +18,8 @@
       android:icon="@mipmap/ic_launcher"
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
-      android:theme="@style/AppTheme">
+      android:theme="@style/AppTheme"
+      android:supportsRtl="true">
         <service android:name="com.CometChatCalls.CallNotificationService" android:foregroundServiceType="mediaPlayback|microphone"></service>
       <activity
         android:name=".MainActivity"

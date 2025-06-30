@@ -1,8 +1,13 @@
 import { View, ScrollView } from 'react-native'
 import React from 'react'
 import { CometChatFormBubble, FormMessage } from '@cometchat/chat-uikit-react-native'
+import { NavigationProp } from '@react-navigation/native';
 
-const FormBubble = (props) => {
+interface FormBubbleProps {
+    navigation: NavigationProp<any>;
+}
+
+const FormBubble = (props: FormBubbleProps) => {
 
     function getFormMessage() {
         const json = {

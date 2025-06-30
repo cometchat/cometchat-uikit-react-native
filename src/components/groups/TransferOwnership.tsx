@@ -2,22 +2,21 @@ import React from 'react'
 import { CometChatTransferOwnership } from '@cometchat/chat-uikit-react-native'
 import { CometChat } from '@cometchat/chat-sdk-react-native'
 
-export const TransferOwnership = (props) => {
+export const TransferOwnership = (props: any) => {
 
-  let group: CometChat.Group = {
-    "guid": "123456",
-    "name": "test group",
-    "type": "public",
-    "scope": "admin",
-    "membersCount": 4,
-    "joinedAt": 1684922261,
-    "conversationId": "group_123456",
-    "hasJoined": true,
-    "createdAt": 1684922167,
-    "owner": "app_system",
-    "updatedAt": 1692359149,
-    "onlineMembersCount": 43
-  }
+  let group: CometChat.Group = new CometChat.Group('supergroup_123456');
+  group.setName("Comic Heros' Hangout");
+  group.setType('public');
+  group.setScope('admin');
+  group.setCreatedAt(Date.now());
+  group.setMembersCount(8);
+  group.setJoinedAt(Date.now() + '');
+  group.setHasJoined(true);
+  group.setOwner('app_system');
+  group.setUpdatedAt(Date.now());
+  group.setIcon(
+    'https://data-us.cometchat.io/assets/images/avatars/supergroup.png',
+  );
 
   return <CometChatTransferOwnership
     group={group}
