@@ -1841,13 +1841,13 @@ PODS:
     - SocketRocket
   - react-native-background-timer (2.4.1):
     - React-Core
-  - react-native-cometchat-ui-kit (5.2.5):
+  - react-native-cometchat-ui-kit (5.2.6):
     - React-Core
-    - react-native-cometchat-ui-kit/Video (= 5.2.5)
-    - react-native-cometchat-ui-kit/VideoCaching (= 5.2.5)
-  - react-native-cometchat-ui-kit/Video (5.2.5):
+    - react-native-cometchat-ui-kit/Video (= 5.2.6)
+    - react-native-cometchat-ui-kit/VideoCaching (= 5.2.6)
+  - react-native-cometchat-ui-kit/Video (5.2.6):
     - React-Core
-  - react-native-cometchat-ui-kit/VideoCaching (5.2.5):
+  - react-native-cometchat-ui-kit/VideoCaching (5.2.6):
     - DVAssetLoaderDelegate (~> 0.3.1)
     - React-Core
     - react-native-cometchat-ui-kit/Video
@@ -2027,7 +2027,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-webrtc (124.0.6):
+  - react-native-webrtc (124.0.7):
     - JitsiWebRTC (~> 124.0.0)
     - React-Core
   - React-NativeModulesApple (0.81.4):
@@ -3211,11 +3211,11 @@ SPEC CHECKSUMS:
   React-Mapbuffer: f84e59c14ff145295fbd029c5be16805aabe98d2
   React-microtasksnativemodule: 584eb07c9b1f1e684fe63b7fae61ed865f8f228f
   react-native-background-timer: 17ea5e06803401a379ebf1f20505b793ac44d0fe
-  react-native-cometchat-ui-kit: f4bb042723039a858ead1054c873075287c5bf37
+  react-native-cometchat-ui-kit: 9ac96e94418f8fccb22ce1e30c3a24168b42bab3
   react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
   react-native-safe-area-context: 3e0a25a843c40ad5efdf2bef93fdd95ad7229650
   react-native-video: 019c02367fb1ceecf9e26234e4ab296172a9a44b
-  react-native-webrtc: 11de1ec579eddb59672126788ca9ff82805eadcc
+  react-native-webrtc: b5062b745a26c99835efdf0d6c027c9b2ee7ddbc
   React-NativeModulesApple: dcfbe72c5a47baec0699a2935c080b7de0c8657b
   React-oscompat: 93b5535ea7f7dff46aaee4f78309a70979bdde9d
   React-perflogger: a03d913e3205b00aee4128082abe42fd45ce0c98
@@ -3268,6 +3268,6 @@ SPEC CHECKSUMS:
   VisionCamera: 3ea10c46a5c612f5f89fb46a54bef4a0de8b58a7
   Yoga: 9b30b783a17681321b52ac507a37219d7d795ace
 
-PODFILE CHECKSUM: 8dbc6ec6b839bee6bfdff518d8bc292ea29957b2
+PODFILE CHECKSUM: ec9da354c54ae7d0b446ea159a547ecf0c2bc10c
 
 COCOAPODS: 1.16.2

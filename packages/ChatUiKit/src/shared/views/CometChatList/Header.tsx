@@ -202,6 +202,7 @@ export default function Header({
                     <Text
                       ellipsizeMode='tail'
                       numberOfLines={1}
+                      allowFontScaling={true}                
                       style={[{ color: theme.color.textPrimary }, titleStyle]}
                     >
                       {title}

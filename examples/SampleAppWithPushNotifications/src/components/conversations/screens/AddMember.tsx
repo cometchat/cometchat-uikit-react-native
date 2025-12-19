@@ -136,7 +136,8 @@ const AddMember: React.FC = () => {
 
         // If all succeeded, emit individual events for each member
         if (addedMembers.length > 0) {
-          group.setMembersCount(group.getMembersCount() + addedMembers.length);
+          const groupInfo  = await CometChat.getGroup(group.getGuid());
+          group.setMembersCount(groupInfo.getMembersCount());
           // Create separate action for each added member
           addedMembers.forEach(member => {
             const action: CometChat.Action = new CometChat.Action(

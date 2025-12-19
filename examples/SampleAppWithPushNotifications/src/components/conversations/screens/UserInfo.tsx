@@ -14,7 +14,7 @@ import {
 import {Icon} from '@cometchat/chat-uikit-react-native';
 import {CometChat} from '@cometchat/chat-sdk-react-native';
 import {permissionUtil} from '@cometchat/chat-uikit-react-native/src/shared/utils/PermissionUtil';
-import {CallTypeConstants} from '@cometchat/chat-uikit-react-native/src/shared/constants/UIKitConstants';
+import {CallTypeConstants, UserStatusConstants} from '@cometchat/chat-uikit-react-native/src/shared/constants/UIKitConstants';
 import { blockUser, unblock } from '../../../utils/helper';
 import {styles} from './UserInfoStyles';
 import ArrowBack from '../../../assets/icons/ArrowBack';
@@ -92,11 +92,13 @@ const UserInfo: FC<Props> = ({route, navigation}) => {
       new CometChat.UserListener({
         onUserOnline: (onlineUser: CometChat.User) => {
           if (onlineUser.getUid() === userObj.getUid()) {
+            setUserObj(onlineUser);
             setUserStatus(onlineUser.getStatus());
           }
         },
         onUserOffline: (offlineUser: CometChat.User) => {
           if (offlineUser.getUid() === userObj.getUid()) {
+            setUserObj(offlineUser);
             setUserStatus(offlineUser.getStatus());
           }
         },
@@ -277,8 +279,8 @@ const UserInfo: FC<Props> = ({route, navigation}) => {
             ]}>
             {userObj &&
               !(userObj.getBlockedByMe() || userObj.getHasBlockedMe()) &&
-              (userStatus === 'online'
-                ? 'Online'
+              (userStatus === UserStatusConstants.online
+                ? t('ONLINE')
                 : getLastSeenTime(userObj.getLastActiveAt()))}
           </Text>
         </View>

@@ -2,7 +2,7 @@
   "expo": {
     "name": "SampleAppExpo",
     "slug": "SampleAppExpo",
-    "version": "5.2.5",
+    "version": "5.2.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
@@ -26,6 +26,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "configChanges": [
+        "keyboard",
+        "keyboardHidden",
+        "orientation",
+        "screenLayout",
+        "screenSize",
+        "smallestScreenSize",
+        "uiMode",
+        "fontScale"
+      ],
       "edgeToEdgeEnabled": true,
       "package": "com.cometchat.sampleapp.reactnative.android",
       "userInterfaceStyle": "automatic",

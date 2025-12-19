@@ -164,14 +164,14 @@ export interface CometChatMessageComposerInterface {
   id?: string | number;
 
   /**
-   * CometChat SDK’s user object.
+   * CometChat SDK's user object.
    *
    * @type {CometChat.User}
    */
   user?: CometChat.User;
 
   /**
-   * CometChat SDK’s group object.
+   * CometChat SDK's group object.
    *
    * @type {CometChat.Group}
    */
@@ -1611,6 +1611,16 @@ export const CometChatMessageComposer = React.forwardRef(
       return false; // No mention found at the cursor position
     }
 
+    function getMentionRangeAtCursor(mentionRanges: any, cursorPosition: number): { start: number; end: number } | null {
+      for (let [range] of mentionRanges) {
+        const [start, end] = range.split("_").map(Number);
+        if (cursorPosition >= start && cursorPosition <= end) {
+          return { start, end }; // Return the boundary positions
+        }
+      }
+      return null; // No mention found at the cursor position
+    }
+
     function shouldOpenList(
       selection: {
         start: number;
@@ -2284,9 +2294,31 @@ export const CometChatMessageComposer = React.forwardRef(
                 },
               }}
               onSelectionChange={({ nativeEvent: { selection } }) => {
+                const cursorPos = selection.start;
+                const mentionRange = getMentionRangeAtCursor(mentionMap.current, cursorPos);
+
+                if (mentionRange) {
+                  console.log('Mention boundary positions:', mentionRange);
+                  const distanceToStart = cursorPos - mentionRange.start;
+                  const distanceToEnd = mentionRange.end - cursorPos;
+                  let targetPosition: number;
+                  if (distanceToStart <= distanceToEnd) {
+                    targetPosition = mentionRange.start;
+                  } else {
+                    targetPosition = mentionRange.end;
+                  }
+                  if (targetPosition !== cursorPos) {
+                    InteractionManager.runAfterInteractions(() => {
+                      setSelectionPosition({ start: targetPosition, end: targetPosition });
+                    });
+                    return;
+                  }
+                }
+                
                 setSelectionPosition(selection);
                 openList(selection);
               }}
+              selection={selectionPosition}
               onChangeText={textChangeHandler}
               VoiceRecordingButtonView={voiceRecoringButtonElem}
               SecondaryButtonView={SecondaryButtonViewElem}

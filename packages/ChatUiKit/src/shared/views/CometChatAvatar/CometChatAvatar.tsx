@@ -52,8 +52,16 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
       return <Image source={imageSource} style={[avatarStyle.imageStyle]} />;
     }
     const initials = [...(name || "")].slice(0, 2).join("").toUpperCase();
-
-    return <Text style={[avatarStyle.textStyle]}>{initials}</Text>;
+    
+    return (
+      <Text 
+        style={[avatarStyle.textStyle]}
+        adjustsFontSizeToFit={true}
+        numberOfLines={1}
+      >
+        {initials}
+      </Text>
+    );
   }, [image, name, avatarStyle.imageStyle, avatarStyle.textStyle]);
 
   return <View style={[avatarStyle.containerStyle]}>{getImageView()}</View>;

@@ -157,11 +157,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     // Process the VoIP push only when the app is in background or killed.
     if type == .voIP {
         let payloadDict = payload.dictionaryPayload as? [String: Any] ?? [:]
-
-        // --- Generate or retrieve the call UUID
-        if AppDelegate.callUUID == nil {
-            AppDelegate.callUUID = payloadDict["uuid"] as? String ?? UUID().uuidString
-        }
+        let callUUID = (payloadDict["uuid"] as? String) ?? UUID().uuidString
 
         // --- Extract relevant fields from the payload
         let callAction = payloadDict["callAction"] as? String ?? ""
@@ -173,7 +169,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         let hasVideo = (payloadDict["callType"] as? String) != "audio"
 
         // --- Add RNVoipPushNotificationManager completion handler
-        RNVoipPushNotificationManager.addCompletionHandler(AppDelegate.callUUID, completionHandler: completion)
+        RNVoipPushNotificationManager.addCompletionHandler(callUUID, completionHandler: completion)
 
         // --- Forward the push payload to RNVoipPushNotificationManager
         RNVoipPushNotificationManager.didReceiveIncomingPush(with: payload, forType: type.rawValue)
@@ -181,7 +177,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // --- Decide how to handle the call action
         if callAction == "initiated" {
             RNCallKeep.reportNewIncomingCall(
-              AppDelegate.callUUID,
+              callUUID,
               handle: handle,
               handleType: "generic",
               hasVideo: hasVideo,
@@ -194,24 +190,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
               payload: nil
             )
         } else if callAction == "unanswered" {
-            
-            RNCallKeep.endCall(withUUID: AppDelegate.callUUID, reason: 3)
-            AppDelegate.callUUID = nil
+            RNCallKeep.endCall(withUUID: callUUID, reason: 3)
         } else if callAction == "rejected" {
-            RNCallKeep.endCall(withUUID: AppDelegate.callUUID, reason: 6)
-            AppDelegate.callUUID = nil
+            RNCallKeep.endCall(withUUID: callUUID, reason: 6)
         } else if callAction == "busy" {
-            RNCallKeep.endCall(withUUID: AppDelegate.callUUID, reason: 1)
-            AppDelegate.callUUID = nil
+            RNCallKeep.endCall(withUUID: callUUID, reason: 1)
         } else if callAction == "cancelled" {
-            RNCallKeep.endCall(withUUID: AppDelegate.callUUID, reason: 6)
-            AppDelegate.callUUID = nil
+            RNCallKeep.endCall(withUUID: callUUID, reason: 6)
         } else if callAction == "ended" {
-            RNCallKeep.endCall(withUUID: AppDelegate.callUUID, reason: 2)
-            AppDelegate.callUUID = nil
+            RNCallKeep.endCall(withUUID: callUUID, reason: 2)
         } else {
-            RNCallKeep.endCall(withUUID: AppDelegate.callUUID, reason: 3)
-            AppDelegate.callUUID = nil
+            RNCallKeep.endCall(withUUID: callUUID, reason: 3)
         }
     } else {
         completion()

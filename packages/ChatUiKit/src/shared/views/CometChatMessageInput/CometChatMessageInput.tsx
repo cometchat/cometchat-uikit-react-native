@@ -88,6 +88,12 @@ export interface CometChatMessageInputInterface {
    * @type {RefObject<any>}
    */
   messageInputRef?: RefObject<any>;
+  /**
+   * Selection state for the TextInput to control cursor position.
+   *
+   * @type {{ start: number; end: number } | undefined}
+   */
+  selection?: { start: number; end: number };
 }
 
 /**
@@ -112,6 +118,7 @@ export const CometChatMessageInput = (props: CometChatMessageInputInterface) => 
     onSelectionChange,
     messageInputRef,
     VoiceRecordingButtonView,
+    selection,
   } = props;
 
   return (
@@ -125,6 +132,7 @@ export const CometChatMessageInput = (props: CometChatMessageInputInterface) => 
         textAlignVertical='top'
         placeholder={placeHolderText}
         onSelectionChange={onSelectionChange}
+        selection={selection}
         onFocus={() => {
           CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.hidePanel, {
             alignment: ViewAlignment.composerBottom,

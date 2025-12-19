@@ -1,6 +1,6 @@
 {
   "name": "ai_sample_app",
-  "version": "5.2.5",
+  "version": "5.2.6",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
@@ -12,7 +12,7 @@
   "dependencies": {
     "@cometchat/calls-sdk-react-native": "^4.4.0",
     "@cometchat/chat-sdk-react-native": "^4.0.18",
-    "@cometchat/chat-uikit-react-native": "^5.2.5",
+    "@cometchat/chat-uikit-react-native": "^5.2.6",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "^8.4.5",

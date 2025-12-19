@@ -320,7 +320,7 @@ export const CallDetails: React.FC<Props> = ({route, navigation}) => {
 
   return (
     <View style={{flex: 1, backgroundColor: theme.color.background1}}>
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, paddingBottom: theme.spacing.padding.p3}}>
         <View
           style={{
             flexDirection: 'row',

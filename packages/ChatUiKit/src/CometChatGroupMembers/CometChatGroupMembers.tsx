@@ -264,11 +264,17 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [modalType, setModalType] = useState<"ban" | "kick" | "">("");
   const modalVisible = modalType !== "";
-  const [selectedRole, setSelectedRole] = useState("Participant");
+  const [selectedRole, setSelectedRole] = useState<string>("");
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const listRef = useRef<any>(null);
   const [isToolTipDismissed, setIsToolTipDismissed] = useState(false);
   const loggedInUser = React.useRef(CometChatUIKit.loggedInUser!);
+
+  // Derived: whether selected scope equals current user scope
+  const isScopeUnchanged = React.useMemo(() => {
+    if (!selectedItem) return true;
+    return selectedRole === selectedItem.getScope();
+  }, [selectedItem, selectedRole]);
 
 
   // Define role permissions for current user actions
@@ -517,9 +523,9 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
         onPress: () => {
           const currentScope = item.getScope();
           setTooltipVisible(false);
-          const formattedScope = currentScope.charAt(0).toUpperCase() + currentScope.slice(1);
           setIsBottomSheetVisible(true);
-          setSelectedRole(formattedScope);
+          // Preselect to current scope (lowercase) for accurate comparison
+          setSelectedRole(currentScope);
         },
         icon: (
           <ChangeCircle
@@ -771,8 +777,12 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
         onClose={() => {
           setIsBottomSheetVisible(false);
           setSelectedItem(null);
+          setSelectedRole("");
         }}
-        onDismiss={() => setSelectedItem(null)}
+        onDismiss={() => {
+          setSelectedItem(null);
+          setSelectedRole("");
+        }}
       >
         {selectedItem ? (
           <View style={mergedStyle?.changeScope?.container}>
@@ -861,6 +871,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
                 onPress={() => {
                   setIsBottomSheetVisible(false);
                   setSelectedItem(null);
+                  setSelectedRole("");
                 }}
               >
                 <Text style={mergedStyle?.changeScope?.cancelStyle?.textStyle}>
@@ -868,8 +879,13 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={mergedStyle?.changeScope?.confirmStyle?.containerStyle}
+                style={[
+                  mergedStyle?.changeScope?.confirmStyle?.containerStyle,
+                  isScopeUnchanged ? {opacity: 0.5} : {}
+                ]}
+                disabled={isScopeUnchanged}
                 onPress={async () => {
+                  if (isScopeUnchanged) return;
                   if (selectedItem && selectedRole) {
                     const currentScope = selectedItem.getScope();
                     const scopeToSet = selectedRole;
@@ -878,7 +894,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
                     if (scopeToSet === currentScope) {
                       setIsBottomSheetVisible(false);
                       setSelectedItem(null);
-                      setSelectedRole("participant");
+                      setSelectedRole("");
                       return;
                     }
 
@@ -925,7 +941,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
                         }
                       );
                       setSelectedItem(null);
-                      setSelectedRole("Participant");
+                      setSelectedRole("");
                     } catch (error) {
                       console.error("Error updating user scope:", error);
                     }

@@ -6,6 +6,7 @@ import {
   GestureResponderEvent,
   ImageSourcePropType,
   ImageStyle,
+  Platform,
   StyleProp,
   Text,
   TextStyle,
@@ -245,11 +246,17 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
 
     const listHandlerRef = useRef<any>(null);
     const initialRunRef = useRef(true);
+    const selectionEffectDidMountRef = useRef(false);
 
     const [list, setList] = useState<any[]>([]);
     const [dataLoadingStatus, setDataLoadingStatus] = useState<string>(LOADING);
 
     useEffect(() => {
+      // Skip calling onSelection on initial mount; only trigger after a user-driven change
+      if (!selectionEffectDidMountRef.current) {
+        selectionEffectDidMountRef.current = true;
+        return;
+      }
       if (props.onSelection) {
         const selectedArray = Object.values(selectedItems);
         props.onSelection(selectedArray);
@@ -766,6 +773,7 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
                 showsVerticalScrollIndicator={false}
                 ListFooterComponent={renderFooter}
                 keyboardShouldPersistTaps='always'
+                keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'none'}
               />
             </View>
           );

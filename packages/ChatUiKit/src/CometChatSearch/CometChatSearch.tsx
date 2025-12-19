@@ -681,7 +681,6 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
   const handleClearSearch = useCallback(() => {
     setSearchValue("");
     dispatch({ type: "setSearchText", searchText: "" });
-    dispatch({ type: "resetActiveFilters" });
     dispatch({ type: "clearResults" });
   }, []);
 

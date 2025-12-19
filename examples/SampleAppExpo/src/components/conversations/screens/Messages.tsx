@@ -226,6 +226,28 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
         handleccUserUnBlocked(item),
     });
 
+    const statusListenerId = 'user_status_messages_' + new Date().getTime();
+    if (localUser) {
+
+      CometChat.addUserListener(
+        statusListenerId,
+        new CometChat.UserListener({
+          onUserOnline: (onlineUser: CometChat.User) => {
+            if (onlineUser.getUid() === localUser.getUid()) {
+              console.log('🚀 ~ onUserOnline ~ onlineUser:', onlineUser);
+              setLocalUser(onlineUser); 
+            }
+          },
+          onUserOffline: (offlineUser: CometChat.User) => {
+            console.log('🚀 ~ onUserOffline ~ offlineUser:', offlineUser);
+            if (offlineUser.getUid() === localUser.getUid()) {
+              setLocalUser(offlineUser); 
+            }
+          },
+        }),
+      );
+    }
+
     // Only attach the openChat listener when we are in a group context.
     // This prevents stacking duplicate private chat screens because the group
     // screen remains mounted underneath the user chat.
@@ -300,6 +322,7 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
 
     return () => {
       CometChatUIEventHandler.removeUserListener(userListenerId);
+      CometChat.removeUserListener(statusListenerId);
       if (group) {
         CometChatUIEventHandler.removeUIListener(currentListenerId);
       }

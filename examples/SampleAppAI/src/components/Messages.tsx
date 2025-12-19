@@ -158,6 +158,28 @@ const Messages: React.FC<Props> = ({route, navigation}) => {
         handleccUserUnBlocked(item),
     });
 
+    const statusListenerId = 'user_status_messages_' + new Date().getTime();
+    if (localUser) {
+
+      CometChat.addUserListener(
+        statusListenerId,
+        new CometChat.UserListener({
+          onUserOnline: (onlineUser: CometChat.User) => {
+            if (onlineUser.getUid() === localUser.getUid()) {
+              console.log('🚀 ~ onUserOnline ~ onlineUser:', onlineUser);
+              setLocalUser(onlineUser); 
+            }
+          },
+          onUserOffline: (offlineUser: CometChat.User) => {
+            console.log('🚀 ~ onUserOffline ~ offlineUser:', offlineUser);
+            if (offlineUser.getUid() === localUser.getUid()) {
+              setLocalUser(offlineUser); 
+            }
+          },
+        }),
+      );
+    }
+
     CometChatUIEventHandler.addUIListener(openmessageListenerId, {
       openChat: ({user}) => {
         if (user != undefined) {
@@ -170,6 +192,7 @@ const Messages: React.FC<Props> = ({route, navigation}) => {
 
     return () => {
       CometChatUIEventHandler.removeUserListener(userListenerId);
+      CometChat.removeUserListener(statusListenerId);
       CometChatUIEventHandler.removeUIListener(openmessageListenerId);
     };
   }, [localUser]);

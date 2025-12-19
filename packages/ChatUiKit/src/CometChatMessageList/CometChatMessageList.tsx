@@ -559,7 +559,7 @@ export const CometChatMessageList = memo(
       const hideReactionOption = isAgenticUser() ? true : propHideReactionOption;
       const hideMessagePrivatelyOption = isAgenticUser() ? true : propHideMessagePrivatelyOption;
       const hideCopyMessageOption = isAgenticUser() ? true : propHideCopyMessageOption;
-      const hideMessageInfoOption = isAgenticUser() ? true : propHideMessageInfoOption;
+      const hideMessageInfoOption = isAgenticUser() ? true : (propHideMessageInfoOption || !receiptsVisibility);
       const hideGroupActionMessages = isAgenticUser() ? true : propHideGroupActionMessages;
       const hideFlagMessageOption = isAgenticUser() ? true : propHideFlagMessageOption;
 
@@ -1261,7 +1261,7 @@ export const CometChatMessageList = memo(
           hideReactionOption: isAgenticUserCheck || hideReactionOption,
           hideMessagePrivatelyOption: isAgenticUserCheck || hideMessagePrivatelyOption,
           hideCopyMessageOption: isAgenticUserCheck || hideCopyMessageOption,
-          hideMessageInfoOption: isAgenticUserCheck || hideMessageInfoOption,
+          hideMessageInfoOption: isAgenticUserCheck || hideMessageInfoOption || !receiptsVisibility,
           hideFlagMessageOption: isAgenticUserCheck || hideFlagMessageOption,
           hideGroupActionMessages,
           onReplyClick: (messageId: string) => {
@@ -1310,6 +1310,7 @@ export const CometChatMessageList = memo(
         hideCopyMessageOption,
         hideMessageInfoOption,
         hideGroupActionMessages,
+        receiptsVisibility,
       ]);
 
       const getPlainString = (underlyingText: string, messageObject: CometChat.BaseMessage) => {
@@ -2332,6 +2333,7 @@ export const CometChatMessageList = memo(
 
       useEffect(() => {
         if (selectedEmoji) {
+          Keyboard.dismiss();
           setShowReactionList(true);
         }
       }, [selectedEmoji]);

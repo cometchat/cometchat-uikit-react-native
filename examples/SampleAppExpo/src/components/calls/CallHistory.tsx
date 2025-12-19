@@ -5,11 +5,10 @@ import {
   useTheme,
   useCometChatTranslation,
   useLocalizedDate,
-  localizedDateHelperInstance,
   LocalizedDateHelper
 } from '@cometchat/chat-uikit-react-native';
 import React, { JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { CallDetailHelper } from './CallDetailHelper';
 import { Icon } from '@cometchat/chat-uikit-react-native';
 
@@ -23,6 +22,8 @@ export const CallHistory = (props: { user?: any; group?: any }) => {
   const { formatDate } = useLocalizedDate();
 
   const [list, setList] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isFetchingMore, setIsFetchingMore] = useState<boolean>(false);
 
   const loggedInUser = useRef<CometChat.User | any>(null);
   const callRequestBuilderRef = useRef<any>(null);
@@ -42,16 +43,23 @@ export const CallHistory = (props: { user?: any; group?: any }) => {
   }
 
   const fetchCallLogHistory = () => {
+    if (!callRequestBuilderRef.current || isFetchingMore) {
+      return;
+    }
+    setIsFetchingMore(true);
     callRequestBuilderRef.current
       .fetchNext()
       .then((CallLogHistory: any) => {
-        console.log(CallLogHistory.length);
         if (CallLogHistory.length > 0) {
-          setList([...list, ...CallLogHistory]);
+          setList(prev => [...prev, ...CallLogHistory]);
         }
       })
       .catch((err: any) => {
-        //onError && onError(err);
+        // onError && onError(err);
+      })
+      .finally(() => {
+        setLoading(false);
+        setIsFetchingMore(false);
       });
   };
 
@@ -63,7 +71,8 @@ export const CallHistory = (props: { user?: any; group?: any }) => {
         fetchCallLogHistory();
       })
       .catch((e: any) => {
-        //onError && onError(e);
+        // onError && onError(e);
+        setLoading(false);
       });
   }, []);
 
@@ -224,6 +233,21 @@ export const CallHistory = (props: { user?: any; group?: any }) => {
       keyExtractor={(item, index) => item.sessionId + '_' + index}
       renderItem={_render}
       onEndReached={fetchCallLogHistory}
+      onEndReachedThreshold={0.5}
+      ListEmptyComponent={
+        loading ? (
+          <View
+            style={{
+              flex: 1,
+              height: 300,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <ActivityIndicator size="large" color={theme.color.primary} />
+          </View>
+        ) : null
+      }
     />
   );
 };

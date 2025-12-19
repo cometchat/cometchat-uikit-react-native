@@ -335,7 +335,10 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
   };
 
   const handleUserStatus = (userDetails: CometChat.User) => {
-    if (userDetails.getUid() === userObj?.getUid()) setUserStatus(userDetails.getStatus());
+    if (userDetails.getUid() === userObj?.getUid()) {
+      setUserObj(userDetails); 
+      setUserStatus(userDetails.getStatus());
+    }
   };
 
   const msgTypingIndicator = (typist: CometChat.TypingIndicator, status: string) => {

@@ -39,7 +39,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    height: 55, 
+    minHeight: 44, // minHeight for accessibility
+    paddingVertical:8,
   },
   selectedCountText: {
     paddingLeft: 10,
@@ -90,11 +91,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   headerLetterStyle: {
-    height: 24,
+    minHeight: 24, //  minHeight for accessibility
     fontWeight: "500",
     fontFamily: undefined,
     fontSize: 13,
     marginTop: 8,
+    paddingVertical: 4,
   },
   dividerStyle: {
     height: 1,
