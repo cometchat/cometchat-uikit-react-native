@@ -114,6 +114,22 @@ import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNe
 let _defaultRequestBuilder: CometChat.MessagesRequestBuilder;
 
 /**
+ * Helper function to safely get message ID
+ * Prevents "undefined is not a function" errors in release builds
+ */
+const safeGetId = (item: any): string | number | undefined => {
+  return typeof item?.getId === 'function' ? item.getId() : item?.id;
+};
+
+/**
+ * Helper function to safely get message MUID
+ * Prevents "undefined is not a function" errors in release builds
+ */
+const safeGetMuid = (item: any): string | undefined => {
+  return typeof item?.getMuid === 'function' ? item.getMuid() : item?.muid;
+};
+
+/**
  * Uses Inverted Flat List
  * Array needs to be reversed meaning the latest message will be at array[0]
  * New message will be appended to the beginning of the array
@@ -1640,11 +1656,11 @@ export const CometChatMessageList = memo(
         // If found, update it in place instead of inserting again.
         if (!isAgenticUser) {
           try {
-            const incomingId = (newMessage as any)?.getId?.();
-            const incomingMuid = (newMessage as any)?.muid || (newMessage as any)?.getMuid?.();
+            const incomingId = typeof (newMessage as any)?.getId === 'function' ? (newMessage as any).getId() : (newMessage as any)?.id;
+            const incomingMuid = (newMessage as any)?.muid || (typeof (newMessage as any)?.getMuid === 'function' ? (newMessage as any).getMuid() : undefined);
             const existingIndex = messagesContentListRef.current.findIndex((m: any) => {
-              const mid = m?.getId?.();
-              const mmuid = m?.muid || m?.getMuid?.();
+              const mid = typeof m?.getId === 'function' ? m.getId() : m?.id;
+              const mmuid = m?.muid || (typeof m?.getMuid === 'function' ? m.getMuid() : undefined);
               return (
                 (incomingId && mid && String(mid) === String(incomingId)) ||
                 (incomingMuid && mmuid && String(mmuid) === String(incomingMuid))
@@ -1967,18 +1983,52 @@ export const CometChatMessageList = memo(
                 setQueueCompletionCallback(
                   runId,
                   (aiAssistantMessage, aiToolResultMessage, aiToolArgumentMessage) => {
-                    let replacement =
-                      aiAssistantMessage || aiToolResultMessage || aiToolArgumentMessage;
+                    const replacement = aiAssistantMessage || aiToolResultMessage || aiToolArgumentMessage;
                     if (!replacement) return;
-                    const updatedList = messagesContentListRef.current.map((msg) => {
-                      if (
-                        (msg as any).isStreamMessage === true &&
-                        (msg as any).targetMessageId === runId
-                      ) {
-                        return replacement;
-                      }
-                      return msg;
+                    console.log("replacement", replacement);
+
+                    const replacementId = typeof (replacement as any)?.getId === 'function' ? (replacement as any).getId() : (replacement as any)?.id;
+                    const replacementRunId = (replacement as any)?.data?.runId;
+                    
+                    if(messagesContentListRef.current?.[0]?.isStreamMessage && messagesContentListRef.current?.[0]?.targetMessageId === runId){
+                      latestMessageRef.current = replacement;
+                    }
+                    
+                    const list = messagesContentListRef.current;
+                    let updatedList: any[];
+                    
+                    // Find indices in one pass
+                    const existingIndex = list.findIndex((msg) => {
+                      const msgId = typeof (msg as any)?.getId === 'function' ? (msg as any).getId() : (msg as any)?.id;
+                      return msgId && String(msgId) === String(replacementId);
                     });
+                    
+                    const streamIndex = existingIndex === -1 ? list.findIndex((msg) => 
+                      (msg as any).isStreamMessage === true && (msg as any).targetMessageId === runId
+                    ) : -1;
+                    
+                    const matchingIndex = (existingIndex === -1 && streamIndex === -1) ? list.findIndex((msg) => {
+                      const msgRunId = (msg as any)?.data?.runId;
+                      return msgRunId && String(msgRunId) === String(replacementRunId);
+                    }) : -1;
+                    
+                    // Update list based on what we found
+                    if (existingIndex !== -1) {
+                      // Update existing message
+                      updatedList = list.map((msg, idx) => idx === existingIndex ? replacement : msg);
+                    } else if (streamIndex !== -1) {
+                      // Replace stream message
+                      updatedList = list.map((msg, idx) => idx === streamIndex ? replacement : msg);
+                    } else if (matchingIndex !== -1) {
+                      // Insert before matching message
+                      updatedList = [...list];
+                      updatedList.splice(matchingIndex, 0, replacement);
+                    } else {
+                      // Add at beginning
+                      updatedList = [replacement, ...list];
+                    }
+                    
+                    console.log("updatedList", updatedList);
                     messagesContentListRef.current = updatedList;
                     setMessagesList(updatedList);
                     onLoad && onLoad([...updatedList].reverse());
@@ -2140,13 +2190,15 @@ export const CometChatMessageList = memo(
             //todo show unsupported bubble
           },
           onAIAssistantMessageReceived: (aiAssistantMessage: CometChat.AIAssistantMessage) => {
-            const runId =
-              aiAssistantMessage.getAssistantMessageData?.()?.getRunId?.() ||
-              aiAssistantMessage.getId?.();
+            const assistantData = typeof aiAssistantMessage.getAssistantMessageData === 'function' ? aiAssistantMessage.getAssistantMessageData() : null;
+            const runIdFromData = assistantData && typeof assistantData.getRunId === 'function' ? assistantData.getRunId() : null;
+            const runIdFromId = typeof aiAssistantMessage.getId === 'function' ? aiAssistantMessage.getId() : (aiAssistantMessage as any)?.id;
+            const runId = runIdFromData || runIdFromId;
 
+            const parentMsgId = typeof aiAssistantMessage.getParentMessageId === 'function' ? aiAssistantMessage.getParentMessageId() : (aiAssistantMessage as any)?.parentMessageId;
             if (
               parentMessageId &&
-              String(parentMessageId) !== String(aiAssistantMessage.getParentMessageId?.())
+              String(parentMessageId) !== String(parentMsgId)
             ) {
               return;
             }
@@ -3294,8 +3346,11 @@ export const CometChatMessageList = memo(
           const index = idx;
           lastMessageDate.current = getSentAtTimestamp(item);
 
+          const id = typeof item?.getId === 'function' ? item.getId() : (item as any)?.id;
+          const muid = typeof item?.getMuid === 'function' ? item.getMuid() : (item as any)?.muid;
+          
           return (
-            <React.Fragment key={`${item.getId()}_${item.getMuid()}`}>
+            <React.Fragment key={`${id}_${muid}`}>
               <MessageView message={item} currentIndex={index} />
             </React.Fragment>
           );
@@ -3303,13 +3358,31 @@ export const CometChatMessageList = memo(
         [mergedTheme, isAgenticUser, messagesList, getSentAtTimestamp, dateSeparatorPattern]
       );
 
-      const keyExtractor = useCallback((item: any) => {
-        const id = item?.getId();
-        const muid = item?.getMuid();
-        if (!id && !muid) {
-          console.log("item has no id or muid", item);
+      const keyExtractor = useCallback((item: any, index: number) => {
+        // Safely check if methods exist before calling them
+        const id = typeof item?.getId === 'function' ? item.getId() : item?.id;
+        const muid = typeof item?.getMuid === 'function' ? item.getMuid() : item?.muid;
+        
+        // Use id + muid if both exist
+        if (id && muid) {
+          return `${id}_${muid}`;
         }
-        return `${id}_${muid}`;
+        
+        // Use muid if id doesn't exist (pending message)
+        if (muid) {
+          return `muid_${muid}`;
+        }
+        
+        // Use id if muid doesn't exist
+        if (id) {
+          return `id_${id}`;
+        }
+        
+        // Fallback to index if neither exist (should not happen, but prevents duplicates)
+        if (__DEV__) {
+          console.warn('[MessageList] Message without id or muid at index:', index, item);
+        }
+        return `index_${index}`;
       }, []);
 
       const itemSeparator = useCallback(() => <View style={{ height: 8 }} />, []);
@@ -3685,7 +3758,8 @@ export const CometChatMessageList = memo(
             }
           }
           const ms = sentAtToMs(item) ?? Date.now();
-          const isHighlighted = highlightedMessageId === String(item.getId());
+          const itemId = typeof item?.getId === 'function' ? item.getId() : (item as any)?.id;
+          const isHighlighted = highlightedMessageId === String(itemId);
           
           const separatorHeight = showSeparator ? 40 : 0; 
           

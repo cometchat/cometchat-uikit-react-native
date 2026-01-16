@@ -52,13 +52,18 @@ let streamedMessages: { [runId: string]: string } = {};
  * Per-runId event queue, matching Android logic
  */
 const eventQueues: { [runId: string]: CometChat.AIAssistantBaseEvent[] } = {};
-let lastAIAssistantMessages: { [runId: string]: CometChat.AIAssistantMessage } = {};
+let lastAIAssistantMessages: Array<{ runId: string, message: CometChat.AIAssistantMessage }> = [];
 
 /**
  * Store AIAssistantMessage for a runId
  */
 export const storeAIAssistantMessage = (runId: string, message: CometChat.AIAssistantMessage) => {
-  lastAIAssistantMessages[runId] = message;
+  const existingIndex = lastAIAssistantMessages.findIndex(item => item.runId === runId);
+  if (existingIndex !== -1) {
+    lastAIAssistantMessages[existingIndex].message = message;
+  } else {
+    lastAIAssistantMessages.push({ runId, message });
+  }
   checkQueueEmptyStatus(runId);
 };
 
@@ -75,17 +80,16 @@ function checkQueueEmptyStatus(runId: string) {
     renderingComplete[runId] === true &&
     queueCompletionCallbacks[runId]
   ) {
-    const aiMsg = lastAIAssistantMessages[runId];
-    const toolResult = lastAIToolResultMessages[runId];
-    const toolArg = lastAIToolArgumentMessages[runId];
+    const aiMsgEntry = lastAIAssistantMessages.find(item => item.runId === runId);
+    const aiMsg = aiMsgEntry?.message;
+    const toolResult = lastAIToolResultMessages[runId]?.message;
+    const toolArg = lastAIToolArgumentMessages[runId]?.message;
+    const indexToDelete = lastAIAssistantMessages.findIndex(item => item.runId === runId);
+    if (indexToDelete !== -1) {
+      lastAIAssistantMessages.splice(indexToDelete, 1);
+    }
     if (aiMsg || toolResult || toolArg) {
       queueCompletionCallbacks[runId](aiMsg, toolResult, toolArg);
-      delete queueCompletionCallbacks[runId];
-      delete lastAIAssistantMessages[runId];
-      delete lastAIToolResultMessages[runId];
-      delete lastAIToolArgumentMessages[runId];
-      delete streamingComplete[runId];
-      delete renderingComplete[runId];
     }
   }
 }
@@ -445,7 +449,7 @@ export const stopStreamingForRunId = (runId?: string) => {
     delete streamedMessages[runId];
     delete processedDeltas[runId];
     delete queueCompletionCallbacks[runId];
-    delete lastAIAssistantMessages[runId];
+    lastAIAssistantMessages = lastAIAssistantMessages.filter(item => item.runId !== runId);
     delete lastAIToolResultMessages[runId];
     delete lastAIToolArgumentMessages[runId];
     delete streamingComplete[runId];
@@ -456,7 +460,7 @@ export const stopStreamingForRunId = (runId?: string) => {
     processedDeltas = {};
     streamingComplete = {};
     renderingComplete = {};
-    lastAIAssistantMessages = {};
+    lastAIAssistantMessages = [];
     lastAIToolResultMessages = {};
     lastAIToolArgumentMessages = {};
     for (const key in queueCompletionCallbacks) {
