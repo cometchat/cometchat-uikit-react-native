@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "会话",
 	"SEARCH_FILTER_MESSAGES": "消息",
 	"SEARCH_NO_MESSAGES": "没有消息",
-	"MESSAGE_REPORTED": "消息已举报"
+	"MESSAGE_REPORTED": "消息已举报",
+	"MARK_AS_UNREAD": "标记未读",
+	"NEW": "新"
 }

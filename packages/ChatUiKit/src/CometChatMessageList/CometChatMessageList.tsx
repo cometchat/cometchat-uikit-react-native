@@ -27,6 +27,8 @@ import {
   TouchableOpacity,
   View,
   ViewStyle,
+  StyleSheet,
+  StyleProp,
 } from "react-native";
 import {
   PanGestureHandler,
@@ -35,22 +37,18 @@ import {
   PanGestureHandlerStateChangeEvent,
 } from "react-native-gesture-handler";
 import { CometChatMessageEvents } from "../shared/events/CometChatMessageEvents";
-import { CometChatMessageInformation } from "../CometChatMessageInformation/CometChatMessageInformation";
+import { CometChatConversationEvents } from "../shared/events/conversations";
 import {
-  CometChatActionSheet,
-  CometChatBottomSheet,
   CometChatMentionsFormatter,
   CometChatSoundManager,
   CometChatTextFormatter,
   CometChatUiKitConstants,
   CometChatUrlsFormatter,
-  MessageDataSource,
   SuggestionItem,
 } from "../shared";
 import {
   MessageBubbleAlignmentType,
   MessageListAlignmentType,
-  MessageTimeAlignmentType,
 } from "../shared/base/Types";
 import {
   CallTypeConstants,
@@ -72,15 +70,12 @@ import { Icon } from "../shared/icons/Icon";
 import { CometChatMessageTemplate } from "../shared/modals/CometChatMessageTemplate";
 import { getUnixTimestamp, messageStatus } from "../shared/utils/CometChatMessageHelper";
 import { CommonUtils } from "../shared/utils/CommonUtils";
-import { CometChatConfirmDialog, CometChatReceipt, CometChatReportDialog } from "../shared/views";
+import { CometChatNewMessageIndicator, CometChatReceipt, NewMessageIndicatorStyle } from "../shared/views";
 import { CometChatAvatar } from "../shared/views/CometChatAvatar";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
 import { CometChatDate } from "../shared/views/CometChatDate";
-import { CometChatEmojiKeyboard } from "../shared/views/CometChatEmojiKeyboard";
 import { CometChatMessageBubble } from "../shared/views/CometChatMessageBubble";
 import { getModerationStatus, ModerationBottomView } from "../shared/utils/MessageUtils";
-import { CometChatQuickReactions } from "../shared/views/CometChatQuickReactions";
-import { CometChatReactionList } from "../shared/views/CometChatReactionList";
 import { CometChatReactions } from "../shared/views/CometChatReactions";
 import { useTheme } from "../theme";
 import { MessageSkeleton } from "./Skeleton";
@@ -90,29 +85,29 @@ import { ExtensionConstants } from "../extensions";
 //@ts-ignore
 import { getExtensionData } from "../shared/helper/functions";
 import { DeepPartial } from "../shared/helper/types";
-import { CometChatDateSeparator } from "../shared/views/CometChatDateSeperator";
 import {
   handleWebsocketMessage,
-  messageStream,
   setAIAssistantTools,
   setStreamSpeed,
-  startStreamingForRunId,
   setQueueCompletionCallback,
-  removeQueueCompletionCallback,
   onConnected as streamOnConnected,
   onDisconnected as streamOnDisconnected,
-  onConnectionError as streamOnConnectionError,
   checkAndTriggerQueueCompletion,
   storeAIAssistantMessage,
-  QueueCompletionCallback,
 } from "../shared/services/stream-message.service";
 import { CometChatAIAssistantTools } from "../shared/modals/CometChatAIAssistantTools";
 import { StreamMessage } from "../shared/modals";
 import { internalMessageDataSource } from "../shared/framework/MessageDataSource";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
+import { MessageModals } from "./components/MessageModals";
+import { ReactionModals } from "./components/ReactionModals";
+import { MessageOptionsSheet } from "./components/MessageOptionsSheet";
+import { MessageListItem } from "./components/MessageListItem";
 
 let _defaultRequestBuilder: CometChat.MessagesRequestBuilder;
-
+const SEPARATOR_HEIGHT = 40;
+const AVERAGE_ITEM_LENGTH = 120;
+const SMALL_LIST_THRESHOLD = 30;
 /**
  * Helper function to safely get message ID
  * Prevents "undefined is not a function" errors in release builds
@@ -128,6 +123,22 @@ const safeGetId = (item: any): string | number | undefined => {
 const safeGetMuid = (item: any): string | undefined => {
   return typeof item?.getMuid === 'function' ? item.getMuid() : item?.muid;
 };
+
+
+
+/**
+ * Batch state updates using requestAnimationFrame
+ * It delays the callback until the next animation frame, 
+ * so all state updates inside the callback happen together, 
+ * just before the UI paints.
+ */
+
+function batchStateUpdates(callback: () => void): void {
+  requestAnimationFrame(() => {
+    callback();
+  });
+}
+
 
 /**
  * Uses Inverted Flat List
@@ -224,6 +235,28 @@ export interface CometChatMessageListProps {
    * If true, the message list will scroll to the bottom when new messages arrive.
    */
   scrollToBottomOnNewMessages?: boolean;
+  /**
+   * If true, the "Mark as Unread" option will be shown in the message options.
+   * @defaultValue false
+   */
+  showMarkAsUnreadOption?: boolean;
+  /**
+   * If true, the message list will start from the first unread message.
+   * @defaultValue false
+   */
+  startFromUnreadMessages?: boolean;
+  /**
+   * Custom component to render the "New Messages" indicator.
+   */
+  NewMessageIndicatorView?: React.ComponentType<any>;
+  /**
+   * Custom styles for the "New Messages" indicator.
+   */
+  newMessageIndicatorStyle?: NewMessageIndicatorStyle;
+  /**
+   * Text to display in the "New Messages" indicator.
+   */
+  newMessageIndicatorText?: string;
   /**
    * Callback invoked when the thread replies view is pressed.
    *
@@ -440,6 +473,18 @@ export interface CometChatMessageListProps {
    * When provided, matching text in messages will be highlighted.
    */
   searchKeyword?: string;
+  /**
+   * @internal
+   * Flag to indicate if the user navigated from search results.
+   * When true, this modifies the message list behavior for better search navigation UX:
+   * - The target message from search is highlighted with a temporary animation
+   * - The "New Messages" indicator is suppressed to avoid visual clutter
+   * - When startFromUnreadMessages is enabled, prevents automatic marking of messages as read
+   *   to preserve unread status for user reference
+   * This ensures users can easily find their searched message without UI distractions
+   * and maintain their unread message state for later review.
+   */
+  navigatedFromSearch?: boolean;
 }
 
 /**
@@ -556,28 +601,35 @@ export const CometChatMessageList = memo(
         streamingSpeed = 30,
         goToMessageId,
         searchKeyword,
+        navigatedFromSearch = false,
         hideFlagRemarkField,
         hideFlagMessageOption: propHideFlagMessageOption = false,
+        showMarkAsUnreadOption = false,//change it to false default is false
+        startFromUnreadMessages = false,//change it to false default is false
+        NewMessageIndicatorView,
+        newMessageIndicatorStyle,
+        newMessageIndicatorText,
       } = props;
 
-      // Helper function to check if user is agentic
-      const isAgenticUser = useCallback(() => {
+      // Helper to check if user is agentic - memoized as boolean for performance
+      const isAgenticUser = useMemo(() => {
         return user?.getRole?.() === "@agentic";
       }, [user]);
 
       // hiding props for @agentic users
-      const hideReplyOption = isAgenticUser() ? true : propHideReplyOption;
-      const hideReplyInThreadOption = isAgenticUser() ? true : propHideReplyInThreadOption;
-      const hideShareMessageOption = isAgenticUser() ? true : propHideShareMessageOption;
-      const hideEditMessageOption = isAgenticUser() ? true : propHideEditMessageOption;
-      const hideTranslateMessageOption = isAgenticUser() ? true : propHideTranslateMessageOption;
-      const hideDeleteMessageOption = isAgenticUser() ? true : propHideDeleteMessageOption;
-      const hideReactionOption = isAgenticUser() ? true : propHideReactionOption;
-      const hideMessagePrivatelyOption = isAgenticUser() ? true : propHideMessagePrivatelyOption;
-      const hideCopyMessageOption = isAgenticUser() ? true : propHideCopyMessageOption;
-      const hideMessageInfoOption = isAgenticUser() ? true : (propHideMessageInfoOption || !receiptsVisibility);
-      const hideGroupActionMessages = isAgenticUser() ? true : propHideGroupActionMessages;
-      const hideFlagMessageOption = isAgenticUser() ? true : propHideFlagMessageOption;
+      const hideReplyOption = isAgenticUser ? true : propHideReplyOption;
+      const hideReplyInThreadOption = isAgenticUser ? true : propHideReplyInThreadOption;
+      const hideShareMessageOption = isAgenticUser ? true : propHideShareMessageOption;
+      const hideEditMessageOption = isAgenticUser ? true : propHideEditMessageOption;
+      const hideTranslateMessageOption = isAgenticUser ? true : propHideTranslateMessageOption;
+      const hideDeleteMessageOption = isAgenticUser ? true : propHideDeleteMessageOption;
+      const hideReactionOption = isAgenticUser ? true : propHideReactionOption;
+      const hideMessagePrivatelyOption = isAgenticUser ? true : propHideMessagePrivatelyOption;
+      const hideCopyMessageOption = isAgenticUser ? true : propHideCopyMessageOption;
+      const hideMessageInfoOption = isAgenticUser ? true : (propHideMessageInfoOption || !receiptsVisibility);
+      const hideGroupActionMessages = isAgenticUser ? true : propHideGroupActionMessages;
+      const hideFlagMessageOption = isAgenticUser ? true : propHideFlagMessageOption;
+      const hideMarkAsUnreadOption = (isAgenticUser || !!parentMessageId) ? true : !showMarkAsUnreadOption;//hide for threads and agentic users
 
       const callListenerId = "call_" + new Date().getTime();
       const effectiveHideModeration =  hideModerationStatus;
@@ -591,10 +643,11 @@ export const CometChatMessageList = memo(
       const groupEventListener = "groupEvent_" + new Date().getTime();
       const streamListenerId = "agent_" + new Date().getTime();
       const deleteItem = useRef<CometChat.BaseMessage>(undefined);
+      const shouldSuppressHighlightRef = useRef(false);
 
       useLayoutEffect(() => {
         // For agent chats (non-thread), don't set up message request builder
-        if (isAgenticUser() && !parentMessageId) {
+        if (isAgenticUser && !parentMessageId) {
           msgRequestBuilder.current = null as any;
           return;
         }
@@ -632,7 +685,7 @@ export const CometChatMessageList = memo(
             _updatedCustomRequestBuilder = _updatedCustomRequestBuilder.setParentMessageId(
               parseInt(parentMessageId)
             );
-            if (isAgenticUser()) {
+            if (isAgenticUser) {
               _updatedCustomRequestBuilder.hideReplies(false);
               _updatedCustomRequestBuilder.withParent(true);
             }
@@ -820,13 +873,13 @@ export const CometChatMessageList = memo(
         layoutHeight: 0,
         contentHeight: 0,
       });
-      const messagesLength = useRef(0);
-      const prevMessagesLength = useRef(0);
-      const messageListRef = useRef<FlatList | null>(null);
-      const loggedInUser = useRef<CometChat.User | null | any>(null);
-      const messageRequest = useRef<CometChat.MessagesRequest | null>(null);
-      const messagesContentListRef = useRef<any[]>([]);
-      const temporaryMessageListRef = useRef<any[]>([]);
+      const messagesLength = useRef(0); // Tracks total message count to detect additions/updates
+      const prevMessagesLength = useRef(0); // Tracks previous message count to handle scroll position adjustments when loading history
+      const messageListRef = useRef<FlatList | null>(null); // Reference to the FlatList for programmatic scrolling
+      const loggedInUser = useRef<CometChat.User | null | any>(null); // Stores current user to check sender identity (me vs others)
+      const messageRequest = useRef<CometChat.MessagesRequest | null>(null); // Manages pagination state for fetching messages
+      const messagesContentListRef = useRef<any[]>([]); // "Main Stage": Source of Truth for visible messages. Kept in sync with state to handle real-time updates without closure staleness.
+      const temporaryMessageListRef = useRef<any[]>([]); // "Waiting Room": Buffer for new messages arriving while scrolled up. Prevents UI jumps/insertions while reading history.
 
       const msgRequestBuilder = useRef<CometChat.MessagesRequestBuilder>(undefined);
       const lastMessageDate = useRef(new Date().getTime());
@@ -834,7 +887,7 @@ export const CometChatMessageList = memo(
       // states
       const [messagesList, setMessagesList] = useState<any[]>([]);
       const [listState, setListState] = useState(
-        isAgenticUser() && !parentMessageId ? "loaded" : "loading"
+        isAgenticUser && !parentMessageId ? "loaded" : "loading"
       );
       const [loadingMessages, setLoadingMessages] = useState(false);
       /** this is required to prevent duplicate api calls. Cannot use state for this since this is being used in scrollHandler  **/
@@ -842,12 +895,18 @@ export const CometChatMessageList = memo(
       const loadingPrevMessagesRef = useRef(false);
       // State for showing loading when navigating to far messages
       const [navigationLoading, setNavigationLoading] = useState(false);
+      // State for showing loading when scrolling to searched messages
+      const [scrollLoading, setScrollLoading] = useState(false);
       // State for showing bottom loading indicator when fetching next messages
       const [bottomLoading, setBottomLoading] = useState(false);
-      const [unreadCount, setUnreadCount] = useState(0);
+      const [unreadCount, setUnreadCount] = useState<number>(0);
       const [showMessageOptions, setShowMessageOptions] = useState<any[]>([]);
       const [ExtensionsComponent, setExtensionsComponent] = useState<JSX.Element | null>(null);
       const [CustomListHeader, setCustomListHeader] = useState<any>(null);
+      // State to track new message indicator visibility
+      const [newMessageIndicatorId, setNewMessageIndicatorId] = useState<string | null>(null);
+      // State to track if user has manually marked messages as unread
+      const [hasManuallyMarkedUnread, setHasManuallyMarkedUnread] = useState<boolean>(false);
       const [messageInfo, setMessageInfo] = useState(false);
       const [showReportDialog, setShowReportDialog] = useState(false);
       const [ongoingCallView, setOngoingCallView] = useState(null);
@@ -862,7 +921,6 @@ export const CometChatMessageList = memo(
       const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
       const [scrollTargetId, setScrollTargetId] = useState<string | null>(null);
       const highlightAnimatedValue = useRef(new Animated.Value(0)).current;
-      const [isListLayoutComplete, setIsListLayoutComplete] = useState<boolean>(false);
       const reportedMessageRef = useRef<CometChat.BaseMessage | null>(null);
       const pendingReportRef = useRef<boolean>(false);
       const bottomSheetRef = useRef<any>(null);
@@ -872,18 +930,23 @@ export const CometChatMessageList = memo(
       const reachedFirstMessage = useRef<boolean>(false);
       const agenticParentMessageIdRef = useRef<string | undefined>(undefined);
       const [hasTargetMessageId, setHasTargetMessageId] = useState(false);
-      const hasReachedBottomRef = useRef(true);
       const fetchingAroundIdRef = useRef<string | null>(null); // Track which message ID we're currently fetching
-      const markUnreadMessageAsRead = () => {
-        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
-          message: messagesContentListRef.current[0],
-        });
-        CometChat.markAsRead(messagesContentListRef.current[0]);
-        setUnreadCount(0);
+      const [itemPositions, setItemPositions] = useState<Map<string, { y: number; height: number }>>(new Map());
+      const markUnreadMessageAsRead = (message?: CometChat.BaseMessage) => {
+        const messageToMark = message || messagesContentListRef.current[0];
+        if (messageToMark) {
+          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
+            message: messageToMark,
+          });
+          CometChat.markAsRead(messageToMark);
+          setUnreadCount(0);
+        }
       };
       const prevMsgListLengthRef = useRef<number>(0);
       const aMessageWasSentByMeRef = useRef<boolean>(false);
       const latestMessageRef = useRef<any | null>(null);
+
+
 
       useEffect(() => {
         if (messagesList.length === prevMsgListLengthRef.current + 1 && aMessageWasSentByMeRef.current) {
@@ -894,7 +957,6 @@ export const CometChatMessageList = memo(
         }
         prevMsgListLengthRef.current = messagesList.length;
       }, [messagesList]);
-
 
 
       const newMsgIndicatorPressed = useCallback(async () => {
@@ -916,26 +978,43 @@ export const CometChatMessageList = memo(
             setListState("");
           }
         } else {
+          // Merge temporary messages when unread count button is pressed
           messagesContentListRef.current = [
             ...temporaryMessageListRef.current,
             ...messagesContentListRef.current,
           ];
-          onLoad && onLoad([...messagesContentListRef.current].reverse());
-          setMessagesList((prev) => [...temporaryMessageListRef.current, ...prev]);
           temporaryMessageListRef.current = [];
-          scrollToBottom();
-          setHideScrollToBottomButton(true);
-          markUnreadMessageAsRead();
+
+          // Update latestMessageRef after merge
+          if (messagesContentListRef.current.length > 0) {
+            latestMessageRef.current = messagesContentListRef.current[0];
+          }
+
+          onLoad && onLoad([...messagesContentListRef.current].reverse());
+          setMessagesList([...messagesContentListRef.current]);
+
+          setTimeout(() => {
+            scrollToBottom();
+            setHideScrollToBottomButton(true);
+            markUnreadMessageAsRead();
+          }, 100);
         }
       }, [onLoad, hasTargetMessageId]);
 
       const getPreviousMessages = async () => {
+        if (fetchingAroundIdRef.current) return;
+
         if (loadingPrevMessagesRef.current) {
           return;
         }
         loadingPrevMessagesRef.current = true;
         // For agent chats (non-thread), don't fetch previous messages
-        if (isAgenticUser() && !parentMessageId) {
+        if (isAgenticUser && !parentMessageId) {
+          return;
+        }
+
+        // Prevent concurrent API calls
+        if (loadingMessagesRef.current) {
           return;
         }
 
@@ -962,6 +1041,7 @@ export const CometChatMessageList = memo(
               reachedFirstMessage.current = true;
             }
             let previousMessagesFetched = [...msgs].reverse(); // Reverse for UI use
+
             if (messagesList.length === 0 && msgs?.length > 0) {
               CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, {
                 message: previousMessagesFetched[0],
@@ -982,19 +1062,59 @@ export const CometChatMessageList = memo(
               });
             }
 
-            for (let index = 0; index < previousMessagesFetched.length; index++) {
-              const message: CometChat.BaseMessage = previousMessagesFetched[index];
-              if (
-                message &&
-                !message.hasOwnProperty("readAt") &&
-                loggedInUser.current?.getUid() != message?.getSender()?.getUid()
-              ) {
-                CometChat.markAsRead(message);
-                if (index == 0)
-                  CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
-                    message,
+            // When startFromUnreadMessages is enabled, the chat starts from the first unread message
+            // and shows a "New Messages" indicator above the oldest unread message.
+            // This allows users to quickly see where unread messages begin.
+            if (startFromUnreadMessages && previousMessagesFetched.length > 0) {
+              const lastMessage = previousMessagesFetched[0];//latest message
+              if (!goToMessageId && messagesList.length === 0) {
+                // If we are not navigating to a specific message, we want to show the new message indicator
+                // above the oldest unread message (which is the last one in the fetched list since it's reversed).
+                const oldestMessage = previousMessagesFetched[previousMessagesFetched.length];
+
+                if (oldestMessage) {
+                  setNewMessageIndicatorId(oldestMessage.getId().toString());
+                }
+              }
+
+              // Only mark conversation as read on initial load.
+              // If we do this on every fetch (pagination), it would reset the unread count
+              // even if the user manually marked a message as unread.
+              // The !navigatedFromSearch condition ensures we don't mark as read when navigating from search results,
+              // as the user might want to keep messages unread for reference.
+              if (messagesList.length === 0 && !navigatedFromSearch) {
+                //marking most recent unread message as read
+                if (user) {
+                  CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
+                    console.log("Error marking user conversation as read", e);
                   });
-              } else break;
+                } else if (group) {
+                  CometChat.markConversationAsRead(group.getGuid(), CometChat.RECEIVER_TYPE.GROUP).catch((e) => {
+                    console.log("Error marking group conversation as read", e);
+                  });
+                }
+                setUnreadCount(0);
+                //emitting event to update read receipts in other components
+                CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
+                  message: lastMessage,
+                });
+              }
+
+            } else {
+              for (let index = 0; index < previousMessagesFetched.length; index++) {
+                const message: CometChat.BaseMessage = previousMessagesFetched[index];
+                if (
+                  message &&
+                  !message.hasOwnProperty("readAt") &&
+                  loggedInUser.current?.getUid() != message?.getSender()?.getUid()
+                ) {
+                  CometChat.markAsRead(message);
+                  if (index == 0)
+                    CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
+                      message,
+                    });
+                } else break;
+              }
             }
             previousMessagesFetched = previousMessagesFetched.map(
               (item: CometChat.BaseMessage, index: any) => {
@@ -1058,18 +1178,18 @@ export const CometChatMessageList = memo(
         if (fetchingAroundIdRef.current === messageId) {
           return;
         }
-        
-        if (isAgenticUser() && !parentMessageId) {
+
+        if (isAgenticUser && !parentMessageId) {
           return;
         }
 
         fetchingAroundIdRef.current = messageId; // Mark this message as being fetched
-        
+
         // Check if message exists in current list
-        const messageExists = messagesContentListRef.current.find(msg => 
+        const messageExists = messagesContentListRef.current.find(msg =>
           String(msg.getId()) === String(messageId)
         );
-        
+
         if (messageExists) {
           setHasTargetMessageId(true);
         } else {
@@ -1082,7 +1202,7 @@ export const CometChatMessageList = memo(
           const targetMessageId = Number(messageId);
           msgRequestBuilder.current?.setMessageId(targetMessageId);
           messageRequest.current = msgRequestBuilder.current?.build() || null;
-          
+
           // Get the target message first to ensure it exists
           const targetMessage = await CometChat.getMessageDetails(targetMessageId);
           if (!targetMessage) {
@@ -1098,18 +1218,28 @@ export const CometChatMessageList = memo(
           if (user) {
             nextMessagesRequest = nextMessagesRequest.setUID(user.getUid());
           }
-          
+
           if (group) {
             nextMessagesRequest = nextMessagesRequest.setGUID(group.getGuid());
           }
-          
-          if (parentMessageId) {
-            nextMessagesRequest = nextMessagesRequest.setParentMessageId(Number(parentMessageId));
+
+          // Main chat: Server excludes thread replies
+          if (!parentMessageId) {
+            nextMessagesRequest = nextMessagesRequest.hideReplies(true);
+          }
+          // Thread: Server includes only relevant messages
+          else {
+            nextMessagesRequest = nextMessagesRequest
+              .setParentMessageId(Number(parentMessageId))
+              .hideReplies(false);
+            if (isAgenticUser) {
+              nextMessagesRequest = nextMessagesRequest.withParent(true);
+            }
           }
 
           // Fetch messages before and after the target message
           const nextMessages = await nextMessagesRequest.build().fetchNext();
-          
+
           // Combine messages: previous (reversed) + target + next
           const allMessages = [
             // ...previousMessages,
@@ -1119,17 +1249,101 @@ export const CometChatMessageList = memo(
 
           // Remove duplicates and sort by timestamp (newest at top for FlatList)
           const uniqueMessages = allMessages
-            // .filter((message, index, array) => 
-            //   array.findIndex(m => m.getId() === message.getId()) === index
-            // )
-            // .sort((a, b) => b.getSentAt() - a.getSentAt());
+          // .filter((message, index, array) => 
+          //   array.findIndex(m => m.getId() === message.getId()) === index
+          // )
+          // .sort((a, b) => b.getSentAt() - a.getSentAt());
 
           if (uniqueMessages.length > 0) {
-                        messagesContentListRef.current = uniqueMessages;
+            // Check if this is the initial load using ref to ensure fresh state
+            const isInitialLoad = messagesContentListRef.current.length === 0;
+            messagesContentListRef.current = uniqueMessages;
             setMessagesList(uniqueMessages);
             onLoad && onLoad([...uniqueMessages].reverse());
 
+            //This check is used to determine if this is the Initial Load of the chat screen.
+            // Check if this is the initial load (messagesList is empty).
+            // We check messagesList.length === 0 because setMessagesList above is async,
+            // so messagesList still reflects the state before this update.
+            // We only want to mark as read on the first load, not during subsequent updates.
+            // The !navigatedFromSearch condition ensures we don't mark as read when navigating from search results,
+            // as the user might want to keep messages unread for reference.
+            if (startFromUnreadMessages && isInitialLoad && !navigatedFromSearch && !goToMessageId) {
+              shouldSuppressHighlightRef.current = true;
+              //marking most recent unread message as read
+              if (user) {
+                CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
+                  console.log("Error marking user conversation as read", e);
+                });
+              } else if (group) {
+                CometChat.markConversationAsRead(group.getGuid(), CometChat.RECEIVER_TYPE.GROUP).catch((e) => {
+                  console.log("Error marking group conversation as read", e);
+                });
+              }
+              setUnreadCount(0);
+              // If we have next messages (unread messages), set the indicator on the first one.
+              // Otherwise, fallback to the target message (last read message).
+              if (nextMessages.length > 0) {
+                setNewMessageIndicatorId(String(nextMessages[0].getId()));
+              } else {
+                setNewMessageIndicatorId(messageId);
+              }
+              //emitting event to update read receipts in other components
+              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
+                message: uniqueMessages[0],
+              });
+            } else if (navigatedFromSearch) {
+              // If we navigated from search, we want to show the "New Messages" indicator
+              // but NOT mark the conversation as read immediately.
+              // We fetch the first unread message to place the indicator correctly.
+              const fetchFirstUnread = async () => {
+                try {
+                  const convId = user?.getUid() ?? group?.getGuid();
+                  const conversationType = user
+                    ? CometChat.RECEIVER_TYPE.USER
+                    : CometChat.RECEIVER_TYPE.GROUP;
+
+                  if (!convId) return;
+
+                  const conversation = await CometChat.getConversation(convId, conversationType);
+                  const unreadCount = conversation.getUnreadMessageCount();
+                  setUnreadCount(unreadCount);
+
+                  if (unreadCount > 0) {
+                    const lastReadMsgId = conversation.getLastReadMessageId();
+
+                    if (lastReadMsgId) {
+                      let request = new CometChat.MessagesRequestBuilder()
+                        .setLimit(1)
+                        .setMessageId(Number(lastReadMsgId));
+
+                      if (user) request = request.setUID(user.getUid());
+                      if (group) request = request.setGUID(group.getGuid());
+
+                      if (!parentMessageId) {
+                        request = request.hideReplies(true);
+                      } else {
+                        request = request.setParentMessageId(Number(parentMessageId)).hideReplies(false);
+                        if (isAgenticUser) {
+                          request = request.withParent(true);
+                        }
+                      }
+
+                      const unreadMessages = await request.build().fetchNext();
+                      if (unreadMessages.length > 0) {
+                        setNewMessageIndicatorId(String(unreadMessages[0].getId()));
+                      }
+                    }
+                  }
+                } catch (e) {
+                  console.log("Error fetching first unread message", e);
+                }
+              };
+              fetchFirstUnread();
+            }
+
             // Reset layout state and set up for scrolling to target message
+            // console.log(`Setting scroll target to message: ${messageId}`);
             setScrollTargetId(messageId);
           }
 
@@ -1137,39 +1351,92 @@ export const CometChatMessageList = memo(
         } catch (error) {
           console.log("Error fetching messages around ID:", error);
           setListState("error");
+          setNavigationLoading(false);
           onError && onError(error as CometChat.CometChatException);
         } finally {
-          setNavigationLoading(false);
+          // setNavigationLoading(false);
           fetchingAroundIdRef.current = null;
         }
       };
 
-      const scrollToMessage = (messageId: string) => {
+      // Scrolls to a specific message by ID, centering it in the view
+      // Uses position data from itemPositions map for precise scrolling
+      const scrollToMessage = (messageId: string, retryCount: number = 0) => {
         if (messageListRef.current && messagesContentListRef.current.length > 0) {
+          // Show loading indicator during scroll operation
+          setNavigationLoading(true);
+
           const targetIndex = messagesContentListRef.current.findIndex(
             (msg) => String(msg.getId()) === messageId
           );
-          
+
           if (targetIndex !== -1) {
-            // Message exists in list, just scroll to it without refetching
-            try {
-              messageListRef.current?.scrollToIndex({
-                index: targetIndex,
-                animated: true,
-                viewPosition: 0.5, // Center the message
-              });
-              highlightMessage(messageId);
-            } catch (scrollError) {
-              console.error('Error during scrollToIndex execution:', scrollError);
-              // Fallback to offset scroll if scrollToIndex fails
-              const approximateOffset = targetIndex * 120;
+            // Get the actual position of the target message
+            const targetMessage = messagesContentListRef.current[targetIndex];
+            const position = itemPositions.get(String(targetMessage.getId()));
+
+            if (position) {
+              // Calculate centered offset for the message
+              // For inverted list, we need to position it from the top of the visible area
+              const screenHeight = currentScrollPosition.current.scrollViewHeight || Dimensions.get('window').height;
+
+              // Center the message: place it at middle of the screen
+              // In inverted list: offset = message.y - (screenHeight/2 - messageHeight/2)
+              const centeredOffset = Math.max(0, position.y - (screenHeight / 2) + (position.height / 2));
+              console.log({centeredOffset});
+
+              // console.log(`📍 Scrolling to position-based offset ${centeredOffset.toFixed(1)}px for message ${messageId}`);
               messageListRef.current?.scrollToOffset({
-                offset: approximateOffset,
+                offset: centeredOffset,
                 animated: true,
               });
-              highlightMessage(messageId);
+
+              // Highlight after scroll animation starts
+              setTimeout(() => {
+                // console.log(`Highlighting message ${messageId} after position-based scroll`);
+                if (!shouldSuppressHighlightRef.current) {
+                  highlightMessage(messageId);
+                }
+                shouldSuppressHighlightRef.current = false;
+                setNavigationLoading(false); // Clear loading when scroll completes
+              }, 150);
+            } else {
+              // Position not measured yet - retry with faster progressive delays (up to 5 times)
+              if (retryCount < 5) {
+                // Faster progressive delays: 100ms, 200ms, 300ms, 400ms, 500ms
+                const delay = (retryCount + 1) * 100;
+                // console.log(`Retrying scroll for message ${messageId} (attempt ${retryCount + 1}/5) after ${delay}ms - waiting for layout`);
+                setTimeout(() => {
+                  scrollToMessage(messageId, retryCount + 1);
+                }, delay);
+              } else {
+                // Final fallback: use scrollToIndex with onScrollToIndexFailed handling for dynamic heights
+                try {
+                  messageListRef.current?.scrollToIndex({
+                    index: targetIndex,
+                    animated: true,
+                    viewPosition: 0.5, // For inverted FlatList
+                  });
+                  // onScrollToIndexFailed will handle retry logic if this fails
+                  setTimeout(() => {
+                    if (!shouldSuppressHighlightRef.current) {
+                      highlightMessage(messageId);
+                    }
+                    shouldSuppressHighlightRef.current = false;
+                    setNavigationLoading(false); // Clear loading when scroll completes
+                  }, 250);
+                } catch (scrollError) {
+                  console.error('scrollToIndex failed immediately:', scrollError);
+                  if (!shouldSuppressHighlightRef.current) {
+                    highlightMessage(messageId);
+                  }
+                  shouldSuppressHighlightRef.current = false;
+                  setNavigationLoading(false); // Clear loading on final failure
+                }
+              }
             }
           } else {
+            setNavigationLoading(false); // Clear loading since we're fetching
             getMessagesAroundId(messageId);
           }
         }
@@ -1177,7 +1444,7 @@ export const CometChatMessageList = memo(
 
       const getUpdatedPreviousMessages = () => {
         // For agent chats (non-thread), don't fetch updated previous messages
-        if (isAgenticUser() && !parentMessageId) {
+        if (isAgenticUser && !parentMessageId) {
           return;
         }
 
@@ -1265,7 +1532,7 @@ export const CometChatMessageList = memo(
       };
 
       const templatesMap = useMemo(() => {
-        const isAgenticUserCheck = isAgenticUser();
+        const isAgenticUserCheck = isAgenticUser;
         const options = {
           textFormatters: textFormatters || [],
           hideReplyOption: isAgenticUserCheck || hideReplyOption,
@@ -1279,6 +1546,7 @@ export const CometChatMessageList = memo(
           hideCopyMessageOption: isAgenticUserCheck || hideCopyMessageOption,
           hideMessageInfoOption: isAgenticUserCheck || hideMessageInfoOption || !receiptsVisibility,
           hideFlagMessageOption: isAgenticUserCheck || hideFlagMessageOption,
+          hideMarkAsUnreadOption: isAgenticUserCheck || hideMarkAsUnreadOption,
           hideGroupActionMessages,
           onReplyClick: (messageId: string) => {
             scrollToMessage(messageId);
@@ -1289,9 +1557,9 @@ export const CometChatMessageList = memo(
           templates && templates.length
             ? templates
             : [
-                ...ChatConfigurator.dataSource.getAllMessageTemplates(mergedTheme, options),
-                ...addTemplates,
-              ];
+              ...ChatConfigurator.dataSource.getAllMessageTemplates(mergedTheme, options),
+              ...addTemplates,
+            ];
         //for internal use only
         const streamTemplate = internalMessageDataSource.getStreamMessageTemplate(
           mergedTheme,
@@ -1434,6 +1702,48 @@ export const CometChatMessageList = memo(
           });
         }
       };
+      /**
+       * Marks a specific message as unread in the conversation.
+       * This function calls the CometChat SDK to mark the message as unread,
+       * updates the conversation's unread count, and emits events to notify
+       * other components of the conversation update. It also sets the new
+       * message indicator to appear above this message.
+       * @param message - The message to mark as unread
+       */
+      const markMessageAsUnread = (message: CometChat.BaseMessage) => {
+        CometChat.markMessageAsUnread(message).then(
+          (response: any) => {
+            setShowMessageOptions([]);
+            setHasManuallyMarkedUnread(true);
+            let convId:string = "";
+            let conversationType:string = "";
+            if (user) {
+              convId = user?.getUid();
+              conversationType = CometChat.RECEIVER_TYPE.USER;
+            } else if (group) {
+              convId = group?.getGuid();
+              conversationType = CometChat.RECEIVER_TYPE.GROUP;
+            }
+            //getting convesation using conversationId=Uid and conversationType
+            CometChat.getConversation(convId, conversationType).then((conversation) => {
+              // Emitting conversation update event
+              console.log("Emitting ccUpdateConversation event for mark as unread", conversation);
+              CometChatUIEventHandler.emitConversationEvent(
+                CometChatConversationEvents.ccUpdateConversation,
+                { conversation }
+              );
+              console.log("latest",conversation.getUnreadMessageCount());
+              setUnreadCount(conversation.getUnreadMessageCount());
+              setNewMessageIndicatorId(message.getId().toString());
+            }).catch((error) => {
+              console.log("Error fetching conversation after marking as unread", error);
+            });
+          },
+          (error: any) => {
+            console.log("Error marking as unread", error);
+          }
+        );
+      };
 
       function checkMessageInSameConversation(message: CometChat.BaseMessage | any): boolean {
         return (
@@ -1461,34 +1771,36 @@ export const CometChatMessageList = memo(
         );
       }
       useEffect(() => {
-        if (isAgenticUser() && parentMessageId && !conversationId.current) {
+        if (isAgenticUser && parentMessageId && !conversationId.current) {
           conversationId.current = parentMessageId;
         }
       }, [parentMessageId, isAgenticUser]);
 
       // Handle scrolling to highlighted message when FlatList layout is complete
       useEffect(() => {
-        let timer: any;
+        let rafId: number | undefined;
+
         if (scrollTargetId && messagesList.length > 0) {
-          timer = setTimeout(() => {
+          rafId = requestAnimationFrame(() => {
             scrollToMessage(scrollTargetId);
             setScrollTargetId(null);
-          }, 100);
+          });
         }
+
         return () => {
-          if (timer) clearTimeout(timer);
+          if (rafId) cancelAnimationFrame(rafId);
         };
       }, [scrollTargetId, messagesList.length]);
 
       function checkSameConversation(message: CometChat.BaseMessage): boolean {
         if ((message as any).isStreamMessage) {
-          if (isAgenticUser()) {
+          if (isAgenticUser) {
             return (message as any).targetMessageId === agenticParentMessageIdRef.current;
           }
           return true;
         }
 
-        if (isAgenticUser()) {
+        if (isAgenticUser) {
           if (parentMessageId && agenticParentMessageIdRef.current) {
             return (
               message.getParentMessageId &&
@@ -1519,6 +1831,12 @@ export const CometChatMessageList = memo(
         if (!layoutHeight) {
           return true;
         }
+
+        // If we have navigated from search and are viewing old messages, we are NOT near bottom
+        if (navigatedFromSearch && hasTargetMessageId) {
+          return false;
+        }
+
         let scrollPosFromTopInPercentage = (scrollPos / layoutHeight) * 100;
 
         // If the user has scrolled to within 30% from the top (which is the "bottom" in this case),
@@ -1535,7 +1853,7 @@ export const CometChatMessageList = memo(
           //todo show unsupported bubble
         }
 
-        if (isAgenticUser()) {
+        if (isAgenticUser) {
           if (
             String(baseMessage.getParentMessageId()) === String(parentMessageId) ||
             String(baseMessage.getId()) === String(parentMessageId)
@@ -1551,7 +1869,11 @@ export const CometChatMessageList = memo(
             checkMessageInSameConversation(baseMessage) ||
             messageToSameConversation(baseMessage)
           ) {
-            CometChat.markAsDelivered(newMessage);
+            if (user) {
+              CometChat.markConversationAsDelivered(user.getUid(), CometChat.RECEIVER_TYPE.USER);
+            } else if (group) {
+              CometChat.markConversationAsDelivered(group.getGuid(), CometChat.RECEIVER_TYPE.GROUP);
+            }
             if (!parentMessageId && newMessage.getParentMessageId()) {
               const parentId = String(
                 newMessage.getParentMessageId
@@ -1629,14 +1951,78 @@ export const CometChatMessageList = memo(
           }
           scrollToBottom();
           markMessageAsRead(newMessage);
+          latestMessageRef.current = newMessage;
         } else {
-          temporaryMessageListRef.current = [newMessage, ...temporaryMessageListRef.current];
-          setUnreadCount(unreadCount + 1);
+          const lastMsg = messagesContentListRef.current[0];
+
+          // Helper to process the message after checking conversation state
+          const processMessage = (isSequenceCorrect: boolean) => {
+            if (isSequenceCorrect && temporaryMessageListRef.current.length === 0) {
+              if (!skipAddToList) addToMessageList(newMessage);
+              latestMessageRef.current = newMessage;
+            } else {
+              temporaryMessageListRef.current = [newMessage, ...temporaryMessageListRef.current];
+            }
+            setUnreadCount((prev) => prev + 1);
+          };
+
+          let conversationWith = "";
+          const conversationType = newMessage.getReceiverType();
+
+          if (conversationType === CometChat.RECEIVER_TYPE.USER) {
+            const senderUid = newMessage.getSender()?.getUid();
+            conversationWith =
+              senderUid === loggedInUser.current?.getUid()
+                ? newMessage.getReceiverId()
+                : senderUid;
+          } else {
+            conversationWith = newMessage.getReceiverId();
+          }
+
+          /**
+           * Sequence Integrity Check for New Message Handling
+           *
+           * Purpose:
+           * Ensures message sequence integrity when appending new messages to the chat list while the user is scrolled up.
+           * Prevents silent gaps in the conversation history due to network latency or missed real-time events.
+           *
+           * Implementation:
+           * Fetches the latest conversation state from the server to compare the local last message ID with the server's last message ID.
+           * If they match, the sequence is intact and the message can be safely appended to the visible list.
+           * If they differ, a gap exists, and the message is buffered in the temporary list to prompt the user to load missing messages.
+           *
+           * Performance Considerations:
+           * This asynchronous operation is conditionally executed only when the user is not at the bottom of the chat,
+           * minimizing unnecessary network calls during active scrolling or bottom-positioned interactions.
+           * A fallback mechanism reverts to local state comparison if the network request fails, ensuring robustness.
+           */
+          CometChat.getConversation(conversationWith, conversationType)
+            .then((conversation) => {
+              const convLastMsg = conversation?.getLastMessage();
+              // Check if the last message in our list matches the conversation's last message
+              // This ensures we don't have a gap
+              // THE CORE LOGIC:
+              // Does the ID of the last message in our list (lastMsg)
+              // MATCH the ID of the last message the server knows about (convLastMsg)?
+              const isSequenceCorrect =
+                lastMsg && convLastMsg && lastMsg.getId() === convLastMsg.getId();
+              processMessage(isSequenceCorrect);
+            })
+            .catch((e) => {
+              console.log("Error fetching conversation in bottomHandler", e);
+              // Fall back to checking our local variable latestMessageRef.
+              const isLatest =
+                lastMsg &&
+                latestMessageRef.current &&
+                lastMsg.getId() === latestMessageRef.current.getId();
+              processMessage(isLatest);
+            });
         }
       };
 
       const addToMessageList = async (newMessage: CometChat.BaseMessage) => {
-        if (isAgenticUser() && !conversationId.current) {
+        // Handle incoming messages and prevent duplicate key errors
+        if (isAgenticUser && !conversationId.current) {
           if (newMessage.getConversationId()) {
             conversationId.current = newMessage.getConversationId();
           } else if (!parentMessageId) {
@@ -1649,11 +2035,7 @@ export const CometChatMessageList = memo(
           conversationId.current = newMessage.getConversationId();
         }
 
-        // ----------------------------------------------------------------------------------
-        // De-duplication / in-place update logic
-        // ----------------------------------------------------------------------------------
-        // Fix: Before inserting, check for an existing message with matching id OR muid.
-        // If found, update it in place instead of inserting again.
+        // Prevent duplicate messages by checking existing messages
         if (!isAgenticUser) {
           try {
             const incomingId = typeof (newMessage as any)?.getId === 'function' ? (newMessage as any).getId() : (newMessage as any)?.id;
@@ -1667,13 +2049,13 @@ export const CometChatMessageList = memo(
               );
             });
             if (existingIndex !== -1) {
-              // Update existing message instead of duplicating.
+              // Update existing message instead of duplicating
               const updatedList = [...messagesContentListRef.current];
               updatedList[existingIndex] = CommonUtils.clone(newMessage);
               messagesContentListRef.current = updatedList;
               onLoad && onLoad([...messagesContentListRef.current].reverse());
               setMessagesList(updatedList);
-              return; // prevent duplicate insert
+              return;
             }
           } catch (e) {
             console.log("Error in message de-duplication:", e);
@@ -1704,21 +2086,43 @@ export const CometChatMessageList = memo(
             return;
           }
         }
-        if (latestMessageRef.current !== null &&
-          messagesContentListRef.current[0]?.id !== latestMessageRef.current.id
-          && messagesContentListRef.current[0]?.muid !== latestMessageRef.current.muid
+        // Check for message sequence gaps and skip for own messages
+        const isOwnMessage = (newMessage.getSender()?.getUid() || (newMessage as any)?.["sender"]?.["uid"]) === loggedInUser.current?.["uid"];
+
+        if (!isOwnMessage &&
+          latestMessageRef.current !== null &&
+          messagesContentListRef.current.length > 0
         ) {
-          reachedFirstMessage.current = false;
-          msgRequestBuilder.current?.setMessageId(0);
-          messageRequest.current = msgRequestBuilder.current?.build() || null;
-          messagesContentListRef.current = [];
-          await getPreviousMessages();
+          const firstMsg = messagesContentListRef.current[0];
+          const firstMsgId = firstMsg?.getId?.();
+          const firstMsgMuid = firstMsg?.getMuid?.() || (firstMsg as any)?.muid;
+          const latestMsgId = latestMessageRef.current?.getId?.();
+          const latestMsgMuid = latestMessageRef.current?.getMuid?.() || (latestMessageRef.current as any)?.muid;
+
+          const hasGap = (firstMsgId && latestMsgId && String(firstMsgId) !== String(latestMsgId)) &&
+            (firstMsgMuid && latestMsgMuid && String(firstMsgMuid) !== String(latestMsgMuid));
+
+          if (hasGap) {
+            reachedFirstMessage.current = false;
+            msgRequestBuilder.current?.setMessageId(0);
+            messageRequest.current = msgRequestBuilder.current?.build() || null;
+            messagesContentListRef.current = [];
+            await getPreviousMessages();
+          }
         }
         messagesContentListRef.current = [newMessage, ...messagesContentListRef.current];
         onLoad && onLoad([...messagesContentListRef.current].reverse());
+        // Update latestMessageRef for gap detection
         latestMessageRef.current = newMessage;
+
+        // Batch state updates for better performance
+        batchStateUpdates(() => {
+          setMessagesList([...messagesContentListRef.current]);
+          if (hideScrollToBottomButton === false && unreadCount < 1 && !hasTargetMessageId) {
+            setHideScrollToBottomButton(true);
+          }
+        });
         aMessageWasSentByMeRef.current = true;
-        setMessagesList((prev) => [newMessage, ...prev]);
       };
 
       const markParentMessageAsRead = (message: CometChat.BaseMessage) => {
@@ -1744,6 +2148,7 @@ export const CometChatMessageList = memo(
         } else condition = (msg) => msg.getId() == editedMessage.getId();
         let msgIndex = messagesContentListRef.current.findIndex(condition);
         if (msgIndex > -1) {
+
           let tmpList = [...messagesContentListRef.current];
           if (editedMessage.getCategory() === MessageCategoryConstants.interactive) {
             //todo show unsupported bubble
@@ -1856,16 +2261,56 @@ export const CometChatMessageList = memo(
           },
         });
         CometChat.getLoggedinUser()
-          .then((u: any) => {
+          .then(async (u: any) => {
+            console.log({startFromUnreadMessages});
+
             loggedInUser.current = u;
-            if (isAgenticUser() && !parentMessageId) {
+            if (isAgenticUser && !parentMessageId) {
               messageRequest.current = null;
             } else {
               messageRequest.current = msgRequestBuilder.current?.build() || null;
             }
-            if (!isAgenticUser() || (isAgenticUser() && parentMessageId)) {
+            if (!isAgenticUser || (isAgenticUser && parentMessageId)) {
               if (goToMessageId) {
                 getMessagesAroundId(goToMessageId);
+              } else if (startFromUnreadMessages) {
+
+
+                try {
+                  const convId = user?.getUid() ?? group?.getGuid();
+                  const conversationType = user
+                    ? CometChat.RECEIVER_TYPE.USER
+                    : CometChat.RECEIVER_TYPE.GROUP;
+
+
+                  if (convId && conversationType) {
+
+                    const conversation = await CometChat.getConversation(
+                      convId,
+                      conversationType
+                    );
+                    console.log({convId,conversationType,user,group,conversation,getUnreadMessageCount:conversation.getUnreadMessageCount()});
+                    // console.log("lower", conversation);
+                    if (conversation.getUnreadMessageCount() > 0) {
+                      setUnreadCount(conversation.getUnreadMessageCount());
+                      const lastReadMessageId = conversation.getLastReadMessageId();
+                      //if lastReadMessageId is 0, it means no messages have been read yet
+                      if (lastReadMessageId && Number(lastReadMessageId) !== 0) {
+                        getMessagesAroundId(String(lastReadMessageId));
+                      } else {
+                        getPreviousMessages();
+                      }
+                    } else {
+                      getPreviousMessages();
+                    }
+                  } else {
+                    getPreviousMessages();
+                  }
+                } catch (e) {
+                  console.log("Error while getting conversation", e);
+
+                  getPreviousMessages();
+                }
               } else {
                 getPreviousMessages();
               }
@@ -1952,7 +2397,7 @@ export const CometChatMessageList = memo(
       );
 
       useEffect(() => {
-        if (isAgenticUser()) {
+        if (isAgenticUser) {
           agenticParentMessageIdRef.current = undefined;
         }
       }, [user?.getUid(), group?.getGuid(), isAgenticUser]);
@@ -1961,7 +2406,7 @@ export const CometChatMessageList = memo(
         //add listeners
 
         // AI Assistant listener for agent chats
-        if (isAgenticUser() && user && (!parentMessageId || (parentMessageId && isAgenticUser()))) {
+        if (isAgenticUser && user && (!parentMessageId || (parentMessageId && isAgenticUser))) {
           CometChat.addAIAssistantListener(streamListenerId, {
             onAIAssistantEventReceived: (message: CometChat.AIAssistantBaseEvent) => {
               if (
@@ -2081,13 +2526,23 @@ export const CometChatMessageList = memo(
         CometChatUIEventHandler.addMessageListener(messageEventListener, {
           ccMessageSent: ({ message, status }: any) => {
             if (status == MessageStatusConstants.inprogress) {
+              // Remove incomplete stream messages before adding new user message (for agentic users)
+              if (isAgenticUser) {
+                const filteredList = messagesContentListRef.current.filter(
+                  (msg) => !(msg as any).isStreamMessage
+                );
+                if (filteredList.length !== messagesContentListRef.current.length) {
+                  messagesContentListRef.current = filteredList;
+                  setMessagesList(filteredList);
+                }
+              }
               newMessage(message, false);
             }
 
             if (status == MessageStatusConstants.success) {
               messageEdited(message, true);
               if (
-                isAgenticUser() &&
+                isAgenticUser &&
                 agenticParentMessageIdRef.current === undefined &&
                 messagesList.length !== 0 &&
                 message.getType() === MessageTypeConstants.text &&
@@ -2095,7 +2550,7 @@ export const CometChatMessageList = memo(
               ) {
                 agenticParentMessageIdRef.current = String(message.getId());
               }
-              if (isAgenticUser() && agenticParentMessageIdRef.current !== undefined) {
+              if (isAgenticUser && agenticParentMessageIdRef.current !== undefined) {
                 const streamMessage = createStreamMessage(message);
                 addToMessageList(streamMessage);
               }
@@ -2118,12 +2573,12 @@ export const CometChatMessageList = memo(
             }
           },
           onTextMessageReceived: (textMessage: any) => {
-            if (isAgenticUser()) {
+            if (isAgenticUser) {
               if (
                 textMessage.getSender?.()?.getRole?.() === "@agentic" ||
                 textMessage.getCategory?.() === MessageCategoryConstants.agentic ||
                 textMessage.getCategory?.() ===
-                  CometChatUiKitConstants.MessageCategoryConstants.stream
+                CometChatUiKitConstants.MessageCategoryConstants.stream
               ) {
                 newMessage(textMessage);
               }
@@ -2132,12 +2587,12 @@ export const CometChatMessageList = memo(
             }
           },
           onMediaMessageReceived: (mediaMessage: any) => {
-            if (isAgenticUser()) {
+            if (isAgenticUser) {
               if (
                 mediaMessage.getSender?.()?.getRole?.() === "@agentic" ||
                 mediaMessage.getCategory?.() === MessageCategoryConstants.agentic ||
                 mediaMessage.getCategory?.() ===
-                  CometChatUiKitConstants.MessageCategoryConstants.stream
+                CometChatUiKitConstants.MessageCategoryConstants.stream
               ) {
                 newMessage(mediaMessage);
               }
@@ -2146,12 +2601,12 @@ export const CometChatMessageList = memo(
             }
           },
           onCustomMessageReceived: (customMessage: any) => {
-            if (isAgenticUser()) {
+            if (isAgenticUser) {
               if (
                 customMessage.getSender?.()?.getRole?.() === "@agentic" ||
                 customMessage.getCategory?.() === MessageCategoryConstants.agentic ||
                 customMessage.getCategory?.() ===
-                  CometChatUiKitConstants.MessageCategoryConstants.stream
+                CometChatUiKitConstants.MessageCategoryConstants.stream
               ) {
                 newMessage(customMessage);
               }
@@ -2165,14 +2620,19 @@ export const CometChatMessageList = memo(
           onMessagesRead: (messageReceipt: any) => {
             updateMessageReceipt(messageReceipt);
           },
+          //suraj
           onMessageDeleted: (deletedMessage: any) => {
+            // If the deleted message was unread, decrement the unread count
+            if (!deletedMessage.getReadAt?.() && deletedMessage.getSender()?.getUid() !== loggedInUser.current?.getUid()) {
+              setUnreadCount(prev => Math.max(0, prev - 1));
+            }
             messageEdited(deletedMessage);
           },
           onMessageEdited: (editedMessage: any) => {
             messageEdited(editedMessage);
           },
           onMessageModerated: (moderatedMessage: any) => {
-            !isAgenticUser() && messageEdited(moderatedMessage);
+            !isAgenticUser && messageEdited(moderatedMessage);
           },
           onFormMessageReceived: (formMessage: any) => {
             newMessage(formMessage);
@@ -2194,8 +2654,8 @@ export const CometChatMessageList = memo(
             const runIdFromData = assistantData && typeof assistantData.getRunId === 'function' ? assistantData.getRunId() : null;
             const runIdFromId = typeof aiAssistantMessage.getId === 'function' ? aiAssistantMessage.getId() : (aiAssistantMessage as any)?.id;
             const runId = runIdFromData || runIdFromId;
-
             const parentMsgId = typeof aiAssistantMessage.getParentMessageId === 'function' ? aiAssistantMessage.getParentMessageId() : (aiAssistantMessage as any)?.parentMessageId;
+
             if (
               parentMessageId &&
               String(parentMessageId) !== String(parentMsgId)
@@ -2356,7 +2816,7 @@ export const CometChatMessageList = memo(
           CometChat.removeGroupListener(groupListenerId);
           CometChat.removeCallListener(callListenerId);
           CometChat.removeConnectionListener(connectionListenerId);
-          if (isAgenticUser()) {
+          if (isAgenticUser) {
             CometChat.removeAIAssistantListener(streamListenerId);
             if (streamSubscriptionRef.current) {
               streamSubscriptionRef.current.unsubscribe();
@@ -2389,6 +2849,7 @@ export const CometChatMessageList = memo(
           setShowReactionList(true);
         }
       }, [selectedEmoji]);
+
       useImperativeHandle(ref, () => {
         return {
           addMessage: newMessage,
@@ -2511,7 +2972,7 @@ export const CometChatMessageList = memo(
           avatarVisibility &&
           (alignment === "leftAligned" ||
             (isIncomingMessage && !user) ||
-            (isAgenticUser() && isIncomingMessage));
+            (isAgenticUser && isIncomingMessage));
 
         if (shouldShowAvatar) {
           return (
@@ -2609,7 +3070,7 @@ export const CometChatMessageList = memo(
             item.getEditedAt?.() &&
             (item as CometChat.BaseMessage).getType() === MessageTypeConstants.text;
 
-          const shouldShowTimestamp = isAgenticUser() ? isOutgoingMessage : !hideTimestamp;
+          const shouldShowTimestamp = isAgenticUser ? isOutgoingMessage : !hideTimestamp;
           return (
             <View>
               <View
@@ -2640,7 +3101,7 @@ export const CometChatMessageList = memo(
                     timeStamp={
                       !hideTimestamp
                         ? (item.getDeletedAt() || item.getSentAt()) * 1000 ||
-                          getSentAtTimestamp(item)
+                        getSentAtTimestamp(item)
                         : undefined
                     }
                     pattern={"timeFormat"}
@@ -2649,9 +3110,9 @@ export const CometChatMessageList = memo(
                   />
                 )}
                 {receiptsVisibility &&
-                alignment !== "leftAligned" &&
-                isOutgoingMessage &&
-                !item.getDeletedAt?.() ? (
+                  alignment !== "leftAligned" &&
+                  isOutgoingMessage &&
+                  !item.getDeletedAt?.() ? (
                   <View style={{ marginLeft: 2, alignItems: "center", justifyContent: "center" }}>
                     <CometChatReceipt
                       receipt={messageState}
@@ -2676,6 +3137,94 @@ export const CometChatMessageList = memo(
         },
         [mergedTheme, isAgenticUser, hideTimestamp]
       );
+
+      const reactToMessage = (emoji: string, messageObj?: CometChat.BaseMessage) => {
+        const originalMessage = messageObj || selectedMessage;
+        const msgObj = CommonUtils.clone(originalMessage);
+
+        if (!msgObj.getId() && originalMessage?.getId()) {
+          msgObj.getId = () => originalMessage.getId();
+        }
+
+        const messageId = msgObj?.getId();
+        const reactions = msgObj?.getReactions() || [];
+        const emojiObject = reactions?.find((reaction: any) => {
+          return reaction?.reaction == emoji;
+        });
+
+        if (emojiObject && emojiObject?.getReactedByMe()) {
+          const updatedReactions: any[] = [];
+          reactions.forEach((reaction: any) => {
+            if (reaction?.getReaction() == emoji) {
+              if (reaction?.getCount() === 1) {
+                return;
+              } else {
+                reaction.setCount(reaction?.getCount() - 1);
+                reaction.setReactedByMe(false);
+                updatedReactions.push(reaction);
+              }
+            } else {
+              updatedReactions.push(reaction);
+            }
+          });
+
+          const newMessageObj = CommonUtils.clone(msgObj);
+          newMessageObj.setReactions(updatedReactions);
+
+          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
+            message: newMessageObj,
+            status: messageStatus.success,
+          });
+
+          CometChat.removeReaction(messageId, emoji)
+            .then((message: any) => { })
+            .catch((error: any) => {
+              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
+                message: msgObj,
+                status: messageStatus.success,
+              });
+            });
+        } else {
+          const updatedReactions: any[] = [];
+          const reactionAvailable = reactions.find((reaction: any) => {
+            return reaction?.getReaction() == emoji;
+          });
+
+          reactions.forEach((reaction: any) => {
+            if (reaction?.getReaction() == emoji) {
+              reaction.setCount(reaction?.getCount() + 1);
+              reaction.setReactedByMe(true);
+              updatedReactions.push(reaction);
+            } else {
+              updatedReactions.push(reaction);
+            }
+          });
+          if (!reactionAvailable) {
+            const react: CometChat.ReactionCount = new CometChat.ReactionCount(emoji, 1, true);
+            updatedReactions.push(react);
+          }
+
+          const newMessageObj = CommonUtils.clone(msgObj);
+
+          newMessageObj.setReactions(updatedReactions);
+
+          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
+            message: newMessageObj,
+            status: messageStatus.success,
+          });
+
+          CometChat.addReaction(messageId, emoji)
+            .then((response: any) => { })
+            .catch((error: any) => {
+              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
+                message: msgObj,
+                status: messageStatus.success,
+              });
+            });
+        }
+
+        setShowMessageOptions([]);
+      };
 
       const onReactionPress = useCallback(
         (reaction: CometChat.ReactionCount, messageObject: CometChat.BaseMessage) => {
@@ -2713,17 +3262,17 @@ export const CometChatMessageList = memo(
             messageObject?.getReactions().length > 0;
           return hasReaction
             ? (params: { maxContentWidth?: number }) => {
-                return (
-                  <CometChatReactions
-                    messageObject={messageObject}
-                    onReactionPress={onReactionPress}
-                    onReactionLongPress={onReactionLongPress}
-                    alignment={alignment}
-                    style={getCurrentBubbleStyle(messageObject).reactionStyles}
-                    maxContentWidth={params?.maxContentWidth}
-                  />
-                );
-              }
+              return (
+                <CometChatReactions
+                  messageObject={messageObject}
+                  onReactionPress={onReactionPress}
+                  onReactionLongPress={onReactionLongPress}
+                  alignment={alignment}
+                  style={getCurrentBubbleStyle(messageObject).reactionStyles}
+                  maxContentWidth={params?.maxContentWidth}
+                />
+              );
+            }
             : null;
         },
         [mergedTheme]
@@ -2735,7 +3284,7 @@ export const CometChatMessageList = memo(
           if (
             alignment == "standard" &&
             (item.getSender()?.getUid() || item?.["sender"]?.["uid"]) ==
-              loggedInUser.current?.getUid()
+            loggedInUser.current?.getUid()
           )
             return "right";
           return "left";
@@ -2751,7 +3300,7 @@ export const CometChatMessageList = memo(
 
       const openReportDialog = (message: any) => {
         reportedMessageRef.current = message;
-        // On iOS wait for BottomSheet modal dismiss animation completion to avoid flashing
+        // On iOS wait for BottomSheet modal dismiss animation to avoid flashing
         if (Platform.OS === "ios") {
           pendingReportRef.current = true;
         } else {
@@ -2809,7 +3358,7 @@ export const CometChatMessageList = memo(
                 style={_style.threadedMessageStyles?.indicatorTextStyle}
               >{`${item.getReplyCount()} ${
                 item.getReplyCount() > 1 ? t("REPLIES") : t("REPLY")
-              }`}</Text>
+                }`}</Text>
               <CometChatBadge
                 style={{
                   containerStyle: _style.threadedMessageStyles?.unreadCountStyle?.containerStyle,
@@ -2864,6 +3413,7 @@ export const CometChatMessageList = memo(
 
       const openOptionsForMessage = useCallback(
         (item: CometChat.BaseMessage | any, template: CometChatMessageTemplate) => {
+          console.log("Opening options for message:", item);
           let options = template?.options
             ? loggedInUser.current
               ? template.options(loggedInUser.current, item, mergedTheme, group)
@@ -2916,6 +3466,9 @@ export const CometChatMessageList = memo(
                 //     break
                 case MessageOptionConstants.shareMessage:
                   option.onPress = shareMedia.bind(this, item);
+                  break;
+                case MessageOptionConstants.markAsUnread:
+                  option.onPress = markMessageAsUnread.bind(this, item);
                   break;
               }
             else {
@@ -3004,7 +3557,7 @@ export const CometChatMessageList = memo(
           }, [hasTemplate, isThreaded, getFooterView, message, bubbleAlignment]);
 
           const ThreadedView = useMemo(() => {
-            if (isAgenticUser()) return undefined;
+            if (isAgenticUser) return undefined;
             return !isThreaded
               ? !message.getDeletedBy()
                 ? getThreadView(message, bubbleAlignment)
@@ -3025,7 +3578,7 @@ export const CometChatMessageList = memo(
             if (effectiveHideModeration) {
               return hasTemplate?.BottomView && hasTemplate?.BottomView(message, bubbleAlignment);
             } else {
-              if (isOutgoing && moderationStatus === "disapproved" && !isAgenticUser()) {
+              if (isOutgoing && moderationStatus === "disapproved" && !isAgenticUser) {
                 return (
                   <ModerationBottomView
                     status={moderationStatus}
@@ -3062,6 +3615,7 @@ export const CometChatMessageList = memo(
               if (!message.getId()) {
                 return;
               }
+              // console.log({hasTemplate});
 
               setSelectedMessage(message);
               hasTemplate && openOptionsForMessage(message, hasTemplate);
@@ -3075,7 +3629,7 @@ export const CometChatMessageList = memo(
             const onReply = useCallback(() => {
               if (message.getDeletedBy() != null) return;
               if (!message.getId()) return;
-              
+
               CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
                 message: message,
                 status: messageStatus.inprogress,
@@ -3087,16 +3641,16 @@ export const CometChatMessageList = memo(
 
             const handlePanGesture = useCallback((event: PanGestureHandlerGestureEvent) => {
               const { translationX, velocityX } = event.nativeEvent;
-              
+
               // Only allow swiping from left to right for replies
               if (translationX <= 0) return;
-              
+
               const swipeThreshold = 80; // Threshold to trigger reply
               const maxSwipeDistance = 120; // Maximum swipe distance
-              
+
               // Calculate progress (0 to 1)
               const progress = Math.min(translationX / maxSwipeDistance, 1);
-              
+
               // Update animated values
               swipeAnimatedValue.setValue(Math.min(translationX, maxSwipeDistance));
               replyIconOpacity.setValue(progress);
@@ -3104,10 +3658,10 @@ export const CometChatMessageList = memo(
 
             const handlePanStateChange = useCallback((event: PanGestureHandlerStateChangeEvent) => {
               const { state, translationX, velocityX } = event.nativeEvent;
-              
+
               if (state === State.END) {
                 const swipeThreshold = 80;
-                
+
                 // Reset animations
                 Animated.parallel([
                   Animated.spring(swipeAnimatedValue, {
@@ -3119,11 +3673,11 @@ export const CometChatMessageList = memo(
                     useNativeDriver: true,
                   }),
                 ]).start();
-                
+
                 const moderationStatus = getModerationStatus(message);
                 const isOutgoing = message.getSender()?.getUid() === loggedInUser.current?.getUid();
                 if (isOutgoing && moderationStatus && moderationStatus !== "approved" && moderationStatus !== "unmoderated") return;
-                
+
                 // Trigger reply if threshold is met
                 if (translationX > swipeThreshold || velocityX > 500) {
                   onReply();
@@ -3132,7 +3686,7 @@ export const CometChatMessageList = memo(
             }, [onReply, message]);
 
             return (
-              message.getCategory() === MessageCategoryConstants.action ? (
+              message.getCategory() === MessageCategoryConstants.action || isAgenticUser ? (
                 <View style={{ position: 'relative' }}>
                   <TouchableOpacity
                     activeOpacity={1}
@@ -3208,106 +3762,23 @@ export const CometChatMessageList = memo(
         return item.getSentAt() ? item.getSentAt() * 1000 : Date.now();
       }, []);
 
-      const reactToMessage = (emoji: string, messageObj?: CometChat.BaseMessage) => {
-        const msgObj = CommonUtils.clone(messageObj) || CommonUtils.clone(selectedMessage);
 
-        const messageId = msgObj?.getId();
-        const reactions = msgObj?.getReactions() || [];
-        const emojiObject = reactions?.find((reaction: any) => {
-          return reaction?.reaction == emoji;
-        });
-        if (emojiObject && emojiObject?.getReactedByMe()) {
-          const updatedReactions: any[] = [];
-          reactions.forEach((reaction: any) => {
-            if (reaction?.getReaction() == emoji) {
-              if (reaction?.getCount() === 1) {
-                return;
-              } else {
-                reaction.setCount(reaction?.getCount() - 1);
-                reaction.setReactedByMe(false);
-                updatedReactions.push(reaction);
-              }
-            } else {
-              updatedReactions.push(reaction);
-            }
-          });
-
-          const newMessageObj = CommonUtils.clone(msgObj);
-          newMessageObj.setReactions(updatedReactions);
-
-          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
-            message: newMessageObj,
-            status: messageStatus.success,
-          });
-          CometChat.removeReaction(messageId, emoji)
-            .then((message: any) => {})
-            .catch((error: any) => {
-              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
-                message: msgObj,
-                status: messageStatus.success,
-              });
-              console.log(error);
-            });
-        } else {
-          const updatedReactions: any[] = [];
-          const reactionAvailable = reactions.find((reaction: any) => {
-            return reaction?.getReaction() == emoji;
-          });
-          reactions.forEach((reaction: any) => {
-            if (reaction?.getReaction() == emoji) {
-              reaction.setCount(reaction?.getCount() + 1);
-              reaction.setReactedByMe(true);
-              updatedReactions.push(reaction);
-            } else {
-              updatedReactions.push(reaction);
-            }
-          });
-          if (!reactionAvailable) {
-            const react: CometChat.ReactionCount = new CometChat.ReactionCount(emoji, 1, true);
-            updatedReactions.push(react);
-          }
-
-          const newMessageObj = CommonUtils.clone(msgObj);
-
-          newMessageObj.setReactions(updatedReactions);
-
-          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
-            message: newMessageObj,
-            status: messageStatus.success,
-          });
-
-          CometChat.addReaction(messageId, emoji)
-            .then((response: any) => {})
-            .catch((error: any) => {
-              console.log(error);
-              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
-                message: msgObj,
-                status: messageStatus.success,
-              });
-            });
-        }
-
-        setShowMessageOptions([]);
-      };
-
-      const sentAtToMs = (msg?: any): number | undefined => {
+      //extract once per item
+      const sentAtToMs = useCallback((msg?: any): number | undefined => {
         if (!msg) return undefined;
-        // try CometChat getter first
-        const raw =
-          typeof msg.getSentAt === "function"
-            ? msg.getSentAt()
-            : (msg?.sentAt ?? msg?.sent_at ?? msg?.sentOn ?? msg?.senton);
+        const raw = typeof msg.getSentAt === "function"
+          ? msg.getSentAt()
+          : (msg?.sentAt ?? msg?.sent_at ?? msg?.sentOn ?? msg?.senton);
         if (raw === undefined || raw === null) return undefined;
-        // if raw looks like seconds (10 digits) convert to ms
         return raw < 1e12 ? raw * 1000 : raw;
-      };
+      }, []);
 
-      const makeDayKey = (ms?: number | undefined) => {
+      const makeDayKey = useCallback((ms?: number | undefined) => {
         if (!ms) return null;
         const d = new Date(ms);
         // use local date parts so "Today" follows user's timezone
         return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-      };
+      }, []);
 
       const messageDayKeys = useMemo(() => {
         return messagesList.map((m) => {
@@ -3316,22 +3787,58 @@ export const CometChatMessageList = memo(
         });
       }, [messagesList]);
 
-      const isSameLocalDay = (ms?: number) => {
+      //extract once per item
+      const isSameLocalDay = useCallback((ms?: number) => {
         if (!ms) return false;
-        const a = new Date(ms);
-        const b = new Date();
+        const now = new Date();
+        const date = new Date(ms);
         return (
-          a.getFullYear() === b.getFullYear() &&
-          a.getMonth() === b.getMonth() &&
-          a.getDate() === b.getDate()
+          date.getFullYear() === now.getFullYear() &&
+          date.getMonth() === now.getMonth() &&
+          date.getDate() === now.getDate()
         );
-      };
+      }, []);
 
-      const getDayHeaderString = (ms?: number | undefined) => {
+      // Memoize separator calculation with cache
+      const separatorCache = useRef(new Map<string, boolean>());
+      const shouldShowSeparator = useCallback((index: number, currentMs?: number, nextMs?: number) => {
+        const cacheKey = `${index}-${currentMs}-${nextMs}`;
+
+        if (separatorCache.current.has(cacheKey)) {
+          return separatorCache.current.get(cacheKey)!;
+        }
+
+        const listLength = messagesContentListRef.current.length;
+
+        // Last item in small list
+        if (index === listLength - 1 && listLength < SMALL_LIST_THRESHOLD) {
+          separatorCache.current.set(cacheKey, true);
+          return true;
+        }
+
+        // Different days
+        if (currentMs && nextMs) {
+          const currentDate = new Date(currentMs).getDate();
+          const nextDate = new Date(nextMs).getDate();
+          const result = currentDate !== nextDate;
+          separatorCache.current.set(cacheKey, result);
+          return result;
+        }
+
+        separatorCache.current.set(cacheKey, false);
+        return false;
+      }, []);
+
+      // Clear cache when messages change
+      useEffect(() => {
+        separatorCache.current.clear();
+      }, [messagesList.length]);
+
+      const getDayHeaderString = useCallback((ms?: number | undefined) => {
         if (!ms) return undefined;
         if (isSameLocalDay(ms)) return t("TODAY") || "Today";
         return dateSeparatorPattern ? dateSeparatorPattern(ms) : undefined;
-      };
+      }, [isSameLocalDay, t, dateSeparatorPattern]);
 
       const RenderMessageItem = useCallback(
         ({
@@ -3345,38 +3852,47 @@ export const CometChatMessageList = memo(
         }) => {
           const index = idx;
           lastMessageDate.current = getSentAtTimestamp(item);
-
           const id = typeof item?.getId === 'function' ? item.getId() : (item as any)?.id;
           const muid = typeof item?.getMuid === 'function' ? item.getMuid() : (item as any)?.muid;
-          
           return (
             <React.Fragment key={`${id}_${muid}`}>
               <MessageView message={item} currentIndex={index} />
             </React.Fragment>
           );
         },
-        [mergedTheme, isAgenticUser, messagesList, getSentAtTimestamp, dateSeparatorPattern]
+        [] // Empty dependencies - MessageView handles its own memoization
       );
 
       const keyExtractor = useCallback((item: any, index: number) => {
         // Safely check if methods exist before calling them
         const id = typeof item?.getId === 'function' ? item.getId() : item?.id;
         const muid = typeof item?.getMuid === 'function' ? item.getMuid() : item?.muid;
+
+        
+        // For stream messages in agentic mode, use a unique combination
+        // to prevent duplicate keys when navigating between chat and history
+        if (item?.isStreamMessage) {
+          const targetId = item?.targetMessageId || '';
+          return `stream_${id}_${targetId}_${index}`;
+        }
         
         // Use id + muid if both exist
         if (id && muid) {
           return `${id}_${muid}`;
         }
+
         
         // Use muid if id doesn't exist (pending message)
         if (muid) {
           return `muid_${muid}`;
         }
+
         
         // Use id if muid doesn't exist
         if (id) {
           return `id_${id}`;
         }
+
         
         // Fallback to index if neither exist (should not happen, but prevents duplicates)
         if (__DEV__) {
@@ -3385,7 +3901,7 @@ export const CometChatMessageList = memo(
         return `index_${index}`;
       }, []);
 
-      const itemSeparator = useCallback(() => <View style={{ height: 8 }} />, []);
+      const itemSeparator = useCallback(() => <View style={staticStyles.itemSeparator} />, [staticStyles]);
 
       const getAgentEmptyView = useCallback(() => {
         if (!user) return <></>;
@@ -3406,45 +3922,23 @@ export const CometChatMessageList = memo(
 
         return (
           <ScrollView
-            contentContainerStyle={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
+            contentContainerStyle={staticStyles.emptyScrollView}
             showsVerticalScrollIndicator={false}
           >
-            <View
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                padding: 24,
-              }}
-            >
+            <View style={staticStyles.emptyContainer}>
               {emptyChatImageView || (
                 <CometChatAvatar
                   image={imageSource}
                   name={user.getName()}
                   style={{
                     containerStyle: {
-                      width: 60,
-                      height: 60,
-                      borderRadius: 40,
-                      marginBottom: 20,
-                      alignItems: "center",
-                      justifyContent: "center",
+                      ...staticStyles.avatarContainer,
                       backgroundColor: mergedTheme.avatarStyle.containerStyle?.backgroundColor,
                     },
-                    imageStyle: {
-                      width: 60,
-                      height: 60,
-                      borderRadius: 40,
-                    },
+                    imageStyle: staticStyles.avatarImage,
                     textStyle: {
-                      fontSize: 32,
-                      fontWeight: "bold",
+                      ...staticStyles.avatarText,
                       color: mergedTheme.avatarStyle.textStyle?.color,
-                      textAlign: "center",
-                      textAlignVertical: "center",
                     },
                   }}
                 />
@@ -3627,28 +4121,37 @@ export const CometChatMessageList = memo(
           if (group) {
             nextMessagesRequest = nextMessagesRequest.setGUID(group.getGuid());
           }
-          if (parentMessageId) {
-            nextMessagesRequest = nextMessagesRequest.setParentMessageId(Number(parentMessageId));
+          if (!parentMessageId) {
+            nextMessagesRequest = nextMessagesRequest.hideReplies(true);
+          }
+          // Thread: Server includes only relevant messages
+          else {
+            nextMessagesRequest = nextMessagesRequest
+              .setParentMessageId(Number(parentMessageId))
+              .hideReplies(false);
+            if (isAgenticUser) {
+              nextMessagesRequest = nextMessagesRequest.withParent(true);
+            }
           }
 
           const nextMessages = await nextMessagesRequest.build().fetchNext();
           if (nextMessages.length > 0) {
+
             const existingIds = new Set(messagesContentListRef.current.map(m => m.getId()));
             const uniqueNewMessages = nextMessages.filter(m => !existingIds.has(m.getId()));
-            
+
             if (uniqueNewMessages.length > 0) {
               const reversedNewMessages = uniqueNewMessages.reverse();
               messagesContentListRef.current = [
                 ...reversedNewMessages,
                 ...messagesContentListRef.current
               ];
-              
+
               setMessagesList(messagesContentListRef.current);
               onLoad && onLoad([...messagesContentListRef.current].reverse());
             }
           } else {
             setHasTargetMessageId(false);
-            hasReachedBottomRef.current = true;
           }
         } catch (error) {
           console.error('[fetchNextMessages] Error:', error);
@@ -3667,37 +4170,6 @@ export const CometChatMessageList = memo(
         );
       };
 
-      const handleScroll = (event: any) => {
-        if (loadingMessagesRef.current) {
-          return;
-        }
-
-        // For agent chats (non-thread), don't fetch previous messages when scrolling to top
-        if (isAgenticUser() && !parentMessageId) {
-          scrollHandler(event);
-          return;
-        }
-
-        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        if (
-          Math.floor(contentOffset.y) >= Math.floor(contentSize.height - layoutMeasurement.height)
-        ) {
-          getPreviousMessages();
-        }
-        if (hasTargetMessageId && contentOffset.y <= 50) {
-           fetchNextMessages();
-        }
-        scrollHandler(event);
-      };
-
-      const shouldShowScrollToBottomButton = useCallback((event: any) => {
-        const { contentOffset, contentSize } = event.nativeEvent;
-
-        currentScrollPosition.current.y = contentOffset.y;
-        currentScrollPosition.current.contentHeight = contentSize.height;
-        setHideScrollToBottomButton(isNearBottom());
-      }, []);
-
       const scrollHandler = (event: any) => {
         /********************************************************************************
              * layoutMeasurement.height: The height of the visible area within the ScrollView.
@@ -3709,12 +4181,6 @@ export const CometChatMessageList = memo(
              * contentSize.height: The total height of the scrollable content.
             *********************************************************************************/
         const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        const screenHeight = Dimensions.get("window").height;
-
-        // Calculate the scroll position
-        const scrollPosition = layoutMeasurement.height + contentOffset.y;
-        const scrollEndPosition = contentSize.height - screenHeight;
-
         currentScrollPosition.current.y = contentOffset.y;
         currentScrollPosition.current.contentHeight = contentSize.height;
 
@@ -3725,81 +4191,237 @@ export const CometChatMessageList = memo(
           currentScrollPosition.current.scrollViewHeight = contentSize.height;
         }
 
-        // if (isAtBottom() || isNearBottom()) {
-        //   newMsgIndicatorPressed();
-        // }
+        const nearBottom = isNearBottom();
+        setHideScrollToBottomButton(nearBottom);
+
+        if (nearBottom && temporaryMessageListRef.current.length > 0) {
+          // Merge temporary messages when scrolling near bottom
+          messagesContentListRef.current = [
+            ...temporaryMessageListRef.current,
+            ...messagesContentListRef.current,
+          ];
+          temporaryMessageListRef.current = [];
+
+          // Update latestMessageRef after merge
+          if (messagesContentListRef.current.length > 0) {
+            latestMessageRef.current = messagesContentListRef.current[0];
+          }
+
+          setMessagesList([...messagesContentListRef.current]);
+          onLoad && onLoad([...messagesContentListRef.current].reverse());
+
+          setUnreadCount(0);
+
+          if (hasManuallyMarkedUnread) {
+            setHasManuallyMarkedUnread(false);
+          }
+
+          if (messagesContentListRef.current.length > 0) {
+            const latestMessage = messagesContentListRef.current[0];
+            markMessageAsRead(latestMessage);
+          }
+        }
       };
 
       const scrollToBottom = useCallback((scrollToFirstUnread = false) => {
-        messageListRef.current?.scrollToOffset({ offset: 0 });        
+        // Merge temporary messages when scrolling to bottom
+        if (temporaryMessageListRef.current.length > 0) {
+          messagesContentListRef.current = [
+            ...temporaryMessageListRef.current,
+            ...messagesContentListRef.current,
+          ];
+          temporaryMessageListRef.current = [];
+
+          // Update latestMessageRef after merge
+          if (messagesContentListRef.current.length > 0) {
+            latestMessageRef.current = messagesContentListRef.current[0];
+          }
+
+          setMessagesList([...messagesContentListRef.current]);
+          onLoad && onLoad([...messagesContentListRef.current].reverse());
+
+          if (hasManuallyMarkedUnread) {
+            setHasManuallyMarkedUnread(false);
+          }
+        }
+
+        setUnreadCount(0);
+        setHideScrollToBottomButton(true);
+        messageListRef.current?.scrollToOffset({ offset: 0 });
         // Clear navigation flags
         setHasTargetMessageId(false);
         setHighlightedMessageId(null);
-        hasReachedBottomRef.current = true;
+        setHasManuallyMarkedUnread(false);
+
+        // Mark latest message as read if available
+        if (messagesContentListRef.current.length > 0) {
+          const latestMessage = messagesContentListRef.current[0];
+          markMessageAsRead(latestMessage);
+        }
+        // setNavigatedFromSearch(false); // navigatedFromSearch is a prop, cannot set it
       }, [hasTargetMessageId, messagesList.length]);
 
-      // const windowSize = useMemo(() => {
-      //   return messagesList.length > 50 ? messagesList.length / 2 : 21;
-      // }, [messagesList]);
+      const handleScrollInternal = useCallback((event: any) => {
+        scrollHandler(event);
+      }, [scrollHandler]);
 
-      const memoizedRenderItem = useCallback(
-        ({ item, index, separators }: any) => {
-          // index here is FlatList's index in messagesList (newest-first)
-          let showSeparator = false;
-          const nextItem = messagesContentListRef.current[index + 1];
-          {
-            const currentItemMs = sentAtToMs(item);
-            const nextItemMs = sentAtToMs(nextItem);
-            if (currentItemMs && nextItemMs) {
-              showSeparator = new Date(currentItemMs).getDate() !== new Date(nextItemMs).getDate();
-            }
-            if (index === messagesContentListRef.current.length - 1 && messagesContentListRef.current.length < 30) {
-              showSeparator = true;
+
+      const handleScrollToIndexFailed = useCallback((error: any) => {
+
+        // Calculate dynamic average height from measured items
+        const measuredItems = Array.from(itemPositions.values());
+        let averageHeight = AVERAGE_ITEM_LENGTH;
+
+        if (measuredItems.length > 0) {
+          const totalHeight = measuredItems.reduce((sum, item) => sum + item.height, 0);
+          averageHeight = totalHeight / measuredItems.length;
+        }
+
+        // Scroll to estimated position to load more items
+        const targetOffset = error.index * averageHeight;
+
+        messageListRef.current?.scrollToOffset({
+          offset: targetOffset,
+          animated: true,
+        });
+
+        // After scrolling to load more items, retry scrollToIndex
+        setTimeout(() => {
+          if (messageListRef.current) {
+            try {
+              messageListRef.current.scrollToIndex({
+                index: error.index,
+                animated: true,
+                viewPosition: 0.5, // For inverted FlatList
+              });
+            } catch (retryError) {
+              console.warn('Retry scrollToIndex also failed:', retryError);
             }
           }
-          const ms = sentAtToMs(item) ?? Date.now();
+        }, 300); // Wait for items to load
+      }, [itemPositions]);
+
+
+
+      // Clear item positions when messages list changes significantly
+      // Don't clear on minor changes (like adding one message) or when navigating
+      useEffect(() => {
+        const lengthDiff = Math.abs(messagesList.length - prevMessagesLength.current);
+        const isSignificantChange = lengthDiff > 5; // Only clear if 5+ messages added/removed
+
+        if (isSignificantChange) {
+          setItemPositions(new Map());
+        }
+
+        prevMessagesLength.current = messagesList.length;
+      }, [messagesList.length]);
+
+      // Handle layout measurement for accurate scrolling
+      const handleItemLayout = useCallback((event: any, messageId: string) => {
+        const { y, height } = event.nativeEvent.layout;
+        setItemPositions(prev => {
+          const newMap = new Map(prev);
+          newMap.set(messageId, { y, height });
+          return newMap;
+        });
+      }, []);
+      //
+      // Configuration for determining when list items are considered "viewable" (visible on screen)
+      // itemVisiblePercentThreshold: 50 means an item is viewable when at least 50% of it is visible
+      // This is used by onViewableItemsChanged to detect when messages come into view for auto-read functionality
+      const viewabilityConfig = useRef({
+        itemVisiblePercentThreshold: 50,
+      }).current;
+
+      // This function handles marking the conversation as read ONLY when the user scrolls
+      // to the "New Message" indicator (the first unread message).
+      // This preserves the unread count while the user is viewing searched messages.
+      const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+        if (navigatedFromSearch && newMessageIndicatorId && unreadCount > 0 && !hasManuallyMarkedUnread) {
+          const indicatorItem = viewableItems.find(
+            (item: any) => String(item.item.getId()) === newMessageIndicatorId
+          );
+
+          if (indicatorItem) {
+            if (user) {
+              CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
+                console.log("Error marking user conversation as read", e);
+              });
+            } else if (group) {
+              CometChat.markConversationAsRead(group.getGuid(), CometChat.RECEIVER_TYPE.GROUP).catch((e) => {
+                console.log("Error marking group conversation as read", e);
+              });
+            }
+            setUnreadCount(0);
+          }
+        }
+      }, [navigatedFromSearch, newMessageIndicatorId, unreadCount, user, group, hasManuallyMarkedUnread]);
+
+
+
+      // Optimized FlatList renderItem using memoized component
+      const memoizedRenderItem = useCallback(
+        ({ item, index }: any) => {
+          const nextItem = messagesContentListRef.current[index + 1];
+          const currentItemMs = sentAtToMs(item);
+          const nextItemMs = sentAtToMs(nextItem);
+          const showSeparator = shouldShowSeparator(index, currentItemMs, nextItemMs);
+          const ms = currentItemMs ?? Date.now();
           const itemId = typeof item?.getId === 'function' ? item.getId() : (item as any)?.id;
           const isHighlighted = highlightedMessageId === String(itemId);
-          
-          const separatorHeight = showSeparator ? 40 : 0; 
-          
-          const animatedBackgroundStyle = {
-            backgroundColor: highlightAnimatedValue.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['transparent', String(mergedTheme.color.extendedPrimary200)],
-            }),
-            position: 'absolute' as 'absolute',
-            left: 0,
-            right: 0,
-            top: separatorHeight,
-            bottom: 0,
-            zIndex: 1,
-          };
+          const dayHeaderString = getDayHeaderString(ms);
+          // Show the "New Messages" indicator above a message if:
+          // - startFromUnreadMessages is enabled (to indicate unread messages start here), OR
+          // - showMarkAsUnreadOption is enabled (to show where a message was marked as unread)
+          // - OR navigatedFromSearch is true (when navigating from search to unread messages)
+          // - and this message matches the newMessageIndicatorId
+          // - and NOT in agentic mode (agentic chats don't support unread indicators)
+          const showNewMessageIndicator = !isAgenticUser && (startFromUnreadMessages || showMarkAsUnreadOption || navigatedFromSearch) && newMessageIndicatorId === String(item.getId());
 
           return (
-            <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 8, position: 'relative' }}>
-              {isHighlighted && (
-                <Animated.View style={animatedBackgroundStyle} />
-              )}
-              <View style={{ position: 'relative', zIndex: 2 }}>
-                {showSeparator && (
-                  <View style={{ alignItems: "center", marginBottom: 8 }}>
-                    <CometChatDateSeparator
-                      timeStamp={ms}
-                      pattern={"dayDateFormat"}
-                      customDateString={getDayHeaderString(ms)}
-                      style={mergedTheme.messageListStyles.dateSeparatorStyle}
-                    />
-                  </View>
-                )}
-                <RenderMessageItem item={item} theme={mergedTheme} idx={index} />
-                {itemSeparator()}
-              </View>
+            <View>
+              <MessageListItem
+                item={item}
+                index={index}
+                showSeparator={showSeparator}
+                isHighlighted={isHighlighted}
+                highlightAnimatedValue={highlightAnimatedValue}
+                theme={mergedTheme}
+                timestamp={ms}
+                dayHeaderString={dayHeaderString}
+                RenderMessageItem={RenderMessageItem}
+                itemSeparator={itemSeparator}
+                staticStyles={staticStyles}
+                onLayout={handleItemLayout}
+                showNewMessageIndicator={showNewMessageIndicator}
+                NewMessageIndicatorView={NewMessageIndicatorView}
+                newMessageIndicatorStyle={newMessageIndicatorStyle}
+                newMessageIndicatorText={newMessageIndicatorText}
+              />
             </View>
           );
         },
-        [mergedTheme, highlightedMessageId]
+        [
+          mergedTheme,
+          highlightedMessageId,
+          highlightAnimatedValue,
+          sentAtToMs,
+          shouldShowSeparator,
+          getDayHeaderString,
+          itemSeparator,
+          RenderMessageItem,
+          handleItemLayout,
+          newMessageIndicatorId,
+          NewMessageIndicatorView,
+          newMessageIndicatorStyle,
+          newMessageIndicatorText,
+          startFromUnreadMessages,
+          showMarkAsUnreadOption,
+          navigatedFromSearch,
+          isAgenticUser
+        ]
       );
+
 
       return (
         <View style={mergedTheme.messageListStyles.containerStyle}>
@@ -3830,44 +4452,39 @@ export const CometChatMessageList = memo(
                     <ActivityIndicator size='small' color={mergedTheme.color.primary} />
                   </View>
                 )}
-                
-                {/* Navigation loading for far message fetching */}
-                {navigationLoading && getLoadingStateView()}
 
+                {/* Navigation loading for far message fetching and scroll operations */}
+                {navigationLoading&& (getLoadingStateView())}
                 <FlatList
                   showsVerticalScrollIndicator={false}
                   ref={messageListRef}
-                  onMomentumScrollEnd={handleScroll}
-                  onScroll={shouldShowScrollToBottomButton}
+                  onMomentumScrollEnd={handleScrollInternal}
+                  onScroll={handleScrollInternal}
                   inverted={true}
                   maintainVisibleContentPosition={{
                     minIndexForVisible: 0,
                   }}
-                  onEndReached={getPreviousMessages}
                   onEndReachedThreshold={0.5}
+                  onEndReached={getPreviousMessages}
                   onStartReached={fetchNextMessages}
                   onStartReachedThreshold={0.5}
                   scrollEventThrottle={16}
-                  keyboardShouldPersistTaps={Platform.OS === "ios" ? "handled" : "always"}
+                  keyboardShouldPersistTaps={(Platform.OS === "ios" ? "handled" : "always") as "handled" | "always"}
                   data={messagesList}
                   keyExtractor={keyExtractor}
                   renderItem={memoizedRenderItem}
-                  onLayout={() => {
-                    setIsListLayoutComplete(true);
-                  }}
                   ListHeaderComponent={renderFooter}
-                  onScrollToIndexFailed={(error) => {                    
-                    const averageItemLength = error.averageItemLength || 120;
-                    const targetOffset = error.index * averageItemLength;
-                    messageListRef.current?.scrollToOffset({
-                      offset: targetOffset,
-                      animated: true,
-                    });
-                  }}
-                  /**Please do not push changes to windowSize without testing infinite scroll and UI interactions and response time**/
-                  /**Test the same on release mode. Dev mode could be laggy**/
-                  windowSize={33}
+                  onScrollToIndexFailed={handleScrollToIndexFailed}
+                  viewabilityConfig={viewabilityConfig}
+                  onViewableItemsChanged={handleViewableItemsChanged}
+                  // Performance optimizations
+                  windowSize={10}
+                  removeClippedSubviews={Platform.OS === 'android'}
+                  maxToRenderPerBatch={5}
+                  updateCellsBatchingPeriod={100}
+                  initialNumToRender={15}
                 />
+
 
                 {CustomListHeader && <CustomListHeader />}
                 {ongoingCallView}
@@ -3916,32 +4533,24 @@ export const CometChatMessageList = memo(
             </Pressable>
           )}
 
-          <CometChatConfirmDialog
-            titleText={t("DELETE_THIS_MESSAGE")}
-            icon={<Icon name='delete' size={theme.spacing.spacing.s12} color={theme.color.error} />}
-            cancelButtonText={t("CANCEL")}
-            confirmButtonText={t("DELETE")}
-            messageText={t("DELETE_MESSAGE_CONFIRM")}
-            isOpen={showDeleteModal}
-            // onDismiss={()=>console.log(deleteItem.current, "CometChatConfirmDialog  onDismiss")}
-            onCancel={() => {
+          <MessageModals
+            showDeleteModal={showDeleteModal}
+            showReportDialog={showReportDialog}
+            deleteItem={deleteItem}
+            reportedMessageRef={reportedMessageRef}
+            theme={theme}
+            hideFlagRemarkField={hideFlagRemarkField}
+            t={t}
+            onDeleteCancel={() => {
               deleteItem.current = undefined;
               setShowDeleteModal(false);
             }}
-            onConfirm={() => {
-              deleteMessage(deleteItem.current!);
-            }}
-          />
-
-          <CometChatReportDialog
-            isOpen={showReportDialog}
-            message={reportedMessageRef.current || undefined}
-            onCancel={() => {
+            onDeleteConfirm={deleteMessage}
+            onReportCancel={() => {
               setShowReportDialog(false);
               reportedMessageRef.current = null;
             }}
-            hideFlagRemarkField={hideFlagRemarkField}
-            onReport={(payload) => {
+            onReportSubmit={(payload) => {
               console.log("Report submitted", {
                 messageId: payload.message?.getId?.(),
                 payload,
@@ -3951,116 +4560,128 @@ export const CometChatMessageList = memo(
             }}
           />
 
-          <CometChatBottomSheet
-            ref={bottomSheetRef}
+          <MessageOptionsSheet
+            bottomSheetRef={bottomSheetRef}
+            isOpen={showMessageOptions.length > 0 || Boolean(ExtensionsComponent) || messageInfo}
+            showMessageOptions={showMessageOptions}
+            ExtensionsComponent={ExtensionsComponent}
+            messageInfo={messageInfo}
+            infoObject={infoObject}
+            selectedMessage={selectedMessage}
+            hideReactionOption={hideReactionOption}
+            quickReactionList={quickReactionList as [string, string?, string?, string?, string?]}
+            templatesMap={templatesMap}
+            mergedTheme={mergedTheme}
+            deleteItem={deleteItem}
+            pendingReportRef={pendingReportRef}
             onClose={() => {
               if (ExtensionsComponent) setExtensionsComponent(null);
               setShowMessageOptions([]);
               infoObject.current = null;
               setMessageInfo(false);
             }}
-            onDismiss={() => {
-              // iOS: Open any deferred modals only after dismiss animation completes
-              if (Platform.OS === "ios") {
-                if (deleteItem.current) {
-                  setShowDeleteModal(true);
-                }
-                if (pendingReportRef.current) {
-                  pendingReportRef.current = false;
-                  setShowReportDialog(true);
-                }
-              }
-            }}
-            isOpen={showMessageOptions.length > 0 || Boolean(ExtensionsComponent) || messageInfo}
-            style={{
-              paddingHorizontal: 0,
-              maxHeight: messageInfo
-                ? Dimensions.get("window").height * 0.9
-                : Dimensions.get("window").height * 0.52,
+            onReactionPress={reactToMessage}
+            onAddReactionPress={onAddReactionPress}
+            setShowDeleteModal={setShowDeleteModal}
+            setShowReportDialog={setShowReportDialog}
+            setShowMessageOptions={setShowMessageOptions}
+            setExtensionsComponent={setExtensionsComponent}
+            setMessageInfo={setMessageInfo}
+            setShowEmojiKeyboard={setShowEmojiKeyboard}
+          />
 
-              minHeight: Dimensions.get("window").height * 0.5,
-            }}
-          >
-            {ExtensionsComponent ? (
-              ExtensionsComponent
-            ) : messageInfo && infoObject.current ? (
-              <CometChatMessageInformation
-                message={infoObject.current}
-                template={templatesMap.get(
-                  `${infoObject.current?.getCategory()}_${infoObject.current?.getType()}`
-                )}
-                onBack={() => {
-                  infoObject.current = null;
-                  setMessageInfo(false);
-                }}
-                style={mergedTheme?.messageListStyles?.messageInformationStyles}
-              />
-            ) : (
-              <View style={{ flex: 1 }}>
-                {/* Show quick reactions for disapproved messages */}
-                {!hideReactionOption && getModerationStatus(selectedMessage) !== "disapproved" && (
-                  <CometChatQuickReactions
-                    quickReactions={quickReactionList}
-                    onReactionPress={reactToMessage}
-                    onAddReactionPress={
-                      onAddReactionPress ??
-                      (() => {
-                        setShowMessageOptions([]);
-                        setTimeout(() => {
-                          setShowEmojiKeyboard(true);
-                        }, 200);
-                      })
-                    }
-                    style={mergedTheme.quickReactionStyle}
-                  />
-                )}
-
-                <CometChatActionSheet
-                  actions={showMessageOptions}
-                  style={mergedTheme.messageListStyles.messageOptionsStyles}
-                />
-              </View>
-            )}
-          </CometChatBottomSheet>
-          <CometChatBottomSheet
-            isOpen={showEmojiKeyboard}
-            onClose={() => setShowEmojiKeyboard(false)}
-            style={{
-              maxHeight: Dimensions.get("window").height * 0.49,
-            }}
-          >
-            <CometChatEmojiKeyboard
-              onClick={(item) => {
-                setShowEmojiKeyboard(false);
-                reactToMessage(item, selectedMessage);
-              }}
-            />
-          </CometChatBottomSheet>
-
-          <CometChatBottomSheet
-            isOpen={showReactionList}
-            onClose={() => {
+          <ReactionModals
+            showEmojiKeyboard={showEmojiKeyboard}
+            showReactionList={showReactionList}
+            selectedMessage={selectedMessage}
+            selectedEmoji={selectedEmoji}
+            reactionsRequestBuilder={reactionsRequestBuilder}
+            onReactionListItemPress={onReactionListItemPressProp}
+            onEmojiSelect={reactToMessage}
+            onEmojiKeyboardClose={() => setShowEmojiKeyboard(false)}
+            onReactionListClose={() => {
               setShowReactionList(false);
               setSelectedEmoji(undefined);
             }}
-            style={{
-              maxHeight: Dimensions.get("window").height * 0.7,
-              minHeight: Dimensions.get("window").height * 0.3,
+            onReactionListEmpty={() => {
+              setShowReactionList(false);
+              setSelectedEmoji(undefined);
             }}
-          >
-            <CometChatReactionList
-              message={selectedMessage}
-              selectedReaction={selectedEmoji}
-              onPress={onReactionListItemPressProp}
-              reactionsRequestBuilder={reactionsRequestBuilder}
-              onListEmpty={() => {
-                setShowReactionList(false);
-                setSelectedEmoji(undefined);
-              }}
-            />
-          </CometChatBottomSheet>
+          />
         </View>
       );
+
     }
   )
 );
+
+
+const staticStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    position: 'relative' as 'relative',
+  },
+  contentWrapper: {
+    position: 'relative' as 'relative',
+    zIndex: 2,
+  },
+  separatorContainer: {
+    alignItems: 'center' as 'center',
+    marginBottom: 8,
+  },
+  footerContainer: {
+    padding: 10,
+    alignItems: 'center' as 'center',
+  },
+  itemSeparator: {
+    height: 8,
+  },
+  loadingContainer: {
+    padding: 16,
+  },
+  listContainer: {
+    height: '100%',
+    width: '100%',
+  },
+  headerContainer: {
+    top: 0,
+  },
+  activityIndicatorContainer: {
+    position: 'absolute' as 'absolute',
+    alignSelf: 'center' as 'center',
+  },
+  flexOne: {
+    flex: 1,
+  },
+  emptyScrollView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  avatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 40,
+    marginBottom: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 40,
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    textAlign: "center",
+    textAlignVertical: "center",
+  },
+})//30/dec/2025 6.48pm

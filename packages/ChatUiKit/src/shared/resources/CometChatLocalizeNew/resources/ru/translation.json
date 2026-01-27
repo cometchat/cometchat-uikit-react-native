@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "Беседы",
 	"SEARCH_FILTER_MESSAGES": "Сообщения",
 	"SEARCH_NO_MESSAGES": "Нет сообщений",
-	"MESSAGE_REPORTED": "Сообщение отправлено на жалобу"
+	"MESSAGE_REPORTED": "Сообщение отправлено на жалобу",
+	"MARK_AS_UNREAD": "Отметить непрочитанным",
+	"NEW": "Новый"
 }

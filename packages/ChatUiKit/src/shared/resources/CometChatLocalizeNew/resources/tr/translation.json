@@ -501,5 +501,7 @@
     "SEARCH_FILTER_CONVERSATIONS": "Sohbetler",
     "SEARCH_FILTER_MESSAGES": "Mesajlar",
     "SEARCH_NO_MESSAGES": "Mesaj yok",
-	"MESSAGE_REPORTED": "Mesaj bildirildi"
+	"MESSAGE_REPORTED": "Mesaj bildirildi",
+	"MARK_AS_UNREAD": "Okunmamış işaretle",
+	"NEW": "Yeni"
 }

@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "Konversationer",
 	"SEARCH_FILTER_MESSAGES": "Meddelanden",
 	"SEARCH_NO_MESSAGES": "Inga meddelanden",
-	"MESSAGE_REPORTED": "Meddelandet har rapporterats"
+	"MESSAGE_REPORTED": "Meddelandet har rapporterats",
+	"MARK_AS_UNREAD": "Markera oläst",
+	"NEW": "Ny"
 }

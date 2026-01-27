@@ -294,6 +294,26 @@ export class MessageDataSource implements DataSource {
       ),
     };
   }
+
+  getMarkAsUnreadOption(theme: CometChatTheme): CometChatMessageOption {
+      return {
+      id: MessageOptionConstants.markAsUnread,
+      title: t("MARK_AS_UNREAD"),
+      icon: (
+        <Icon
+          name='unread'
+          color={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
+          }
+          height={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.height}
+          width={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.width}
+          containerStyle={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconContainerStyle
+          }
+        ></Icon>
+      ),
+    };
+  }
   // getForwardOption(): CometChatMessageOption {
   //     return {
   //         id: MessageOptionConstants.forwardMessage,
@@ -352,18 +372,8 @@ export class MessageDataSource implements DataSource {
     let messageOptionList: CometChatMessageOption[] = [];
 
     if (isDeletedMessage(messageObject)) return messageOptionList;
-    if (
-      this.validateOption(
-        loggedInUser,
-        messageObject,
-        MessageOptionConstants.replyMessage,
-        group,
-        additionalParams
-      )
-    ) {
-      messageOptionList.push(this.getReplyOption(theme));
-    }
 
+    // reply in thread
     if (
       this.validateOption(
         loggedInUser,
@@ -376,6 +386,20 @@ export class MessageDataSource implements DataSource {
       messageOptionList.push(this.getReplyInThreadOption(theme));
     }
 
+    // reply
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.replyMessage,
+        group,
+        additionalParams
+      )
+    ) {
+      messageOptionList.push(this.getReplyOption(theme));
+    }
+
+    // share
     if (
       this.validateOption(
         loggedInUser,
@@ -388,6 +412,7 @@ export class MessageDataSource implements DataSource {
       messageOptionList.push(this.getShareOption(theme));
     }
 
+    // copy
     if (
       this.validateOption(
         loggedInUser,
@@ -400,6 +425,45 @@ export class MessageDataSource implements DataSource {
       messageOptionList.push(this.getCopyOption(theme));
     }
 
+    // mark as unread
+    if(
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.markAsUnread,
+        group,
+        additionalParams,
+
+      )
+    ) {
+      messageOptionList.push(this.getMarkAsUnreadOption(theme));
+    }
+
+    // report
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.reportMessage,
+        group,
+        additionalParams
+      )
+    ) {
+      messageOptionList.push(this.getReportOption(theme));
+    }
+
+    // message privately
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.sendMessagePrivately,
+        group,
+        additionalParams
+      )
+    ) {
+      messageOptionList.push(this.getPrivateMessageOption(theme));
+    }
     if (
       this.validateOption(
         loggedInUser,
@@ -434,30 +498,6 @@ export class MessageDataSource implements DataSource {
       )
     ) {
       messageOptionList.push(this.getDeleteOption(theme));
-    }
-
-     if (
-      this.validateOption(
-        loggedInUser,
-        messageObject,
-        MessageOptionConstants.reportMessage,
-        group,
-        additionalParams
-      )
-    ) {
-      messageOptionList.push(this.getReportOption(theme));
-    }
-
-    if (
-      this.validateOption(
-        loggedInUser,
-        messageObject,
-        MessageOptionConstants.sendMessagePrivately,
-        group,
-        additionalParams
-      )
-    ) {
-      messageOptionList.push(this.getPrivateMessageOption(theme));
     }
 
     return messageOptionList;
@@ -715,6 +755,15 @@ export class MessageDataSource implements DataSource {
     ) {
       return true;
     }
+   
+
+    if (
+      MessageOptionConstants.markAsUnread === optionId &&
+      !isSentByMe &&
+      !additionalParams?.hideMarkAsUnreadOption
+    ) {
+      return true;
+    }
 
     return false;
   }
@@ -811,6 +860,18 @@ export class MessageDataSource implements DataSource {
       )
     ) {
       messageOptionList.push(this.getPrivateMessageOption(theme));
+    }
+
+    if(
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.markAsUnread,
+        group,
+        additionalParams
+      )
+    ) {
+      messageOptionList.push(this.getMarkAsUnreadOption(theme));
     }
 
     return messageOptionList;
@@ -1012,8 +1073,9 @@ export class MessageDataSource implements DataSource {
 
     // Wrap with TouchableOpacity for click handling
     if (additionalParams?.onReplyClick && !isQuotedMessageDeleted) {
+      const replyTouchableStyle = { padding: theme.spacing.padding.p0_5 };
       return (
-        <TouchableOpacity onPress={handleReplyClick} activeOpacity={0.7}>
+        <TouchableOpacity onPress={handleReplyClick} activeOpacity={0.7} style={replyTouchableStyle}>
           {previewComponent}
         </TouchableOpacity>
       );

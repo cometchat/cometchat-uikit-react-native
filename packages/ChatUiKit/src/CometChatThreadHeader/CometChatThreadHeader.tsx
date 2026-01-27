@@ -19,6 +19,9 @@ import { deepMerge } from "../shared/helper/helperFunctions";
 import { CommonUtils } from "../shared/utils/CommonUtils";
 import { DeepPartial } from "../shared/helper/types";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
+import { ExtensionConstants } from "../extensions";
+import { getExtensionData } from "../shared/helper/functions";
+import { urlPattern } from "../shared/constants/UIKitConstants";
 
 /**
  * Unique UI event identifier for CometChatUIEventHandler.
@@ -234,10 +237,29 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
     };
   }, []);
 
+  // Check if message has URLs (link preview or URLs in text)
+  const hasUrl = useMemo(() => {
+    // Check for link preview extension data
+    const linkData = getExtensionData(message, ExtensionConstants.linkPreview);
+    if (linkData && linkData.links && linkData.links.length > 0) {
+      return true;
+    }
+
+    // Check if text message contains URLs
+    if (message.getType() === "text") {
+      const textMessage = message as CometChat.TextMessage;
+      const text = textMessage.getText() || "";
+      const urlRegex = new RegExp(urlPattern);
+      return urlRegex.test(text);
+    }
+
+    return false;
+  }, [message]);
+
   return (
     <View style={[style?.containerStyle]}>
       <ScrollView style={style?.messageBubbleContainerStyle}>
-        <View pointerEvents='none'>
+        <View pointerEvents={hasUrl ? 'auto' : 'none'}>
           {MessageUtils.getMessageView({
             message,
             templates:

@@ -33,7 +33,7 @@ const Users: React.FC = () => {
         usersRequestBuilder={new CometChat.UsersRequestBuilder()
           .setLimit(30)
           .hideBlockedUsers(false)
-          .setRoles([])
+          // .setRoles(['@agentic'])
           .friendsOnly(false)
           .setStatus('')
           .setTags([])

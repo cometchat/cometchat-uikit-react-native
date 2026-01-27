@@ -38,6 +38,7 @@ export interface CometChatListActionsInterface {
   getListItem: (itemId: string | number) => any;
   getSelectedItems: () => Array<any>;
   getAllListItems: () => Array<any>;
+  reload: () => void;
 }
 
 export interface CometChatListStylesInterface {
@@ -212,6 +213,7 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
         updateAndMoveToFirst,
         getSelectedItems,
         getAllListItems,
+        reload,
       };
     });
 
@@ -491,7 +493,7 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
             if (newlist.length === 0) setHasMoreData(false);
           }
 
-          // If we *did* get results but less than a full “page”, also stop further loads
+          // If we *did* get results but less than a full "page", also stop further loads
           if (newlist.length === 0) setHasMoreData(false);
 
           props.onListFetched?.(finalList);
@@ -506,6 +508,23 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
           }
           setIsLoadingMore(false);
         });
+    };
+
+    /**
+     * Reloads the list by fetching fresh data (matches Calls tab behavior)
+     */
+    const reload = () => {
+      // Prevent multiple reloads if a load operation is already in progress
+      if (isLoadingMore) return;
+
+      setDataLoadingStatus(LOADING);
+      setHasMoreData(true);
+      if (requestBuilder) {
+        if (searchInputRef.current)
+          listHandlerRef.current = requestBuilder.setSearchKeyword(searchInputRef.current).build();
+        else listHandlerRef.current = requestBuilder.build();
+      }
+      handleList(true);
     };
 
     const renderFooter = useCallback(() => {

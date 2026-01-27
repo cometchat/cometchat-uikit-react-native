@@ -501,5 +501,7 @@
   "SEARCH_FILTER_CONVERSATIONS": "Conversations",
   "SEARCH_FILTER_MESSAGES": "Messages",
   "SEARCH_NO_MESSAGES": "Aucun message",
-  "MESSAGE_REPORTED": "Message signalé"
+  "MESSAGE_REPORTED": "Message signalé",
+  "MARK_AS_UNREAD": "Marquer non lu",
+  "NEW": "Nouveau"
 }

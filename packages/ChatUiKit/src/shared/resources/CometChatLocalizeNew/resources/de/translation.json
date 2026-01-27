@@ -481,5 +481,7 @@
 	"CHAT_HISTORY": "Chat-Verlauf",
 	"ASK_ANYTHING": "Frag etwas...",
 	"AI_ASSISTANT": "AI-Assistent",
-	"MESSAGE_REPORTED": "Nachricht gemeldet"
+	"MESSAGE_REPORTED": "Nachricht gemeldet",
+	"MARK_AS_UNREAD": "Ungelesen markieren",
+	"NEW": "Neu"
 }

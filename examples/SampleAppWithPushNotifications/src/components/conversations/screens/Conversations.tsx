@@ -47,7 +47,6 @@ const Conversations: React.FC<{}> = ({}) => {
   const loggedInUser = useRef<CometChat.User>(
     CometChatUIKit.loggedInUser,
   ).current;
-  const [shouldHide, setShouldHide] = React.useState(false);
   const { t } = useCometChatTranslation();
 
   const [isConfigUpdated, setIsConfigUpdated] = useState(false);
@@ -57,13 +56,11 @@ const Conversations: React.FC<{}> = ({}) => {
 
   useFocusEffect(
     useCallback(() => {
-      setShouldHide(false);
       // Check config updated flag
       AsyncStorage.getItem('@config_updated').then(val => {
         setIsConfigUpdated(val === 'true');
       });
       return () => {
-        setShouldHide(true);
         setTooltipVisible(false);
       };
     }, []),
@@ -181,7 +178,7 @@ const Conversations: React.FC<{}> = ({}) => {
     );
   };
 
-  return shouldHide ? null : (
+  return (
     <View style={{flex: 1}}>
       <View style={{flex: 1}}>
         <CometChatConversations

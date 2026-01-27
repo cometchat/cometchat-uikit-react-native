@@ -133,15 +133,14 @@ export const CometChatMessageInput = (props: CometChatMessageInputInterface) => 
         placeholder={placeHolderText}
         onSelectionChange={onSelectionChange}
         selection={selection}
+        value={text}
         onFocus={() => {
           CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.hidePanel, {
             alignment: ViewAlignment.composerBottom,
             child: () => null, // Hide the panel content.
           });
         }}
-      >
-        {text}
-      </TextInput>
+      />
       <View style={style?.dividerStyle as ViewStyle} />
       <View
         style={{

@@ -449,3 +449,4 @@ export const CallDetails: React.FC<Props> = ({route, navigation}) => {
     </View>
   );
 };
+

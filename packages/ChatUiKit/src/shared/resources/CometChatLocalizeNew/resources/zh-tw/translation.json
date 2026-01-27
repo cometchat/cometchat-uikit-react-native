@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "對話",
 	"SEARCH_FILTER_MESSAGES": "訊息",
 	"SEARCH_NO_MESSAGES": "沒有訊息",
-	"MESSAGE_REPORTED": "訊息已回報"
+	"MESSAGE_REPORTED": "訊息已檢舉",
+	"MARK_AS_UNREAD": "標記未讀",
+	"NEW": "新"
 }

@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "बातचीत",
 	"SEARCH_FILTER_MESSAGES": "संदेश",
 	"SEARCH_NO_MESSAGES": "कोई संदेश नहीं",
-	"MESSAGE_REPORTED": "संदेश रिपोर्ट किया गया"
+	"MESSAGE_REPORTED": "संदेश रिपोर्ट किया गया",
+	"MARK_AS_UNREAD": "अपठित करें",
+	"NEW": "नया"
 }

@@ -9,7 +9,7 @@ import {
   GestureResponderEvent,
   ActivityIndicator,
 } from "react-native";
-import { CometChatAvatar} from "../../shared";
+import { CometChatAvatar, CometChatRetryButton } from "../../shared";
 import { CallTypeConstants } from "../../shared/constants/UIKitConstants";
 import { CometChatUIEventHandler } from "../../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { CallUIEvents } from "../CallEvents";
@@ -48,7 +48,7 @@ export interface CometChatCallLogsConfigurationInterface {
   /** Custom component to render as the entire item view for each call log */
   ItemView?: (call?: any) => JSX.Element;
   /** Custom component to render as the trailing view for each call log item */
-  TrailingView?: (call?: any) => JSX.Element;
+  TrailingView?: (call?: any, defaultOnPress?: (call: any) => void) => JSX.Element;
   /** Custom options to render in the AppBar */
   AppBarOptions?: () => JSX.Element;
   /** Builder for custom call log requests */
@@ -212,16 +212,17 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     const reqBuilder = callLogRequestBuilder
       ? callLogRequestBuilder.setAuthToken(loggedInUser.current!.getAuthToken())
       : new CometChatCalls.CallLogRequestBuilder()
-          .setLimit(30)
-          .setAuthToken(loggedInUser.current!.getAuthToken() || "")
-          .setCallCategory("call");
+        .setLimit(30)
+        .setAuthToken(loggedInUser.current!.getAuthToken() || "")
+        .setCallCategory("call");
     callLogRequestBuilderRef.current = reqBuilder.build();
   }
 
   /**
    * Fetches the call logs using the configured request builder.
+   * @param isAppending - If true, appends to existing list (for pagination). If false, replaces the list (for initial load/reload).
    */
-  const fetchCallLogs = () => {
+  const fetchCallLogs = (isAppending: boolean = true) => {
     setListState("loading");
     callLogRequestBuilderRef
       .current!.fetchNext()
@@ -230,12 +231,12 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
           setHasMoreData(false);
         }
         if (callLogs.length > 0) {
-          const updatedList = [...list, ...callLogs];
+          const updatedList = isAppending ? [...list, ...callLogs] : callLogs;
           setList(updatedList);
           onLoad && onLoad(updatedList);
         } else {
           // If no new logs are returned and the current list is empty, trigger onEmpty
-          if (list.length === 0) {
+          if (list.length === 0 || !isAppending) {
             onEmpty && onEmpty();
           }
         }
@@ -245,6 +246,17 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
         onError && onError(err);
         setListState("error");
       });
+  };
+
+  /**
+   * Reloads the call logs by resetting the request builder and fetching fresh data.
+   * This matches the behavior of other tabs (Chats, Groups, Users).
+   */
+  const reloadCallLogs = () => {
+    setList([]);
+    setHasMoreData(true);
+    setRequestBuilder();
+    fetchCallLogs(false);
   };
 
   // Setup logged-in user and call listeners on mount.
@@ -454,16 +466,16 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
                 SubtitleView(item)
               ) : (
                 <Text style={mergedCallLogsStyle.itemStyle.subTitleTextStyle}>
-                    {formatDate(
-                      item["initiatedAt"] * 1000,
-                      datePattern ?? LocalizedDateHelper.patterns.callLogs
-                    )}
+                  {formatDate(
+                    item["initiatedAt"] * 1000,
+                    datePattern ?? LocalizedDateHelper.patterns.callLogs
+                  )}
                 </Text>
               )}
             </View>
           </View>
           {TrailingView ? (
-            TrailingView(item)
+            TrailingView(item,onPress)
           ) : (
             <TouchableOpacity
               onPress={() => onPress(item)}
@@ -489,7 +501,6 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
    */
   const ErrorStateView = useCallback(() => {
     if (hideError) return null;
-    if (ErrorView) return <ErrorView />;
     return (
       <ErrorEmptyView
         title={t("OOPS")}
@@ -507,27 +518,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
         containerStyle={Style.errorEmptyContainer}
         titleStyle={mergedCallLogsStyle.errorStateStyle?.titleStyle}
         subTitleStyle={mergedCallLogsStyle.errorStateStyle?.subTitleStyle}
-        RetryView={
-          <TouchableOpacity
-            onPress={fetchCallLogs}
-            style={{
-              backgroundColor: theme.color.primary,
-              paddingVertical: theme.spacing.spacing.s3,
-              paddingHorizontal: theme.spacing.spacing.s10,
-              borderRadius: theme.spacing.radius.r2,
-              marginTop: theme.spacing.spacing.s5,
-            }}
-          >
-            <Text
-              style={{
-                color: theme.color.primaryButtonIcon,
-                ...theme.typography.button.medium,
-              }}
-            >
-              {t("RETRY")}
-            </Text>
-          </TouchableOpacity>
-        }
+        RetryView={<CometChatRetryButton onPress={reloadCallLogs} />}
       />
     );
   }, [theme]);
@@ -633,7 +624,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
             keyExtractor={(item, index) => item.sessionId + "_" + index}
             extraData={{ list, listState }}
             renderItem={_render}
-            onEndReached={fetchCallLogs}
+            onEndReached={() => fetchCallLogs(true)}
             ListFooterComponent={renderFooter}
           />
         )}

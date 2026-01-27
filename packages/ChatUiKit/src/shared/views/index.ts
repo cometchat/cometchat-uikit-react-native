@@ -70,6 +70,10 @@ import {
   CometChatReactions,
   CometChatReactionsInterface,
 } from "./CometChatReactions";
+import {
+  CometChatRetryButton,
+  CometChatRetryButtonProps,
+} from "./CometChatRetryButton";
 
 import { CometChatEmojiKeyboard } from "./CometChatEmojiKeyboard";
 
@@ -85,6 +89,12 @@ import {
   CometChatReportDialog,
   CometChatReportDialogInterface,
 } from "./CometChatReportDialog";
+
+import {
+  CometChatNewMessageIndicator,
+  CometChatNewMessageIndicatorInterface,
+  NewMessageIndicatorStyle,
+} from "./CometChatNewMessageIndicator";
 
 export type {
   CometChatConfirmDialogInterface,
@@ -102,10 +112,12 @@ export type {
   CometChatMessageInputInterface,
   CometChatReactionListInterface,
   CometChatReactionsInterface,
+  CometChatRetryButtonProps,
   CometChatStatusIndicatorInterface,
   CometChatSuggestionListInterface,
   CometChatVideoBubbleInterface,
   CometChatTextBubbleInterface,
+  CometChatNewMessageIndicatorInterface,
 };
 
 export {
@@ -127,11 +139,13 @@ export {
   CometChatQuickReactions,
   CometChatReactionList,
   CometChatReactions,
+  CometChatRetryButton,
   CometChatStatusIndicator,
   CometChatSuggestionList,
   CometChatTextBubble,
   CometChatVideoBubble,
   SuggestionItem,
+  CometChatNewMessageIndicator,
 };
 
 
@@ -140,4 +154,5 @@ export type {
   CometChatListProps,
   DateStyle,
   MenuItemInterface,
+  NewMessageIndicatorStyle,
 };

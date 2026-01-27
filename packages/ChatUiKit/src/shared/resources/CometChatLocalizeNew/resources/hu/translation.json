@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "Beszélgetések",
 	"SEARCH_FILTER_MESSAGES": "Üzenetek",
 	"SEARCH_NO_MESSAGES": "Nincsenek üzenetek",
-	"MESSAGE_REPORTED": "Üzenet bejelentve"
+	"MESSAGE_REPORTED": "Üzenet jelentve",
+	"MARK_AS_UNREAD": "Olvasatlanként jelöl",
+	"NEW": "Új"
 }

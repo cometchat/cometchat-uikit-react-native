@@ -501,5 +501,7 @@
     "SEARCH_FILTER_CONVERSATIONS": "Gesprekken",
     "SEARCH_FILTER_MESSAGES": "Berichten",
     "SEARCH_NO_MESSAGES": "Geen berichten",
-	"MESSAGE_REPORTED": "Bericht gemeld"
+	"MESSAGE_REPORTED": "Bericht gemeld",
+	"MARK_AS_UNREAD": "Ongelezen markeren",
+	"NEW": "Nieuw"
 }

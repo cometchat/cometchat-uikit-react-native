@@ -501,5 +501,7 @@
     "SEARCH_FILTER_CONVERSATIONS": "대화",
     "SEARCH_FILTER_MESSAGES": "메시지",
     "SEARCH_NO_MESSAGES": "메시지가 없습니다",
-	"MESSAGE_REPORTED": "메시지가 신고되었습니다"
+	"MESSAGE_REPORTED": "메시지가 신고되었습니다",
+	"MARK_AS_UNREAD": "읽지 않음 표시",
+	"NEW": "새로운"
 }

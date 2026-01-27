@@ -19,6 +19,27 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
   }
 
   private Link = ({ text, url, style }: any) => {
+    const handlePress = async () => {
+      try {
+        let finalUrl = url;
+        if (!url.match(/^(https?|mailto|tel):/i)) {
+          finalUrl = `http://${url}`;
+        }
+        
+        const canOpen = await Linking.canOpenURL(finalUrl);
+        if (canOpen) {
+          Linking.openURL(finalUrl);
+        } else {
+          // Try opening anyway as fallback
+          Linking.openURL(finalUrl).catch((err) => {
+            console.log("Can not open link", finalUrl, err);
+          });
+        }
+      } catch (err) {
+        console.log("Error opening URL:", err);
+      }
+    };
+
     return (
       <Text
         style={{
@@ -26,20 +47,7 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
           ...style?.linkTextFont,
           textDecorationLine: "underline",
         }}
-        onPress={() => {
-          let finalUrl = url.startsWith("http") ? url : `http://${url}`;
-          Linking.canOpenURL(finalUrl)
-            .then((res) => {
-              if (res) {
-                Linking.openURL(finalUrl);
-                return;
-              }
-              console.log("Can not open link", finalUrl);
-            })
-            .catch((err) => {
-              console.log("Error:", err);
-            });
-        }}
+        onPress={handlePress}
       >
         {text}
       </Text>
@@ -86,7 +94,7 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
         if (phone) urlLink = "tel:";
         return (
           <Text>
-            <Text>{pre} </Text>
+            <Text>{pre}</Text>
             {this.Link({
               text: resPart[0].trim(),
               url: urlLink.trim() + resPart[0].trim(),

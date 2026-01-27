@@ -12,7 +12,7 @@ import {
 import {CometChatCompThemeProvider} from '@cometchat/chat-uikit-react-native/src/theme/provider';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Text, View} from 'react-native';
-
+import { useConfig } from '../../config/store';
 export type CallLogDetailHeaderInterface = {
   user?: CometChat.User;
   /**
@@ -36,7 +36,18 @@ export const CallLogDetailHeader = (props: CallLogDetailHeaderInterface) => {
       ? user?.getStatus()
       : '',
   );
-
+  const oneOnOneVoiceCalling = useConfig(
+    (state) => state.settings.callFeatures.voiceAndVideoCalling.oneOnOneVoiceCalling
+  );
+  const oneOnOneVideoCalling = useConfig(
+    (state) => state.settings.callFeatures.voiceAndVideoCalling.oneOnOneVideoCalling
+  );
+  const groupVideoConference = useConfig(
+    (state) => state.settings.callFeatures.voiceAndVideoCalling.groupVideoConference
+  );
+  const groupVoiceConference = useConfig(
+    (state) => state.settings.callFeatures.voiceAndVideoCalling.groupVoiceConference
+  );
   const receiverTypeRef = useRef(
     user
       ? CometChat.RECEIVER_TYPE.USER
@@ -154,6 +165,12 @@ export const CallLogDetailHeader = (props: CallLogDetailHeaderInterface) => {
           <CometChatCallButtons
             user={user}
             group={group}
+            hideVoiceCallButton={
+              (user && !oneOnOneVoiceCalling) || (group && !groupVoiceConference)
+            }
+            hideVideoCallButton={
+              (user && !oneOnOneVideoCalling) || (group && !groupVideoConference)
+            }
             style={{
               containerStyle: {
                 gap: 10,

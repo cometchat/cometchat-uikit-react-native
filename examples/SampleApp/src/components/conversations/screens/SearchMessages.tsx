@@ -117,12 +117,14 @@ const SearchMessages: React.FC<Props> = ({ route, navigation }) => {
         user: targetUser,
         messageId: String(message.getId()),
         searchKeyword,
+        navigatedFromSearch: true,
       });
     } else if (targetGroup) {
       navigate(SCREEN_CONSTANTS.MESSAGES, {
         group: targetGroup,
         messageId: String(message.getId()),
         searchKeyword,
+        navigatedFromSearch: true,
       });
     }
   }, []);

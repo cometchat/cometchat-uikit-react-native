@@ -501,5 +501,7 @@
     "SEARCH_FILTER_CONVERSATIONS": "会話",
     "SEARCH_FILTER_MESSAGES": "メッセージ",
     "SEARCH_NO_MESSAGES": "メッセージがありません",
-	"MESSAGE_REPORTED": "メッセージが報告されました"
+	"MESSAGE_REPORTED": "メッセージが報告されました",
+	"MARK_AS_UNREAD": "未読にする",
+	"NEW": "新規"
 }

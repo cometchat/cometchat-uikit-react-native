@@ -312,7 +312,7 @@ const GroupInfo: React.FC<GroupInfoProps> = ({route, navigation}) => {
                 onPress={() => {
                   navigation.navigate('AddMember', { group });
                 }}
-              style={[
+                style={[
                   styles.buttonContainer,
                   { borderColor: theme.color.borderDefault },
                 ]}
@@ -363,7 +363,6 @@ const GroupInfo: React.FC<GroupInfoProps> = ({route, navigation}) => {
             </Text>
           </TouchableOpacity>
           )}
-
           {/* Banned Members */}
           {(userScope === CometChatUiKitConstants.GroupMemberScope.owner ||
             userScope === CometChatUiKitConstants.GroupMemberScope.admin ||

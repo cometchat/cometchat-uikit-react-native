@@ -581,7 +581,9 @@ export const CometChatMessageComposer = React.forwardRef(
     const [plainText, setPlainText] = React.useState(initialComposertext ?? "");
     const bottomSheetRef = React.useRef<any>(null);
     const [showStopButton, setShowStopButton] = React.useState(false);
-    
+    const [isSendButtonDisabledForDelay, setIsSendButtonDisabledForDelay] = React.useState(false);
+    const sendButtonDelayTimer = React.useRef<NodeJS.Timeout | null>(null);
+
     const closeReplyPreview = useCallback(() => {
       setReplyMessage(null);
     }, []);
@@ -604,6 +606,13 @@ export const CometChatMessageComposer = React.forwardRef(
     useEffect(() => {
       setShowStopButton(false);
       setIsStreaming(false);
+
+      // Cleanup function to clear the delay timer on unmount
+      return () => {
+        if (sendButtonDelayTimer.current) {
+          clearTimeout(sendButtonDelayTimer.current);
+        }
+      };
     }, []);
 
     useLayoutEffect(() => {
@@ -869,7 +878,24 @@ export const CometChatMessageComposer = React.forwardRef(
         return;
       }
 
-      let finalTextInput = getRegexString(plainTextInput.current);
+      if (Platform.OS === "ios" && messageInputRef.current) {
+        InteractionManager.runAfterInteractions(() => {
+          let textToProcess = plainTextInput.current;
+          if (typeof inputMessage === 'string' && inputMessage.trim().length > 0) {
+            textToProcess = inputMessage;
+          }
+
+          processAndSendMessage(textToProcess);
+        });
+        return; // Exit early, processAndSendMessage will handle sending
+      }
+
+      // For non-iOS platforms, proceed normally
+      processAndSendMessage(plainTextInput.current);
+    };
+
+    const processAndSendMessage = (textToProcess: string) => {
+      let finalTextInput = getRegexString(textToProcess);
       let trimmedTextInput = finalTextInput.trim();
 
       if (trimmedTextInput.trim().length === 0) {
@@ -926,6 +952,18 @@ export const CometChatMessageComposer = React.forwardRef(
       setWarningMessage("");
       setReplyMessage(null);
 
+      // Clear the TextInput on iOS to remove auto-corrected text
+      if (Platform.OS === "ios" && messageInputRef.current) {
+        InteractionManager.runAfterInteractions(() => {
+          try {
+            messageInputRef.current?.setNativeProps?.({ text: "" });
+            messageInputRef.current?.clear?.();
+          } catch (error) {
+            // Ignore errors when clearing
+          }
+        });
+      }
+
       if (onSendButtonPress) {
         onSendButtonPress(textMessage);
         return;
@@ -937,6 +975,17 @@ export const CometChatMessageComposer = React.forwardRef(
       });
 
       if (!disableSoundForOutgoingMessages) playAudio();
+
+      // Enable 1-second delay for agentic users
+      if (isAgenticUser()) {
+        setIsSendButtonDisabledForDelay(true);
+        if (sendButtonDelayTimer.current) {
+          clearTimeout(sendButtonDelayTimer.current);
+        }
+        sendButtonDelayTimer.current = setTimeout(() => {
+          setIsSendButtonDisabledForDelay(false);
+        }, 1000);
+      }
 
       CometChat.sendMessage(textMessage)
         .then((message: any) => {
@@ -1285,7 +1334,7 @@ export const CometChatMessageComposer = React.forwardRef(
       const isAgenticUserCheck = isAgenticUser();
 
       if (isAgenticUserCheck) {
-        const disabled = isStreaming || plainText.trim().length === 0 || (messagePreview && !hasEdited);
+        const disabled = isStreaming || plainTextInput.current.trim().length === 0|| (messagePreview && !hasEdited) || isSendButtonDisabledForDelay;
         const SendButtonComponent =  DefaultAgentSendButtonView;
         // Create a ref-like object that matches what CometChatSendButtonView expects
         const composerRef = {
@@ -1328,7 +1377,7 @@ export const CometChatMessageComposer = React.forwardRef(
           />
         </TouchableOpacity>
       );
-    }, [mergedComposerStyle, inputMessage, plainText, messagePreview, hasEdited, isStreaming, DefaultAgentSendButtonView, user, isAgenticUser, sendTextMessage, hideSendButton, SendButtonView]);
+    }, [mergedComposerStyle, inputMessage, plainText, messagePreview, hasEdited, isStreaming, DefaultAgentSendButtonView, user, isAgenticUser, sendTextMessage, hideSendButton, SendButtonView, isSendButtonDisabledForDelay]);
 
     //fetch logged in user
     useEffect(() => {
@@ -1890,9 +1939,7 @@ export const CometChatMessageComposer = React.forwardRef(
       let decr = 0;
 
       plainTextInput.current = newText;
-      if (!(oldText.length > newText.length)) {
-        setPlainText(newText);
-      }
+      setPlainText(newText);
 
       const newMentionMap: Map<string, SuggestionItem> = new Map(mentionMap.current);
 
@@ -2314,7 +2361,7 @@ export const CometChatMessageComposer = React.forwardRef(
                     return;
                   }
                 }
-                
+
                 setSelectionPosition(selection);
                 openList(selection);
               }}

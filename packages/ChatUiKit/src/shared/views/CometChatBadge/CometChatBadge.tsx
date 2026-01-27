@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Text, View } from "react-native";
+import { Text, View, Dimensions } from "react-native";
 import { useTheme } from "../../../theme";
 import { deepMerge } from "../../helper/helperFunctions";
 import { BadgeStyle } from "./styles";
@@ -49,9 +49,12 @@ export const CometChatBadge = (props: CometChatBadgeProps) => {
   // If count is zero or an empty string, do not render the badge.
   if (countText.length === 0) return null;
 
+  const fontScale = Dimensions.get('window').fontScale;
+  const badgeSize = 25 * fontScale;
+
   return (
-    <View style={[badgeStyle.containerStyle]}>
-      <Text style={[badgeStyle.textStyle]}>{countText}</Text>
+    <View style={[badgeStyle.containerStyle, { width: badgeSize, height: badgeSize }]}>
+      <Text style={[badgeStyle.textStyle]} numberOfLines={1} adjustsFontSizeToFit={true}>{countText}</Text>
     </View>
   );
 };

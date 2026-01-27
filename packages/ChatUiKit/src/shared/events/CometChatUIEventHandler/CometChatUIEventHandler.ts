@@ -232,6 +232,10 @@ export class CometChatUIEventHandler {
         case listener._eventListener?.ccConversationDeleted?.name:
           listener._eventListener?.ccConversationDeleted?.(param);
           break;
+          //added for markAsUnread 
+        case listener._eventListener?.ccUpdateConversation?.name:
+          listener._eventListener?.ccUpdateConversation?.(param);
+          break;
       }
     });
   }

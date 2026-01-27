@@ -1,7 +1,7 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ColorValue, ImageSourcePropType, Text, View } from "react-native";
-import { CometChatList, CometChatListActionsInterface } from "../shared";
+import { ImageSourcePropType, Text, View } from "react-native";
+import { CometChatList, CometChatListActionsInterface, CometChatRetryButton } from "../shared";
 import { SelectionMode } from "../shared/base/Types";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { deepMerge } from "../shared/helper/helperFunctions";
@@ -293,6 +293,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     useEffect(() => {
       setHideSearchError(true); // Hide search while showing error
     }, []);
+    if (hideError) return null;
     return (
       <View style={{ flex: 1 }}>
         <ErrorEmptyView
@@ -317,10 +318,11 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
           }}
           titleStyle={mergedStyle.errorStateStyle.titleStyle}
           subTitleStyle={mergedStyle.errorStateStyle.subTitleStyle}
+          RetryView={<CometChatRetryButton onPress={() => groupListRef.current?.reload()} />}
         />
       </View>
     );
-  }, [mergedStyle, mode, theme]);
+  }, [mergedStyle, mode, theme, hideError]);
 
   /**
    * Build final list of menu items for a given group:

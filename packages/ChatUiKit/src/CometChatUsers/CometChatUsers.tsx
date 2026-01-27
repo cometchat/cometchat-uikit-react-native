@@ -5,6 +5,7 @@ import {
   CometChatList,
   CometChatListActionsInterface,
   CometChatListProps,
+  CometChatRetryButton,
 } from "../shared";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { deepMerge } from "../shared/helper/helperFunctions";
@@ -404,6 +405,7 @@ export const CometChatUsers = React.forwardRef<
       // Hide search when error view is active.
       setHideSearchError(true);
     }, []);
+    if (hideError) return null;
     return (
       <View style={{ flex: 1 }}>
         <ErrorEmptyView
@@ -428,10 +430,11 @@ export const CometChatUsers = React.forwardRef<
           }}
           titleStyle={mergedStyle.errorStateStyle.titleStyle}
           subTitleStyle={mergedStyle.errorStateStyle.subTitleStyle}
+          RetryView={<CometChatRetryButton onPress={() => userRef.current?.reload()} />}
         />
       </View>
     );
-  }, [theme, mergedStyle]);
+  }, [theme, mergedStyle, hideError]);
 
   return (
     <View style={theme.userStyles.containerStyle}>

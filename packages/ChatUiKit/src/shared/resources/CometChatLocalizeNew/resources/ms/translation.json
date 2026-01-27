@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "Perbualan",
 	"SEARCH_FILTER_MESSAGES": "Mesej",
 	"SEARCH_NO_MESSAGES": "Tiada mesej",
-	"MESSAGE_REPORTED": "Mesej dilaporkan"
+	"MESSAGE_REPORTED": "Mesej dilaporkan",
+	"MARK_AS_UNREAD": "Tandai belum dibaca",
+	"NEW": "Baru"
 }

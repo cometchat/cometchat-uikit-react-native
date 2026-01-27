@@ -19,6 +19,7 @@ import {
   CometChatList,
   CometChatListActionsInterface,
   CometChatMentionsFormatter,
+  CometChatRetryButton,
   CometChatSoundManager,
   CometChatStatusIndicator,
   CometChatTextFormatter,
@@ -358,6 +359,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
    * ErrorStateView renders a view to show when an error occurs.
    */
   const ErrorStateView = useCallback(() => {
+    if (hideError) return null;
     return (
       <ErrorEmptyView
         title={t("OOPS")}
@@ -378,9 +380,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
         containerStyle={mergedStyles?.errorStateStyle?.containerStyle}
         titleStyle={mergedStyles?.errorStateStyle?.titleStyle}
         subTitleStyle={mergedStyles?.errorStateStyle?.subTitleStyle}
+        RetryView={<CometChatRetryButton onPress={() => conversationListRef.current?.reload()} />}
       />
     );
-  }, [theme, mergedStyles]);
+  }, [theme, mergedStyles, hideError]);
 
   /**
    * EmptyStateView renders a view when no conversations are available.
@@ -1265,6 +1268,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
       ccConversationDeleted: ({ conversation }: { conversation: CometChat.Conversation }) => {
         conversationListRef.current!.removeItemFromList(conversation.getConversationId());
         removeItemFromSelectionList(conversation.getConversationId());
+      },
+      // Handle conversation updates from external sources (e.g., when conversation properties change)
+      ccUpdateConversation: ({ conversation }: { conversation: CometChat.Conversation }) => {
+        conversationListRef.current!.updateList(conversation);
       },
     });
     // Listen for message events.

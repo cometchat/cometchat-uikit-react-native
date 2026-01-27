@@ -18,7 +18,6 @@ const ViewMembers: React.FC = () => {
   const navigation = useNavigation();
   const { group } = route.params;
   const theme = useTheme();
-
   const kickUsers =  useConfig(
     (state) => state.settings.chatFeatures.moderatorControls.kickUsers
   );

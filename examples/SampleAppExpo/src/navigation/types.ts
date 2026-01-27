@@ -19,6 +19,7 @@ export type RootStackParamList = {
     parentMessageId?: string;
     messageId?: string;
     searchKeyword?: string;
+    navigatedFromSearch?: boolean;
   };
   SearchMessages: {
     user?: CometChat.User;

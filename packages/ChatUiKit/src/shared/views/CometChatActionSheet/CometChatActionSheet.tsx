@@ -1,4 +1,4 @@
-import React, { JSX, useCallback, useMemo } from "react";
+import React, { JSX, useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   ImageSourcePropType,
@@ -6,7 +6,6 @@ import {
   Pressable,
   Text,
   TextStyle,
-  View,
   ViewStyle,
 } from "react-native";
 import { useTheme } from "../../../theme";
@@ -36,6 +35,8 @@ const OptionListView = ({
   }>;
 }) => {
   const theme = useTheme();
+  const [isPressed, setIsPressed] = useState(false);
+
   const renderIcon = useCallback(() => {
     return (
       <Icon icon={icon} imageStyle={style?.iconStyle} containerStyle={style?.iconContainerStyle} />
@@ -46,9 +47,11 @@ const OptionListView = ({
     <Pressable
       key={id}
       onPress={onPress}
-      style={({ pressed }) => [
+      onPressIn={() => setIsPressed(true)}
+      onPressOut={() => setIsPressed(false)}
+      style={[
         style?.containerStyle,
-        pressed && { backgroundColor: theme.color.background4 },
+        isPressed && { backgroundColor: theme.color.background4 },
       ]}
     >
       {renderIcon()}

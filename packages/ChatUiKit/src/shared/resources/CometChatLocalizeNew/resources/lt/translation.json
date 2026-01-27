@@ -501,5 +501,7 @@
 	"SEARCH_FILTER_CONVERSATIONS": "Pokalbiai",
 	"SEARCH_FILTER_MESSAGES": "Žinutės",
 	"SEARCH_NO_MESSAGES": "Nėra žinučių",
-	"MESSAGE_REPORTED": "Pranešimas praneštas"
+	"MESSAGE_REPORTED": "Pranešimas praneštas",
+	"MARK_AS_UNREAD": "Pažymėti neskaitytą",
+	"NEW": "Naujas"
 }

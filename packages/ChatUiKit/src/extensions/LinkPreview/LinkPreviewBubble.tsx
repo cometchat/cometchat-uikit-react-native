@@ -1,4 +1,4 @@
-import React, { JSX, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { JSX, useCallback, useRef, useState } from "react";
 import {
   Alert,
   DimensionValue,
@@ -67,6 +67,8 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
     uri: favicon.startsWith("https:") ? favicon : `https:${favicon.split("http:")[1]}`,
   });
 
+  const [faviconError, setFaviconError] = useState(false);
+
   const pressTime = useRef<number | null>(0);
 
   /**
@@ -80,7 +82,6 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
    * Handles the touch end event. If the press duration is less than 500ms, it triggers the onPress callback or opens the link.
    */
   const handleTouchEnd = async () => {
-    if (pressTime.current === null && Platform.OS === "ios") return;
     const endTime = Date.now();
     const pressDuration = endTime - (pressTime.current ?? 0);
     if (pressDuration < 500) {
@@ -138,7 +139,12 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
   );
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutHandler}>
+    <View 
+      onLayout={onLayoutHandler}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={onTouchMove}
+    >
       <View
         style={style?.headerImageContainerStyle}
         onTouchStart={handleTouchStart}
@@ -162,15 +168,17 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
             </Text>
           </View>
 
-          <View style={style?.bodyStyle?.faviconContainerStyle}>
-            <Image
-              source={faviconSource}
-              style={style?.bodyStyle?.faviconStyle}
-              onError={(err) => {
-                setImageSource(DefaultLinkPreview);
-              }}
-            />
-          </View>
+          {!faviconError && (
+            <View style={style?.bodyStyle?.faviconContainerStyle}>
+              <Image
+                source={faviconSource}
+                style={style?.bodyStyle?.faviconStyle}
+                onError={(err) => {
+                  setFaviconError(true);
+                }}
+              />
+            </View>
+          )}
         </View>
         <View style={style?.bodyStyle?.subtitleContainerStyle}>
           <Text style={style?.bodyStyle?.subtitleTitle} numberOfLines={2} ellipsizeMode='tail'>
@@ -185,6 +193,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
         style={{
           paddingVertical: theme.spacing.padding.p3,
           paddingHorizontal: style?.bodyStyle?.containerStyle.padding,
+          flexShrink: 0,
         }}
       >
         {ChildView && <ChildView />}

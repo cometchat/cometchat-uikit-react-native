@@ -29,6 +29,7 @@ export type AdditionalParams = {
   hideCopyMessageOption?: boolean,
   hideMessageInfoOption?: boolean,
   hideReportMessageOption?: boolean,
+  hideMarkAsUnreadOption?: boolean,
   hideGroupActionMessages?: boolean,
   onReplyClick?: (messageId: string) => void;
 };

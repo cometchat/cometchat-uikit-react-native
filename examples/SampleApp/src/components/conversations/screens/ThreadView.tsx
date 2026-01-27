@@ -2,8 +2,8 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useRef,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -39,6 +39,7 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CommonUtils } from '../../../utils/CommonUtils';
 import { useConfig } from '../../../config/store';
 
+
 type ThreadViewRouteProp = RouteProp<RootStackParamList, 'ThreadView'>;
 type ThreadViewNavProp = StackNavigationProp<RootStackParamList>;
 
@@ -49,7 +50,6 @@ const ThreadView = () => {
   const theme = useTheme();
   const { message, user, group } = params || {};
   const { t } = useCometChatTranslation();
-
   const messageDeliveryAndReadReceipts = useConfig(
       (state) => state.settings.chatFeatures.coreMessagingExperience.messageDeliveryAndReadReceipts
   );

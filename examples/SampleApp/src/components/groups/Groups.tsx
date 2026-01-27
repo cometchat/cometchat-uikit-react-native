@@ -18,7 +18,7 @@ import {
   CreateGroupBottomSheet,
   JoinGroupBottomSheet,
 } from './GroupHelper';
-import { SCREEN_CONSTANTS } from '../../utils/AppConstants';
+import {SCREEN_CONSTANTS} from '../../utils/AppConstants';
 import { useConfig } from '../../config/store';
 
 type GroupNavigationProp = StackNavigationProp<RootStackParamList, 'Groups'>;

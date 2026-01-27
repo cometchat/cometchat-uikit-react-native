@@ -91,7 +91,7 @@ const CometChatBottomSheet = forwardRef(
       onDismiss,
     } = props;
 
-    // Animated value for overlay fade
+    // All hooks called unconditionally at top level
     const overlayAnim = useRef(new Animated.Value(0)).current;
     const [isModalOpen, setIsModalOpen] = useState(isOpen);
 
@@ -161,6 +161,7 @@ const CometChatBottomSheet = forwardRef(
         visible={isModalOpen}
         onRequestClose={togglePanel}
         onDismiss={onDismiss}
+        supportedOrientations={["portrait", "landscape"]}
       >
         {/* Animated overlay that fades in from transparent to a semi-transparent black */}
         <Animated.View

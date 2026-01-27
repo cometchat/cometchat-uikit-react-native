@@ -27,6 +27,7 @@ import {
   RootStackParamList,
 } from '../../../navigation/types';
 import {useFocusEffect} from '@react-navigation/native';
+import { useConfig } from '../../../config/store';
 
 
 type ScreenProps = StackScreenProps<RootStackParamList, 'UserInfo'>;
@@ -53,6 +54,12 @@ const UserInfo: FC<Props> = ({route, navigation}) => {
   const [callObj, setCallObj] = useState<CometChat.Call>();
 
   const callType = useRef<string | undefined>(undefined);
+  const oneOnOneVoiceCalling = useConfig(
+    (state) => state.settings.callFeatures.voiceAndVideoCalling.oneOnOneVoiceCalling
+  );
+  const oneOnOneVideoCalling = useConfig(
+    (state) => state.settings.callFeatures.voiceAndVideoCalling.oneOnOneVideoCalling
+  );
 
   useEffect(() => {
     setUserStatus(userObj.getStatus());
@@ -286,47 +293,53 @@ const UserInfo: FC<Props> = ({route, navigation}) => {
         </View>
 
         {/* Action Boxes */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[
-              styles.callActionButton,
-              {borderColor: theme.color.borderDefault},
-            ]}
-            onPress={makeVoiceCall}>
-            <Icon
-              icon={<Call color={theme.color.primary} height={24} width={24} />}
-            />
-            <Text
-              style={[
-                theme.typography.caption1.regular,
-                styles.mt5Centered,
-                { color: theme.color.textSecondary },
-              ]}>
-              {t('AUDIO_CALL')}
-            </Text>
-          </TouchableOpacity>
+        {(oneOnOneVoiceCalling || oneOnOneVideoCalling) && (
+          <View style={styles.actionsRow}>
+            {oneOnOneVoiceCalling && (
+              <TouchableOpacity
+                style={[
+                  styles.callActionButton,
+                  {borderColor: theme.color.borderDefault},
+                ]}
+                onPress={makeVoiceCall}>
+                <Icon
+                  icon={<Call color={theme.color.primary} height={24} width={24} />}
+                />
+                <Text
+                  style={[
+                    theme.typography.caption1.regular,
+                    styles.mt5Centered,
+                    { color: theme.color.textSecondary },
+                  ]}>
+                  {t('AUDIO_CALL')}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-          <TouchableOpacity
-            style={[
-              styles.callActionButton,
-              {borderColor: theme.color.borderDefault},
-            ]}
-            onPress={makeVideoCall}>
-            <Icon
-              icon={
-                <Videocam color={theme.color.primary} height={24} width={24} />
-              }
-            />
-            <Text
-              style={[
-                theme.typography.caption1.regular,
-                styles.mt5Centered,
-                { color: theme.color.textSecondary },
-              ]}>
-              {t('VIDEO_CALL')}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            {oneOnOneVideoCalling && (
+              <TouchableOpacity
+                style={[
+                  styles.callActionButton,
+                  {borderColor: theme.color.borderDefault},
+                ]}
+                onPress={makeVideoCall}>
+                <Icon
+                  icon={
+                    <Videocam color={theme.color.primary} height={24} width={24} />
+                  }
+                />
+                <Text
+                  style={[
+                    theme.typography.caption1.regular,
+                    styles.mt5Centered,
+                    { color: theme.color.textSecondary },
+                  ]}>
+                  {t('VIDEO_CALL')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Block/Unblock and Delete Chat Buttons */}

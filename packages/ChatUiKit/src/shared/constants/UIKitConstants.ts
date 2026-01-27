@@ -61,7 +61,6 @@ export const emailPattern =
   wordBoundary.start + `[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}` + wordBoundary.end;
 
 export const urlPattern =
-  wordBoundary.start +
   `((https?://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?)` +
   wordBoundary.end;
 
@@ -236,6 +235,7 @@ export const MessageOptionConstants = {
   sendMessagePrivately: "sendMessagePrivately",
   replyMessagePrivately: "replyMessagePrivately",
   reportMessage: "reportMessage",
+  markAsUnread: "markAsUnread",
 };
 
 export const CometChatMessageTypes = Object.freeze({

@@ -65,7 +65,9 @@ export const CometChatAudioBubble = ({
   useEffect(() => {
     if (audioUrl) {
       SoundPlayer.prepareMediaPlayer(audioUrl, (s: string) => {
-        setDuration(JSON.parse(s).duration);
+        try {
+          setDuration(JSON.parse(s).duration);
+        } catch (e) {}
       });
     }
 
@@ -118,20 +120,24 @@ export const CometChatAudioBubble = ({
       }
       // Get total duration when audio starts playing
       SoundPlayer.getPosition((info: string) => {
-        if (info) {
-          if (Platform.OS == "android") {
-            setStatus("playing");
+        try {
+          if (info) {
+            if (Platform.OS == "android") {
+              setStatus("playing");
+            }
+            setCurrentTime(JSON.parse(info).position);
           }
-          setCurrentTime(JSON.parse(info).position);
-        }
+        } catch (e) {}
       });
 
       // Start tracking the current time
       interval = setInterval(() => {
         SoundPlayer.getPosition((info: string) => {
-          if (info) {
-            setCurrentTime(JSON.parse(info).position);
-          }
+          try {
+            if (info) {
+              setCurrentTime(JSON.parse(info).position);
+            }
+          } catch (e) {}
         });
       }, 500);
       return;
@@ -145,9 +151,11 @@ export const CometChatAudioBubble = ({
             setStatus("playing");
             // Get total duration when audio starts playing
             SoundPlayer.getPosition((info: string) => {
-              if (info) {
-                setCurrentTime(JSON.parse(info).position);
-              }
+              try {
+                if (info) {
+                  setCurrentTime(JSON.parse(info).position);
+                }
+              } catch (e) {}
             });
 
             // Start tracking the current time

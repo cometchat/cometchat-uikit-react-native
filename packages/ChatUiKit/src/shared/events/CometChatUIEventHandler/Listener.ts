@@ -344,11 +344,14 @@ export class UserCallUIEventListener {
 
 type ConversationUIEvents = {
   ccConversationDeleted?: Function;
+  ccUpdateConversation?: Function;
 };
 export class ConversationUIEventListener {
   ccConversationDeleted?: Function;
-  constructor({ ccConversationDeleted }: ConversationUIEvents) {
+  ccUpdateConversation?: Function;
+  constructor({ ccConversationDeleted, ccUpdateConversation }: ConversationUIEvents) {
     if (!isFalsy(ccConversationDeleted)) this.ccConversationDeleted = ccConversationDeleted;
+    if (!isFalsy(ccUpdateConversation)) this.ccUpdateConversation = ccUpdateConversation;
   }
 }
 

@@ -12,6 +12,7 @@ import {
 } from '@react-navigation/bottom-tabs';
 import {useTheme, Icon, useCometChatTranslation } from '@cometchat/chat-uikit-react-native';
 import {SCREEN_CONSTANTS} from '../utils/AppConstants';
+import { useIsKeyboardVisible } from '../hooks/useIsKeyboardVisible';
 import ChatFill from '../assets/icons/Chatfill';
 import Chat from '../assets/icons/Chat';
 import PersonFill from '../assets/icons/PersonFill';
@@ -57,7 +58,9 @@ const CustomTabBarButton = ({children, onPress}: BottomTabBarButtonProps) => (
 const BottomTabNavigator = () => {
   const theme = useTheme();
   const tabs = useConfig(state => state.settings.layout.tabs);
-   const { t } = useCometChatTranslation();
+  const { t } = useCometChatTranslation();
+  // Use the custom hook to track keyboard visibility
+  const isKeyboardVisible = useIsKeyboardVisible();
 
   // Map tab keys to screen names and components
   const TAB_COMPONENTS: Record<string, { name: string; component: React.ComponentType<any> }> = {
@@ -72,7 +75,10 @@ const BottomTabNavigator = () => {
       initialRouteName="Chats"
       screenOptions={({route}) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        // Hide tab bar when keyboard is visible
+        tabBarStyle: isKeyboardVisible 
+          ? { display: 'none' } 
+          : styles.tabBar,
         animation: 'none',
         tabBarIcon: ({focused}) => {
           const iconSet = icons[route.name];
@@ -108,7 +114,6 @@ const BottomTabNavigator = () => {
                   },
                 ]}
               >
-                {/* Used t() for fixing Bottom Tabs Localization */}
                 {t(route.name.toUpperCase())}
               </Text>
             </View>
@@ -117,7 +122,8 @@ const BottomTabNavigator = () => {
         tabBarBackground: () => (
           <View style={{backgroundColor: theme.color.background1, flex: 1}} />
         ),
-      })}>
+      })}
+    >
       {tabs.map(tabKey => {
         const tab = TAB_COMPONENTS[tabKey.toLowerCase()];
         return tab ? (
