@@ -632,7 +632,7 @@ export const CometChatMessageList = memo(
       const hideMarkAsUnreadOption = (isAgenticUser || !!parentMessageId) ? true : !showMarkAsUnreadOption;//hide for threads and agentic users
 
       const callListenerId = "call_" + new Date().getTime();
-      const effectiveHideModeration =  hideModerationStatus;
+      const effectiveHideModeration = hideModerationStatus;
       const groupListenerId = "group_" + new Date().getTime();
       const uiEventListener = "uiEvent_" + new Date().getTime();
       const callEventListener = "callEvent_" + new Date().getTime();
@@ -1073,7 +1073,10 @@ export const CometChatMessageList = memo(
                 const oldestMessage = previousMessagesFetched[previousMessagesFetched.length];
 
                 if (oldestMessage) {
-                  setNewMessageIndicatorId(oldestMessage.getId().toString());
+                  const msgId = safeGetId(oldestMessage);
+                  if (msgId !== undefined) {
+                    setNewMessageIndicatorId(String(msgId));
+                  }
                 }
               }
 
@@ -1383,7 +1386,6 @@ export const CometChatMessageList = memo(
               // Center the message: place it at middle of the screen
               // In inverted list: offset = message.y - (screenHeight/2 - messageHeight/2)
               const centeredOffset = Math.max(0, position.y - (screenHeight / 2) + (position.height / 2));
-              console.log({centeredOffset});
 
               // console.log(`📍 Scrolling to position-based offset ${centeredOffset.toFixed(1)}px for message ${messageId}`);
               messageListRef.current?.scrollToOffset({
@@ -1715,8 +1717,8 @@ export const CometChatMessageList = memo(
           (response: any) => {
             setShowMessageOptions([]);
             setHasManuallyMarkedUnread(true);
-            let convId:string = "";
-            let conversationType:string = "";
+            let convId: string = "";
+            let conversationType: string = "";
             if (user) {
               convId = user?.getUid();
               conversationType = CometChat.RECEIVER_TYPE.USER;
@@ -1727,12 +1729,10 @@ export const CometChatMessageList = memo(
             //getting convesation using conversationId=Uid and conversationType
             CometChat.getConversation(convId, conversationType).then((conversation) => {
               // Emitting conversation update event
-              console.log("Emitting ccUpdateConversation event for mark as unread", conversation);
               CometChatUIEventHandler.emitConversationEvent(
                 CometChatConversationEvents.ccUpdateConversation,
                 { conversation }
               );
-              console.log("latest",conversation.getUnreadMessageCount());
               setUnreadCount(conversation.getUnreadMessageCount());
               setNewMessageIndicatorId(message.getId().toString());
             }).catch((error) => {
@@ -2184,12 +2184,11 @@ export const CometChatMessageList = memo(
           .catch((rej: any) => {
             deleteItem.current = undefined;
             setShowDeleteModal(false);
-            console.log(rej);
             onError && onError(rej);
           });
       };
 
-      const createActionMessage = () => {};
+      const createActionMessage = () => { };
 
       const updateMessageReceipt = (receipt: any) => {
         if (
@@ -2262,8 +2261,6 @@ export const CometChatMessageList = memo(
         });
         CometChat.getLoggedinUser()
           .then(async (u: any) => {
-            console.log({startFromUnreadMessages});
-
             loggedInUser.current = u;
             if (isAgenticUser && !parentMessageId) {
               messageRequest.current = null;
@@ -2289,8 +2286,6 @@ export const CometChatMessageList = memo(
                       convId,
                       conversationType
                     );
-                    console.log({convId,conversationType,user,group,conversation,getUnreadMessageCount:conversation.getUnreadMessageCount()});
-                    // console.log("lower", conversation);
                     if (conversation.getUnreadMessageCount() > 0) {
                       setUnreadCount(conversation.getUnreadMessageCount());
                       const lastReadMessageId = conversation.getLastReadMessageId();
@@ -2430,33 +2425,32 @@ export const CometChatMessageList = memo(
                   (aiAssistantMessage, aiToolResultMessage, aiToolArgumentMessage) => {
                     const replacement = aiAssistantMessage || aiToolResultMessage || aiToolArgumentMessage;
                     if (!replacement) return;
-                    console.log("replacement", replacement);
 
                     const replacementId = typeof (replacement as any)?.getId === 'function' ? (replacement as any).getId() : (replacement as any)?.id;
                     const replacementRunId = (replacement as any)?.data?.runId;
-                    
-                    if(messagesContentListRef.current?.[0]?.isStreamMessage && messagesContentListRef.current?.[0]?.targetMessageId === runId){
+
+                    if (messagesContentListRef.current?.[0]?.isStreamMessage && messagesContentListRef.current?.[0]?.targetMessageId === runId) {
                       latestMessageRef.current = replacement;
                     }
-                    
+
                     const list = messagesContentListRef.current;
                     let updatedList: any[];
-                    
+
                     // Find indices in one pass
                     const existingIndex = list.findIndex((msg) => {
                       const msgId = typeof (msg as any)?.getId === 'function' ? (msg as any).getId() : (msg as any)?.id;
                       return msgId && String(msgId) === String(replacementId);
                     });
-                    
-                    const streamIndex = existingIndex === -1 ? list.findIndex((msg) => 
+
+                    const streamIndex = existingIndex === -1 ? list.findIndex((msg) =>
                       (msg as any).isStreamMessage === true && (msg as any).targetMessageId === runId
                     ) : -1;
-                    
+
                     const matchingIndex = (existingIndex === -1 && streamIndex === -1) ? list.findIndex((msg) => {
                       const msgRunId = (msg as any)?.data?.runId;
                       return msgRunId && String(msgRunId) === String(replacementRunId);
                     }) : -1;
-                    
+
                     // Update list based on what we found
                     if (existingIndex !== -1) {
                       // Update existing message
@@ -2472,8 +2466,7 @@ export const CometChatMessageList = memo(
                       // Add at beginning
                       updatedList = [replacement, ...list];
                     }
-                    
-                    console.log("updatedList", updatedList);
+
                     messagesContentListRef.current = updatedList;
                     setMessagesList(updatedList);
                     onLoad && onLoad([...updatedList].reverse());
@@ -2783,15 +2776,13 @@ export const CometChatMessageList = memo(
           connectionListenerId,
           new CometChat.ConnectionListener({
             onConnected: () => {
-              console.log("CONNECTED...");
               streamOnConnected();
               if (lastID.current) {
                 getUpdatedPreviousMessages();
               }
             },
-            inConnecting: () => {},
+            inConnecting: () => { },
             onDisconnected: () => {
-              console.log("DISCONNECTED...");
               streamOnDisconnected();
               if (!messagesList[0].id) {
                 for (let i = 0; i < messagesList.length; i++) {
@@ -3356,8 +3347,7 @@ export const CometChatMessageList = memo(
 
               <Text
                 style={_style.threadedMessageStyles?.indicatorTextStyle}
-              >{`${item.getReplyCount()} ${
-                item.getReplyCount() > 1 ? t("REPLIES") : t("REPLY")
+              >{`${item.getReplyCount()} ${item.getReplyCount() > 1 ? t("REPLIES") : t("REPLY")
                 }`}</Text>
               <CometChatBadge
                 style={{
@@ -3376,7 +3366,6 @@ export const CometChatMessageList = memo(
         setShowMessageOptions([]);
         CometChat.getUser(item.getSender().getUid())
           .then((user: any) => {
-            console.log({ user });
             CometChatUIEventHandler.emitUIEvent("openChat", { user });
           })
           .catch((e: any) => {
@@ -3407,13 +3396,11 @@ export const CometChatMessageList = memo(
         };
 
         NativeModules.FileManager.shareMessage(shareObj, (callback: any) => {
-          console.log("shareMessage Callback", callback);
         });
       };
 
       const openOptionsForMessage = useCallback(
         (item: CometChat.BaseMessage | any, template: CometChatMessageTemplate) => {
-          console.log("Opening options for message:", item);
           let options = template?.options
             ? loggedInUser.current
               ? template.options(loggedInUser.current, item, mergedTheme, group)
@@ -3868,32 +3855,32 @@ export const CometChatMessageList = memo(
         const id = typeof item?.getId === 'function' ? item.getId() : item?.id;
         const muid = typeof item?.getMuid === 'function' ? item.getMuid() : item?.muid;
 
-        
+
         // For stream messages in agentic mode, use a unique combination
         // to prevent duplicate keys when navigating between chat and history
         if (item?.isStreamMessage) {
           const targetId = item?.targetMessageId || '';
           return `stream_${id}_${targetId}_${index}`;
         }
-        
+
         // Use id + muid if both exist
         if (id && muid) {
           return `${id}_${muid}`;
         }
 
-        
+
         // Use muid if id doesn't exist (pending message)
         if (muid) {
           return `muid_${muid}`;
         }
 
-        
+
         // Use id if muid doesn't exist
         if (id) {
           return `id_${id}`;
         }
 
-        
+
         // Fallback to index if neither exist (should not happen, but prevents duplicates)
         if (__DEV__) {
           console.warn('[MessageList] Message without id or muid at index:', index, item);
@@ -4454,7 +4441,7 @@ export const CometChatMessageList = memo(
                 )}
 
                 {/* Navigation loading for far message fetching and scroll operations */}
-                {navigationLoading&& (getLoadingStateView())}
+                {navigationLoading && (getLoadingStateView())}
                 <FlatList
                   showsVerticalScrollIndicator={false}
                   ref={messageListRef}
@@ -4551,10 +4538,6 @@ export const CometChatMessageList = memo(
               reportedMessageRef.current = null;
             }}
             onReportSubmit={(payload) => {
-              console.log("Report submitted", {
-                messageId: payload.message?.getId?.(),
-                payload,
-              });
               setShowReportDialog(false);
               reportedMessageRef.current = null;
             }}

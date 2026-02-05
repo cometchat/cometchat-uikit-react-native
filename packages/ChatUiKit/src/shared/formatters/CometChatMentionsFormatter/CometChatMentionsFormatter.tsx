@@ -1,6 +1,6 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { JSX } from "react";
-import { ColorValue, StyleProp, Text, TextStyle } from "react-native";
+import { ColorValue, StyleProp, Text, TextStyle, View } from "react-native";
 import { CometChatUIKit } from "../../CometChatUiKit";
 import {
   MentionsTargetElement,
@@ -25,6 +25,8 @@ const t = getCometChatTranslation();
 type MentionsSubStyle = {
   textStyle?: TextStyle;
   selfTextStyle?: TextStyle;
+  backgroundColor?: ColorValue;
+  selfBackgroundColor?: ColorValue;
 };
 
 type MentionContext = "composer" | "conversation" | "incoming" | "outgoing";
@@ -71,7 +73,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
   private incomingBubbleStyle: MentionsSubStyle;
   private outgoingBubbleStyle: MentionsSubStyle;
   private currentContext: MentionContext = "incoming";
-  private resolveStyle(isSelf: boolean): TextStyle {
+  private resolveStyle(isSelf: boolean): { textStyle: TextStyle; backgroundColor: ColorValue | undefined } {
     let style: MentionsSubStyle;
     switch (this.currentContext) {
       case "composer":
@@ -86,7 +88,9 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
       default:
         style = this.incomingBubbleStyle;
     }
-    return isSelf ? (style.selfTextStyle ?? {}) : (style.textStyle ?? {});
+    const textStyle = isSelf ? (style.selfTextStyle ?? {}) : (style.textStyle ?? {});
+    const backgroundColor = isSelf ? style.selfBackgroundColor : style.backgroundColor;
+    return { textStyle, backgroundColor };
   }
 
   /**
@@ -132,22 +136,64 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
       ? loggedInUser
       : (themeOrUser as CometChat.User | undefined);
 
-    const fallback: MentionsSubStyle = {
+    // Incoming bubble style - purple/blue text with purple background
+    const incomingFallback: MentionsSubStyle = {
       textStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#6852D6" },
       selfTextStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#FFAB00" },
+      backgroundColor: "rgba(104, 82, 214, 0.15)", // Purple/blue matching text color
+      selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
     };
 
-    const fromTheme = (c: ColorValue): MentionsSubStyle => {
+    // Outgoing bubble style - white text with white background
+    const outgoingFallback: MentionsSubStyle = {
+      textStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#FFFFFF" },
+      selfTextStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#FFAB00" },
+      backgroundColor: "rgba(255, 255, 255, 0.2)", // White matching text color
+      selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
+    };
+
+    const incomingFromTheme = (c: ColorValue): MentionsSubStyle => {
       const baseStyle = theme?.typography?.body?.bold || {};
       return {
         textStyle: { ...baseStyle, color: c },
         selfTextStyle: { ...baseStyle, color: theme?.color?.warning || "#FFAB00" },
+        backgroundColor: "rgba(104, 82, 214, 0.15)", // Purple/blue matching primary color
+        selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
       };
     };
 
-    this.incomingBubbleStyle = theme ? fromTheme(theme.color.receiveBubbleTextHighlight) : fallback;
-    this.outgoingBubbleStyle = theme ? fromTheme(theme.color.sendBubbleTextHighlight) : fallback;
-    this.composerStyle = this.incomingBubbleStyle; // reasonable defaults
+    const outgoingFromTheme = (c: ColorValue): MentionsSubStyle => {
+      const baseStyle = theme?.typography?.body?.bold || {};
+      return {
+        textStyle: { ...baseStyle, color: c },
+        selfTextStyle: { ...baseStyle, color: theme?.color?.warning || "#FFAB00" },
+        backgroundColor: "rgba(255, 255, 255, 0.2)", // White matching outgoing text color
+        selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
+      };
+    };
+
+    // Composer-specific style with purple/blue background matching the text color
+    const composerFallback: MentionsSubStyle = {
+      textStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#6852D6" },
+      selfTextStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#FFAB00" },
+      backgroundColor: "rgba(104, 82, 214, 0.15)", // Purple/blue matching text color
+      selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
+    };
+
+    const composerFromTheme = (): MentionsSubStyle => {
+      const baseStyle = theme?.typography?.body?.bold || {};
+      const primaryColor = theme?.color?.primary || "#6852D6";
+      return {
+        textStyle: { ...baseStyle, color: primaryColor },
+        selfTextStyle: { ...baseStyle, color: theme?.color?.warning || "#FFAB00" },
+        backgroundColor: "rgba(104, 82, 214, 0.15)", // Purple/blue background
+        selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
+      };
+    };
+
+    this.incomingBubbleStyle = theme ? incomingFromTheme(theme.color.receiveBubbleTextHighlight) : incomingFallback;
+    this.outgoingBubbleStyle = theme ? outgoingFromTheme(theme.color.sendBubbleTextHighlight) : outgoingFallback;
+    this.composerStyle = theme ? composerFromTheme() : composerFallback;
     this.conversationStyle = this.incomingBubbleStyle;
   }
 
@@ -584,23 +630,29 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
               this.setContext(isOutgoing ? "outgoing" : "incoming");
             }
 
-            const textStyle = this.resolveStyle(isSelf);
+            const { textStyle, backgroundColor } = this.resolveStyle(isSelf);
 
             let onPressProp =
               this.temp && !isAlias
                 ? { onPress: (event: any) => this.onMentionClick(event, segment) }
                 : {}; // still suppress click for alias
 
+            const mentionContainerStyle = backgroundColor ? {
+              backgroundColor,
+              borderRadius: 4,
+              paddingHorizontal: 2,
+            } : {};
+
             if (this.target === MentionsTargetElement.textbubble) {
               return (
-                <Text suppressHighlighting={true} key={index} {...onPressProp} style={[textStyle]}>
+                <Text suppressHighlighting={true} key={index} {...onPressProp} style={[textStyle, mentionContainerStyle]}>
                   {userRegistry[segment]}
                 </Text>
               );
             }
 
             return (
-              <Text suppressHighlighting={true} key={index} {...onPressProp} style={[textStyle]}>
+              <Text suppressHighlighting={true} key={index} {...onPressProp} style={[textStyle, mentionContainerStyle]}>
                 {userRegistry[segment]}
               </Text>
             );
@@ -610,11 +662,16 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
               (it) => it.underlyingText === `<@all:${segment}>`
             );
             if (aliasItem) {
-              const styleResolved = this.resolveStyle(true);
+              const { textStyle: styleResolved, backgroundColor } = this.resolveStyle(true);
+              const mentionContainerStyle = backgroundColor ? {
+                backgroundColor,
+                borderRadius: 4,
+                paddingHorizontal: 2,
+              } : {};
               // If context is 'conversation', render @all and description inline
               if (this.currentContext === "conversation") {
                 return (
-                  <Text suppressHighlighting={true} key={index} style={[styleResolved]}>
+                  <Text suppressHighlighting={true} key={index} style={[styleResolved, mentionContainerStyle]}>
                     <Text style={[styleResolved, { fontWeight: "700" }]}>
                       @{aliasItem.promptText}
                     </Text>
@@ -626,7 +683,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
                 );
               }
               return (
-                <Text suppressHighlighting={true} key={index} style={[styleResolved]}>
+                <Text suppressHighlighting={true} key={index} style={[styleResolved, mentionContainerStyle]}>
                   {aliasItem.promptText}
                 </Text>
               );

@@ -2,7 +2,7 @@
   "expo": {
     "name": "SampleAppExpo",
     "slug": "SampleAppExpo",
-    "version": "5.2.9",
+    "version": "5.2.10",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,

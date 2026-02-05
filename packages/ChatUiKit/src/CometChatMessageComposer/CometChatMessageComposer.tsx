@@ -2076,16 +2076,29 @@ export const CometChatMessageComposer = React.forwardRef(
         trackingCharacter: activeCharacter.current,
       });
       mentionMap.current = updatedMap;
-      setSelectionPosition({
-        start:
-          selectionPosition.start -
-          (searchStringRef.current.length + 1) +
-          (item.promptText?.length ?? 0),
-        end:
-          selectionPosition.start -
-          (searchStringRef.current.length + 1) +
-          (item.promptText?.length ?? 0),
-      });
+      
+      // Calculate cursor position after the mention + space
+      // Add 1 to account for the space character added after the mention
+      const newCursorPosition =
+        selectionPosition.start -
+        (searchStringRef.current.length + 1) +
+        (item.promptText?.length ?? 0) +
+        1; // +1 for the space after mention
+      
+      // On iOS, use InteractionManager to ensure selection is applied after UI updates
+      if (Platform.OS === "ios") {
+        InteractionManager.runAfterInteractions(() => {
+          setSelectionPosition({
+            start: newCursorPosition,
+            end: newCursorPosition,
+          });
+        });
+      } else {
+        setSelectionPosition({
+          start: newCursorPosition,
+          end: newCursorPosition,
+        });
+      }
       setFormattedInputMessage();
     };
 
