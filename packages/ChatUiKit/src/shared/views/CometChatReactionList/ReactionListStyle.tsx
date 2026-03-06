@@ -76,8 +76,9 @@ export const getReactionListStyleLight = (
         textStyle: {},
       },
       emojiStyle: {
-        height: 24,
-        width: 24,
+        minHeight: 24,
+        minWidth: 24,
+        textAlign: "center",
         ...typography.heading2.regular,
       },
       titleContainerStyle: {

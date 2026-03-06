@@ -443,6 +443,7 @@
 	"WEDNESDAY": "onsdag",
 	"WOULD__YOU_LIKE_TO_DELETE_THIS_CONVERSATION": "Vill du ta bort den här konversationen? Den här konversationen kommer att raderas från alla dina enheter.",
 	"WRONG_FILE_TYPE": "Du har valt en annan typ av fil. Välj lämplig fil.",
+	"FILE_TYPE_NOT_ALLOWED": "Denna filtyp är inte tillåten.",
 	"WRONG_PASSWORD": "Ange rätt lösenord och försök igen",
 	"WRONG_TEXT": "Det verkar som att något gick fel.",
 	"WRONG_TEXT_TRY_AGAIN": "Vänligen försök igen.",

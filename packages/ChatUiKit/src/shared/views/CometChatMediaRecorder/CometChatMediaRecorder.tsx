@@ -203,7 +203,6 @@ export const CometChatMediaRecorder = (props: CometChatMediaRecorderInterface) =
       style={{
         paddingHorizontal: theme.spacing.padding.p5,
         backgroundColor: theme.color.background1,
-        flex: 1,
       }}
     >
       {recordingState !== "stopped" && (

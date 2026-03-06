@@ -75,9 +75,9 @@ import { CometChatAvatar } from "../shared/views/CometChatAvatar";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
 import { CometChatDate } from "../shared/views/CometChatDate";
 import { CometChatMessageBubble } from "../shared/views/CometChatMessageBubble";
-import { getModerationStatus, ModerationBottomView } from "../shared/utils/MessageUtils";
+import { getModerationStatus, ModerationBottomView, MimeErrorBottomView } from "../shared/utils/MessageUtils";
 import { CometChatReactions } from "../shared/views/CometChatReactions";
-import { useTheme } from "../theme";
+import { useTheme, useThemeInternal } from "../theme";
 import { MessageSkeleton } from "./Skeleton";
 import { ErrorEmptyView } from "../shared/views/ErrorEmptyView/ErrorEmptyView";
 import { BubbleStyles, CometChatTheme } from "../theme/type";
@@ -715,6 +715,8 @@ export const CometChatMessageList = memo(
       }, [hideGroupActionMessages, isAgenticUser, parentMessageId]);
 
       const theme = useTheme();
+      const themeInternal = useThemeInternal();
+      const themeMode = themeInternal.mode; // 'light' or 'dark' - used for FlatList extraData
       const { t } = useCometChatTranslation();
 
       const mergedTheme: CometChatTheme = useMemo(() => {
@@ -3043,11 +3045,17 @@ export const CometChatMessageList = memo(
             messagesContentListRef.current[currentIndex! - 1].getDeliveredAt();
           // Moderation status should override other receipt states for immediate error display
           const moderationStatus = getModerationStatus(item);
-          if (item.getReadAt() || nextItemIsRead) messageState = MessageReceipt.READ;
+
+          // Check error metadata FIRST before sentAt/deliveredAt/readAt
+          const hasErrorMetadata = item?.getData?.()?.metaData?.error;
+          const hasErrorInMetadata = item?.getMetadata?.()?.error;
+          const hasErrorProp = (item as any)?.error;
+          if (hasErrorMetadata || hasErrorInMetadata || hasErrorProp) {
+            messageState = MessageReceipt.ERROR;
+          } else if (item.getReadAt() || nextItemIsRead) messageState = MessageReceipt.READ;
           else if (item.getDeliveredAt() || nextItemIsDelivered)
             messageState = MessageReceipt.DELIVERED;
           else if (item.getSentAt()) messageState = MessageReceipt.SENT;
-          else if (item?.getData()?.metaData?.error) messageState = MessageReceipt.ERROR;
           else if (isOutgoingMessage) messageState = MessageReceipt.WAIT;
           else messageState = MessageReceipt.ERROR;
 
@@ -3409,6 +3417,9 @@ export const CometChatMessageList = memo(
           if (hideFlagMessageOption) {
             options = options.filter((opt: any) => opt.id !== MessageOptionConstants.reportMessage);
           }
+          if (hideMarkAsUnreadOption) {
+            options = options.filter((opt: any) => opt.id !== MessageOptionConstants.markAsUnread);
+          }
           let optionsWithPressHandling = options.map((option) => {
             if (!option.onPress)
               switch (option.id) {
@@ -3562,6 +3573,20 @@ export const CometChatMessageList = memo(
           const BottomView = useMemo(() => {
             const moderationStatus = getModerationStatus(message);
             const isOutgoing = message.getSender()?.getUid() === loggedInUser.current?.getUid();
+            
+            // Check for MIME type error (ERR_PERMISSION_DENIED)
+            const hasErrorMetadata = (message as any)?.getData?.()?.metaData?.error;
+            const hasErrorInMetadata = (message as any)?.getMetadata?.()?.error;
+            if (isOutgoing && (hasErrorMetadata || hasErrorInMetadata) && !isAgenticUser) {
+              return (
+                <MimeErrorBottomView
+                  moderationStyle={
+                    mergedTheme.messageListStyles.outgoingMessageBubbleStyles.moderationStyle
+                  }
+                />
+              );
+            }
+
             if (effectiveHideModeration) {
               return hasTemplate?.BottomView && hasTemplate?.BottomView(message, bubbleAlignment);
             } else {
@@ -3847,7 +3872,7 @@ export const CometChatMessageList = memo(
             </React.Fragment>
           );
         },
-        [] // Empty dependencies - MessageView handles its own memoization
+        [themeMode] // Only recreate when theme mode changes - MessageView accessed via closure
       );
 
       const keyExtractor = useCallback((item: any, index: number) => {
@@ -4374,6 +4399,7 @@ export const CometChatMessageList = memo(
                 isHighlighted={isHighlighted}
                 highlightAnimatedValue={highlightAnimatedValue}
                 theme={mergedTheme}
+                themeMode={themeMode}
                 timestamp={ms}
                 dayHeaderString={dayHeaderString}
                 RenderMessageItem={RenderMessageItem}
@@ -4390,6 +4416,7 @@ export const CometChatMessageList = memo(
         },
         [
           mergedTheme,
+          themeMode,
           highlightedMessageId,
           highlightAnimatedValue,
           sentAtToMs,
@@ -4458,6 +4485,7 @@ export const CometChatMessageList = memo(
                   scrollEventThrottle={16}
                   keyboardShouldPersistTaps={(Platform.OS === "ios" ? "handled" : "always") as "handled" | "always"}
                   data={messagesList}
+                  extraData={themeMode}
                   keyExtractor={keyExtractor}
                   renderItem={memoizedRenderItem}
                   ListHeaderComponent={renderFooter}

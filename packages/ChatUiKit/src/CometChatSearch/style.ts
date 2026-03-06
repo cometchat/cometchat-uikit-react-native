@@ -314,9 +314,9 @@ export const getSearchStyleLight = (
         maxWidth: '80%',
       },
       textContainerStyle: {
-        width: 328,
-        height: 80,
-        flex: 0,
+        flex: 1,
+        minHeight: 80,
+        maxWidth: '100%',
       },
       titleStyle: {
         ...typography.caption1.medium,

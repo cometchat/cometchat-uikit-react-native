@@ -1,6 +1,8 @@
 import {CometChat} from '@cometchat/chat-sdk-react-native';
 import React, {useCallback, useContext, useRef, useState} from 'react';
 import {TouchableOpacity, View, Platform} from 'react-native';
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
+import notifee from '@notifee/react-native';
 import {
   CometChatAvatar,
   CometChatConversations,
@@ -131,6 +133,17 @@ const Conversations: React.FC<{}> = ({}) => {
       console.error('CometChat logout failed:', error);
       setIsLoggingOut(false);
       return; // Exit if CometChat logout fails
+    }
+
+    // Step 3: Clear badge count on logout
+    try {
+      if (Platform.OS === 'ios') {
+        PushNotificationIOS.setApplicationIconBadgeNumber(0);
+      } else if (Platform.OS === 'android') {
+        await notifee.cancelAllNotifications();
+      }
+    } catch (error) {
+      console.error('Error :', error);
     }
 
     // If all operations succeed, navigate to the LoginScreen

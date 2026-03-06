@@ -30,6 +30,7 @@
     "CONVERSATION_LIST": "会話リスト",
     "MESSAGES": "メッセージ",
     "WRONG_FILE_TYPE": "異なるタイプのファイルを選択しました。適切なファイルを選択してください。",
+    "FILE_TYPE_NOT_ALLOWED": "このファイル形式は許可されていません。",
     "MESSAGE_HEADER": "メッセージヘッダー",
     "MESSAGE_LIST": "メッセージリスト",
     "MESSAGE_COMPOSER": "メッセージ作成",

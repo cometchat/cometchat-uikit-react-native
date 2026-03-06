@@ -30,6 +30,7 @@
     "CONVERSATION_LIST": "대화 목록",
     "MESSAGES": "메시지",
     "WRONG_FILE_TYPE": "다른 유형의 파일을 선택했습니다. 적절한 파일을 선택해 주세요.",
+    "FILE_TYPE_NOT_ALLOWED": "이 파일 형식은 허용되지 않습니다.",
     "MESSAGE_HEADER": "메시지 헤더",
     "MESSAGE_LIST": "메시지 목록",
     "MESSAGE_COMPOSER": "메시지 작성기",

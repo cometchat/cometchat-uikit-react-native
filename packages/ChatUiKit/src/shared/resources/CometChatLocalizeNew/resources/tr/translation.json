@@ -30,6 +30,7 @@
     "CONVERSATION_LIST": "Konuşma Listesi",
     "MESSAGES": "Mesajlar",
     "WRONG_FILE_TYPE": "Farklı bir dosya türü seçtiniz. Lütfen uygun dosyayı seçin.",
+    "FILE_TYPE_NOT_ALLOWED": "Bu dosya türüne izin verilmiyor.",
     "MESSAGE_HEADER": "Mesaj Başlığı",
     "MESSAGE_LIST": "Mesaj Listesi",
     "MESSAGE_COMPOSER": "Mesaj Oluşturucu",

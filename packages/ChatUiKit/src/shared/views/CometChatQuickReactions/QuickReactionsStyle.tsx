@@ -18,8 +18,8 @@ export const getQuickReactionStyleLight = (
     emojiContainerStyle: {
       backgroundColor: color.background3,
       borderRadius: spacing.radius.max,
-      height: 40,
-      width: 40,
+      minHeight: 40,
+      minWidth: 40,
       justifyContent: 'center',
       alignItems: 'center',
     }

@@ -14,6 +14,7 @@ interface MessageListItemProps {
   isHighlighted: boolean;
   highlightAnimatedValue: Animated.Value;
   theme: CometChatTheme;
+  themeMode: string; 
   timestamp: number;
   dayHeaderString: string | undefined;
   RenderMessageItem: React.ComponentType<any>;
@@ -33,6 +34,7 @@ const MessageListItemComponent: React.FC<MessageListItemProps> = ({
   isHighlighted,
   highlightAnimatedValue,
   theme,
+  themeMode,
   timestamp,
   dayHeaderString,
   RenderMessageItem,
@@ -99,9 +101,12 @@ const MessageListItemComponent: React.FC<MessageListItemProps> = ({
 export const MessageListItem = memo(MessageListItemComponent, (prevProps, nextProps) => {
   // Return true if props are equal (skip re-render)
   // Return false if props changed (re-render needed)
-  
+
   const itemUnchanged = prevProps.item === nextProps.item;
-  
+
+  // Theme mode change should trigger re-render for theme updates
+  const themeModeUnchanged = prevProps.themeMode === nextProps.themeMode;
+
   const visualsUnchanged =
     prevProps.isHighlighted === nextProps.isHighlighted &&
     prevProps.showSeparator === nextProps.showSeparator &&
@@ -109,19 +114,17 @@ export const MessageListItem = memo(MessageListItemComponent, (prevProps, nextPr
     prevProps.dayHeaderString === nextProps.dayHeaderString &&
     prevProps.showNewMessageIndicator === nextProps.showNewMessageIndicator &&
     prevProps.newMessageIndicatorText === nextProps.newMessageIndicatorText;
-  
+
   const styleUnchanged =
-    prevProps.theme === nextProps.theme &&
     prevProps.staticStyles === nextProps.staticStyles &&
     prevProps.newMessageIndicatorStyle === nextProps.newMessageIndicatorStyle;
-  
+
   const functionsUnchanged =
-    prevProps.RenderMessageItem === nextProps.RenderMessageItem &&
     prevProps.itemSeparator === nextProps.itemSeparator &&
     prevProps.highlightAnimatedValue === nextProps.highlightAnimatedValue &&
     prevProps.onLayout === nextProps.onLayout;
-  
-  return itemUnchanged && visualsUnchanged && styleUnchanged && functionsUnchanged;
+
+  return itemUnchanged && themeModeUnchanged && visualsUnchanged && styleUnchanged && functionsUnchanged;
 });
 
 MessageListItem.displayName = 'MessageListItem';

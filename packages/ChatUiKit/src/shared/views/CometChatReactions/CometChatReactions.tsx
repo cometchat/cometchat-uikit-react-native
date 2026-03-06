@@ -1,5 +1,5 @@
 import React, { JSX, useLayoutEffect } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { PixelRatio, Text, TouchableOpacity, View } from "react-native";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MessageBubbleAlignmentType } from "../../base/Types";
 import { CometChatTheme } from "../../../theme/type";
@@ -129,19 +129,25 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
   useLayoutEffect(() => {
     reactionRef.current = messageObject?.getReactions()!;
     let countEmoji = maxContentWidth ? 0 : 3;
+
+    // Scale width estimates by the system font scale so that when the user
+    // increases the device font/display size the layout calculation still
+    // fits reactions correctly and avoids cropping.
+    const fontScale = PixelRatio.getFontScale();
+
     if (maxContentWidth) {
       let remainingWidth = maxContentWidth;
       for (let i = 0; i < reactionRef.current.length; i++) {
         const currentReactionCount = reactionRef.current[i].getCount();
         let widthToReduce = 0;
         if (currentReactionCount < 10) {
-          widthToReduce = 45;
+          widthToReduce = 45 * fontScale;
         } else if (currentReactionCount < 100) {
-          widthToReduce = 55;
+          widthToReduce = 55 * fontScale;
         } else if (currentReactionCount < 1000) {
-          widthToReduce = 65;
+          widthToReduce = 65 * fontScale;
         }
-        if (remainingWidth > 30 + widthToReduce) {
+        if (remainingWidth > 30 * fontScale + widthToReduce) {
           remainingWidth = remainingWidth - widthToReduce;
           countEmoji++;
           continue;

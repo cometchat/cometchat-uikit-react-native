@@ -450,4 +450,59 @@ export const ModerationBottomView = ({
   );
 };
 
+export const MimeErrorBottomView = ({
+  moderationStyle,
+}: {
+  moderationStyle?: OutgoingBubbleStyles["moderationStyle"];
+}) => {
+  const { t } = useCometChatTranslation();
+  const theme = useTheme();
+
+  const bubblePadH =
+    theme.messageListStyles.outgoingMessageBubbleStyles?.containerStyle?.paddingHorizontal ??
+    theme.spacing?.spacing?.s3 ?? 12;
+
+  const bubblePadB =
+    theme.messageListStyles.outgoingMessageBubbleStyles?.containerStyle?.paddingBottom ?? 0;
+
+  const bubbleRadius =
+    theme.messageListStyles.outgoingMessageBubbleStyles?.containerStyle?.borderRadius ?? 8;
+
+  const themeModerationStyle =
+    theme.messageListStyles.outgoingMessageBubbleStyles.moderationStyle || {};
+
+  const effective = deepMerge(themeModerationStyle, moderationStyle || {});
+
+  return (
+    <View
+      style={[
+        {
+          marginHorizontal: -bubblePadH,
+          marginBottom: -bubblePadB,
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+          borderBottomLeftRadius: bubbleRadius,
+          borderBottomRightRadius: bubbleRadius,
+          flexDirection: "row",
+          alignItems: "center",
+        },
+        effective?.containerStyle,
+      ]}
+    >
+      <Icon
+        name="message-blocked"
+        color={effective?.iconTintColor}
+        containerStyle={{ paddingLeft: 12, paddingRight: 4, alignSelf: "stretch" }}
+      />
+      <Text
+        style={[
+          effective?.textStyle,
+        ]}
+      >
+        {t("FILE_TYPE_NOT_ALLOWED")}
+      </Text>
+    </View>
+  );
+};
+
 

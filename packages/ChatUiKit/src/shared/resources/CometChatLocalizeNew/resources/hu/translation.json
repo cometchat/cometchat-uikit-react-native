@@ -443,6 +443,7 @@
 	"WEDNESDAY": "Szerda",
 	"WOULD__YOU_LIKE_TO_DELETE_THIS_CONVERSATION": "Szeretné törölni ezt a beszélgetést? Ez a beszélgetés törlődik az összes eszközéről.",
 	"WRONG_FILE_TYPE": "Másik típusú fájlt választott ki. Kérjük, válassza ki a megfelelő fájlt.",
+	"FILE_TYPE_NOT_ALLOWED": "Ez a fájltípus nem engedélyezett.",
 	"WRONG_PASSWORD": "Kérjük, adja meg a helyes jelszót, és próbálja újra",
 	"WRONG_TEXT": "Úgy tűnik, valami félrement.",
 	"WRONG_TEXT_TRY_AGAIN": "Kérjük, próbáld meg újra.",

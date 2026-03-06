@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useRef, useCallback } from "react";
+import React, { useLayoutEffect, useState, useRef, useCallback, useMemo } from "react";
 import {
   StyleProp,
   Text,
@@ -63,92 +63,77 @@ export const CometChatTextBubbleText = (
     toggleTextStyle,
   } = props;
 
-  const [formattedText, setFormattedText] = useState<string>(text);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTruncatable, setIsTruncatable] = useState(false);
-
-  // store container width for accurate measurement
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [measurementComplete, setMeasurementComplete] = useState(false);
 
-  /**
-   * measuredCache helps avoid re-measuring if the same text+width was already measured.
-   * Structure: { key: string } where key = `${text}::${width}`
-   */
+  // Refs to track state without causing re-renders
   const measuredCacheRef = useRef<Record<string, boolean>>({});
+  const lastTextRef = useRef<string>(text);
 
-  // Only recompute formattedText when the text or textFormatters actually change.
-  useLayoutEffect(() => {
+  // Compute formatted text synchronously - no state update needed
+  const formattedText = useMemo(() => {
     let finalText = text;
     if (textFormatters && textFormatters.length) {
       for (let i = 0; i < textFormatters.length; i++) {
         finalText = textFormatters[i].getFormattedText(finalText);
       }
     }
+    return finalText as string;
+  }, [text, textFormatters]);
 
-    // If text content actually changed, update formattedText and reset expansion.
-    // Do NOT reset on other prop changes (so adding reaction won't collapse/lose toggle).
-    if (finalText !== formattedText) {
-      setFormattedText(finalText as string);
+  // Reset state only when text actually changes
+  useLayoutEffect(() => {
+    if (lastTextRef.current !== text) {
+      lastTextRef.current = text;
       setIsExpanded(false);
-      // measurement cache can stay, but remove entries for previous text (optional)
-      // measuredCacheRef.current = {}; // not required, we'll rely on keying by text+width
+      setIsTruncatable(false);
+      setMeasurementComplete(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    text /* only textFormatters intentionally omitted from deps if stable; if not stable include it */,
-  ]);
+  }, [text]);
 
-  // handler to capture container width whenever layout changes
-  const onContainerLayout = useCallback(
-    (e: LayoutChangeEvent) => {
-      const w = Math.round(e.nativeEvent.layout.width);
-      if (w && w !== containerWidth) {
-        setContainerWidth(w);
-        // Do NOT clear isExpanded here — measurement may change truncation but we want to
-        // preserve user's expanded/collapsed state unless the text itself changed.
-      }
-    },
-    [containerWidth]
-  );
+  // Handler to capture container width - use functional update to avoid dependency
+  const onContainerLayout = useCallback((e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w > 0) {
+      setContainerWidth(prev => prev === w ? prev : w);
+    }
+  }, []);
 
-  // Called when hidden text is laid out; use it to determine lines count
-  const onMeasuredTextLayout = (e: TextLayoutEvent) => {
-    // We rely on containerWidth + formattedText as the measurement key
+  // Called when hidden text is laid out
+  const onMeasuredTextLayout = useCallback((e: TextLayoutEvent) => {
     const key = `${formattedText}::${containerWidth ?? 0}`;
 
-    // If we've already measured this text at this width, skip
-    if (measuredCacheRef.current[key]) return;
+    // Skip if already measured
+    if (measuredCacheRef.current[key]) {
+      if (!measurementComplete) {
+        setMeasurementComplete(true);
+      }
+      return;
+    }
 
     const lines = e.nativeEvent.lines;
     const isNowTruncatable = !!(lines && lines.length > collapseLines);
 
+    measuredCacheRef.current[key] = true;
     setIsTruncatable(isNowTruncatable);
-    measuredCacheRef.current[key] = isNowTruncatable;
-  };
+    setMeasurementComplete(true);
+  }, [formattedText, containerWidth, collapseLines, measurementComplete]);
 
-  const toggle = () => setIsExpanded((v) => !v);
+  const toggle = useCallback(() => setIsExpanded(v => !v), []);
 
-  /**
-   * Hidden measurement `Text`:
-   * - we render it only when we have containerWidth (so it can measure correctly)
-   * - style uses same font metrics as visible text because it inherits textStyle
-   * - opacity: 0 and position absolute so it does not affect layout
-   *
-   * Important: We key the hidden Text by formattedText + containerWidth so React remounts
-   * it and triggers onTextLayout when either changes.
-   */
   const hiddenTextKey = `${formattedText}::${containerWidth ?? 0}`;
+  const needsMeasurement = containerWidth !== null && !measuredCacheRef.current[hiddenTextKey];
 
   return (
     <View onLayout={onContainerLayout}>
-      {/* Hidden measurement text: only meaningful after we know container width */}
-      {containerWidth ? (
+      {/* Hidden measurement text - only render if we need to measure */}
+      {needsMeasurement && (
         <Text
           key={hiddenTextKey}
-          // make sure the hidden text has same width as container
           style={[
-            // width must be exact to get consistent wrapping on both platforms
-            { position: "absolute", left: 0, top: -10000, width: containerWidth, opacity: 0 },
+            { position: "absolute", left: 0, top: -10000, width: containerWidth!, opacity: 0 },
             textStyle as any,
           ]}
           onTextLayout={onMeasuredTextLayout}
@@ -157,7 +142,7 @@ export const CometChatTextBubbleText = (
         >
           {formattedText}
         </Text>
-      ) : null}
+      )}
 
       {/* Visible text */}
       <Text
@@ -168,8 +153,8 @@ export const CometChatTextBubbleText = (
         {formattedText}
       </Text>
 
-      {/* Toggle (only when truncation is needed) */}
-      {isTruncatable ? (
+      {/* Toggle - only show after measurement is complete to prevent flicker */}
+      {measurementComplete && isTruncatable && (
         <View style={[{ alignItems: "flex-end", marginTop: 6 }, toggleContainerStyle]}>
           <TouchableOpacity onPress={toggle} accessibilityRole='button'>
             <Text style={[{ alignSelf: "flex-end" }, textStyle, toggleTextStyle]}>
@@ -177,7 +162,7 @@ export const CometChatTextBubbleText = (
             </Text>
           </TouchableOpacity>
         </View>
-      ) : null}
+      )}
     </View>
   );
 };

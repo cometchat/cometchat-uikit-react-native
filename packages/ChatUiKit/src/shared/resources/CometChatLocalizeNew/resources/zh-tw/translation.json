@@ -443,6 +443,7 @@
 	"WEDNESDAY": "星期三",
 	"WOULD__YOU_LIKE_TO_DELETE_THIS_CONVERSATION": "您想刪除此對話嗎？此對話將從您的所有設備中刪除。",
 	"WRONG_FILE_TYPE": "您選取了不同類型的檔案。請選擇適當的檔案。",
+	"FILE_TYPE_NOT_ALLOWED": "不允許使用此檔案類型。",
 	"WRONG_PASSWORD": "請輸入正確的密碼，然後再試一次",
 	"WRONG_TEXT": "看起來出了點問題.",
 	"WRONG_TEXT_TRY_AGAIN": "請再試一次.",

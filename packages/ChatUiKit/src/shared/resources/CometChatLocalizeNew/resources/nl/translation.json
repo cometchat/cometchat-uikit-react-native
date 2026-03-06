@@ -30,6 +30,7 @@
     "CONVERSATION_LIST": "Gesprekkenlijst",
     "MESSAGES": "Berichten",
     "WRONG_FILE_TYPE": "Je hebt een ander bestandstype geselecteerd. Kies het juiste bestand.",
+    "FILE_TYPE_NOT_ALLOWED": "Dit bestandstype is niet toegestaan.",
     "MESSAGE_HEADER": "Berichtkop",
     "MESSAGE_LIST": "Berichtenlijst",
     "MESSAGE_COMPOSER": "Berichtschrijver",

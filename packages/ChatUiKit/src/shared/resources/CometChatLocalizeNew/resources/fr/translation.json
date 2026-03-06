@@ -443,6 +443,7 @@
   "WEDNESDAY": "Mercredi",
   "WOULD__YOU_LIKE_TO_DELETE_THIS_CONVERSATION": "Désirez-vous supprimer cette conversation ? Cette conversation sera supprimée de tous vos appareils.",
   "WRONG_FILE_TYPE": "Vous avez sélectionné un autre type de fichier. Choisissez le fichier approprié.",
+  "FILE_TYPE_NOT_ALLOWED": "Ce type de fichier n'est pas autorisé.",
   "WRONG_PASSWORD": "Entrez le mot de passe correct et réessayez",
   "WRONG_TEXT": "On dirait que quelque chose a mal tourné.",
   "WRONG_TEXT_TRY_AGAIN": "Veuillez réessayer.",

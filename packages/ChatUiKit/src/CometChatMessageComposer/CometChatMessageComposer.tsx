@@ -105,6 +105,7 @@ const ActionSheetBoard = (props: any) => {
       ref={sheetRef}
       onClose={onClose}
       isOpen={shouldShow}
+      doNotOccupyEntireHeight
     >
       <CometChatActionSheet actions={options} style={style} />
     </CometChatBottomSheet>
@@ -132,6 +133,7 @@ const RecordAudio = (props: any) => {
       onClose={onClose}
       style={cometChatBottomSheetStyle}
       isOpen={shouldShow}
+      doNotOccupyEntireHeight
     >
       <CometChatMediaRecorder
         onClose={onClose}
@@ -1151,6 +1153,11 @@ export const CometChatMessageComposer = React.forwardRef(
         url: messageInput["uri"],
         sender: loggedInUser.current,
         attachments: [messageInput],
+        entities: {
+          sender: {
+            entity: loggedInUser.current,
+          },
+        },
       });
 
       CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
@@ -1172,18 +1179,34 @@ export const CometChatMessageComposer = React.forwardRef(
             });
           }
           setReplyMessage(null);
+          setWarningMessage("");
           setShowRecordAudio(false);
         })
         .catch((error: any) => {
           setShowRecordAudio(false);
+          if (error?.code === "ERR_PERMISSION_DENIED") {
+            onError && onError(error);
+            // Set error in data.metaData where the message list receipt logic checks
+            const currentData = localMessage.getData() || {};
+            localMessage.setData({ ...currentData, metaData: { error: true } });
+            localMessage.setMetadata({ error: true });
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+              message: localMessage,
+              status: messageStatus.error,
+            });
+            setReplyMessage(null);
+            return;
+          }
           onError && onError(error);
+          // Set error in data.metaData where the message list receipt logic checks
+          const currentData = localMessage.getData() || {};
+          localMessage.setData({ ...currentData, metaData: { error: true } });
           localMessage.setMetadata({ error: true });
           CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
             message: localMessage,
             status: messageStatus.error,
           });
           setReplyMessage(null);
-          // console.log("media message sent error", error); // Removed debug log
         });
     };
 

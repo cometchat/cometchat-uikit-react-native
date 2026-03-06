@@ -443,6 +443,7 @@
 	"WEDNESDAY": "Quarta-feira",
 	"WOULD__YOU_LIKE_TO_DELETE_THIS_CONVERSATION": "Você gostaria de excluir esta conversa? Essa conversa será excluída de todos os seus dispositivos.",
 	"WRONG_FILE_TYPE": "Você selecionou um tipo diferente de arquivo. Escolha o arquivo apropriado.",
+	"FILE_TYPE_NOT_ALLOWED": "Este tipo de arquivo não é permitido.",
 	"WRONG_PASSWORD": "Digite a senha correta e tente novamente",
 	"WRONG_TEXT": "Parece que algo deu errado.",
 	"WRONG_TEXT_TRY_AGAIN": "Por favor, tente novamente.",

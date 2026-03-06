@@ -2,6 +2,7 @@ import React, { JSX, useRef } from "react";
 import {
   ImageSourcePropType,
   ImageStyle,
+  Pressable,
   StyleProp,
   Text,
   TextInput,
@@ -274,60 +275,67 @@ export default function Header({
               <SearchView />
             </View>
           ) : (
-            <View
-              style={[
-                {
-                  backgroundColor: theme.color.background3,
-                  borderRadius: theme.spacing.radius.max,
-                  paddingHorizontal: theme.spacing.spacing.s3,
-                  paddingVertical: theme.spacing.spacing.s3,
-                  marginTop: theme.spacing.spacing.s2,
-                  flexDirection: 'row' as const,
-                  alignItems: 'center' as const,
-                  gap: theme.spacing.spacing.s2,
-                  height: 48,
-                  alignSelf: 'stretch',
-                },
-                searchStyle?.containerStyle,
-              ]}
+          
+            <Pressable
+              onPress={onSearchBarClicked}
+              disabled={!onSearchBarClicked}
             >
-              <Icon
-                name='search-fill'
-                size={searchStyle?.iconStyle?.width || 24}
-                height={searchStyle?.iconStyle?.height || 24}
-                width={searchStyle?.iconStyle?.width || 24}
-                color={searchStyle?.iconStyle?.tintColor || theme.color.iconSecondary}
-                icon={searchStyle?.icon}
-                imageStyle={searchStyle?.iconStyle}
-              />
-              <TextInput
-                ref={inputRef}
-                placeholder={searchPlaceholderText}
-                placeholderTextColor={
-                  searchStyle?.placehodlerTextStyle?.color || theme.color.textTertiary
-                }
-                onChangeText={searchHandler}
-                onFocus={onSearchBarClicked}
-                returnKeyType='search'
-                value={searchInput}
-                onSubmitEditing={() => {
-                  onSubmitEditing?.();
-                  inputRef.current?.focus();
-                }}
-                submitBehavior='submit'
-                numberOfLines={1}
+              <View
+                pointerEvents={onSearchBarClicked ? 'none' : 'auto'}
                 style={[
                   {
-                    flex: 1,
-                    color: theme.color.textPrimary,
-                    fontSize: 16,
-                    paddingVertical: 4, 
-                    ...theme.typography.heading4.regular,
+                    backgroundColor: theme.color.background3,
+                    borderRadius: theme.spacing.radius.max,
+                    paddingHorizontal: theme.spacing.spacing.s3,
+                    paddingVertical: theme.spacing.spacing.s3,
+                    marginTop: theme.spacing.spacing.s2,
+                    flexDirection: 'row' as const,
+                    alignItems: 'center' as const,
+                    gap: theme.spacing.spacing.s2,
+                    height: 48,
+                    alignSelf: 'stretch',
                   },
-                  searchStyle?.textStyle,
+                  searchStyle?.containerStyle,
                 ]}
-              />
-            </View>
+              >
+                <Icon
+                  name='search-fill'
+                  size={searchStyle?.iconStyle?.width || 24}
+                  height={searchStyle?.iconStyle?.height || 24}
+                  width={searchStyle?.iconStyle?.width || 24}
+                  color={searchStyle?.iconStyle?.tintColor || theme.color.iconSecondary}
+                  icon={searchStyle?.icon}
+                  imageStyle={searchStyle?.iconStyle}
+                />
+                <TextInput
+                  ref={inputRef}
+                  placeholder={searchPlaceholderText}
+                  placeholderTextColor={
+                    searchStyle?.placehodlerTextStyle?.color || theme.color.textTertiary
+                  }
+                  onChangeText={searchHandler}
+                  returnKeyType='search'
+                  value={searchInput}
+                  editable={!onSearchBarClicked}
+                  onSubmitEditing={() => {
+                    onSubmitEditing?.();
+                    inputRef.current?.focus();
+                  }}
+                  submitBehavior='submit'
+                  numberOfLines={1}
+                  style={[
+                    {
+                      flex: 1,
+                      color: theme.color.textPrimary,
+                      fontSize: 16,
+                      paddingVertical: 4, 
+                      ...theme.typography.heading4.regular,
+                    },
+                    searchStyle?.textStyle,
+                  ]}
+                />
+              </View>
+            </Pressable>
           )}
         </View>
       )}

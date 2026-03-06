@@ -24,6 +24,7 @@
 	"CHATS": "Charlas",
 	"SEARCH_EMOJI": "Buscar emojis",
 	"WRONG_FILE_TYPE": "Has seleccionado otro tipo de archivo. Seleccione el archivo adecuado.",
+	"FILE_TYPE_NOT_ALLOWED": "Este tipo de archivo no está permitido.",
 	"WOULD__YOU_LIKE_TO_DELETE_THIS_CONVERSATION": "¿Quieres eliminar esta conversación? Esta conversación se eliminará de todos tus dispositivos.",
 	"GROUPS": "Grupos",
 	"SHARED": "Compartido",

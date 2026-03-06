@@ -90,10 +90,10 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
       <FlatList
         key={"list"}
         keyExtractor={(item) => item.id}
-        style={{ flex: 1 }}
         data={actionList}
         numColumns={1}
         renderItem={_render}
+        contentContainerStyle={{ paddingBottom: 24 }}
       />
     );
   };

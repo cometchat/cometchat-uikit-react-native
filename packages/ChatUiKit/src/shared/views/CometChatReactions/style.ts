@@ -17,15 +17,19 @@ export const getReactionsStyleLight = (
         flexDirection: "row",
         alignItems: "center",
         gap: 2,
+        // Allow reactions row to wrap when system font size causes overflow
+        flexWrap: "wrap",
       },
       emojiStyle: {
         containerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          minHeight: 24,
           backgroundColor: color.background1,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -37,10 +41,13 @@ export const getReactionsStyleLight = (
         containerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.extendedPrimary100,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -52,10 +59,13 @@ export const getReactionsStyleLight = (
         containerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.background1,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -64,10 +74,13 @@ export const getReactionsStyleLight = (
         activeContainerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.extendedPrimary100,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -81,15 +94,20 @@ export const getReactionsStyleLight = (
         flexDirection: "row",
         alignItems: "center",
         gap: 2,
+        // Allow reactions row to wrap when system font size causes overflow
+        flexWrap: "wrap",
       },
       emojiStyle: {
         containerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.background1,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -101,10 +119,13 @@ export const getReactionsStyleLight = (
         containerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.extendedPrimary100,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -116,10 +137,13 @@ export const getReactionsStyleLight = (
         containerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.background1,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
@@ -128,10 +152,13 @@ export const getReactionsStyleLight = (
         activeContainerStyle: {
           paddingVertical: spacing.padding.p0_5,
           paddingHorizontal: spacing.padding.p2,
-          height: 24,
+          // Use minHeight instead of fixed height so the container grows
+          // when system font/display size is increased (accessibility)
+          minHeight: 24,
           backgroundColor: color.extendedPrimary100,
           borderRadius: 20,
           flexDirection: "row",
+          alignItems: "center",
           gap: 4,
           borderWidth: 1,
           borderColor: color.borderDark,
