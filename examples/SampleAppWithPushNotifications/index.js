@@ -146,6 +146,20 @@ if (Platform.OS === 'android') {
         }
         return;
       } else {
+        // Handle badge count from push notification
+        const unreadCount = data?.unreadMessageCount;
+        if (unreadCount !== undefined && unreadCount !== null) {
+          const count = parseInt(unreadCount, 10);
+          if (!isNaN(count) && count >= 0) {
+            try {
+              await notifee.setBadgeCount(count);
+            } catch (error) {
+              console.error('Error setting badge:', error);
+            }
+          }
+        } else {
+          console.log('No unreadMessageCount in payload - check dashboard settings');
+        }
         await displayLocalNotification(remoteMessage);
       }
     } catch (error) {

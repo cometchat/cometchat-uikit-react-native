@@ -119,6 +119,17 @@ const App = (): React.ReactElement => {
         const loggedInUser = CometChatUIKit.loggedInUser;
         if (loggedInUser) {
           setIsLoggedIn(true);
+        } else {
+          // Clear badge on fresh install or when no user is logged in
+          try {
+            if (Platform.OS === 'ios') {
+              PushNotificationIOS.setApplicationIconBadgeNumber(0);
+            } else if (Platform.OS === 'android') {
+              await notifee.cancelAllNotifications();
+            }
+          } catch (error) {
+            console.error('Error :', error);
+          }
         }
 
       } catch (error) {
@@ -215,8 +226,11 @@ const App = (): React.ReactElement => {
     }
     const handleAppStateChange = async (nextState: AppStateStatus) => {
       if (nextState === 'active') {
-        if (Platform.OS === 'android') {
-          // Clear all notifications when the app resumes.
+        // Clear badge only for iOS when app becomes active
+        if (Platform.OS === 'ios') {
+          PushNotificationIOS.setApplicationIconBadgeNumber(0);
+        } else if (Platform.OS === 'android') {
+          // Clear all notifications when app becomes active (clears badge automatically)
           await notifee.cancelAllNotifications();
         }
         try {
@@ -252,6 +266,12 @@ const App = (): React.ReactElement => {
         logoutSuccess: () => {
           setUserLoggedIn(false);
           setIsTokenRegistered(false);
+          // Clear badge on logout
+          if (Platform.OS === 'ios') {
+            PushNotificationIOS.setApplicationIconBadgeNumber(0);
+          } else if (Platform.OS === 'android') {
+            notifee.cancelAllNotifications();
+          }
         },
         logoutFailure: (e: CometChat.CometChatException) => {
           console.log('LoginListener :: logoutFailure', e.message);
@@ -357,6 +377,21 @@ const App = (): React.ReactElement => {
     if (Platform.OS === 'android') {
       // Subscribe to FCM messages.
       const unsubscribe = messaging().onMessage(async remoteMessage => {
+        // Handle badge count from push notification
+        const unreadCount = remoteMessage.data?.unreadMessageCount;
+        if (unreadCount !== undefined && unreadCount !== null) {
+          const count = parseInt(unreadCount as string, 10);
+          if (!isNaN(count) && count >= 0) {
+            try {
+              await notifee.setBadgeCount(count);
+            } catch (error) {
+              console.error('Error setting badge:', error);
+            }
+          }
+        } else {
+          console.log('No unreadMessageCount in payload - check dashboard settings');
+        }
+        // Display local notification
         try {
           await displayLocalNotification(remoteMessage, activeChat);
         } catch (error) {

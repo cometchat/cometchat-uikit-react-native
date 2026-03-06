@@ -41,6 +41,7 @@ interface NotifeeData {
 /**
  * Display a local notification (Android) using Notifee.
  * This is triggered when the app is in the foreground.
+ * Uses notification grouping with summary to show unread count.
  */
 export async function displayLocalNotification(
   remoteMessage: any,
@@ -99,8 +100,25 @@ export async function displayLocalNotification(
       ...(parentId && { parentId }),
     };
 
+    // Get badge count from payload
+    const unreadCount = remoteMessage.data?.unreadMessageCount;
+    const badgeCount = unreadCount ? parseInt(unreadCount, 10) : undefined;
+
+    // Add unread count to title if more than 1
+    const displayTitle = badgeCount && badgeCount > 1
+      ? `${title || 'New Message'} (${badgeCount} unread)`
+      : title || 'New Message';
+
+    // Set badge count directly from backend unreadMessageCount
+    if (badgeCount && badgeCount > 0) {
+      await notifee.setBadgeCount(badgeCount);
+    }
+
+    // Use fixed notification ID so Samsung doesn't add badge counts from multiple notifications
+    // This ensures badge shows exact unreadMessageCount from backend
     await notifee.displayNotification({
-      title: title || 'New Message',
+      id: 'chat-notification',
+      title: displayTitle,
       body: body || 'You received a new message.',
       android: {
         channelId,
@@ -111,6 +129,7 @@ export async function displayLocalNotification(
           senderAvatar ||
           'https://cdn-icons-png.flaticon.com/512/149/149071.png',
         importance: AndroidImportance.HIGH,
+        badgeCount: badgeCount,
         pressAction: {
           id: 'default',
         },
@@ -212,9 +231,20 @@ export async function checkInitialNotificationIOS() {
  * navigate accordingly. (Foreground or background scenario)
  */
 export async function onRemoteNotificationIOS(notification: any) {
-  const isClicked = notification.getData().userInteraction === 1;
+  // Handle badge count from push notification
+  const data = notification.getData();
+  const unreadCount = data?.unreadMessageCount;
+  if (unreadCount !== undefined && unreadCount !== null) {
+    const count = parseInt(unreadCount, 10);
+    if (!isNaN(count) && count >= 0) {
+      PushNotificationIOS.setApplicationIconBadgeNumber(count);
+    }
+  } else {
+    console.log('No unreadMessageCount in payload - check dashboard settings');
+  }
+
+  const isClicked = data?.userInteraction === 1;
   if (isClicked) {
-    const data = notification.getData();
     if (data && data.type === 'chat') {
       // Extract parent ID for agentic messages
       let parentId: string | undefined;
