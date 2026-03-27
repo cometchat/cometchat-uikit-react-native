@@ -10,7 +10,7 @@ const SvgComponent = ({ height, width, color }: SvgProps) => (
     </G>
     <Defs>
       <ClipPath id='prefix__a'>
-        <Path fill='color' d='M.467.967h17.067v17.067H.467z' />
+        <Path fill='#fff' d='M.467.967h17.067v17.067H.467z' />
       </ClipPath>
     </Defs>
   </Svg>

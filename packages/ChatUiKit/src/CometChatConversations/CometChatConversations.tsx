@@ -11,7 +11,7 @@
  */
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useCallback, useMemo } from "react";
-import { Text, View, GestureResponderEvent } from "react-native";
+import { Text, View, GestureResponderEvent, Platform, StyleSheet } from "react-native";
 import {
   ChatConfigurator,
   CometChatAvatar,
@@ -41,6 +41,8 @@ import {
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { Icon } from "../shared/icons/Icon";
 import { CommonUtils } from "../shared/utils/CommonUtils";
+import { stripMarkdown, preparePreviewText } from "../shared/utils/MarkdownUtils";
+import { CometChatRichTextFormatter } from "../shared/formatters/CometChatRichTextFormatter";
 import { getMessagePreviewInternal } from "../shared/utils/MessageUtils";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
 import { CometChatConfirmDialog } from "../shared/views/CometChatConfirmDialog";
@@ -67,6 +69,9 @@ const userListenerId = "chatlist_user_" + new Date().getTime();
 const groupListenerId = "chatlist_group_" + new Date().getTime();
 const messageListenerId = "chatlist_message_" + new Date().getTime();
 const callListenerId = "call_" + new Date().getTime();
+
+/** Module-level rich text formatter — reused across renders (no GC churn) */
+const conversationRichTextFormatter = new CometChatRichTextFormatter();
 
 /**
  * Interface defining props for the CometChatConversations component.
@@ -322,6 +327,22 @@ export const CometChatConversations = (props: ConversationInterface) => {
   // Merge theme styles with provided style overrides.
   const theme = useTheme();
   const { t } = useCometChatTranslation()
+
+  // Configure conversation subtitle formatter with theme-aware inline code colors
+  useMemo(() => {
+    conversationRichTextFormatter.setStyle({
+      inlineCodeStyle: {
+        color: theme.color.primary as string,
+      },
+      inlineCodeContainerStyle: {
+        backgroundColor: theme.color.background3 as string,
+        borderRadius: 2,
+        paddingHorizontal: 2,
+        paddingVertical: 0,
+      },
+    });
+  }, [theme]);
+
   const mergedStyles = useMemo(() => {
     const baseStyles = deepMerge(theme.conversationStyles, style ?? {});
     // Add search styling for CometChatList component
@@ -815,19 +836,73 @@ export const CometChatConversations = (props: ConversationInterface) => {
     let messageText: string | JSX.Element = "";
     messageText = ChatConfigurator.getDataSource().getLastConversationMessage(conversations, theme);
 
-    if (lastMessage && typeof messageText === "string") {
-      messageText = getFormattedText(lastMessage, messageText?.trim());
-    }
+    // Detect block-level elements in text messages before stripMarkdown flattens them
+    let blockType: 'blockquote' | 'codeBlock' | 'list' | null = null;
+    let codeBlockLine = '';
+    let listPrefix = '';
     if (
       lastMessage instanceof CometChat.TextMessage &&
-      lastMessage.getCategory() === "message" &&
+      lastMessage.getCategory() === MessageCategoryConstants.message &&
+      typeof messageText === "string"
+    ) {
+      const rawText = messageText;
+      const preview = preparePreviewText(rawText);
+      if (preview.isBlockquote) {
+        blockType = 'blockquote';
+        // Run formatter on content only (no `> ` prefix) so it won't re-parse as block
+        messageText = getFormattedText(lastMessage, preview.text.trim());
+      } else if (preview.codeBlockFirstLine !== null) {
+        blockType = 'codeBlock';
+        codeBlockLine = preview.codeBlockFirstLine;
+      } else if (preview.listPrefix) {
+        blockType = 'list';
+        listPrefix = preview.listPrefix;
+        messageText = getFormattedText(lastMessage, preview.text.trim());
+      } else {
+        messageText = getFormattedText(lastMessage, preview.text.trim());
+      }
+    } else if (lastMessage && typeof messageText === "string") {
+      messageText = getFormattedText(lastMessage, messageText?.trim());
+    }
+
+    if (
+      lastMessage instanceof CometChat.TextMessage &&
+      lastMessage.getCategory() === MessageCategoryConstants.message &&
       (() => {
-        // Guard against undefined text or non-string values.
         const text = typeof lastMessage.getText === "function" ? lastMessage.getText() : undefined;
         return typeof text === "string" && text.slice(0, 50).match(/https?:\/\//);
       })()
     ) {
       messageText = getMessagePreviewInternal("link-fill", t("LINK"), { theme });
+    } else if (blockType === 'codeBlock') {
+      messageText = (
+        <View style={conversationPreviewStyles.codeBlockRow}>
+          <View style={[conversationPreviewStyles.codeBlockBadge, { backgroundColor: theme?.color?.background2 as string || '#FAFAFA', borderColor: theme?.color?.borderDefault as string || '#E8E8E8' }]}>
+            <Text numberOfLines={1} ellipsizeMode='tail' style={[conversationPreviewStyles.codeBlockText, { color: theme?.color?.textPrimary as string || '#141414' }]}>
+              {codeBlockLine + '..'}
+            </Text>
+          </View>
+        </View>
+      );
+    } else if (blockType === 'blockquote') {
+      messageText = (
+        <View style={conversationPreviewStyles.blockquoteRow}>
+          <View style={[conversationPreviewStyles.blockquoteBar, { backgroundColor: theme?.color?.primary as string }]} />
+          <Text numberOfLines={1} ellipsizeMode='tail' style={[mergedStyles.itemStyle.subtitleStyle, conversationPreviewStyles.blockquoteText]}>
+            {messageText}
+          </Text>
+        </View>
+      );
+    } else if (blockType === 'list') {
+      messageText = (
+        <Text
+          style={[mergedStyles.itemStyle.subtitleStyle, { flexShrink: 2 }]}
+          numberOfLines={1}
+          ellipsizeMode='tail'
+        >
+          {listPrefix}{messageText}{'...'}
+        </Text>
+      );
     } else if (messageText) {
       messageText = (
         <Text
@@ -874,11 +949,24 @@ export const CometChatConversations = (props: ConversationInterface) => {
    * @returns The formatted text.
    */
   function getFormattedText(message: CometChat.BaseMessage, subtitle: string) {
-    let messageTextTmp: string | JSX.Element = subtitle;
+    // For text messages, use the rich text formatter to preserve inline styles
+    // (bold, italic, underline, strikethrough, inline code). The subtitle has
+    // already been processed by preparePreviewText which strips block-level
+    // markers, so the formatter will only encounter inline formatting.
+    let messageTextTmp: string | JSX.Element;
+    if (
+      message instanceof CometChat.TextMessage &&
+      message.getCategory() === MessageCategoryConstants.message
+    ) {
+      const formatted = conversationRichTextFormatter.getFormattedText(subtitle);
+      messageTextTmp = formatted ?? subtitle;
+    } else {
+      // Non-text messages: strip markdown as before
+      messageTextTmp = stripMarkdown(subtitle);
+    }
     let allFormatters = [...(textFormatters || [])];
-    // Detect presence of @all alias token in raw string
-    const containsAllAlias =
-      typeof messageTextTmp === "string" && /<@all:(.*?)>/.test(messageTextTmp);
+    // Detect presence of @all alias token in raw subtitle string (before formatting)
+    const containsAllAlias = /<@all:(.*?)>/.test(subtitle);
 
     if (message.getMentionedUsers().length || containsAllAlias) {
       let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
@@ -890,7 +978,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
       // Inject alias suggestion item if needed so formatter can render styled @All
       if (containsAllAlias) {
-        const match = (messageTextTmp as string).match(/<@all:(.*?)>/);
+        const match = subtitle.match(/<@all:(.*?)>/);
         const aliasLabel = match && match[1] ? match[1] : "all";
         let existing = mentionsFormatter.getSuggestionItems();
         const underlyingText = `<@all:${aliasLabel}>`;
@@ -913,7 +1001,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     if (
       message instanceof CometChat.TextMessage &&
-      message.getCategory() === "message" &&
+      message.getCategory() === MessageCategoryConstants.message &&
       (() => {
         const text = typeof message.getText === "function" ? message.getText() : undefined;
         return typeof text === "string" && text.slice(0, 50).match(/https?:\/\//);
@@ -1765,3 +1853,44 @@ export const CometChatConversations = (props: ConversationInterface) => {
     </View>
   );
 };
+
+// Static styles for conversation preview block-level elements (code block, blockquote, list).
+// Theme-dependent values (colors) are applied inline via style array merging.
+const conversationPreviewStyles = StyleSheet.create({
+  codeBlockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 2,
+  },
+  codeBlockBadge: {
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexShrink: 1,
+  },
+  codeBlockText: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 11,
+  },
+  blockquoteRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(104, 81, 214, 0.08)',
+    borderRadius: 6,
+    flexShrink: 2,
+    minHeight: 22,
+    paddingVertical: 1,
+  },
+  blockquoteBar: {
+    width: 3,
+    borderRadius: 1.5,
+    marginVertical: 3,
+    marginLeft: 4,
+  },
+  blockquoteText: {
+    flex: 1,
+    paddingHorizontal: 5,
+    lineHeight: 18,
+  },
+});

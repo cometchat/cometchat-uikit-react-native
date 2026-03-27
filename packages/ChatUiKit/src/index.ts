@@ -3,6 +3,7 @@
 import {
   ActionItemInterface,
   AdditionalParams,
+  AudioWaveformVisualizerProps,
   //Add Call events here already exposed in Calls
   //Framework
   ChatConfigurator,
@@ -27,6 +28,9 @@ import {
   CometChatGroupsEvents,
   CometChatImageBubble,
   CometChatImageBubbleInterface,
+  CometChatInlineAudioRecorder,
+  CometChatInlineAudioRecorderProps,
+  CometChatInlineAudioRecorderStyle,
   CometChatListActionsInterface,
   //View
   CometChatListItem,
@@ -62,6 +66,8 @@ import {
   CometChatUIKitHelper,
   CometChatUiKitConstants,
   CometChatUrlsFormatter,
+  CometChatRichTextFormatter,
+  RichTextStyle,
   CometChatVideoBubble,
   CometChatVideoBubbleInterface,
   ConversationType,
@@ -74,9 +80,12 @@ import {
   MessageEvents,
   MessageListAlignmentType,
   MessageTimeAlignmentType,
+  RecorderState,
   SelectionMode,
   SuggestionItem,
   UIKitSettings,
+  UseAudioRecorderReturn,
+  WaveformStyle,
   messageStatus,
   Icon,
   MenuItemInterface,
@@ -119,6 +128,12 @@ import {
   CometChatMessageComposer,
   CometChatMessageComposerInterface,
 } from "./CometChatMessageComposer";
+
+import {
+  CometChatCompactMessageComposer,
+  CometChatCompactMessageComposerInterface,
+  SingleLineMessageComposerStyleInterface,
+} from "./CometChatCompactMessageComposer";
 
 import { CometChatAIAssistantChatHistory } from "./CometChatAIAssistantChatHistory";
 
@@ -210,6 +225,7 @@ export {
   CometChatAIAssistantChatHistory,
   CometChatImageBubble,
   CometChatIncomingCall,
+  CometChatInlineAudioRecorder,
   //
   //
   CometChatListItem,
@@ -219,6 +235,7 @@ export {
   /* Text Formatters */
   CometChatMentionsFormatter,
   CometChatMessageComposer,
+  CometChatCompactMessageComposer,
   CometChatMessageInformation,
   CometChatMessageList,
   CometChatMessagePreview,
@@ -245,6 +262,8 @@ export {
   CometChatUIKitHelper,
   CometChatUiKitConstants,
   CometChatUrlsFormatter,
+  CometChatRichTextFormatter,
+  RichTextStyle,
   CometChatUsers,
   CometChatVideoBubble,
   DataSourceDecorator,
@@ -305,6 +324,8 @@ export type {
   CometChatGroupMembersInterface,
   CometChatFileBubbleInterface,
   CometChatImageBubbleInterface,
+  CometChatInlineAudioRecorderProps,
+  CometChatInlineAudioRecorderStyle,
   CometChatListActionsInterface,
   CometChatListItemInterface,
   CometChatListStylesInterface,
@@ -313,10 +334,12 @@ export type {
   CometChatMessageListActionsInterface,
   CometChatMessageListInterface,
   CometChatMessageComposerInterface,
-  CometChatMessageListProps,
+  CometChatCompactMessageComposerInterface,
+  SingleLineMessageComposerStyleInterface,
   CometChatMessageOption,
   ActionItemInterface,
   AdditionalParams,
+  AudioWaveformVisualizerProps,
   SelectionMode,
   CometChatReactionsInterface,
   CometChatReactionListInterface,
@@ -340,12 +363,36 @@ export type {
   ConversationInterface,
   LinkPreviewBubbleInterface,
   PollsConfigurationInterface,
+  RecorderState,
   StickerConfigurationInterface,
   ConversationType,
   DataSource,
   MessageListAlignmentType,
   MessageTimeAlignmentType,
   MessageBubbleAlignmentType,
+  UseAudioRecorderReturn,
+  WaveformStyle,
   CometChatTheme,
   MenuItemInterface
 };
+
+// Rich Text Editor
+export { default as RichTextEditor } from './CometChatRichTextEditor';
+export type {
+  RichTextEditorRef,
+  ContentChangeEvent,
+  ActiveStylesState,
+  RichTextEditorProps,
+  RichTextEditorPropsExtended,
+} from './CometChatRichTextEditor';
+export type {
+  Selection,
+  StyleRange,
+  Block,
+  BlockType,
+  TextAlignment,
+  EditorVariant,
+  ToolbarOption,
+  SelectionChangeEvent,
+  RichTextEditorRef as RichTextEditorRefType,
+} from './CometChatRichTextEditor/types';

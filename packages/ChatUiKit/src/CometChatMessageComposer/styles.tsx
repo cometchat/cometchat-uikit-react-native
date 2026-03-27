@@ -7,7 +7,6 @@ import {
   ViewStyle,
 } from "react-native";
 import { ActionSheetStyle, CometChatTheme } from "../theme/type";
-import { Icon } from "../shared/icons/Icon";
 import { DeepPartial } from "../shared/helper/types";
 import { JSX } from "react";
 

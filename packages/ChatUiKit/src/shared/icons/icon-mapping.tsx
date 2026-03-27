@@ -1,3 +1,5 @@
+import Code from "./components/code";
+import CodeBlocks from "./components/code-blocks";
 import AccountCircle from "./components/account-circle";
 import AccountCircleFill from "./components/account-circle-fill";
 import Activity from "./components/activity";
@@ -118,6 +120,13 @@ import FilterListFill from "./components/filter-list-fill";
 import FilterListOff from "./components/filter-list-off";
 import FilterListOffFill from "./components/filter-list-off-fill";
 import Flags from "./components/flags";
+import FormatBold from "./components/format-bold";
+import FormatItalic from "./components/format-italic";
+import FormatUnderlined from "./components/format-underlined";
+import FormatStrikethrough from "./components/format-strikethrough";
+import FormatListNumbered from "./components/format-list-numbered";
+import FormatListBulleted from "./components/format-list-bulleted";
+import FormatQuote from "./components/format-quote";
 import FlipCameraIos from "./components/flip-camera-ios";
 import FlipCameraIosFill from "./components/flip-camera-ios-fill";
 import Food from "./components/food-&-drink";
@@ -435,6 +444,15 @@ export const ICONS = {
   "filter-list-off-fill": FilterListOffFill,
   "flip-camera-ios": FlipCameraIos,
   "flip-camera-ios-fill": FlipCameraIosFill,
+  "format-bold": FormatBold,
+  "format-italic": FormatItalic,
+  "format-underlined": FormatUnderlined,
+  "format-strikethrough": FormatStrikethrough,
+  "format-list-numbered": FormatListNumbered,
+  "format-list-bulleted": FormatListBulleted,
+  "format-quote": FormatQuote,
+  code: Code,
+  "code-blocks": CodeBlocks,
   forward: Forward,
   "forward-fill": ForwardFill,
   gif: Gif,

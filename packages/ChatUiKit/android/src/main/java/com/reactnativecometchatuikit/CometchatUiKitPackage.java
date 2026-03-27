@@ -32,6 +32,9 @@ public class CometchatUiKitPackage implements ReactPackage {
     @NonNull
     @Override
     public List<ViewManager> createViewManagers(@NonNull ReactApplicationContext reactContext) {
-        return Arrays.<ViewManager>asList(new ReactVideoViewManager());
+        return Arrays.<ViewManager>asList(
+            new ReactVideoViewManager(),
+            new RichTextEditorViewManager()
+        );
     }
 }

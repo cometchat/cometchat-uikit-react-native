@@ -1,14 +1,17 @@
 import React, { JSX } from "react";
-import { View, Text, TouchableOpacity, Image, StyleProp, ViewStyle } from "react-native";
+import { View, Text, TouchableOpacity, StyleProp, ViewStyle, Platform, StyleSheet } from "react-native";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import closeIcon from "./resources/close.png";
 import { useTheme } from "../../../theme";
 import { Styles } from "./style";
 import { getCometChatTranslation } from "../../resources/CometChatLocalizeNew/LocalizationManager";
 import { Icon } from "../../icons/Icon";
-import { CometChatUIKit } from "../../CometChatUiKit";
+import { stripMarkdown, preparePreviewText } from "../MarkdownUtils";
+import { CometChatRichTextFormatter } from "../../formatters/CometChatRichTextFormatter";
 
 const t = getCometChatTranslation();
+
+/** Module-level formatter instance — reused across renders (SRP, no GC churn) */
+const previewFormatter = new CometChatRichTextFormatter();
 
 /**
  * Props for CometChatMessagePreview component
@@ -83,7 +86,7 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
   };
 
   // Helper function to get message preview subtitle/content
-  const getMessagePreviewSubtitle = (): string => {
+  const getMessagePreviewSubtitle = (): string | JSX.Element => {
     if (messagePreviewSubtitle) return messagePreviewSubtitle;
     
     if (!message) return "";
@@ -124,8 +127,37 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
               console.warn("Error formatting mentions in preview:", e);
             }
 
-            // Truncate long text messages
-            return text.length > 50 ? `${text.substring(0, 50)}...` : text;
+            // Prepare text for preview: collapse code blocks, strip block markers, flatten to single line
+            const previewResult = preparePreviewText(text);
+            const cleanText = previewResult.text;
+            const formatted = previewFormatter.getFormattedText(cleanText || null);
+
+            // Resolve subtitle content
+            let subtitleContent: string | JSX.Element;
+            if (formatted && typeof formatted !== 'string') {
+              subtitleContent = formatted;
+            } else {
+              subtitleContent = (formatted as string) || stripMarkdown(text);
+            }
+
+            // For code blocks (first rich block): render compact code block container
+            if (previewResult.codeBlockFirstLine !== null) {
+              isCodeBlockPreview = true;
+              codeBlockLine = previewResult.codeBlockFirstLine;
+            }
+
+            // For blockquotes: set flag for render section to add container styling
+            if (previewResult.isBlockquote) {
+              isBlockquotePreview = true;
+            }
+
+            // For list items: set flag so render shows prefix + content with ellipsis
+            if (previewResult.listPrefix) {
+              isListPreview = true;
+              listPrefix = previewResult.listPrefix;
+            }
+
+            return subtitleContent;
           
           case CometChat.MESSAGE_TYPE.IMAGE:
             const imageMessage = message as CometChat.MediaMessage;
@@ -258,13 +290,27 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
     return null;
   };
 
-  let messageText = getMessagePreviewSubtitle();
+  // Mutable flags set by getMessagePreviewSubtitle when block types are detected
+  let isBlockquotePreview = false;
+  let isCodeBlockPreview = false;
+  let isListPreview = false;
+  let listPrefix = '';
+  let codeBlockLine = '';
+
+  let messageText: string | JSX.Element = getMessagePreviewSubtitle();
   let title = getMessagePreviewTitle();
   let autoIcon = getAutoIcon();
 
   const shouldShowClose = showCloseIcon || onCloseClick;
   const containerStyle = style ? [Styles(finalTheme).editPreviewContainerStyle, style] : Styles(finalTheme).editPreviewContainerStyle;
   const iconToShow = subtitleIcon || autoIcon;
+
+  // Determine if subtitle is rich (JSX) or plain string
+  const isRichSubtitle = typeof messageText !== 'string';
+  // Detect if the formatter returned a View root (block-level content that
+  // slipped through preparePreviewText). View can't nest inside Text, so we
+  // render it in a height-constrained View wrapper instead.
+  const isViewRoot = isRichSubtitle && React.isValidElement(messageText) && (messageText as React.ReactElement<any>).type === View;
 
   return (
     <View style={containerStyle}>
@@ -280,14 +326,89 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
           </TouchableOpacity>
         )}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: finalTheme?.spacing?.padding?.p1}}>
+      <View style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: finalTheme?.spacing?.padding?.p1 }]}>
         {iconToShow && <View>{iconToShow}</View>}
-        <Text numberOfLines={1} ellipsizeMode='tail' style={[Styles(finalTheme).previewSubTitleStyle, { flex: 1 }]}>
-          {messageText}
-        </Text>
+        {isCodeBlockPreview ? (
+          <View style={previewBlockStyles.codeBlockRow}>
+            <View style={[previewBlockStyles.codeBlockBadge, { backgroundColor: finalTheme?.color?.background2 as string || '#FAFAFA', borderColor: finalTheme?.color?.borderDefault as string || '#E8E8E8' }]}>
+              <Text numberOfLines={1} ellipsizeMode='tail' style={[previewBlockStyles.codeBlockText, { color: finalTheme?.color?.textPrimary as string || '#141414' }]}>
+                {codeBlockLine + '..'}
+              </Text>
+            </View>
+          </View>
+        ) : isBlockquotePreview ? (
+          <View style={previewBlockStyles.blockquoteRow}>
+            <View style={[previewBlockStyles.blockquoteBar, { backgroundColor: finalTheme.color.primaryColor as string }]} />
+            <Text numberOfLines={1} ellipsizeMode='tail' style={[Styles(finalTheme).previewSubTitleStyle, previewBlockStyles.blockquoteText]}>
+              {messageText}
+            </Text>
+          </View>
+        ) : isListPreview ? (
+          <Text numberOfLines={1} ellipsizeMode='tail' style={[Styles(finalTheme).previewSubTitleStyle, previewBlockStyles.flexOne]}>
+            {listPrefix}{messageText}{'...'}
+          </Text>
+        ) : isViewRoot ? (
+          <View style={previewBlockStyles.viewRootContainer}>
+            {messageText}
+          </View>
+        ) : (
+          <Text numberOfLines={1} ellipsizeMode='tail' style={[Styles(finalTheme).previewSubTitleStyle, previewBlockStyles.flexOne]}>
+            {messageText}
+          </Text>
+        )}
       </View>
     </View>
   );
 };
 
 export { CometChatMessagePreview };
+
+// Static styles for message preview block-level elements.
+// Theme-dependent values (colors) are applied inline via style array merging.
+const previewBlockStyles = StyleSheet.create({
+  codeBlockRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  codeBlockBadge: {
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    flexShrink: 1,
+  },
+  codeBlockText: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 12,
+  },
+  blockquoteRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(104, 81, 214, 0.08)',
+    borderRadius: 8,
+    minHeight: 26,
+    paddingVertical: 2,
+  },
+  blockquoteBar: {
+    width: 4,
+    borderRadius: 2,
+    marginVertical: 4,
+    marginLeft: 4,
+  },
+  blockquoteText: {
+    flex: 1,
+    marginBottom: 0,
+    paddingHorizontal: 6,
+    lineHeight: 22,
+  },
+  flexOne: {
+    flex: 1,
+  },
+  viewRootContainer: {
+    flex: 1,
+    overflow: 'hidden',
+    maxHeight: 28,
+  },
+});

@@ -32,6 +32,12 @@ static NSString *const FIELD_SIZE = @"size";
 @property (nonatomic, strong) AVAudioPlayer *player;
 @property (nonatomic, strong) UIDocumentInteractionController *documentController;
 
+// Segment-based recording properties
+@property (nonatomic, strong) NSMutableArray<NSURL *> *segmentPaths;
+@property (nonatomic, assign) NSInteger currentSegmentIndex;
+@property (nonatomic, strong) AVQueuePlayer *queuePlayer;
+@property (nonatomic, strong) id playbackObserver;
+
 @end
 
 @implementation CometChatFileManager {
@@ -49,7 +55,7 @@ static NSString *const FIELD_SIZE = @"size";
 }
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"opening", @"downloading", @"status", @"downloadComplete"];
+    return @[@"opening", @"downloading", @"status", @"downloadComplete", @"audioAmplitude"];
 }
 
 RCT_EXPORT_MODULE(FileManager)
@@ -423,6 +429,7 @@ RCT_EXPORT_METHOD(pauseRecording:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
     if (self.audioRecorder.isRecording) {
         [self.audioRecorder pause];
+        [self stopAmplitudeTimer];
         resolve(@"success");
     } else {
         resolve(@"error");
@@ -433,6 +440,7 @@ RCT_EXPORT_METHOD(resumeRecording:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject) {
     if (![self.audioRecorder isRecording]) {
         [self.audioRecorder record];
+        [self startAmplitudeTimer];
         resolve(@"success");
     } else {
         resolve(@"error");
@@ -456,9 +464,35 @@ RCT_EXPORT_METHOD(resumeRecording:(RCTPromiseResolveBlock)resolve
         self.audioRecorder.meteringEnabled = YES;
         [self.audioRecorder record];
         
+        // Start amplitude timer for real-time waveform
+        [self startAmplitudeTimer];
+        
         NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"file\": \"%@\"}", [self.audioFilename path]];
         NSLog(@"FILENAME: %@", jsonString);
         callback(@[jsonString]);
+    }
+}
+
+- (void)startAmplitudeTimer {
+    [self stopAmplitudeTimer];
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer * _Nonnull timer) {
+        if (self.audioRecorder && self.audioRecorder.isRecording && self->hasListeners) {
+            [self.audioRecorder updateMeters];
+            float decibels = [self.audioRecorder averagePowerForChannel:0];
+            // Convert decibels to linear scale (0.0 to 1.0)
+            // Decibels range from -160 (silence) to 0 (max)
+            // We normalize to 0-1 range
+            float linear = pow(10, decibels / 20.0);
+            linear = MIN(1.0, MAX(0.0, linear));
+            [self sendEventWithName:@"audioAmplitude" body:@{@"amplitude": @(linear)}];
+        }
+    }];
+}
+
+- (void)stopAmplitudeTimer {
+    if (self.timer) {
+        [self.timer invalidate];
+        self.timer = nil;
     }
 }
 
@@ -473,6 +507,7 @@ RCT_EXPORT_METHOD(stopRecordingAudio:(RCTResponseSenderBlock)callback) {
 }
 
 - (NSString *)stopRecordingWithSuccess:(BOOL)success {
+    [self stopAmplitudeTimer];
     if (success) {
         [self.audioRecorder stop];
         self.audioRecorder = nil;
@@ -534,27 +569,101 @@ RCT_EXPORT_METHOD(resumePlaying:(RCTResponseSenderBlock)callback) {
     callback(@[jsonString]);
 }
 
+/**
+ * Get current playback position in milliseconds.
+ * Used for accurate waveform sync during playback.
+ */
+RCT_EXPORT_METHOD(getPlaybackPosition:(RCTResponseSenderBlock)callback) {
+    if (self.player != nil) {
+        NSTimeInterval currentTime = self.player.currentTime;
+        NSTimeInterval duration = self.player.duration;
+        int positionMs = (int)(currentTime * 1000);
+        int durationMs = (int)(duration * 1000);
+        NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"position\": %d, \"duration\": %d}", positionMs, durationMs];
+        callback(@[jsonString]);
+    } else if (self.queuePlayer != nil) {
+        // For queue player (segment playback)
+        CMTime currentTime = self.queuePlayer.currentTime;
+        int positionMs = (int)(CMTimeGetSeconds(currentTime) * 1000);
+        
+        // Get total duration from all items in queue
+        int totalDurationMs = 0;
+        for (AVPlayerItem *item in self.queuePlayer.items) {
+            CMTime itemDuration = item.asset.duration;
+            if (CMTIME_IS_VALID(itemDuration) && !CMTIME_IS_INDEFINITE(itemDuration)) {
+                totalDurationMs += (int)(CMTimeGetSeconds(itemDuration) * 1000);
+            }
+        }
+        
+        NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"position\": %d, \"duration\": %d}", positionMs, totalDurationMs];
+        callback(@[jsonString]);
+    } else {
+        callback(@[@"{\"success\": false, \"error\": \"No audio player active\"}"]);
+    }
+}
+
+/**
+ * Seek to a specific position in the audio playback.
+ * @param positionMs Position in milliseconds
+ */
+RCT_EXPORT_METHOD(seekTo:(int)positionMs callback:(RCTResponseSenderBlock)callback) {
+    if (self.player != nil) {
+        NSTimeInterval positionSeconds = positionMs / 1000.0;
+        self.player.currentTime = positionSeconds;
+        NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"position\": %d}", positionMs];
+        callback(@[jsonString]);
+    } else {
+        callback(@[@"{\"success\": false, \"error\": \"No audio player active\"}"]);
+    }
+}
+
+/**
+ * Start playback from a specific position.
+ * @param positionMs Position in milliseconds to start from
+ */
+RCT_EXPORT_METHOD(playFromPosition:(int)positionMs callback:(RCTResponseSenderBlock)callback) {
+    if (self.audioFilename == nil) {
+        callback(@[@"{\"success\": false, \"error\": \"No audio file to play\"}"]);
+        return;
+    }
+    
+    [self preparePlayer];
+    
+    if (self.player != nil) {
+        NSTimeInterval positionSeconds = positionMs / 1000.0;
+        self.player.currentTime = positionSeconds;
+        [self.player play];
+        NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"position\": %d}", positionMs];
+        callback(@[jsonString]);
+    } else {
+        callback(@[@"{\"success\": false, \"error\": \"Failed to create audio player\"}"]);
+    }
+}
+
 - (void)stopPlaying {
     [self.player stop];
     self.player = nil;
 }
 
 RCT_EXPORT_METHOD(releaseMediaResources:(RCTResponseSenderBlock)callback) {
-    if (self.audioRecorder != nil || self.audioRecorder.isRecording) {
+    if (self.audioRecorder != nil) {
         NSTimeInterval duration = self.audioRecorder.currentTime;
         [self stopRecordingWithSuccess:YES];
         NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"file\": \"%@\", \"duration\": %f}", [self.audioFilename path], duration];
         NSLog(@"FILENAME: %@", jsonString);
         callback(@[jsonString]);
+        return;
     }
 
-    if (self.player != nil || self.player.isPlaying) {
+    if (self.player != nil) {
         [self stopPlaying];
         NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"file\": \"%@\"}", [self.audioFilename path]];
         NSLog(@"FILENAME: %@", jsonString);
         callback(@[jsonString]);
+        return;
     }
     
+    callback(@[@"{\"success\": true}"]);
 }
 
 RCT_EXPORT_METHOD(deleteFile:(RCTResponseSenderBlock)callback) {
@@ -572,6 +681,324 @@ RCT_EXPORT_METHOD(deleteFile:(RCTResponseSenderBlock)callback) {
             callback(@[@"{\"success\": false}"]);
         }
     }
+}
+
+#pragma mark - Segment-Based Recording Methods
+
+/**
+ * Finalize the current recording segment without stopping the recorder.
+ * This allows the user to preview the recorded audio while paused.
+ * @validates Requirements 11.1
+ */
+RCT_EXPORT_METHOD(finalizeSegment:(RCTResponseSenderBlock)callback) {
+    if (self.audioRecorder == nil || !self.audioRecorder.isRecording) {
+        // If not recording, check if we have a paused recording
+        if (self.audioRecorder != nil) {
+            NSTimeInterval duration = self.audioRecorder.currentTime;
+            [self.audioRecorder stop];
+            
+            // Initialize segments array if needed
+            if (self.segmentPaths == nil) {
+                self.segmentPaths = [NSMutableArray array];
+            }
+            
+            // Add current file to segments
+            if (self.audioFilename != nil) {
+                [self.segmentPaths addObject:self.audioFilename];
+            }
+            
+            NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"segmentPath\": \"%@\", \"duration\": %f, \"segmentIndex\": %lu}", 
+                [self.audioFilename path], 
+                duration,
+                (unsigned long)(self.segmentPaths.count - 1)];
+            callback(@[jsonString]);
+            return;
+        }
+        callback(@[@"{\"success\": false, \"error\": \"No active recording\"}"]);
+        return;
+    }
+    
+    [self stopAmplitudeTimer];
+    NSTimeInterval duration = self.audioRecorder.currentTime;
+    [self.audioRecorder stop];
+    
+    // Initialize segments array if needed
+    if (self.segmentPaths == nil) {
+        self.segmentPaths = [NSMutableArray array];
+    }
+    
+    // Add current file to segments
+    [self.segmentPaths addObject:self.audioFilename];
+    
+    NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"segmentPath\": \"%@\", \"duration\": %f, \"segmentIndex\": %lu}", 
+        [self.audioFilename path], 
+        duration,
+        (unsigned long)(self.segmentPaths.count - 1)];
+    callback(@[jsonString]);
+}
+
+/**
+ * Start recording a new segment after pausing.
+ * This creates a new audio file for the next segment.
+ * @validates Requirements 11.2
+ */
+RCT_EXPORT_METHOD(startNewSegment:(RCTResponseSenderBlock)callback) {
+    self.recordingSession = [AVAudioSession sharedInstance];
+    NSError *error = nil;
+    if ([self.recordingSession setCategory:AVAudioSessionCategoryPlayAndRecord
+                               withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker
+                                     error:&error] &&
+        [self.recordingSession setActive:YES error:&error]) {
+        
+        // Create a new file for this segment
+        self.audioFilename = [self getFileURL];
+        
+        NSDictionary *settings = @{
+            AVFormatIDKey : [NSNumber numberWithInt:kAudioFormatMPEG4AAC],
+            AVSampleRateKey : [NSNumber numberWithFloat:12000.0],
+            AVNumberOfChannelsKey : [NSNumber numberWithInt:1],
+            AVEncoderAudioQualityKey : [NSNumber numberWithInt:AVAudioQualityHigh]
+        };
+        
+        NSError *recorderError = nil;
+        self.audioRecorder = [[AVAudioRecorder alloc] initWithURL:self.audioFilename settings:settings error:&recorderError];
+        
+        if (recorderError) {
+            callback(@[@"{\"success\": false, \"error\": \"Failed to create recorder\"}"]);
+            return;
+        }
+        
+        self.audioRecorder.delegate = self;
+        self.audioRecorder.meteringEnabled = YES;
+        [self.audioRecorder record];
+        
+        // Start amplitude timer for real-time waveform
+        [self startAmplitudeTimer];
+        
+        // Initialize segments array if needed
+        if (self.segmentPaths == nil) {
+            self.segmentPaths = [NSMutableArray array];
+        }
+        
+        NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"file\": \"%@\", \"segmentIndex\": %lu}", 
+            [self.audioFilename path],
+            (unsigned long)self.segmentPaths.count];
+        callback(@[jsonString]);
+    } else {
+        callback(@[@"{\"success\": false, \"error\": \"Failed to setup audio session\"}"]);
+    }
+}
+
+/**
+ * Merge all recorded segments into a single audio file.
+ * Uses AVMutableComposition for seamless audio concatenation.
+ * @validates Requirements 11.4
+ */
+RCT_EXPORT_METHOD(mergeSegments:(NSArray<NSString *> *)segmentPaths callback:(RCTResponseSenderBlock)callback) {
+    if (segmentPaths == nil || segmentPaths.count == 0) {
+        callback(@[@"{\"success\": false, \"error\": \"No segments to merge\"}"]);
+        return;
+    }
+    
+    // If only one segment, just return it
+    if (segmentPaths.count == 1) {
+        NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"mergedPath\": \"%@\", \"totalDuration\": 0}", segmentPaths[0]];
+        callback(@[jsonString]);
+        return;
+    }
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        AVMutableComposition *composition = [AVMutableComposition composition];
+        AVMutableCompositionTrack *audioTrack = [composition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
+        
+        CMTime currentTime = kCMTimeZero;
+        Float64 totalDuration = 0;
+        
+        for (NSString *segmentPath in segmentPaths) {
+            NSURL *segmentURL = [NSURL fileURLWithPath:segmentPath];
+            AVURLAsset *asset = [AVURLAsset assetWithURL:segmentURL];
+            
+            NSArray *tracks = [asset tracksWithMediaType:AVMediaTypeAudio];
+            if (tracks.count == 0) {
+                NSLog(@"No audio track found in segment: %@", segmentPath);
+                continue;
+            }
+            
+            AVAssetTrack *assetTrack = tracks[0];
+            CMTimeRange timeRange = CMTimeRangeMake(kCMTimeZero, asset.duration);
+            
+            NSError *error = nil;
+            [audioTrack insertTimeRange:timeRange ofTrack:assetTrack atTime:currentTime error:&error];
+            
+            if (error) {
+                NSLog(@"Error inserting track: %@", error);
+                continue;
+            }
+            
+            currentTime = CMTimeAdd(currentTime, asset.duration);
+            totalDuration += CMTimeGetSeconds(asset.duration);
+        }
+        
+        // Create output file
+        NSURL *outputURL = [self getMergedFileURL];
+        
+        AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:composition presetName:AVAssetExportPresetAppleM4A];
+        exportSession.outputURL = outputURL;
+        exportSession.outputFileType = AVFileTypeAppleM4A;
+        
+        [exportSession exportAsynchronouslyWithCompletionHandler:^{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+                    // Update audioFilename to point to merged file
+                    self.audioFilename = outputURL;
+                    
+                    NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"mergedPath\": \"%@\", \"totalDuration\": %f}", 
+                        [outputURL path], 
+                        totalDuration];
+                    callback(@[jsonString]);
+                } else {
+                    NSString *errorMsg = exportSession.error ? [exportSession.error localizedDescription] : @"Unknown error";
+                    NSString *jsonString = [NSString stringWithFormat:@"{\"success\": false, \"error\": \"%@\"}", errorMsg];
+                    callback(@[jsonString]);
+                }
+            });
+        }];
+    });
+}
+
+/**
+ * Play multiple segments sequentially.
+ * Uses AVQueuePlayer for seamless playback.
+ * @validates Requirements 11.4
+ */
+RCT_EXPORT_METHOD(playSegments:(NSArray<NSString *> *)segmentPaths callback:(RCTResponseSenderBlock)callback) {
+    if (segmentPaths == nil || segmentPaths.count == 0) {
+        callback(@[@"{\"success\": false, \"error\": \"No segments to play\"}"]);
+        return;
+    }
+    
+    // Stop any existing playback
+    if (self.queuePlayer) {
+        [self.queuePlayer pause];
+        if (self.playbackObserver) {
+            [self.queuePlayer removeTimeObserver:self.playbackObserver];
+            self.playbackObserver = nil;
+        }
+        self.queuePlayer = nil;
+    }
+    
+    // Create player items for each segment
+    NSMutableArray<AVPlayerItem *> *playerItems = [NSMutableArray array];
+    for (NSString *segmentPath in segmentPaths) {
+        NSURL *segmentURL = [NSURL fileURLWithPath:segmentPath];
+        AVPlayerItem *item = [AVPlayerItem playerItemWithURL:segmentURL];
+        [playerItems addObject:item];
+    }
+    
+    // Create queue player
+    self.queuePlayer = [AVQueuePlayer queuePlayerWithItems:playerItems];
+    self.currentSegmentIndex = 0;
+    
+    // Add observer for playback completion
+    __weak typeof(self) weakSelf = self;
+    [[NSNotificationCenter defaultCenter] addObserverForName:AVPlayerItemDidPlayToEndTimeNotification 
+                                                      object:nil 
+                                                       queue:[NSOperationQueue mainQueue] 
+                                                  usingBlock:^(NSNotification *note) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        if (strongSelf.queuePlayer.currentItem == note.object) {
+            strongSelf.currentSegmentIndex++;
+            if (strongSelf.currentSegmentIndex >= segmentPaths.count) {
+                // All segments played
+                if (strongSelf->hasListeners) {
+                    [strongSelf sendEventWithName:@"status" body:@{@"state": @"playbackComplete"}];
+                }
+            }
+        }
+    }];
+    
+    [self.queuePlayer play];
+    
+    NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"segmentCount\": %lu}", (unsigned long)segmentPaths.count];
+    callback(@[jsonString]);
+}
+
+/**
+ * Delete all segment files.
+ * @validates Requirements 11.5
+ */
+RCT_EXPORT_METHOD(deleteSegments:(NSArray<NSString *> *)segmentPaths callback:(RCTResponseSenderBlock)callback) {
+    if (segmentPaths == nil || segmentPaths.count == 0) {
+        callback(@[@"{\"success\": true, \"deletedCount\": 0}"]);
+        return;
+    }
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSInteger deletedCount = 0;
+    
+    for (NSString *segmentPath in segmentPaths) {
+        NSError *error = nil;
+        if ([fileManager removeItemAtPath:segmentPath error:&error]) {
+            deletedCount++;
+        } else {
+            NSLog(@"Error deleting segment: %@, error: %@", segmentPath, error);
+        }
+    }
+    
+    // Clear internal segments array
+    [self.segmentPaths removeAllObjects];
+    
+    NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"deletedCount\": %ld}", (long)deletedCount];
+    callback(@[jsonString]);
+}
+
+/**
+ * Get all current segment paths.
+ */
+RCT_EXPORT_METHOD(getSegmentPaths:(RCTResponseSenderBlock)callback) {
+    if (self.segmentPaths == nil || self.segmentPaths.count == 0) {
+        callback(@[@"{\"success\": true, \"segments\": []}"]);
+        return;
+    }
+    
+    NSMutableArray<NSString *> *paths = [NSMutableArray array];
+    for (NSURL *url in self.segmentPaths) {
+        [paths addObject:[url path]];
+    }
+    
+    NSError *error = nil;
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:paths options:0 error:&error];
+    NSString *pathsJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+    
+    NSString *jsonString = [NSString stringWithFormat:@"{\"success\": true, \"segments\": %@}", pathsJson];
+    callback(@[jsonString]);
+}
+
+/**
+ * Clear all segments and reset state.
+ */
+RCT_EXPORT_METHOD(clearSegments:(RCTResponseSenderBlock)callback) {
+    [self.segmentPaths removeAllObjects];
+    self.currentSegmentIndex = 0;
+    
+    if (self.queuePlayer) {
+        [self.queuePlayer pause];
+        if (self.playbackObserver) {
+            [self.queuePlayer removeTimeObserver:self.playbackObserver];
+            self.playbackObserver = nil;
+        }
+        self.queuePlayer = nil;
+    }
+    
+    callback(@[@"{\"success\": true}"]);
+}
+
+- (NSURL *)getMergedFileURL {
+    self.dateFormatter = [[NSDateFormatter alloc] init];
+    self.dateFormatter.dateFormat = @"yyyyMMddHHmmss";
+    NSURL *path = [[self getDocumentsDirectory] URLByAppendingPathComponent:[NSString stringWithFormat:@"audio-merged-%@.m4a", [self.dateFormatter stringFromDate:[NSDate date]]]];
+    return path;
 }
 
 - (NSURL *) saveImage:(NSString *) imageName image:(UIImage *) image {

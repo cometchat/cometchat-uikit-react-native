@@ -55,6 +55,7 @@ import {
   messageStatus,
 } from "../shared/utils/CometChatMessageHelper";
 import { CommonUtils } from "../shared/utils/CommonUtils";
+import { isCursorWithinMentionRange, getMentionRangeAtCursor } from "../shared/utils/MentionUtils";
 import { permissionUtil } from "../shared/utils/PermissionUtil";
 import { CometChatMediaRecorder } from "../shared/views/CometChatMediaRecorder";
 import { useTheme } from "../theme";
@@ -1672,26 +1673,6 @@ export const CometChatMessageComposer = React.forwardRef(
       sendMediaMessage(chatWithId.current, fileObj, MessageTypeConstants.audio, chatWith.current);
       // console.log("Send Audio"); // Removed debug log
     };
-
-    function isCursorWithinMentionRange(mentionRanges: any, cursorPosition: number) {
-      for (let [range, mention] of mentionRanges) {
-        const [start, end] = range.split("_").map(Number);
-        if (cursorPosition >= start && cursorPosition <= end) {
-          return true; // Cursor is within the range of a mention
-        }
-      }
-      return false; // No mention found at the cursor position
-    }
-
-    function getMentionRangeAtCursor(mentionRanges: any, cursorPosition: number): { start: number; end: number } | null {
-      for (let [range] of mentionRanges) {
-        const [start, end] = range.split("_").map(Number);
-        if (cursorPosition >= start && cursorPosition <= end) {
-          return { start, end }; // Return the boundary positions
-        }
-      }
-      return null; // No mention found at the cursor position
-    }
 
     function shouldOpenList(
       selection: {

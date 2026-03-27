@@ -5,6 +5,7 @@ import {
   CometChatTextFormatter,
   CometChatUIKit,
   CometChatUrlsFormatter,
+  CometChatRichTextFormatter,
 } from "../..";
 import { CometChatTheme } from "../../theme/type";
 import {
@@ -40,7 +41,7 @@ import CometChatStreamMessageBubble from '../views/CometChatStreamMessageBubble/
 import { ChatConfigurator } from "./ChatConfigurator";
 import { DataSource } from "./DataSource";
 import { CommonUtils } from "../utils/CommonUtils";
-import { DimensionValue, TouchableOpacity, ViewStyle, View, Text } from "react-native";
+import { DimensionValue, TouchableOpacity, ViewStyle, View, Text, Platform } from "react-native";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/LocalizationManager";
 import { CometChatMessageEvents } from "../events/CometChatMessageEvents";
@@ -1143,6 +1144,86 @@ export class MessageDataSource implements DataSource {
       loggedInUser!,
       theme
     );
+
+    // Create rich text formatter for markdown parsing
+    let richTextFormatter = new CometChatRichTextFormatter(loggedInUser!);
+    richTextFormatter.setMessage(message);
+    richTextFormatter.setId("ccDefaultRichTextFormatterId");
+    // Use same link color as CometChatUrlsFormatter for consistency
+    // Inline code styles differ for sent vs received bubbles per Figma spec
+    richTextFormatter.setStyle({
+      linkStyle: {
+        color: isMessageSentByLoggedInUser ? theme.color.sendBubbleLink : theme.color.receiveBubbleLink,
+        textDecorationLine: 'underline',
+      },
+      inlineCodeStyle: isMessageSentByLoggedInUser
+        ? {
+            fontSize: theme.typography.body.regular.fontSize,
+            fontWeight: '400',
+            lineHeight: ((theme.typography.body.regular.fontSize as number) ?? 14) * 1.2,
+            color: theme.color.sendBubbleTextHighlight,
+          }
+        : {
+            fontSize: theme.typography.body.regular.fontSize,
+            fontWeight: '400',
+            lineHeight: ((theme.typography.body.regular.fontSize as number) ?? 14) * 1.2,
+            color: theme.color.receiveBubbleTextHighlight,
+          },
+      inlineCodeContainerStyle: isMessageSentByLoggedInUser
+        ? {
+            backgroundColor: `${String(theme.color.extendedPrimary50)}33`, // 20% opacity
+            borderRadius: 2,
+            paddingHorizontal: 2,
+            paddingVertical: 0,
+          }
+        : {
+            backgroundColor: theme.color.background3,
+            borderRadius: 2,
+            paddingHorizontal: 2,
+            paddingVertical: 0,
+          },
+      // Code block styles per Figma spec — monospace font in a rounded container
+      codeBlockStyle: {
+        fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+        fontSize: 13,
+        color: isMessageSentByLoggedInUser
+          ? theme.color.sendBubbleText
+          : theme.color.receiveBubbleText,
+      },
+      codeBlockContainerStyle: isMessageSentByLoggedInUser
+        ? {
+            backgroundColor: 'rgba(255,255,255,0.1)',
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.2)',
+            padding: 12,
+          }
+        : {
+            backgroundColor: theme.color.background2,
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: theme.color.borderDefault,
+            padding: 12,
+          },
+      // Blockquote styles per Figma spec — rounded container with left bar
+      blockquoteContainerStyle: isMessageSentByLoggedInUser
+        ? {
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            borderRadius: theme.spacing.radius.r2,
+          }
+        : {
+            backgroundColor: theme.color.background3,
+            borderRadius: theme.spacing.radius.r2,
+          },
+      blockquoteBarStyle: isMessageSentByLoggedInUser
+        ? {
+            backgroundColor: 'rgba(255,255,255,0.6)',
+          }
+        : {
+            backgroundColor: theme.color.primary,
+          },
+    });
+
     mentionsTextFormatter.setContext(isMessageSentByLoggedInUser ? MentionContext.Outgoing : MentionContext.Incoming);
     linksTextFormatter.setMessage(message);
     linksTextFormatter.setId("ccDefaultUrlsFormatterId");
@@ -1161,6 +1242,7 @@ export class MessageDataSource implements DataSource {
 
     let urlFormatterExists = false;
     let mentionsFormatterExists = false;
+    let richTextFormatterExists = false;
 
     for (const formatter of textFormatters) {
       if (formatter instanceof CometChatUrlsFormatter) {
@@ -1175,11 +1257,20 @@ export class MessageDataSource implements DataSource {
         formatter.setContext(isMessageSentByLoggedInUser ? "outgoing" : "incoming");
       }
 
+      if (formatter instanceof CometChatRichTextFormatter) {
+        richTextFormatterExists = true;
+      }
+
       formatter.setMessage(message);
       finalFormatters.push(CommonUtils.clone(formatter));
-      if (urlFormatterExists && mentionsFormatterExists) {
+      if (urlFormatterExists && mentionsFormatterExists && richTextFormatterExists) {
         break;
       }
+    }
+
+    // Add rich text formatter first (to parse markdown before other formatters)
+    if (!richTextFormatterExists) {
+      finalFormatters.unshift(richTextFormatter);
     }
 
     if (!urlFormatterExists) {

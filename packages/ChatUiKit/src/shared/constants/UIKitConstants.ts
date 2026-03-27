@@ -61,7 +61,8 @@ export const emailPattern =
   wordBoundary.start + `[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}` + wordBoundary.end;
 
 export const urlPattern =
-  `((https?://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?)` +
+  `((https?://|ftp://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?` +
+  `|[a-zA-Z0-9][-a-zA-Z0-9]*(?:\\.[a-zA-Z0-9][-a-zA-Z0-9]*)*\\.[a-zA-Z]{2,}(?:[:/][-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]*[\\w/#](\\(\\))?)?)` +
   wordBoundary.end;
 
 export const phoneNumPattern =
@@ -451,4 +452,14 @@ export enum MentionsTargetElement {
   textinput,
   textbubble,
   conversation,
+}
+
+/**
+ * Enum for Enter key behavior in the composer.
+ * On iOS, Enter always inserts a new line regardless of this setting.
+ * @platform Android
+ */
+export enum EnterKeyBehavior {
+  SendMessage = "sendMessage",
+  NewLine = "newLine",
 }

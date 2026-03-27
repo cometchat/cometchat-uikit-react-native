@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useRef, useCallback, useMemo } from "react";
+import React, { useLayoutEffect, useState, useRef, useCallback, useMemo, JSX } from "react";
 import {
   StyleProp,
   Text,
@@ -15,7 +15,9 @@ import {
   CometChatUrlsFormatter,
 } from "../../formatters";
 import { useCometChatTranslation } from "../../resources/CometChatLocalizeNew";
-import { t } from "../../resources/CometChatLocalizeNew/LocalizationManager";
+
+// Pre-allocated style for view-based content wrapper (blockquotes, lists).
+const VIEW_BASED_WRAPPER_STYLE = { flexShrink: 1 as const };
 
 export interface CometChatTextBubbleInterface {
   /*** text to be shown */
@@ -43,6 +45,30 @@ export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
     </View>
   );
 };
+
+/**
+ * Recursively apply textStyle to all Text elements within a tree.
+ * Needed for View-based content (blockquotes, lists) where Text nodes
+ * can be nested multiple levels deep inside View wrappers.
+ */
+function applyTextStyleDeep(
+  el: React.ReactElement<any>,
+  textStyle: StyleProp<TextStyle> | undefined
+): React.ReactElement<any> {
+  if (el.type === Text) {
+    return React.cloneElement(el, {
+      style: [textStyle, el.props?.style],
+    });
+  }
+  if (el.type === View && el.props.children) {
+    const newChildren = React.Children.map(el.props.children, (child) => {
+      if (!React.isValidElement(child)) return child;
+      return applyTextStyleDeep(child as React.ReactElement<any>, textStyle);
+    });
+    return React.cloneElement(el, {}, newChildren);
+  }
+  return el;
+}
 
 /**
  * CometChatTextBubbleText
@@ -73,14 +99,15 @@ export const CometChatTextBubbleText = (
   const lastTextRef = useRef<string>(text);
 
   // Compute formatted text synchronously - no state update needed
+  // Result can be string or JSX.Element (when rich text formatter produces View-based content)
   const formattedText = useMemo(() => {
-    let finalText = text;
+    let finalText: string | JSX.Element | null = text;
     if (textFormatters && textFormatters.length) {
       for (let i = 0; i < textFormatters.length; i++) {
         finalText = textFormatters[i].getFormattedText(finalText);
       }
     }
-    return finalText as string;
+    return finalText as string | JSX.Element;
   }, [text, textFormatters]);
 
   // Reset state only when text actually changes
@@ -102,8 +129,9 @@ export const CometChatTextBubbleText = (
   }, []);
 
   // Called when hidden text is laid out
+  // Use original text for the measurement key (formattedText may be JSX)
   const onMeasuredTextLayout = useCallback((e: TextLayoutEvent) => {
-    const key = `${formattedText}::${containerWidth ?? 0}`;
+    const key = `${text}::${containerWidth ?? 0}`;
 
     // Skip if already measured
     if (measuredCacheRef.current[key]) {
@@ -119,12 +147,20 @@ export const CometChatTextBubbleText = (
     measuredCacheRef.current[key] = true;
     setIsTruncatable(isNowTruncatable);
     setMeasurementComplete(true);
-  }, [formattedText, containerWidth, collapseLines, measurementComplete]);
+  }, [text, containerWidth, collapseLines, measurementComplete]);
 
   const toggle = useCallback(() => setIsExpanded(v => !v), []);
 
-  const hiddenTextKey = `${formattedText}::${containerWidth ?? 0}`;
-  const needsMeasurement = containerWidth !== null && !measuredCacheRef.current[hiddenTextKey];
+  // Use original text for keys (formattedText may be JSX and can't be stringified)
+  const hiddenTextKey = `${text}::${containerWidth ?? 0}`;
+
+  // Check if formattedText is a View-based element (e.g. blockquote with View wrapper).
+  // View elements cannot be nested inside Text, so render them directly.
+  const isViewBased = React.isValidElement(formattedText) &&
+    (formattedText as React.ReactElement<any>).type === View;
+
+  // Only measure string content — View-based content can't use onTextLayout
+  const needsMeasurement = containerWidth !== null && !isViewBased && !measuredCacheRef.current[hiddenTextKey];
 
   return (
     <View onLayout={onContainerLayout}>
@@ -144,14 +180,26 @@ export const CometChatTextBubbleText = (
         </Text>
       )}
 
-      {/* Visible text */}
-      <Text
-        style={textStyle}
-        numberOfLines={isExpanded ? undefined : collapseLines}
-        ellipsizeMode='tail'
-      >
-        {formattedText}
-      </Text>
+      {/* Visible text — View-based content (blockquotes, lists) rendered directly */}
+      {isViewBased ? (
+        <View style={VIEW_BASED_WRAPPER_STYLE}>
+          {React.Children.map(
+            (formattedText as React.ReactElement<any>).props.children,
+            (child) => {
+              if (!React.isValidElement(child)) return child;
+              return applyTextStyleDeep(child as React.ReactElement<any>, textStyle);
+            }
+          )}
+        </View>
+      ) : (
+        <Text
+          style={textStyle}
+          numberOfLines={isExpanded ? undefined : collapseLines}
+          ellipsizeMode='tail'
+        >
+          {formattedText}
+        </Text>
+      )}
 
       {/* Toggle - only show after measurement is complete to prevent flicker */}
       {measurementComplete && isTruncatable && (

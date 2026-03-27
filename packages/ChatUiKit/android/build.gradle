@@ -6,6 +6,7 @@ buildscript {
 
   dependencies {
     classpath 'com.android.tools.build:gradle:4.2.0'
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
   }
 }
 
@@ -14,6 +15,7 @@ def isNewArchitectureEnabled() {
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 if (isNewArchitectureEnabled()) {
   apply plugin: 'com.facebook.react'
@@ -129,6 +131,7 @@ dependencies {
   implementation "com.facebook.react:react-native:+"
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.5.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
 // From node_modules
 }
 

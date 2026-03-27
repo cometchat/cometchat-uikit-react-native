@@ -23,7 +23,7 @@ import {
 import {
   CometChatThreadHeader,
   CometChatMessageList,
-  CometChatMessageComposer,
+  CometChatCompactMessageComposer,
   useCometChatTranslation,
   CometChatUIKit,
   ChatConfigurator,
@@ -331,7 +331,7 @@ const handleBack = useCallback(() => {
           </TouchableOpacity>
         </View>
       ) : (
-        <CometChatMessageComposer
+        <CometChatCompactMessageComposer
           user={localUser}
           group={group}
           parentMessageId={message.getId()}

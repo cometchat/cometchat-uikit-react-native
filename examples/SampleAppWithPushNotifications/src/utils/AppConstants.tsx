@@ -5,7 +5,7 @@ export const AppConstants = {
   appId: '',
   region: '',
   subscriptionType: 'ALL_USERS',
-  versionNumber: 'V5.2.11',
+  versionNumber: 'V5.3.0',
   webClientId:
     '',
   iosClientId:

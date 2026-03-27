@@ -17,6 +17,7 @@ import { deepMerge } from '../shared/helper/helperFunctions';
 import { DeepPartial } from '../shared/helper/types';
 import { getCometChatTranslation } from '../shared/resources/CometChatLocalizeNew/LocalizationManager';
 import { CommonUtils } from '../shared/utils/CommonUtils';
+import { stripMarkdown } from '../shared/utils/MarkdownUtils';
 import { ExtensionConstants } from '../extensions/ExtensionConstants';
 import { getExtensionData } from '../extensions/ExtensionModerator';
 
@@ -535,7 +536,9 @@ const ConversationItem = React.memo<ConversationItemProps>((
   const formatMentionsInText = (rawText: any, message?: CometChat.BaseMessage) => {
     if (typeof rawText !== 'string') return rawText;
 
-    let text = rawText.replace(/<@all:(.*?)>/g, '@$1');
+    // Strip markdown syntax for clean search result preview while
+    // preserving mention tokens for processing below.
+    let text = stripMarkdown(rawText).replace(/<@all:(.*?)>/g, '@$1');
 
     try {
       const mentionedUsers: CometChat.User[] = (message && (message).getMentionedUsers && (message).getMentionedUsers()) || [];
@@ -1390,11 +1393,13 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
   };
 
   // Format mentions in raw message text: convert <@all:alias> to @alias
-  // and <@uid:UID> to @Name when message provides mentioned users
+  // and <@uid:UID> to @Name when message provides mentioned users.
+  // Also strips markdown syntax for clean search result previews.
   const formatMentionsInText = (rawText: any, message?: CometChat.BaseMessage) => {
     if (typeof rawText !== 'string') return rawText;
 
-    let text = rawText.replace(/<@all:(.*?)>/g, '@$1');
+    // Strip markdown syntax while preserving mention tokens for processing below.
+    let text = stripMarkdown(rawText).replace(/<@all:(.*?)>/g, '@$1');
 
     try {
       const mentionedUsers: CometChat.User[] = (message && (message).getMentionedUsers && (message).getMentionedUsers()) || [];

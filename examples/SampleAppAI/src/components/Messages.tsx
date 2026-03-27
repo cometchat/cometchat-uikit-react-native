@@ -21,7 +21,7 @@ import {
   CometChatUIKit,
   CometChatMessageHeader,
   CometChatMessageList,
-  CometChatMessageComposer,
+  CometChatCompactMessageComposer,
   useTheme,
   CometChatUIEventHandler,
   CometChatUIEvents,
@@ -387,7 +387,7 @@ const handleNewChatClick = useCallback(() => {
             </TouchableOpacity>
           </View>
         ) : (
-          <CometChatMessageComposer
+          <CometChatCompactMessageComposer
             key={messageComposerKey}
             ref={messageComposerRef}
             parentMessageId={parentMessageId}

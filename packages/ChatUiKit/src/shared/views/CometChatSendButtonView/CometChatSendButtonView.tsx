@@ -1,5 +1,5 @@
-import React from "react";
-import { TouchableOpacity } from "react-native";
+import React, { useMemo } from "react";
+import { TouchableOpacity, ViewStyle } from "react-native";
 import { stopStreamingForRunId } from "../../services/stream-message.service";
 import { useTheme } from "../../../theme";
 import { Icon } from "../../../shared/icons/Icon";
@@ -39,44 +39,47 @@ const CometChatSendButtonView = ({
 
   const shouldShowStop = isStreaming || showStopButton;
   const isActive = shouldShowStop || !isButtonDisabled;
-  const backgroundColor =
-    theme.mode === "light"
-      ? isActive
-        ? theme.color.secondaryButtonBackground
-        : theme.color.background4
-      : isActive
-      ? theme.color.staticWhite
-      : theme.color.background4;
+
+  const buttonStyle = useMemo<ViewStyle>(() => {
+    const { spacing } = theme;
+    const backgroundColor =
+      theme.mode === "light"
+        ? isActive
+          ? theme.color.secondaryButtonBackground
+          : theme.color.background4
+        : isActive
+        ? theme.color.staticWhite
+        : theme.color.background4;
+
+    return {
+      display: "flex",
+      width: spacing.spacing.s8,
+      height: spacing.spacing.s8,
+      padding: spacing.padding.p1,
+      justifyContent: "center",
+      alignItems: "center",
+      borderRadius: spacing.spacing.s15,
+      backgroundColor,
+    } as ViewStyle;
+  }, [theme, isActive]);
+
   const iconColor =
     theme.mode === "light"
-      ? isActive
-        ? theme.color.staticWhite
-        : theme.color.staticWhite
+      ? theme.color.staticWhite
       : isActive
       ? theme.color.staticBlack
-      : theme.color.staticBlack
+      : theme.color.staticBlack;
 
-  
   return (
     <TouchableOpacity
       onPress={handlePress}
       disabled={isButtonDisabled && shouldShowStop}
-      style={{
-        display: "flex",
-        width: 40,
-        height: 40,
-        paddingVertical: theme.spacing.padding.p4,
-        paddingHorizontal: theme.spacing.padding.p3,
-        justifyContent: "center",
-        alignItems: "center",
-        borderRadius: 9999,
-        backgroundColor,
-      }}
+      style={buttonStyle}
     >
       <Icon
         name={shouldShowStop ? "stop-fill" : "ai-send-button"}
-        width={20}
-        height={20}
+        width={theme.spacing.spacing.s5}
+        height={theme.spacing.spacing.s5}
         color={iconColor}
       />
     </TouchableOpacity>

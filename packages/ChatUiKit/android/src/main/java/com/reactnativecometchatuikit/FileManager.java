@@ -54,6 +54,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.FileInputStream;
+import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -64,9 +66,11 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import org.json.JSONException;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.facebook.react.bridge.Promise;
+import com.facebook.react.bridge.ReadableArray;
 
 public class FileManager extends ReactContextBaseJavaModule {
     public static final String NAME = "FileManager";
@@ -478,6 +482,51 @@ public class FileManager extends ReactContextBaseJavaModule {
     private String fileName;
     private Context context;
     private Activity activity;
+    private Handler amplitudeHandler;
+    private Runnable amplitudeRunnable;
+    private boolean isAmplitudePolling = false;
+    
+    // Segment-based recording fields
+    private List<String> segmentPaths = new ArrayList<>();
+    private int currentSegmentIndex = 0;
+
+    private void startAmplitudePolling() {
+        if (amplitudeHandler == null) {
+            amplitudeHandler = new Handler(Looper.getMainLooper());
+        }
+        isAmplitudePolling = true;
+        amplitudeRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (audioRecorder != null && isAmplitudePolling) {
+                    try {
+                        int maxAmplitude = audioRecorder.getMaxAmplitude();
+                        // Normalize to 0.0-1.0 range (max amplitude is ~32767)
+                        double normalizedAmplitude = Math.min(1.0, maxAmplitude / 32767.0);
+                        
+                        // Send event to React Native
+                        if (eventEmitter == null) {
+                            eventEmitter = getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+                        }
+                        WritableMap params = Arguments.createMap();
+                        params.putDouble("amplitude", normalizedAmplitude);
+                        eventEmitter.emit("audioAmplitude", params);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error getting amplitude: " + e.getMessage());
+                    }
+                    amplitudeHandler.postDelayed(this, 100); // Poll every 100ms
+                }
+            }
+        };
+        amplitudeHandler.post(amplitudeRunnable);
+    }
+
+    private void stopAmplitudePolling() {
+        isAmplitudePolling = false;
+        if (amplitudeHandler != null && amplitudeRunnable != null) {
+            amplitudeHandler.removeCallbacks(amplitudeRunnable);
+        }
+    }
 
     @ReactMethod
     public void startRecording(final Callback callback) {
@@ -514,12 +563,16 @@ public class FileManager extends ReactContextBaseJavaModule {
 
         audioRecorder.prepare();
         audioRecorder.start();
+        
+        // Start amplitude polling for real-time waveform
+        startAmplitudePolling();
 
         // Your JS just needs a callback to move to "recording"
         callback.invoke("{\"success\": true}");
     } catch (Exception e) {
         try { if (audioRecorder != null) audioRecorder.release(); } catch (Exception ignore) {}
         audioRecorder = null;
+        stopAmplitudePolling();
         callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
     }
     }
@@ -538,16 +591,93 @@ public class FileManager extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void playAudio(Callback callback) {
+        // Check if fileName is valid
+        if (fileName == null || fileName.isEmpty()) {
+            Log.e("TAG", "playAudio: fileName is null or empty");
+            callback.invoke("{\"success\": false, \"error\": \"No audio file to play\"}");
+            return;
+        }
+        
+        // Stop any existing playback
+        if (audioPlayer != null) {
+            try {
+                if (audioPlayer.isPlaying()) audioPlayer.stop();
+                audioPlayer.release();
+            } catch (Exception ignore) {}
+            audioPlayer = null;
+        }
+        
         audioPlayer = new MediaPlayer();
         try {
-            Log.e("TAG", "Trying to play Audio: " + fileName);
-            audioPlayer.setDataSource(fileName);
+            String playPath = fileName;
+            
+            // Handle content:// URIs
+            if (playPath.startsWith("content://")) {
+                Activity activity = getCurrentActivity();
+                if (activity != null) {
+                    Log.e("TAG", "Playing Audio with content URI: " + playPath);
+                    audioPlayer.setDataSource(activity, Uri.parse(playPath));
+                } else {
+                    // Fallback: try to extract file path from content URI
+                    String[] parts = playPath.split("/external_files");
+                    if (parts.length > 1) {
+                        playPath = "/storage/emulated/0" + parts[1];
+                        Log.e("TAG", "Converted to file path: " + playPath);
+                        audioPlayer.setDataSource(playPath);
+                    } else {
+                        throw new IOException("Cannot resolve content URI without activity");
+                    }
+                }
+            } else {
+                // Handle file:// URIs
+                if (playPath.startsWith("file://")) {
+                    playPath = playPath.substring(7);
+                }
+                Log.e("TAG", "Playing Audio: " + playPath);
+                audioPlayer.setDataSource(playPath);
+            }
+            
+            // Set up completion listener to emit event when playback finishes
+            audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    // Emit playback complete event to JS
+                    if (eventEmitter == null) {
+                        eventEmitter = getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+                    }
+                    WritableMap params = Arguments.createMap();
+                    params.putString("state", "playbackComplete");
+                    eventEmitter.emit("status", params);
+                }
+            });
+            
             audioPlayer.prepare();
             audioPlayer.start();
-            Log.e("TAG", "Playing Audio: " + fileName);
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
+            Log.e("TAG", "Audio playback started");
+            
+            // Build response with file URI
+            String fileUri = fileName;
+            Activity activity = getCurrentActivity();
+            if (activity != null && !fileName.startsWith("content://")) {
+                try {
+                    Uri contentUri = FileProvider.getUriForFile(
+                        activity, 
+                        activity.getApplicationContext().getPackageName() + ".fileprovider", 
+                        new File(fileName));
+                    fileUri = contentUri.toString();
+                } catch (Exception e) {
+                    Log.e("TAG", "FileProvider error: " + e.getMessage());
+                    fileUri = "file://" + fileName;
+                }
+            }
+            
+            callback.invoke("{\"success\": true, \"file\": \"" + fileUri + "\"}");
         } catch (IOException e) {
-            Log.e("TAG", "prepare() failed");
+            Log.e("TAG", "prepare() failed: " + e.getMessage());
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+        } catch (Exception e) {
+            Log.e("TAG", "playAudio error: " + e.getMessage());
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
@@ -557,6 +687,7 @@ public class FileManager extends ReactContextBaseJavaModule {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 try {
                     audioRecorder.pause();
+                    stopAmplitudePolling();
                     promise.resolve("Recording paused successfully");
                 } catch (Exception e) {
                     promise.resolve("Failed to pause recording");
@@ -576,6 +707,7 @@ public class FileManager extends ReactContextBaseJavaModule {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 try {
                     audioRecorder.resume();
+                    startAmplitudePolling();
                     promise.resolve("Recording resumed successfully");
                 } catch (Exception e) {
                     promise.resolve("Failed to pause recording");
@@ -594,23 +726,118 @@ public class FileManager extends ReactContextBaseJavaModule {
         if (audioPlayer != null && audioPlayer.isPlaying()) {
             Log.e("TAG", "Trying to pause Audio: " + fileName);
             audioPlayer.pause();
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
-            Log.e("TAG", "Paused Audio: " + fileName);
+            
+            // Get current position for accurate resume
+            int currentPosition = audioPlayer.getCurrentPosition();
+            
+            // Build response with file URI and position
+            String fileUri = fileName != null ? fileName : "";
+            Activity activity = getCurrentActivity();
+            if (activity != null && fileName != null) {
+                try {
+                    Uri contentUri = FileProvider.getUriForFile(
+                        activity, 
+                        activity.getApplicationContext().getPackageName() + ".fileprovider", 
+                        new File(fileName));
+                    fileUri = contentUri.toString();
+                } catch (Exception e) {
+                    Log.e("TAG", "FileProvider error: " + e.getMessage());
+                    fileUri = "file://" + fileName;
+                }
+            }
+            
+            callback.invoke("{\"success\": true, \"file\": \"" + fileUri + "\", \"position\": " + currentPosition + "}");
+            Log.e("TAG", "Paused Audio at position: " + currentPosition);
+        } else {
+            callback.invoke("{\"success\": false, \"error\": \"No audio playing\"}");
+        }
+    }
+
+    /**
+     * Resume playback from the current paused position.
+     * This is instant since the MediaPlayer is already prepared.
+     */
+    @ReactMethod
+    public void resumePlaying(Callback callback) {
+        if (audioPlayer != null) {
+            try {
+                // Check if already playing
+                if (audioPlayer.isPlaying()) {
+                    callback.invoke("{\"success\": true, \"message\": \"Already playing\"}");
+                    return;
+                }
+                
+                // Get current position before resuming
+                int currentPosition = audioPlayer.getCurrentPosition();
+                
+                // Resume playback - this is instant since player is already prepared
+                audioPlayer.start();
+                Log.e("TAG", "Resumed Audio from position: " + currentPosition);
+                
+                // Build response with file URI and position
+                String fileUri = fileName != null ? fileName : "";
+                Activity activity = getCurrentActivity();
+                if (activity != null && fileName != null) {
+                    try {
+                        Uri contentUri = FileProvider.getUriForFile(
+                            activity, 
+                            activity.getApplicationContext().getPackageName() + ".fileprovider", 
+                            new File(fileName));
+                        fileUri = contentUri.toString();
+                    } catch (Exception e) {
+                        Log.e("TAG", "FileProvider error: " + e.getMessage());
+                        fileUri = "file://" + fileName;
+                    }
+                }
+                
+                callback.invoke("{\"success\": true, \"file\": \"" + fileUri + "\", \"position\": " + currentPosition + "}");
+            } catch (Exception e) {
+                Log.e("TAG", "resumePlaying error: " + e.getMessage());
+                callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+            }
+        } else {
+            callback.invoke("{\"success\": false, \"error\": \"No audio player initialized\"}");
         }
     }
 
     @ReactMethod
     private void stopPlaying(Callback callback) {
         if (audioPlayer != null) {
-            audioPlayer.stop();
-            audioPlayer.release();
+            try {
+                audioPlayer.stop();
+            } catch (Exception ignore) {}
+            try {
+                audioPlayer.release();
+            } catch (Exception ignore) {}
             audioPlayer = null;
-            callback.invoke("{\"success\": true, \"file\": \"" + String.valueOf(FileProvider.getUriForFile(getCurrentActivity(), getCurrentActivity().getApplicationContext().getPackageName() + ".fileprovider", new File(fileName))) + "\"}");
+            
+            // Build response with file URI
+            String fileUri = fileName != null ? fileName : "";
+            Activity activity = getCurrentActivity();
+            if (activity != null && fileName != null) {
+                try {
+                    Uri contentUri = FileProvider.getUriForFile(
+                        activity, 
+                        activity.getApplicationContext().getPackageName() + ".fileprovider", 
+                        new File(fileName));
+                    fileUri = contentUri.toString();
+                } catch (Exception e) {
+                    Log.e("TAG", "FileProvider error: " + e.getMessage());
+                    fileUri = "file://" + fileName;
+                }
+            }
+            
+            callback.invoke("{\"success\": true, \"file\": \"" + fileUri + "\"}");
+        } else {
+            callback.invoke("{\"success\": false, \"error\": \"No audio player\"}");
         }
     }
 
     @ReactMethod
     public void releaseMediaResources(final Callback callback) {
+    // Stop amplitude polling
+    stopAmplitudePolling();
+    
     // Stop active recording
     if (audioRecorder != null) {
         try {
@@ -672,6 +899,678 @@ public class FileManager extends ReactContextBaseJavaModule {
                 callback.invoke("{\"success\": false}");
             }
         }
+    }
+
+    // ==================== Segment-Based Recording Methods ====================
+
+    /**
+     * Finalize the current recording segment without stopping the recorder.
+     * This allows the user to preview the recorded audio while paused.
+     * @validates Requirements 11.1
+     */
+    @ReactMethod
+    public void finalizeSegment(Callback callback) {
+        stopAmplitudePolling();
+        
+        if (audioRecorder == null) {
+            callback.invoke("{\"success\": false, \"error\": \"No active recording\"}");
+            return;
+        }
+        
+        try {
+            audioRecorder.stop();
+            audioRecorder.release();
+            audioRecorder = null;
+            
+            // Add current file to segments (store the actual file path, not content URI)
+            if (fileName != null) {
+                segmentPaths.add(fileName);
+            }
+            
+            // Return the file path (not content URI) so JS can use it for playback
+            String jsonString = String.format(
+                "{\"success\": true, \"segmentPath\": \"%s\", \"duration\": 0, \"segmentIndex\": %d}",
+                fileName,
+                segmentPaths.size() - 1
+            );
+            callback.invoke(jsonString);
+        } catch (Exception e) {
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * Start recording a new segment after pausing.
+     * This creates a new audio file for the next segment.
+     * @validates Requirements 11.2
+     */
+    @ReactMethod
+    public void startNewSegment(Callback callback) {
+        Activity activity = getCurrentActivity();
+        if (activity == null) {
+            callback.invoke("{\"success\": false, \"error\": \"E_NO_ACTIVITY\"}");
+            return;
+        }
+
+        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            callback.invoke("{\"granted\": false}");
+            return;
+        }
+
+        try {
+            // Create new file for this segment
+            File dir = activity.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+            if (dir == null) {
+                callback.invoke("{\"success\": false, \"error\": \"E_NO_DIR\"}");
+                return;
+            }
+            String ts = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+            fileName = new File(dir, "audio-segment-" + ts + "-" + segmentPaths.size() + ".m4a").getAbsolutePath();
+
+            audioRecorder = new MediaRecorder();
+            audioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            audioRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            audioRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            audioRecorder.setAudioEncodingBitRate(128000);
+            audioRecorder.setAudioSamplingRate(44100);
+            audioRecorder.setOutputFile(fileName);
+
+            audioRecorder.prepare();
+            audioRecorder.start();
+            
+            // Start amplitude polling for real-time waveform
+            startAmplitudePolling();
+
+            String jsonString = String.format(
+                "{\"success\": true, \"file\": \"%s\", \"segmentIndex\": %d}",
+                fileName,
+                segmentPaths.size()
+            );
+            callback.invoke(jsonString);
+        } catch (Exception e) {
+            try { if (audioRecorder != null) audioRecorder.release(); } catch (Exception ignore) {}
+            audioRecorder = null;
+            stopAmplitudePolling();
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * Merge all recorded segments into a single audio file.
+     * Uses simple concatenation for M4A files.
+     * @validates Requirements 11.4
+     */
+    @ReactMethod
+    public void mergeSegments(ReadableArray segmentPathsArray, Callback callback) {
+        if (segmentPathsArray == null || segmentPathsArray.size() == 0) {
+            callback.invoke("{\"success\": false, \"error\": \"No segments to merge\"}");
+            return;
+        }
+
+        // Convert ReadableArray to List
+        List<String> paths = new ArrayList<>();
+        for (int i = 0; i < segmentPathsArray.size(); i++) {
+            paths.add(segmentPathsArray.getString(i));
+        }
+
+        // If only one segment, just return it and update fileName
+        if (paths.size() == 1) {
+            String segmentPath = paths.get(0);
+            // Handle content:// URIs - convert to file path
+            if (segmentPath.startsWith("content://")) {
+                String[] parts = segmentPath.split("/external_files");
+                if (parts.length > 1) {
+                    segmentPath = "/storage/emulated/0" + parts[1];
+                }
+            } else if (segmentPath.startsWith("file://")) {
+                segmentPath = segmentPath.substring(7);
+            }
+            
+            // Update fileName so playAudio uses this file
+            fileName = segmentPath;
+            
+            Activity activity = getCurrentActivity();
+            String fileUri = segmentPath;
+            if (activity != null) {
+                try {
+                    Uri contentUri = FileProvider.getUriForFile(
+                        activity, activity.getPackageName() + ".fileprovider", new File(segmentPath));
+                    fileUri = contentUri.toString();
+                } catch (Exception e) {
+                    // Use original path if FileProvider fails
+                    fileUri = "file://" + segmentPath;
+                }
+            }
+            callback.invoke(String.format("{\"success\": true, \"mergedPath\": \"%s\", \"totalDuration\": 0}", fileUri));
+            return;
+        }
+
+        // Merge segments in background thread using MediaExtractor/MediaMuxer
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                Activity activity = getCurrentActivity();
+                if (activity == null) {
+                    new Handler(Looper.getMainLooper()).post(() -> 
+                        callback.invoke("{\"success\": false, \"error\": \"No activity\"}"));
+                    return;
+                }
+
+                // Create output file
+                File dir = activity.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+                String ts = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+                String mergedPath = new File(dir, "audio-merged-" + ts + ".m4a").getAbsolutePath();
+
+                // Use MediaMuxer for proper AAC/M4A merging
+                android.media.MediaMuxer muxer = new android.media.MediaMuxer(mergedPath, android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+                int audioTrackIndex = -1;
+                boolean muxerStarted = false;
+                long totalDurationUs = 0;
+                
+                for (String path : paths) {
+                    // Handle content:// URIs and file:// URIs
+                    String actualPath = path;
+                    if (path.startsWith("content://")) {
+                        String[] parts = path.split("/external_files");
+                        if (parts.length > 1) {
+                            actualPath = "/storage/emulated/0" + parts[1];
+                        } else {
+                            Log.e(TAG, "Cannot resolve content URI: " + path);
+                            continue;
+                        }
+                    }
+                    if (actualPath.startsWith("file://")) {
+                        actualPath = actualPath.substring(7);
+                    }
+                    
+                    File segmentFile = new File(actualPath);
+                    if (!segmentFile.exists()) {
+                        Log.e(TAG, "Segment file not found: " + actualPath);
+                        continue;
+                    }
+                    
+                    android.media.MediaExtractor extractor = new android.media.MediaExtractor();
+                    extractor.setDataSource(actualPath);
+                    
+                    // Find audio track
+                    int trackIndex = -1;
+                    for (int i = 0; i < extractor.getTrackCount(); i++) {
+                        android.media.MediaFormat format = extractor.getTrackFormat(i);
+                        String mime = format.getString(android.media.MediaFormat.KEY_MIME);
+                        if (mime != null && mime.startsWith("audio/")) {
+                            trackIndex = i;
+                            if (!muxerStarted) {
+                                audioTrackIndex = muxer.addTrack(format);
+                                muxer.start();
+                                muxerStarted = true;
+                            }
+                            break;
+                        }
+                    }
+                    
+                    if (trackIndex < 0) {
+                        extractor.release();
+                        continue;
+                    }
+                    
+                    extractor.selectTrack(trackIndex);
+                    
+                    // Copy samples
+                    java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(1024 * 1024);
+                    android.media.MediaCodec.BufferInfo bufferInfo = new android.media.MediaCodec.BufferInfo();
+                    
+                    while (true) {
+                        int sampleSize = extractor.readSampleData(buffer, 0);
+                        if (sampleSize < 0) break;
+                        
+                        bufferInfo.offset = 0;
+                        bufferInfo.size = sampleSize;
+                        bufferInfo.presentationTimeUs = totalDurationUs + extractor.getSampleTime();
+                        bufferInfo.flags = extractor.getSampleFlags();
+                        
+                        muxer.writeSampleData(audioTrackIndex, buffer, bufferInfo);
+                        extractor.advance();
+                    }
+                    
+                    // Get duration of this segment
+                    android.media.MediaFormat format = extractor.getTrackFormat(trackIndex);
+                    if (format.containsKey(android.media.MediaFormat.KEY_DURATION)) {
+                        totalDurationUs += format.getLong(android.media.MediaFormat.KEY_DURATION);
+                    }
+                    
+                    extractor.release();
+                }
+                
+                if (muxerStarted) {
+                    muxer.stop();
+                }
+                muxer.release();
+
+                // Update fileName to merged file so playAudio uses it
+                fileName = mergedPath;
+
+                String fileUri = mergedPath;
+                try {
+                    Uri contentUri = FileProvider.getUriForFile(
+                        activity, activity.getPackageName() + ".fileprovider", new File(mergedPath));
+                    fileUri = contentUri.toString();
+                } catch (Exception e) {
+                    // Use original path if FileProvider fails
+                    fileUri = "file://" + mergedPath;
+                }
+
+                final String finalUri = fileUri;
+                final double totalDurationSec = totalDurationUs / 1000000.0;
+                new Handler(Looper.getMainLooper()).post(() -> 
+                    callback.invoke(String.format("{\"success\": true, \"mergedPath\": \"%s\", \"totalDuration\": %f}", finalUri, totalDurationSec)));
+            } catch (Exception e) {
+                Log.e(TAG, "Error merging segments: " + e.getMessage());
+                new Handler(Looper.getMainLooper()).post(() -> 
+                    callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}"));
+            }
+        });
+    }
+
+    /**
+     * Play multiple segments sequentially.
+     * @validates Requirements 11.4
+     */
+    @ReactMethod
+    public void playSegments(ReadableArray segmentPathsArray, Callback callback) {
+        if (segmentPathsArray == null || segmentPathsArray.size() == 0) {
+            callback.invoke("{\"success\": false, \"error\": \"No segments to play\"}");
+            return;
+        }
+
+        // Convert ReadableArray to List
+        final List<String> paths = new ArrayList<>();
+        for (int i = 0; i < segmentPathsArray.size(); i++) {
+            paths.add(segmentPathsArray.getString(i));
+        }
+
+        // Stop any existing playback
+        if (audioPlayer != null) {
+            try {
+                if (audioPlayer.isPlaying()) audioPlayer.stop();
+                audioPlayer.release();
+            } catch (Exception ignore) {}
+            audioPlayer = null;
+        }
+        if (nextAudioPlayer != null) {
+            try {
+                nextAudioPlayer.release();
+            } catch (Exception ignore) {}
+            nextAudioPlayer = null;
+        }
+
+        currentSegmentIndex = 0;
+        segmentPathsList = paths;
+        playNextSegmentGapless(callback);
+    }
+
+    // Store segment paths for gapless playback
+    private List<String> segmentPathsList = new ArrayList<>();
+    private MediaPlayer nextAudioPlayer = null;
+
+    private MediaPlayer createMediaPlayerForPath(String path) throws Exception {
+        MediaPlayer mp = new MediaPlayer();
+        
+        if (path.startsWith("file://")) {
+            path = path.substring(7);
+        }
+        
+        if (path.startsWith("content://")) {
+            Activity activity = getCurrentActivity();
+            if (activity != null) {
+                mp.setDataSource(activity, Uri.parse(path));
+            } else {
+                String[] parts = path.split("/external_files");
+                if (parts.length > 1) {
+                    path = "/storage/emulated/0" + parts[1];
+                    mp.setDataSource(path);
+                } else {
+                    throw new Exception("Cannot resolve content URI: " + path);
+                }
+            }
+        } else {
+            mp.setDataSource(path);
+        }
+        
+        mp.prepare();
+        return mp;
+    }
+
+    private void playNextSegmentGapless(final Callback callback) {
+        if (currentSegmentIndex >= segmentPathsList.size()) {
+            // All segments played
+            if (eventEmitter == null) {
+                eventEmitter = getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+            }
+            WritableMap params = Arguments.createMap();
+            params.putString("state", "playbackComplete");
+            eventEmitter.emit("status", params);
+            return;
+        }
+
+        try {
+            String path = segmentPathsList.get(currentSegmentIndex);
+            
+            // Create current player
+            audioPlayer = createMediaPlayerForPath(path);
+            
+            // Pre-load next segment for gapless playback
+            if (currentSegmentIndex + 1 < segmentPathsList.size()) {
+                try {
+                    String nextPath = segmentPathsList.get(currentSegmentIndex + 1);
+                    nextAudioPlayer = createMediaPlayerForPath(nextPath);
+                    audioPlayer.setNextMediaPlayer(nextAudioPlayer);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error pre-loading next segment: " + e.getMessage());
+                    // Continue without gapless - will have small gap
+                }
+            }
+            
+            audioPlayer.setOnCompletionListener(mp -> {
+                currentSegmentIndex++;
+                mp.release();
+                
+                // Move next player to current
+                if (nextAudioPlayer != null) {
+                    audioPlayer = nextAudioPlayer;
+                    nextAudioPlayer = null;
+                    
+                    // Pre-load the next-next segment
+                    if (currentSegmentIndex + 1 < segmentPathsList.size()) {
+                        try {
+                            String nextPath = segmentPathsList.get(currentSegmentIndex + 1);
+                            nextAudioPlayer = createMediaPlayerForPath(nextPath);
+                            audioPlayer.setNextMediaPlayer(nextAudioPlayer);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error pre-loading next segment: " + e.getMessage());
+                        }
+                    }
+                    
+                    // Set completion listener for the new current player
+                    audioPlayer.setOnCompletionListener(this::onSegmentComplete);
+                } else {
+                    audioPlayer = null;
+                    playNextSegmentGapless(callback);
+                }
+            });
+            
+            audioPlayer.start();
+            
+            if (currentSegmentIndex == 0) {
+                callback.invoke(String.format("{\"success\": true, \"segmentCount\": %d}", segmentPathsList.size()));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing segment: " + e.getMessage());
+            if (currentSegmentIndex == 0) {
+                callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+            }
+        }
+    }
+
+    private void onSegmentComplete(MediaPlayer mp) {
+        currentSegmentIndex++;
+        mp.release();
+        
+        if (nextAudioPlayer != null) {
+            audioPlayer = nextAudioPlayer;
+            nextAudioPlayer = null;
+            
+            // Pre-load the next-next segment
+            if (currentSegmentIndex + 1 < segmentPathsList.size()) {
+                try {
+                    String nextPath = segmentPathsList.get(currentSegmentIndex + 1);
+                    nextAudioPlayer = createMediaPlayerForPath(nextPath);
+                    audioPlayer.setNextMediaPlayer(nextAudioPlayer);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error pre-loading next segment: " + e.getMessage());
+                }
+            }
+            
+            audioPlayer.setOnCompletionListener(this::onSegmentComplete);
+        } else {
+            audioPlayer = null;
+            // Check if there are more segments
+            if (currentSegmentIndex < segmentPathsList.size()) {
+                playNextSegmentGapless(null);
+            } else {
+                // All done
+                if (eventEmitter == null) {
+                    eventEmitter = getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+                }
+                WritableMap params = Arguments.createMap();
+                params.putString("state", "playbackComplete");
+                eventEmitter.emit("status", params);
+            }
+        }
+    }
+
+    // Keep old method for backward compatibility but redirect to new one
+    private void playNextSegment(final List<String> paths, final Callback callback) {
+        segmentPathsList = paths;
+        playNextSegmentGapless(callback);
+    }
+
+    /**
+     * Seek to a specific position in the audio playback.
+     * Uses OnSeekCompleteListener to wait for the async seek to complete
+     * before invoking the callback, preventing race conditions.
+     * @param positionMs Position in milliseconds
+     */
+    @ReactMethod
+    public void seekTo(int positionMs, Callback callback) {
+        if (audioPlayer != null) {
+            try {
+                // Set up listener to wait for seek to complete
+                audioPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+                    @Override
+                    public void onSeekComplete(MediaPlayer mp) {
+                        // Clear the listener after use
+                        mp.setOnSeekCompleteListener(null);
+                        // Get actual position after seek completes
+                        int actualPosition = mp.getCurrentPosition();
+                        callback.invoke("{\"success\": true, \"position\": " + actualPosition + "}");
+                    }
+                });
+                audioPlayer.seekTo(positionMs);
+            } catch (Exception e) {
+                callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+            }
+        } else {
+            callback.invoke("{\"success\": false, \"error\": \"No audio player active\"}");
+        }
+    }
+
+    /**
+     * Get current playback position in milliseconds.
+     * Used for accurate waveform sync during playback.
+     */
+    @ReactMethod
+    public void getPlaybackPosition(Callback callback) {
+        if (audioPlayer != null) {
+            try {
+                int position = audioPlayer.getCurrentPosition();
+                int duration = audioPlayer.getDuration();
+                callback.invoke("{\"success\": true, \"position\": " + position + ", \"duration\": " + duration + "}");
+            } catch (Exception e) {
+                callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+            }
+        } else {
+            callback.invoke("{\"success\": false, \"error\": \"No audio player active\"}");
+        }
+    }
+
+    /**
+     * Start playback from a specific position.
+     * Uses OnSeekCompleteListener to ensure seek completes before starting playback.
+     * @param positionMs Position in milliseconds to start from
+     */
+    @ReactMethod
+    public void playFromPosition(int positionMs, Callback callback) {
+        if (fileName == null || fileName.isEmpty()) {
+            callback.invoke("{\"success\": false, \"error\": \"No audio file to play\"}");
+            return;
+        }
+        
+        // Stop any existing playback
+        if (audioPlayer != null) {
+            try {
+                if (audioPlayer.isPlaying()) audioPlayer.stop();
+                audioPlayer.release();
+            } catch (Exception ignore) {}
+            audioPlayer = null;
+        }
+        
+        try {
+            audioPlayer = new MediaPlayer();
+            
+            String playPath = fileName;
+            if (playPath.startsWith("content://")) {
+                Activity activity = getCurrentActivity();
+                if (activity != null) {
+                    audioPlayer.setDataSource(activity, Uri.parse(playPath));
+                } else {
+                    String[] parts = playPath.split("/external_files");
+                    if (parts.length > 1) {
+                        playPath = "/storage/emulated/0" + parts[1];
+                        audioPlayer.setDataSource(playPath);
+                    } else {
+                        throw new IOException("Cannot resolve content URI without activity");
+                    }
+                }
+            } else {
+                if (playPath.startsWith("file://")) {
+                    playPath = playPath.substring(7);
+                }
+                audioPlayer.setDataSource(playPath);
+            }
+            
+            // Set up completion listener to emit event when playback finishes
+            audioPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    // Emit playback complete event to JS
+                    if (eventEmitter == null) {
+                        eventEmitter = getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class);
+                    }
+                    WritableMap params = Arguments.createMap();
+                    params.putString("state", "playbackComplete");
+                    eventEmitter.emit("status", params);
+                }
+            });
+            
+            audioPlayer.prepare();
+            
+            // Use OnSeekCompleteListener to ensure seek completes before starting playback
+            audioPlayer.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener() {
+                @Override
+                public void onSeekComplete(MediaPlayer mp) {
+                    // Clear the listener after use
+                    mp.setOnSeekCompleteListener(null);
+                    // Start playback after seek completes
+                    mp.start();
+                    int actualPosition = mp.getCurrentPosition();
+                    callback.invoke("{\"success\": true, \"position\": " + actualPosition + "}");
+                }
+            });
+            audioPlayer.seekTo(positionMs);
+            
+        } catch (Exception e) {
+            Log.e("TAG", "playFromPosition error: " + e.getMessage());
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * Delete all segment files.
+     * @validates Requirements 11.5
+     */
+    @ReactMethod
+    public void deleteSegments(ReadableArray segmentPathsArray, Callback callback) {
+        if (segmentPathsArray == null || segmentPathsArray.size() == 0) {
+            callback.invoke("{\"success\": true, \"deletedCount\": 0}");
+            return;
+        }
+
+        int deletedCount = 0;
+        for (int i = 0; i < segmentPathsArray.size(); i++) {
+            try {
+                String path = segmentPathsArray.getString(i);
+                // Handle content:// URIs
+                if (path.startsWith("file://")) {
+                    path = path.substring(7);
+                }
+                if (path.startsWith("content://")) {
+                    // Skip content URIs
+                    continue;
+                }
+                
+                File file = new File(path);
+                if (file.exists() && file.delete()) {
+                    deletedCount++;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error deleting segment: " + e.getMessage());
+            }
+        }
+
+        // Clear internal segments list
+        segmentPaths.clear();
+        currentSegmentIndex = 0;
+
+        callback.invoke(String.format("{\"success\": true, \"deletedCount\": %d}", deletedCount));
+    }
+
+    /**
+     * Get all current segment paths.
+     */
+    @ReactMethod
+    public void getSegmentPaths(Callback callback) {
+        try {
+            JSONArray pathsArray = new JSONArray();
+            Activity activity = getCurrentActivity();
+            
+            for (String path : segmentPaths) {
+                String fileUri = path;
+                if (activity != null) {
+                    try {
+                        Uri contentUri = FileProvider.getUriForFile(
+                            activity, activity.getPackageName() + ".fileprovider", new File(path));
+                        fileUri = contentUri.toString();
+                    } catch (Exception e) {
+                        // Use original path if FileProvider fails
+                    }
+                }
+                pathsArray.put(fileUri);
+            }
+            
+            callback.invoke(String.format("{\"success\": true, \"segments\": %s}", pathsArray.toString()));
+        } catch (Exception e) {
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * Clear all segments and reset state.
+     */
+    @ReactMethod
+    public void clearSegments(Callback callback) {
+        segmentPaths.clear();
+        currentSegmentIndex = 0;
+        
+        if (audioPlayer != null) {
+            try {
+                if (audioPlayer.isPlaying()) audioPlayer.stop();
+                audioPlayer.release();
+            } catch (Exception ignore) {}
+            audioPlayer = null;
+        }
+        
+        callback.invoke("{\"success\": true}");
     }
 
     @ReactMethod

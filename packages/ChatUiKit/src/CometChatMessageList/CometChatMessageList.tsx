@@ -3329,7 +3329,12 @@ export const CometChatMessageList = memo(
       const copyMessage = (item: any) => {
         let copyMessage = getPlainString(item["text"], item);
         Clipboard.setString(copyMessage);
-        setShowMessageOptions([]);
+        // Defer modal dismiss to next frame to avoid Fabric race condition
+        // where unmounting the Modal while Clipboard is still accessing views
+        // causes EXC_BAD_ACCESS (SIGSEGV) at null pointer in mount phase.
+        requestAnimationFrame(() => {
+          setShowMessageOptions([]);
+        });
       };
 
       const getThreadView = useCallback(

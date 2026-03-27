@@ -91,14 +91,39 @@ import {
 } from "./CometChatReportDialog";
 
 import {
+  CometChatLinkConfirmPopup,
+  CometChatLinkConfirmPopupInterface,
+} from "./CometChatLinkConfirmPopup";
+
+import {
   CometChatNewMessageIndicator,
   CometChatNewMessageIndicatorInterface,
   NewMessageIndicatorStyle,
 } from "./CometChatNewMessageIndicator";
 
+import {
+  CometChatInlineAudioRecorder,
+  formatDuration,
+  AudioWaveformVisualizer,
+  useAudioRecorder,
+  getInlineAudioRecorderStyle,
+  getInlineAudioRecorderStyleLight,
+  getInlineAudioRecorderStyleDark,
+} from "./CometChatInlineAudioRecorder";
+
+import type {
+  CometChatInlineAudioRecorderProps,
+  CometChatInlineAudioRecorderStyle,
+  AudioWaveformVisualizerProps,
+  WaveformStyle,
+  RecorderState,
+  UseAudioRecorderReturn,
+} from "./CometChatInlineAudioRecorder";
+
 export type {
   CometChatConfirmDialogInterface,
   CometChatReportDialogInterface,
+  CometChatLinkConfirmPopupInterface,
   CometChatDateInterface,
   CometChatFileBubbleInterface,
   CometChatImageBubbleInterface,
@@ -118,6 +143,12 @@ export type {
   CometChatVideoBubbleInterface,
   CometChatTextBubbleInterface,
   CometChatNewMessageIndicatorInterface,
+  CometChatInlineAudioRecorderProps,
+  CometChatInlineAudioRecorderStyle,
+  AudioWaveformVisualizerProps,
+  WaveformStyle,
+  RecorderState,
+  UseAudioRecorderReturn,
 };
 
 export {
@@ -128,6 +159,7 @@ export {
   CometChatBottomSheet,
   CometChatConfirmDialog,
   CometChatReportDialog,
+  CometChatLinkConfirmPopup,
   CometChatDate,
   CometChatEmojiKeyboard,
   CometChatFileBubble,
@@ -146,6 +178,13 @@ export {
   CometChatVideoBubble,
   SuggestionItem,
   CometChatNewMessageIndicator,
+  CometChatInlineAudioRecorder,
+  formatDuration,
+  AudioWaveformVisualizer,
+  useAudioRecorder,
+  getInlineAudioRecorderStyle,
+  getInlineAudioRecorderStyleLight,
+  getInlineAudioRecorderStyleDark,
 };
 
 

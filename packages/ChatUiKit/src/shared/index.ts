@@ -55,6 +55,7 @@ export {
   CometChatEmojiKeyboard,
   CometChatFileBubble,
   CometChatImageBubble,
+  CometChatInlineAudioRecorder,
   CometChatList,
   CometChatListItem,
   CometChatMediaRecorder,
@@ -73,6 +74,7 @@ export {
 
 export type{
   ActionItemInterface,
+  AudioWaveformVisualizerProps,
   BadgeStyle,
   CometChatAudioBubbleInterface,
   CometChatBottomSheetInterface,
@@ -80,6 +82,8 @@ export type{
   CometChatDateInterface,
   CometChatFileBubbleInterface,
   CometChatImageBubbleInterface,
+  CometChatInlineAudioRecorderProps,
+  CometChatInlineAudioRecorderStyle,
   CometChatListActionsInterface,
   CometChatListItemInterface,
   CometChatListProps,
@@ -94,14 +98,19 @@ export type{
   CometChatTextBubbleInterface,
   CometChatVideoBubbleInterface,
   DateStyle,
-  MenuItemInterface
+  MenuItemInterface,
+  RecorderState,
+  UseAudioRecorderReturn,
+  WaveformStyle,
 } from "./views";
 
 export {
   CometChatMentionsFormatter,
   CometChatTextFormatter,
   CometChatUrlsFormatter,
+  CometChatRichTextFormatter,
   MentionTextStyle,
+  RichTextStyle,
 } from "./formatters";
 
 export { CometChatUIKit, CometChatUIKitHelper, UIKitSettings } from "./CometChatUiKit";
@@ -115,3 +124,46 @@ export { useLocalizedDate } from "./helper/useLocalizedDateHook";
 export { LocalizedDateHelper } from "./helper/LocalizedDateHelper";
 export { useCometChatTranslation } from "./resources/CometChatLocalizeNew/useCometChatTranslationHook";
 export {getLastSeenTime} from "./helper/helperFunctions";
+
+// Composer helper utilities for shared functionality between message composers
+export {
+  // Agentic user helpers
+  isAgenticUser,
+  deriveHideButton,
+  deriveDisableFeature,
+  applyAgenticSendDelay,
+  trackAgenticParentMessageId,
+  getParentMessageId,
+  // Reply message helpers
+  setQuotedMessageSafe,
+  getReplyMessageId,
+  hasActiveReply,
+  handleReplyOnSend,
+  // Send button state helpers
+  isSendButtonDisabled,
+  getSendButtonTint,
+  // Message creation helpers
+  createTextMessage,
+  createMediaMessage,
+  // Mention helpers
+  parseMentionKey,
+  calcDeletionRange,
+  collectOverlappingMentions,
+  shiftRemainingMentionKeys,
+  // Utility helpers
+  generateMessageMuid,
+  isTextEmpty,
+  getMessageIdSafe,
+} from "./helper/composerHelpers";
+
+export type {
+  ReplyMessageState,
+  MessagePreviewState,
+  AgenticSendDelayConfig,
+  AgenticParentMessageConfig,
+  ReplyMessageSendConfig,
+  SendButtonStateConfig,
+  CreateTextMessageConfig,
+  CreateMediaMessageConfig,
+  MentionOverlap,
+} from "./helper/composerHelpers";

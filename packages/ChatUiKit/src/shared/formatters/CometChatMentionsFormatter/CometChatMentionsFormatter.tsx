@@ -172,12 +172,12 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
       };
     };
 
-    // Composer-specific style with purple/blue background matching the text color
+    // Composer-specific style — bold text with subtle background pill (original behavior)
     const composerFallback: MentionsSubStyle = {
       textStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#6852D6" },
       selfTextStyle: { fontWeight: "700", fontSize: 14, lineHeight: 19.6, color: "#FFAB00" },
-      backgroundColor: "rgba(104, 82, 214, 0.15)", // Purple/blue matching text color
-      selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
+      backgroundColor: "rgba(104, 82, 214, 0.15)",
+      selfBackgroundColor: "rgba(255, 171, 0, 0.2)",
     };
 
     const composerFromTheme = (): MentionsSubStyle => {
@@ -186,8 +186,8 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
       return {
         textStyle: { ...baseStyle, color: primaryColor },
         selfTextStyle: { ...baseStyle, color: theme?.color?.warning || "#FFAB00" },
-        backgroundColor: "rgba(104, 82, 214, 0.15)", // Purple/blue background
-        selfBackgroundColor: "rgba(255, 171, 0, 0.2)", // Yellow/warning for @all
+        backgroundColor: "rgba(104, 82, 214, 0.15)",
+        selfBackgroundColor: "rgba(255, 171, 0, 0.2)",
       };
     };
 

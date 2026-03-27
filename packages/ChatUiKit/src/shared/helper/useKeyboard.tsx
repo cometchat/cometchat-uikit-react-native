@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Keyboard, KeyboardEvent, LayoutAnimation, Platform } from "react-native";
+import { Keyboard, KeyboardEvent } from "react-native";
 
 export let isKeyboardVisible = false;
 
@@ -9,27 +9,17 @@ export const useKeyboard = () => {
   useEffect(() => {
     function onKeyboardDidShow(e: KeyboardEvent) {
       isKeyboardVisible = true;
-      if (Platform.OS === "ios") {
-        LayoutAnimation.configureNext({
-          duration: 200,
-          create: { type: "linear", property: "opacity" },
-          update: { type: "linear", property: "opacity" },
-          delete: { type: "linear", property: "opacity" },
-        });
-      }
+      // NOTE: LayoutAnimation removed to prevent Fabric crashes (SIGABRT)
+      // LayoutAnimation.configureNext() on iOS with Fabric causes crashes when
+      // components are removed during the animation (e.g., message list updates).
+      // The crash happens in RCTComponentViewRegistry.componentViewDescriptorWithTag
+      // when React tries to access a view that was destroyed during animation.
       setKeyboardHeight(e.endCoordinates.height);
     }
 
     function onKeyboardDidHide() {
       isKeyboardVisible = false;
-      if (Platform.OS === "ios") {
-        LayoutAnimation.configureNext({
-          duration: 200,
-          create: { type: "linear", property: "opacity" },
-          update: { type: "linear", property: "opacity" },
-          delete: { type: "linear", property: "opacity" },
-        });
-      }
+      // NOTE: LayoutAnimation removed to prevent Fabric crashes (SIGABRT)
       setKeyboardHeight(0);
     }
 

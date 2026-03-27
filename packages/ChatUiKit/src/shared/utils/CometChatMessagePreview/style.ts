@@ -4,14 +4,12 @@ import { CometChatTheme } from "../../../theme/type";
 export const Styles = (theme: CometChatTheme) => {
   return StyleSheet.create({
     editPreviewContainerStyle: {
-      alignSelf: "center",
       borderRadius: theme.spacing.radius.r2,
       padding: theme.spacing.padding.p2,
       marginBottom: theme.spacing.margin.m1,
       backgroundColor: theme.color.background3,
-      width: '100%',
       borderWidth: theme.spacing.spacing.s0_5 / 2,
-      borderColor: theme.color.borderDefault
+      borderColor: theme.color.borderDefault,
     },
     previewHeadingStyle: {
       marginBottom: 5,
