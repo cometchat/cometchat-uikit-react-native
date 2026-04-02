@@ -150,6 +150,8 @@ const AddMember: React.FC = () => {
             action.setActionBy(CometChatUIKit.loggedInUser!);
             action.setActionFor(group);
             action.setSender(CometChatUIKit.loggedInUser!);
+            // Initialize data to prevent crash when SDK accesses getData().metadata during render
+            action.setData({ metadata: {} });
 
             // Emit individual event for each member added
             CometChatUIEventHandler.emitGroupEvent(

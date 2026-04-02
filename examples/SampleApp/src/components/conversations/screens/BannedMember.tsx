@@ -107,6 +107,8 @@ const BannedMember: React.FC<BannedMembersRouteProp> = ({
       actionMessage.setActionOn(selectedUser);
       actionMessage.setActionBy(CometChatUIKit.loggedInUser!);
       actionMessage.setSender(CometChatUIKit.loggedInUser!);
+      // Initialize data to prevent crash when SDK accesses getData().metadata during render
+      actionMessage.setData({ metadata: {} });
       actionMessage.setMessage(
         `${CometChatUIKit.loggedInUser?.getName()} ${t(
           'UNBANNED',

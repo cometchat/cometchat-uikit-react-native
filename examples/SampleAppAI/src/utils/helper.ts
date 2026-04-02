@@ -185,6 +185,8 @@ export const leaveGroup = (
         actionMessage.setMessage(
           `${CometChatUIKit.loggedInUser!.getName()} has left`,
         );
+        // Initialize data to prevent crash when SDK accesses getData().metadata during render
+        actionMessage.setData({ metadata: {} });
         CometChatUIEventHandler.emitGroupEvent(CometChatUIEvents.ccGroupLeft, {
           message: actionMessage, //Note: Add Action message after discussion
           leftUser: CometChatUIKit.loggedInUser,
