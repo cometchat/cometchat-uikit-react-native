@@ -26,4 +26,6 @@ export enum MessageEvents {
   onMessageReactionRemoved = "onMessageReactionRemoved",
   onMessageModerated = "onMessageModerated",
   onAIAssistantMessageReceived = "onAIAssistantMessageReceived",
+  onMessagesDeliveredToAll = "onMessagesDeliveredToAll",
+  onMessagesReadByAll = "onMessagesReadByAll",
 }

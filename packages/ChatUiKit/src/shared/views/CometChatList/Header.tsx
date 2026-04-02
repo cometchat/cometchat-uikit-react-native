@@ -292,7 +292,7 @@ export default function Header({
                     flexDirection: 'row' as const,
                     alignItems: 'center' as const,
                     gap: theme.spacing.spacing.s2,
-                    height: 48,
+                    minHeight: 48,
                     alignSelf: 'stretch',
                   },
                   searchStyle?.containerStyle,
@@ -323,6 +323,7 @@ export default function Header({
                   }}
                   submitBehavior='submit'
                   numberOfLines={1}
+                  allowFontScaling={false}
                   style={[
                     {
                       flex: 1,

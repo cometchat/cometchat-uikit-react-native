@@ -19,11 +19,12 @@ export const MessageReceiptUtils = {
     if (hasError) return MessageReceipt.ERROR;
 
     // Deleted messages treated as error for receipts
-    if ((message as any)?.deletedAt) return MessageReceipt.ERROR;
+    if (message.getDeletedAt?.()) return MessageReceipt.ERROR;
 
-    if ((message as any)?.readAt) return MessageReceipt.READ;
-    if ((message as any)?.deliveredAt) return MessageReceipt.DELIVERED;
-    if ((message as any)?.sentAt) return MessageReceipt.SENT;
+    // Use getter methods for receipt state (SDK objects expose these via getters)
+    if (message.getReadAt?.()) return MessageReceipt.READ;
+    if (message.getDeliveredAt?.()) return MessageReceipt.DELIVERED;
+    if (message.getSentAt?.()) return MessageReceipt.SENT;
 
     return MessageReceipt.WAIT;
   },

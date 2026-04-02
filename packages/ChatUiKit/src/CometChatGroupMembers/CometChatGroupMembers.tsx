@@ -454,6 +454,8 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
       action.setSender(loggedInUser.current);
       action.setReceiver(group);
       action.setConversationId("group_" + group.getGuid());
+      // Initialize data to prevent crash when SDK accesses getData().metadata during render
+      action.setData({ metadata: {} });
 
       // Emit the group event for a kicked member.
       CometChatUIEventHandler.emitGroupEvent(CometChatGroupsEvents.ccGroupMemberKicked, {
@@ -496,6 +498,8 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
       action.setMuid(String(getUnixTimestampInMilliseconds()));
       action.setSender(loggedInUser.current);
       action.setReceiver(group);
+      // Initialize data to prevent crash when SDK accesses getData().metadata during render
+      action.setData({ metadata: {} });
       group.setMembersCount(group.getMembersCount() - 1);
 
       // Emit the group event for a banned member.
@@ -928,6 +932,8 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
                       action.setMuid(String(getUnixTimestampInMilliseconds()));
                       action.setSender(loggedInUser.current);
                       action.setReceiver(group);
+                      // Initialize data to prevent crash when SDK accesses getData().metadata during render
+                      action.setData({ metadata: {} });
 
                       // Emit the group event for a scope change.
                       CometChatUIEventHandler.emitGroupEvent(

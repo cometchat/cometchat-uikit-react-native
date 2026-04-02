@@ -199,6 +199,8 @@ export class CometChatUIKit {
     }
     if (authToken) {
       let user = await CometChat.login(authToken).catch((e) => Promise.reject(e));
+      CometChatUIKit.setLoggedInUser(user);
+      CometChatUIKit.setConversationUpdateSettings(await CometChat.getConversationUpdateSettings());
       this.enableExtensions();
       return user;
     }

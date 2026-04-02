@@ -668,8 +668,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     if (
       conv &&
       conv?.getLastMessage &&
-      (conv.getLastMessage().id == receipt.getMessageId() ||
-        conv.getLastMessage().messageId == receipt.getMessageId())
+      (String(typeof conv.getLastMessage().getId === 'function' ? conv.getLastMessage().getId() : conv.getLastMessage().id) === String(receipt.getMessageId()))
     ) {
       let newConversation = CommonUtils.clone(conv);
       if (receipt.getReadAt()) {
@@ -903,7 +902,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
           {listPrefix}{messageText}{'...'}
         </Text>
       );
-    } else if (messageText) {
+    } else if (messageText && typeof messageText === 'string') {
       messageText = (
         <Text
           style={[mergedStyles.itemStyle.subtitleStyle, { flexShrink: 2 }]}
@@ -1705,7 +1704,6 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
       return (
         <View style={[
-          { flex: 1 },
           isAgentic ? { justifyContent: 'center' } : null
         ]}>
           <Text

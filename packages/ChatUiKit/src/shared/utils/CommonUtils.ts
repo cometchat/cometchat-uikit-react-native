@@ -54,7 +54,24 @@ export class CommonUtils {
     // Copy properties from obj2 to the new instance
     Object.assign(merged, obj2);
 
-    return merged;
+  // Preserve SDK message class identity after merge.
+    // When obj2 is a raw JSON object from the REST API history fetch,
+    // it contains flat `category` and `type` own properties (e.g. "message"/"text")
+    const protectedProps = ['category', 'type'];
+    for (const prop of protectedProps) {
+      const getterName = `get${prop.charAt(0).toUpperCase() + prop.slice(1)}`;
+      if (
+        typeof (obj1 as any)[getterName] === 'function' &&
+        typeof (obj2 as any)[getterName] !== 'function'
+      ) {
+        const correctValue = (obj1 as any)[getterName]();
+        if (correctValue !== undefined && (merged as any)[prop] !== correctValue) {
+          (merged as any)[prop] = correctValue;
+        }
+      }
+    }
+
+    return merged;
   }
 
   /**

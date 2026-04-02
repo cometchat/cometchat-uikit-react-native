@@ -33,6 +33,7 @@ export const Style = StyleSheet.create({
     marginHorizontal: 6,
     alignItems: "flex-end",
     justifyContent: "center",
+    flexShrink: 0,
   },
   optionStyle: {
     position: "absolute",

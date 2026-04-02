@@ -1,6 +1,6 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { JSX } from "react";
-import { ColorValue, Text, View } from "react-native";
+import { ColorValue, PixelRatio, Text, View } from "react-native";
 import { MessageBubbleAlignmentType } from "../base";
 import {
   CometChatCustomMessageTypes,
@@ -174,7 +174,7 @@ const getHeaderView = (
   ) {
     const senderName = (item.getSender()?.getName() || "").trim();
     return (
-      <View style={{ flexDirection: "row" }}>
+      <View style={{flexDirection: "row" }}>
         {Boolean(senderName) && (
           <Text style={_style.senderNameTextStyles} numberOfLines={1} ellipsizeMode={"tail"}>
             {senderName}
@@ -349,12 +349,14 @@ export const getMessagePreviewInternal = (
   text: string,
   { iconColor, theme }: { iconColor?: ColorValue; theme?: CometChatTheme }
 ) => {
+  const fontScale = PixelRatio.getFontScale();
+  const iconSize = (theme?.spacing?.spacing?.s4 ?? 16) * fontScale;
   return (
     <>
       {iconName && (
         <Icon
           name={iconName}
-          size={theme?.spacing?.spacing?.s4}
+          size={iconSize}
           color={iconColor || theme?.color?.textSecondary}
           containerStyle={{ marginRight: theme?.spacing?.spacing?.s0_5 }}
         />

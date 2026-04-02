@@ -3418,11 +3418,56 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       const applyInlineStyles = (text: string, styles: any[]): string => {
         if (!styles || styles.length === 0 || !text) return text;
 
+        // Build mention ranges by finding mention promptText within this block's text.
+        // This is more robust than position-based mapping because mentionMap positions
+        // are based on plain text (with list prefixes) while block text has prefixes stripped.
+        const mentionRanges: Array<[number, number]> = [];
+        mentionMap.current.forEach((value, _key) => {
+          const pt = value.promptText || '';
+          if (pt) {
+            let searchFrom = 0;
+            // Find all occurrences of this mention's promptText in the block text
+            while (searchFrom < text.length) {
+              const idx = text.indexOf(pt, searchFrom);
+              if (idx === -1) break;
+              mentionRanges.push([idx, idx + pt.length]);
+              searchFrom = idx + pt.length;
+            }
+          }
+        });
+
+        // Split styles around mention ranges so mentions stay clean.
+        const filteredStyles: any[] = [];
+        for (const s of styles) {
+          if (s.style === 'link' || mentionRanges.length === 0) {
+            filteredStyles.push(s);
+            continue;
+          }
+          const sStart = Math.max(0, s.start);
+          const sEnd = Math.min(text.length, s.end);
+          // Collect non-mention sub-ranges of this style
+          let cursor = sStart;
+          // Sort mention ranges for consistent processing
+          const sorted = [...mentionRanges].sort((a, b) => a[0] - b[0]);
+          for (const [mStart, mEnd] of sorted) {
+            if (mStart >= sEnd || mEnd <= sStart) continue; // no overlap
+            // Add the part before the mention
+            if (cursor < mStart) {
+              filteredStyles.push({ ...s, start: cursor, end: mStart });
+            }
+            cursor = Math.max(cursor, mEnd);
+          }
+          // Add the part after the last mention
+          if (cursor < sEnd) {
+            filteredStyles.push({ ...s, start: cursor, end: sEnd });
+          }
+        }
+
         // Collect all boundary positions where style sets change
         const boundaries = new Set<number>();
         boundaries.add(0);
         boundaries.add(text.length);
-        for (const s of styles) {
+        for (const s of filteredStyles) {
           boundaries.add(Math.max(0, s.start));
           boundaries.add(Math.min(text.length, s.end));
         }
@@ -3440,7 +3485,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
 
           const active: string[] = [];
           let linkUrl = '';
-          for (const s of styles) {
+          for (const s of filteredStyles) {
             const sStart = Math.max(0, s.start);
             const sEnd = Math.min(text.length, s.end);
             if (sStart <= segStart && sEnd >= segEnd) {

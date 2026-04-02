@@ -339,34 +339,38 @@ const t = getCometChatTranslation();
 
 interface LinkPreviewImageProps {
   uri: string;
+  fallbackUri?: string;
   mergedStyles: any;
   theme: any;
 }
 
-const LinkPreviewImage: React.FC<LinkPreviewImageProps> = ({ uri, mergedStyles, theme }) => {
-  const [imageError, setImageError] = useState(false);
+const LinkFallbackIcon = ({ mergedStyles, theme }: { mergedStyles: any; theme: any }) => (
+  <View style={mergedStyles.messageItemStyle?.iconContainerStyle}>
+    <Icon
+      name='link-fill'
+      size={48}
+      height={48}
+      width={48}
+      color={theme.color.iconSecondary}
+    />
+  </View>
+);
 
-  if (imageError) {
-    return (
-      <View style={mergedStyles.messageItemStyle?.iconContainerStyle}>
-        <Icon
-          name='link-fill'
-          size={48}
-          height={48}
-          width={48}
-          color={theme.color.iconSecondary}
-        />
-      </View>
-    );
+const LinkPreviewImage: React.FC<LinkPreviewImageProps> = ({ uri, fallbackUri, mergedStyles, theme }) => {
+  const [imageError, setImageError] = useState(false);
+  const [fallbackError, setFallbackError] = useState(false);
+
+  if (imageError && (!fallbackUri || fallbackError)) {
+    return <LinkFallbackIcon mergedStyles={mergedStyles} theme={theme} />;
   }
 
   return (
     <View style={mergedStyles.messageItemStyle?.iconContainerStyle}>
       <Image
-        source={{ uri }}
+        source={{ uri: imageError ? fallbackUri! : uri }}
         style={mergedStyles.messageItemStyle?.linkPreviewImageStyle}
         resizeMode="cover"
-        onError={() => setImageError(true)}
+        onError={() => imageError ? setFallbackError(true) : setImageError(true)}
       />
     </View>
   );
@@ -1481,25 +1485,22 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
             return (
               <LinkPreviewImage
                 uri={thumbnailUrl}
+                fallbackUri={firstLink.favicon !== thumbnailUrl ? firstLink.favicon : undefined}
                 mergedStyles={mergedStyles}
                 theme={theme}
               />
             );
           } else {
             // Fallback to link icon if no thumbnail
-            return (
-              <View style={mergedStyles.messageItemStyle?.iconContainerStyle}>
-                <Icon
-                  name='link-fill'
-                  size={48}
-                  height={48}
-                  width={48}
-                  color={theme.color.iconSecondary}
-                />
-              </View>
-            );
+            return <LinkFallbackIcon mergedStyles={mergedStyles} theme={theme} />;
           }
         }
+
+        // Show link icon for text messages in Links filter that lack preview metadata
+        if (searchState.activeFilters.includes(CometChatSearchFilter.Links)) {
+          return <LinkFallbackIcon mergedStyles={mergedStyles} theme={theme} />;
+        }
+
         return null;
       }
 

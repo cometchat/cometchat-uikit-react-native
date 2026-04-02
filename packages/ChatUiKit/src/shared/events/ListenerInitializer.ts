@@ -90,6 +90,12 @@ export class ListenerInitializer {
       },
       onMessageModerated: (message: CometChat.BaseMessage) => {
         CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageModerated, message);
+      },
+      onMessagesDeliveredToAll: (messageReceipt: CometChat.MessageReceipt) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessagesDeliveredToAll, messageReceipt);
+      },
+      onMessagesReadByAll: (messageReceipt: CometChat.MessageReceipt) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessagesReadByAll, messageReceipt);
       }
     });
   }

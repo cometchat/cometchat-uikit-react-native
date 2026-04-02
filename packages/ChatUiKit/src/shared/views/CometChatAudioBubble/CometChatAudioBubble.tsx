@@ -199,7 +199,7 @@ export const CometChatAudioBubble = ({
 
   const displayDuration = useCallback(
     () => (
-      <Text style={playProgressTextStyle}>
+      <Text allowFontScaling={false} style={playProgressTextStyle}>
         {`${String(Math.floor((currentTime || 0) / 60)).padStart(2, "0")}:${String(
           Math.floor((currentTime || 0) % 60)
         ).padStart(2, "0")}`}

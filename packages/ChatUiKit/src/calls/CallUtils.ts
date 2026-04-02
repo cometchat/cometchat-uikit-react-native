@@ -85,8 +85,8 @@ export class CallUtils {
             callMessageText = `${t("CALL_REJECTED")}`;
             selectedIcon = call["type"] === "audio" ? "call" : "video-call";
           } else {
-            callMessageText = `${t("INCOMING_CALL")}`;
-            selectedIcon = call["type"] === "audio" ? "incoming-audio" : "incoming-video";
+            callMessageText = `${t("CALL_REJECTED")}`;
+            selectedIcon = call["type"] === "audio" ? "call" : "video-call";
           }
           break;
         case CALL_BUSY:
@@ -124,8 +124,8 @@ export class CallUtils {
       return callStatus === CALL_UNANSWERED;
     }
 
-    // Incoming calls: treat BUSY as missed as well
-    return [CALL_UNANSWERED, CALL_CANCELLED, CALL_BUSY].includes(callStatus);
+    // Incoming calls: treat BUSY and REJECTED as missed as well
+    return [CALL_UNANSWERED, CALL_CANCELLED, CALL_BUSY, CALL_REJECTED].includes(callStatus);
   }
 
   /**

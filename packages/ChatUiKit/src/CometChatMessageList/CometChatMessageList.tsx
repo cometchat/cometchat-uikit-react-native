@@ -936,11 +936,17 @@ export const CometChatMessageList = memo(
       const [itemPositions, setItemPositions] = useState<Map<string, { y: number; height: number }>>(new Map());
       const markUnreadMessageAsRead = (message?: CometChat.BaseMessage) => {
         const messageToMark = message || messagesContentListRef.current[0];
-        if (messageToMark) {
+        if (
+          messageToMark &&
+          messageToMark.getSender?.()?.getUid() !== loggedInUser.current?.getUid()
+        ) {
           CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
             message: messageToMark,
           });
-          CometChat.markAsRead(messageToMark);
+          CometChat.markAsRead(messageToMark).catch((error: any) => {
+            console.log("Error marking unread message as read", error);
+            onError && onError(error);
+          });
           setUnreadCount(0);
         }
       };
@@ -1107,7 +1113,9 @@ export const CometChatMessageList = memo(
 
             } else {
               for (let index = 0; index < previousMessagesFetched.length; index++) {
-                const message: CometChat.BaseMessage = previousMessagesFetched[index];
+                  CometChat.markAsRead(message).catch((error: any) => {
+                    console.log("Error marking message as read", error);
+                  });sage = previousMessagesFetched[index];
                 if (
                   message &&
                   !message.hasOwnProperty("readAt") &&
@@ -1697,7 +1705,10 @@ export const CometChatMessageList = memo(
       }, []);
 
       const markMessageAsRead = (message: any) => {
-        if (!message?.readAt) {
+        if (
+          !message?.readAt &&
+          message?.getSender?.()?.getUid() !== loggedInUser.current?.getUid()
+        ) {
           CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, { message });
           CometChat.markAsRead(message).catch((error: any) => {
             console.log("Error", error);
@@ -1952,6 +1963,7 @@ export const CometChatMessageList = memo(
             addToMessageList(newMessage);
           }
           scrollToBottom();
+          
           markMessageAsRead(newMessage);
           latestMessageRef.current = newMessage;
         } else {
@@ -2202,9 +2214,13 @@ export const CometChatMessageList = memo(
         ) {
           return;
         }
+        // Use getter method for messageId (SDK receipt objects expose it via getMessageId())
+        let receiptMessageId = typeof receipt.getMessageId === 'function' ? receipt.getMessageId() : receipt["messageId"];
         let index = messagesContentListRef.current.findIndex(
-          (msg, index) =>
-            msg["id"] == receipt["messageId"] || msg["messageId"] == receipt["messageId"]
+          (msg) => {
+            const msgId = typeof msg.getId === 'function' ? msg.getId() : msg["id"];
+            return String(msgId) === String(receiptMessageId);
+          }
         );
 
         if (index == -1) return;
@@ -2786,15 +2802,16 @@ export const CometChatMessageList = memo(
             inConnecting: () => { },
             onDisconnected: () => {
               streamOnDisconnected();
-              if (!messagesList[0].id) {
-                for (let i = 0; i < messagesList.length; i++) {
-                  if (messagesList[i].id) {
-                    lastID.current = messagesList[i].id;
+              const currentMessages = messagesContentListRef.current;
+              if (currentMessages.length > 0 && !currentMessages[0].id) {
+                for (let i = 0; i < currentMessages.length; i++) {
+                  if (currentMessages[i].id) {
+                    lastID.current = currentMessages[i].id;
                     break;
                   }
                 }
-              } else {
-                lastID.current = messagesList[0].id;
+              } else if (currentMessages.length > 0) {
+                lastID.current = currentMessages[0].id;
               }
             },
           })
@@ -2816,7 +2833,7 @@ export const CometChatMessageList = memo(
             }
           }
         };
-      }, [unreadCount, user, group, isAgenticUser, messagesList]);
+      }, [unreadCount, user, group, isAgenticUser]);
 
       useEffect(() => {
         if (aiAssistantTools) {
@@ -2934,7 +2951,7 @@ export const CometChatMessageList = memo(
             return item.getType();
           })();
 
-          if (item.getSender().getUid() != loggedInUser.current.getUid()) {
+          if (item.getSender()?.getUid() != loggedInUser.current?.getUid()) {
             return (
               overridenBubbleStyles.get(type)?.incoming ??
               mergedTheme.messageListStyles.incomingMessageBubbleStyles
@@ -3518,19 +3535,43 @@ export const CometChatMessageList = memo(
           isThreaded?: boolean;
           currentIndex?: number;
         }) => {
-          const { message, showOptions = true, isThreaded = false, currentIndex } = params;
-          const hasTemplate = useMemo(() => {
-            const defaultTemplate = templatesMap.get(
-              `${message.getCategory()}_${message.getType()}`
-            );
+          const { message, showOptions = true, isThreaded = false, currentIndex } = params
 
-            if (templates?.length > 0) {
-              const customTemplate = templates.find(
-                (template) =>
-                  template.type === message.getType() && template.category === message.getCategory()
-              );
-              return customTemplate ?? defaultTemplate;
-            }
+          const hasTemplate = useMemo(() => {
+            // Detect InteractiveMessage instances where Object.assign
+            // (from mergeObjects during history fetch dedup) overwrote `category` and `type`
+            let lookupCategory: string = message.getCategory();
+            let lookupType: string = message.getType();
+
+            const hasInteractiveData =
+              typeof (message as any).getInteractiveData === 'function' &&
+              (message as any).getInteractiveData() != null;
+
+            if (hasInteractiveData && lookupCategory !== MessageCategoryConstants.interactive) {
+              lookupCategory = MessageCategoryConstants.interactive;
+              const interactiveData = (message as any).getInteractiveData();
+              if (interactiveData?.formFields) {
+                lookupType = MessageTypeConstants.form;
+              } else if (interactiveData?.scheduleElement || interactiveData?.timezoneCode) {
+                lookupType = MessageTypeConstants.scheduler;
+              } else if (interactiveData?.cardActions) {
+                lookupType = MessageTypeConstants.card;
+              }
+              (message as any).category = lookupCategory;
+              (message as any).type = lookupType;
+            }
+
+            const defaultTemplate = templatesMap.get(
+              `${lookupCategory}_${lookupType}`
+            );
+
+            if (templates?.length > 0) {
+              const customTemplate = templates.find(
+                (template) =>
+                  template.type === lookupType && template.category === lookupCategory
+              );
+              return customTemplate ?? defaultTemplate;
+            }
 
             return defaultTemplate;
           }, [message, templatesMap, templates]);
@@ -3577,10 +3618,10 @@ export const CometChatMessageList = memo(
 
           const BottomView = useMemo(() => {
             const moderationStatus = getModerationStatus(message);
-            const isOutgoing = message.getSender()?.getUid() === loggedInUser.current?.getUid();
+            const isOutgoing = message?.getSender?.()?.getUid() === loggedInUser.current?.getUid();
             
             // Check for MIME type error (ERR_PERMISSION_DENIED)
-            const hasErrorMetadata = (message as any)?.getData?.()?.metaData?.error;
+            const hasErrorMetadata = message?.getData?.()?.metaData?.error;
             const hasErrorInMetadata = (message as any)?.getMetadata?.()?.error;
             if (isOutgoing && (hasErrorMetadata || hasErrorInMetadata) && !isAgenticUser) {
               return (
