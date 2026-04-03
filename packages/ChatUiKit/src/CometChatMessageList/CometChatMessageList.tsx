@@ -1113,9 +1113,10 @@ export const CometChatMessageList = memo(
 
             } else {
               for (let index = 0; index < previousMessagesFetched.length; index++) {
+                 const message=previousMessagesFetched[index];
                   CometChat.markAsRead(message).catch((error: any) => {
                     console.log("Error marking message as read", error);
-                  });sage = previousMessagesFetched[index];
+                  })  
                 if (
                   message &&
                   !message.hasOwnProperty("readAt") &&

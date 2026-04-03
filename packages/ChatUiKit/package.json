@@ -1,6 +1,6 @@
 {
   "name": "@cometchat/chat-uikit-react-native",
-  "version": "5.3.1",
+  "version": "5.3.2",
   "description": "Ready-to-use Chat UI Components for React Native",
   "main": "src/index",
   "module": "src/index",
