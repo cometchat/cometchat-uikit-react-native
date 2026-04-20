@@ -64,7 +64,8 @@
         "users",
         "groups"
       ],
-      "chatType": "both"
+      "chatType": "both",
+      "compactMessageComposer": true
     },
     "style": {
           "theme": "system",

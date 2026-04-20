@@ -135,6 +135,9 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
   const groupVoiceConference = useConfig(
     (state) => state.settings.callFeatures.voiceAndVideoCalling.groupVoiceConference
   );
+  const compactMessageComposer = useConfig(
+    (state) => state.settings.layout.compactMessageComposer
+  );
 
   const loggedInUser = useRef<CometChat.User>(
     CometChatUIKit.loggedInUser!,
@@ -676,6 +679,7 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
         ) : (
+          compactMessageComposer ? (
           <CometChatCompactMessageComposer
             key={messageComposerKey}
             ref={messageComposerRef}
@@ -702,6 +706,34 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
             hidePollsAttachmentOption={!polls}
             hideVoiceRecordingButton={!voiceNotes}
           />
+          ) : (
+          <CometChatMessageComposer
+            key={messageComposerKey}
+            ref={messageComposerRef}
+            parentMessageId={parentMessageId}
+            user={localUser}
+            group={group}
+            keyboardAvoidingViewProps={{
+              ...(Platform.OS === 'android'
+                ? {}
+                : {
+                  behavior: 'padding',
+                }),
+            }}
+            disableTypingEvents={!typingIndicator}
+            hideImageAttachmentOption={!photosSharing}
+            hideVideoAttachmentOption={!videoSharing}
+            hideAudioAttachmentOption={!audioSharing}
+            hideFileAttachmentOption={!fileSharing}
+            hideCameraOption={!photosSharing}
+            disableMentions={!mentions}
+            hideStickersButton={!stickers}
+            hideCollaborativeDocumentOption={!collaborativeDocument}
+            hideCollaborativeWhiteboardOption={!collaborativeWhiteboard}
+            hidePollsAttachmentOption={!polls}
+            hideVoiceRecordingButton={!voiceNotes}
+          />
+          )
         )}
       </View>
     </CometChatThemeProvider>

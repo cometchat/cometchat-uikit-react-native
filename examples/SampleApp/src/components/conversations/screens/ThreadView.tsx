@@ -335,6 +335,7 @@ const handleBack = useCallback(() => {
           </TouchableOpacity>
         </View>
       ) : (
+        compactMessageComposer ? (
         <CometChatCompactMessageComposer
           user={localUser}
           group={group}
@@ -352,6 +353,25 @@ const handleBack = useCallback(() => {
           hideVoiceRecordingButton={!voiceNotes}
           hideStickersButton={!stickers}
         />
+        ) : (
+        <CometChatMessageComposer
+          user={localUser}
+          group={group}
+          parentMessageId={message.getId()}
+          onError={(error: any) => console.error('Composer Error:', error)}
+          keyboardAvoidingViewProps={
+            Platform.OS === 'android' ? {} : { behavior: 'padding' }
+          }
+          hideImageAttachmentOption={!photosSharing}
+          hideVideoAttachmentOption={!videoSharing}
+          hideAudioAttachmentOption={!audioSharing}
+          hideFileAttachmentOption={!fileSharing}
+          hideCameraOption={!photosSharing}
+          disableMentions={!mentions}
+          hideVoiceRecordingButton={!voiceNotes}
+          hideStickersButton={!stickers}
+        />
+        )
       )}
     </View>
   );
