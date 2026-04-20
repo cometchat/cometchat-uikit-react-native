@@ -7,6 +7,7 @@ import { getCometChatTranslation } from "../../resources/CometChatLocalizeNew/Lo
 import { Icon } from "../../icons/Icon";
 import { stripMarkdown, preparePreviewText } from "../MarkdownUtils";
 import { CometChatRichTextFormatter } from "../../formatters/CometChatRichTextFormatter";
+import { applyMentionsFormatting } from "../MessageUtils";
 
 const t = getCometChatTranslation();
 
@@ -37,6 +38,9 @@ interface CometChatMessagePreviewProps {
   
   // Deleted message indicator
   isDeletedMessage?: boolean;
+
+  // Mentions style override for reply preview context
+  mentionsStyle?: any;
 }
 
 /**
@@ -56,7 +60,8 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
     style,
     subtitleIcon,
     titleStyle,
-    isDeletedMessage = false
+    isDeletedMessage = false,
+    mentionsStyle,
   } = props;
   
   const theme = useTheme();
@@ -105,31 +110,25 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
           case CometChat.MESSAGE_TYPE.TEXT:
             const textMessage = message as CometChat.TextMessage;
             let text = (typeof textMessage.getText === 'function' ? textMessage.getText() : (textMessage as any).text) || "";
-            try {
-              if (textMessage.getMentionedUsers && textMessage.getMentionedUsers().length > 0) {
-                const mentionedUsers = textMessage.getMentionedUsers();
-                const uidMap = new Map();
-                mentionedUsers.forEach(user => {
-                  uidMap.set(user.getUid(), user.getName());
-                });
-                text = text.replace(/<@uid:(.*?)>/g, (match: string, uid: string): string => {
-                  if (uidMap.has(uid)) {
-                    return `@${uidMap.get(uid)}`;
-                  }
-                  return match;
-                });
-              }
-              text = text.replace(/<@all:(.*?)>/g, (match: string, alias: string): string => {
-                return `@${alias}`;
-              });
-              
-            } catch (e) {
-              console.warn("Error formatting mentions in preview:", e);
-            }
 
             // Prepare text for preview: collapse code blocks, strip block markers, flatten to single line
             const previewResult = preparePreviewText(text);
             const cleanText = previewResult.text;
+            // Set inline code styles for the preview context — uses theme's textPrimary
+            // which is white for outgoing (set by getReplyView) and dark for composer tray.
+            previewFormatter.setStyle({
+              inlineCodeStyle: {
+                fontSize: 14,
+                fontWeight: '400',
+                color: finalTheme?.color?.textPrimary as string || '#141414',
+              },
+              inlineCodeContainerStyle: {
+                backgroundColor: finalTheme?.color?.previewInlineCodeBackground ?? finalTheme?.color?.background3 ?? 'rgba(120, 120, 128, 0.18)',
+                borderRadius: 4,
+                borderWidth: 0.5,
+                borderColor: finalTheme?.color?.borderDefault ?? 'rgba(120, 120, 128, 0.3)',
+              },
+            });
             const formatted = previewFormatter.getFormattedText(cleanText || null);
 
             // Resolve subtitle content
@@ -139,6 +138,10 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
             } else {
               subtitleContent = (formatted as string) || stripMarkdown(text);
             }
+
+            // Apply mentions formatter using shared helper (DRY — same as conversation list)
+            // mentionsStyle prop is passed from the caller (e.g., getReplyView in MessageDataSource)
+            subtitleContent = applyMentionsFormatting(textMessage, subtitleContent, text, mentionsStyle);
 
             // For code blocks (first rich block): render compact code block container
             if (previewResult.codeBlockFirstLine !== null) {
@@ -330,7 +333,7 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
         {iconToShow && <View>{iconToShow}</View>}
         {isCodeBlockPreview ? (
           <View style={previewBlockStyles.codeBlockRow}>
-            <View style={[previewBlockStyles.codeBlockBadge, { backgroundColor: finalTheme?.color?.background2 as string || '#FAFAFA', borderColor: finalTheme?.color?.borderDefault as string || '#E8E8E8' }]}>
+            <View style={[previewBlockStyles.codeBlockBadge, { backgroundColor: (finalTheme?.color?.previewCodeBlockBackground ?? finalTheme?.color?.background2) as string || '#FAFAFA', borderColor: (finalTheme?.color?.previewCodeBlockBorder ?? finalTheme?.color?.borderDefault) as string || '#E8E8E8' }]}>
               <Text numberOfLines={1} ellipsizeMode='tail' style={[previewBlockStyles.codeBlockText, { color: finalTheme?.color?.textPrimary as string || '#141414' }]}>
                 {codeBlockLine + '..'}
               </Text>

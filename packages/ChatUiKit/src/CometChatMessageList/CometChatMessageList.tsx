@@ -76,6 +76,7 @@ import { CometChatBadge } from "../shared/views/CometChatBadge";
 import { CometChatDate } from "../shared/views/CometChatDate";
 import { CometChatMessageBubble } from "../shared/views/CometChatMessageBubble";
 import { getModerationStatus, ModerationBottomView, MimeErrorBottomView } from "../shared/utils/MessageUtils";
+import { stripMarkdown } from "../shared/utils/MarkdownUtils";
 import { CometChatReactions } from "../shared/views/CometChatReactions";
 import { useTheme, useThemeInternal } from "../theme";
 import { MessageSkeleton } from "./Skeleton";
@@ -125,6 +126,24 @@ const safeGetMuid = (item: any): string | undefined => {
 };
 
 
+
+/**
+ * Fetches a conversation if it exists, returning null for new users
+ * who haven't exchanged any messages yet (ERR_CONVERSATION_NOT_ACCESSIBLE).
+ */
+async function getConversationIfExists(
+  convId: string,
+  conversationType: string
+): Promise<CometChat.Conversation | null> {
+  try {
+    return await CometChat.getConversation(convId, conversationType);
+  } catch (e: any) {
+    if (e?.code === "ERR_CONVERSATION_NOT_ACCESSIBLE") {
+      return null;
+    }
+    throw e;
+  }
+}
 
 /**
  * Batch state updates using requestAnimationFrame
@@ -1319,7 +1338,8 @@ export const CometChatMessageList = memo(
 
                   if (!convId) return;
 
-                  const conversation = await CometChat.getConversation(convId, conversationType);
+                  const conversation = await getConversationIfExists(convId, conversationType);
+                  if (!conversation) return;
                   const unreadCount = conversation.getUnreadMessageCount();
                   setUnreadCount(unreadCount);
 
@@ -1741,7 +1761,8 @@ export const CometChatMessageList = memo(
               conversationType = CometChat.RECEIVER_TYPE.GROUP;
             }
             //getting convesation using conversationId=Uid and conversationType
-            CometChat.getConversation(convId, conversationType).then((conversation) => {
+            getConversationIfExists(convId, conversationType).then((conversation) => {
+              if (!conversation) return;
               // Emitting conversation update event
               CometChatUIEventHandler.emitConversationEvent(
                 CometChatConversationEvents.ccUpdateConversation,
@@ -2011,8 +2032,13 @@ export const CometChatMessageList = memo(
            * minimizing unnecessary network calls during active scrolling or bottom-positioned interactions.
            * A fallback mechanism reverts to local state comparison if the network request fails, ensuring robustness.
            */
-          CometChat.getConversation(conversationWith, conversationType)
+          getConversationIfExists(conversationWith, conversationType)
             .then((conversation) => {
+              if (!conversation) {
+                // No conversation yet (fresh user) — treat as sequence correct
+                processMessage(true);
+                return;
+              }
               const convLastMsg = conversation?.getLastMessage();
               // Check if the last message in our list matches the conversation's last message
               // This ensures we don't have a gap
@@ -2301,11 +2327,11 @@ export const CometChatMessageList = memo(
 
                   if (convId && conversationType) {
 
-                    const conversation = await CometChat.getConversation(
+                    const conversation = await getConversationIfExists(
                       convId,
                       conversationType
                     );
-                    if (conversation.getUnreadMessageCount() > 0) {
+                    if (conversation && conversation.getUnreadMessageCount() > 0) {
                       setUnreadCount(conversation.getUnreadMessageCount());
                       const lastReadMessageId = conversation.getLastReadMessageId();
                       //if lastReadMessageId is 0, it means no messages have been read yet
@@ -3407,7 +3433,7 @@ export const CometChatMessageList = memo(
       const shareMedia = async (messageObject: CometChat.MediaMessage | any) => {
         let _plainString = getPlainString(messageObject?.getData()["text"] || "", messageObject);
 
-        let textMessage = _plainString;
+        let textMessage = stripMarkdown(_plainString);
         let fileUrl = messageObject.getData()["url"];
 
         const getFileName = () => {
@@ -3658,9 +3684,17 @@ export const CometChatMessageList = memo(
               : getStatusInfoView(message, bubbleAlignment, currentIndex);
           }, [hasTemplate, message, bubbleAlignment, currentIndex, getStatusInfoView]);
 
+         
           const ReplyView = useMemo(() => {
+            if (templates && templates.length > 0) {
+              return ChatConfigurator.dataSource.getReplyView?.(message, mergedTheme, {
+                onReplyClick: (messageId: string) => {
+                  scrollToMessage(messageId);
+                },
+              }) || null;
+            }
             return hasTemplate?.ReplyView?.(message, bubbleAlignment) || null;
-          }, [hasTemplate, message, bubbleAlignment]);
+          }, [hasTemplate, message, bubbleAlignment, mergedTheme, templates]);
 
           if (hasTemplate) {
             if (hasTemplate?.BubbleView) return hasTemplate?.BubbleView(message);

@@ -94,6 +94,7 @@ export const CometChatSuggestionList = (props: CometChatSuggestionListInterface)
         <FlatList
           data={data}
           renderItem={_render}
+          keyExtractor={(item, index) => `${item.id}_${index}`}
           onMomentumScrollEnd={(event) => {
             const contentOffsetY = event.nativeEvent.contentOffset.y; // The current scroll position
             const contentHeight = event.nativeEvent.contentSize.height; // Total height of the content

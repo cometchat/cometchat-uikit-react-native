@@ -24,6 +24,7 @@ import {
   CometChatThreadHeader,
   CometChatMessageList,
   CometChatCompactMessageComposer,
+  CometChatMessageComposer,
   useCometChatTranslation,
   CometChatUIKit,
   ChatConfigurator,
@@ -79,6 +80,9 @@ const ThreadView = () => {
   );
   const sendPrivateMessageToGroupMembers = useConfig(
       (state) => state.settings.chatFeatures.privateMessagingWithinGroups.sendPrivateMessageToGroupMembers
+  );
+  const compactMessageComposer = useConfig(
+      (state) => state.settings.layout.compactMessageComposer
   );
 
   const loggedInUser = useRef<CometChat.User>(

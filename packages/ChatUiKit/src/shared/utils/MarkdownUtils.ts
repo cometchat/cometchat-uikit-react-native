@@ -60,7 +60,11 @@ export function stripMarkdown(text: string): string {
   // 9. Remove numbered list markers at start of lines
   result = result.replace(/^\d+\.\s/gm, '');
 
-  // 10. Remove any remaining backslash escapes (e.g., \* \_ \` \~)
+  // 10. Strip HTML tags (e.g., <u>, <b>, <i>, <s>, <em>, <strong>, <del>, <br>, etc.)
+  result = result.replace(/<br\s*\/?>/gi, '\n');
+  result = result.replace(/<[^>]+>/g, '');
+
+  // 11. Remove any remaining backslash escapes (e.g., \* \_ \` \~)
   result = result.replace(/\\([*_`~>\\])/g, '$1');
 
   return result;

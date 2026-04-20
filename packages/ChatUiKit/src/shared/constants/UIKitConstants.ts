@@ -62,7 +62,7 @@ export const emailPattern =
 
 export const urlPattern =
   `((https?://|ftp://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?` +
-  `|[a-zA-Z0-9][-a-zA-Z0-9]*(?:\\.[a-zA-Z0-9][-a-zA-Z0-9]*)*\\.[a-zA-Z]{2,}(?:[:/][-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]*[\\w/#](\\(\\))?)?)` +
+  `|[a-zA-Z][a-zA-Z0-9]*[-a-zA-Z0-9]*(?:\\.[a-zA-Z0-9][-a-zA-Z0-9]*)*\\.[a-zA-Z]{2,}(?:[:/][-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]*[\\w/#](\\(\\))?)?)` +
   wordBoundary.end;
 
 export const phoneNumPattern =

@@ -202,6 +202,7 @@ const ActionSheetBoard = (props: any) => {
       ref={sheetRef}
       onClose={onClose}
       isOpen={shouldShow}
+      doNotOccupyEntireHeight={true}
     >
       <CometChatActionSheet actions={options} style={style} />
     </CometChatBottomSheet>
@@ -248,12 +249,12 @@ const RecordAudio = (props: any) => {
  * MessagePreviewTray component for displaying edit/reply message preview (v5 pattern)
  */
 const MessagePreviewTray = (props: any) => {
-  const { shouldShow = false, text = '', onClose = () => {}, title = '' } = props;
+  const { shouldShow = false, message = null, onClose = () => {}, title = '' } = props;
   if (!shouldShow) return null;
   return (
     <CometChatMessagePreview
       messagePreviewTitle={title}
-      messagePreviewSubtitle={stripMarkdown(text)}
+      message={message}
       onCloseClick={onClose}
     />
   );
@@ -1200,6 +1201,8 @@ export const CometChatCompactMessageComposer = React.forwardRef(
     // Mic/sticker animation: single Animated.Value drives mic slide + fade
     // 0 = idle (mic visible), 1 = typing (mic hidden)
     const micAnimValue = React.useRef(new Animated.Value(0)).current;
+    // Separate Animated.Value for mic layout width collapse (JS driver, supports layout props)
+    const micWidthAnim = React.useRef(new Animated.Value(1)).current;
     const [messagePreview, setMessagePreview] = React.useState<{ message: any; mode: string } | null>(null);
     const [showMentionList, setShowMentionList] = React.useState(false);
     const [mentionsSearchData, setMentionsSearchData] = React.useState<Array<SuggestionItem>>([]);
@@ -2965,9 +2968,10 @@ export const CometChatCompactMessageComposer = React.forwardRef(
 
         mentionMap.current = newMentionMap;
 
-        // Set the message preview state with resolved text (display names, not tokens)
+        // Set the message preview state with original message object
+        // (preserves SDK prototype chain for CometChatMessagePreview formatting)
         setMessagePreview({
-          message: { ...message, text: resolvedText },
+          message: message,
           mode: ConversationOptionConstants.edit,
         });
 
@@ -3923,11 +3927,21 @@ export const CometChatCompactMessageComposer = React.forwardRef(
     useEffect(() => {
       if (hideVoiceRecordingButton) return;
 
-      Animated.timing(micAnimValue, {
-        toValue: hasContent ? 1 : 0,
-        duration: MIC_ANIM_DURATION,
-        useNativeDriver: true,
-      }).start();
+      // Run visual animation (native driver) and layout collapse (JS driver) in parallel
+      Animated.parallel([
+        // Visual: slide + fade (native driver for 60fps)
+        Animated.timing(micAnimValue, {
+          toValue: hasContent ? 1 : 0,
+          duration: MIC_ANIM_DURATION,
+          useNativeDriver: true,
+        }),
+        // Layout: width collapse (JS driver, needed for layout props)
+        Animated.timing(micWidthAnim, {
+          toValue: hasContent ? 0 : 1,
+          duration: MIC_ANIM_DURATION,
+          useNativeDriver: false,
+        }),
+      ]).start();
     }, [hasContent, hideVoiceRecordingButton]);
 
     /**
@@ -4167,26 +4181,36 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       if (showInlineRecorder) {
         return null;
       }
-      // Animated wrapper: translateX slides right, opacity fades out
+      // Two nested Animated.Views to avoid native/JS driver conflict:
+      // Outer: JS driver — animates width + margin for layout collapse (eats the gap)
+      // Inner: native driver — animates opacity + translateX for smooth visuals
       return (
         <Animated.View
-          pointerEvents={hasContent ? 'none' : 'auto'}
           style={{
-            opacity: micAnimValue.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-            transform: [{ translateX: micAnimValue.interpolate({ inputRange: [0, 1], outputRange: [0, MIC_SLIDE_DISTANCE] }) }],
+            width: micWidthAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 24] }),
+            marginLeft: micWidthAnim.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }),
+            overflow: 'hidden' as const,
           }}
         >
-          <IconButton
-            name={voiceRecordingIconURL ? undefined : 'mic'}
-            icon={voiceRecordingIconURL}
-            onClick={() => {
-              // Show inline recorder
-              setTimeout(() => setShowInlineRecorder(true), 50);
+          <Animated.View
+            pointerEvents={hasContent ? 'none' : 'auto'}
+            style={{
+              opacity: micAnimValue.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+              transform: [{ translateX: micAnimValue.interpolate({ inputRange: [0, 1], outputRange: [0, MIC_SLIDE_DISTANCE] }) }],
             }}
-            buttonStyle={Style.iconButton}
-            iconStyle={Style.icon}
-            tintColor={getAttachmentIconTint()}
-          />
+          >
+            <IconButton
+              name={voiceRecordingIconURL ? undefined : 'mic'}
+              icon={voiceRecordingIconURL}
+              onClick={() => {
+                // Show inline recorder
+                setTimeout(() => setShowInlineRecorder(true), 50);
+              }}
+              buttonStyle={Style.iconButton}
+              iconStyle={Style.icon}
+              tintColor={getAttachmentIconTint()}
+            />
+          </Animated.View>
         </Animated.View>
       );
     };
@@ -4296,7 +4320,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
               {/* Message Preview Tray for Edit Mode */}
               <MessagePreviewTray
                 shouldShow={messagePreview !== null}
-                text={typeof messagePreview?.message?.text === 'string' ? messagePreview.message.text : ''}
+                message={messagePreview?.message}
                 title={t('EDIT_MESSAGE')}
                 onClose={() => {
                   setMessagePreview(null);
@@ -4449,13 +4473,9 @@ export const CometChatCompactMessageComposer = React.forwardRef(
                     Style.rightIconsContainer,
                     isExpanded && { alignItems: 'flex-end' as const }
                   ]}>
-                    {/* Auxiliary button (stickers/emoji) on right — slides right with mic */}
+                    {/* Auxiliary button (stickers/emoji) on right — slides with mic width collapse */}
                     {resolvedAlignment === 'right' && !hideVoiceRecordingButton && (
-                      <Animated.View style={{
-                        transform: [{ translateX: micAnimValue.interpolate({ inputRange: [0, 1], outputRange: [0, MIC_SLIDE_DISTANCE] }) }],
-                      }}>
-                        {renderAuxiliaryButton()}
-                      </Animated.View>
+                      renderAuxiliaryButton()
                     )}
                     {resolvedAlignment === 'right' && hideVoiceRecordingButton && renderAuxiliaryButton()}
                     

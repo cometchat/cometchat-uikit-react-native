@@ -267,6 +267,15 @@ export class CometChatThemeHelper {
     color.receiveBubbleIcon =
       color.receiveBubbleIcon === undefined ? color.primary : color.receiveBubbleIcon;
 
+    color.previewInlineCodeBackground =
+      color.previewInlineCodeBackground === undefined ? defaultColor.previewInlineCodeBackground : color.previewInlineCodeBackground;
+
+    color.previewCodeBlockBackground =
+      color.previewCodeBlockBackground === undefined ? defaultColor.previewCodeBlockBackground : color.previewCodeBlockBackground;
+
+    color.previewCodeBlockBorder =
+      color.previewCodeBlockBorder === undefined ? defaultColor.previewCodeBlockBorder : color.previewCodeBlockBorder;
+
     return color;
   }
 

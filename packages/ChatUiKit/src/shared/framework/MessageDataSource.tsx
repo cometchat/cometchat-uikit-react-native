@@ -1054,6 +1054,15 @@ export class MessageDataSource implements DataSource {
       }
     };
 
+    // Mentions style for reply preview — derived from theme tokens so customers can
+    // override via CometChatThemeProvider. Uses same tokens as outgoing bubble mentions.
+    const replyMentionsStyle = isOutgoingMessage
+      ? {
+          textStyle: { color: theme.color.sendBubbleTextHighlight },
+          backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        }
+      : undefined;
+
     const previewComponent = (
       <CometChatMessagePreview
         message={hasQuotedMessage}
@@ -1069,6 +1078,7 @@ export class MessageDataSource implements DataSource {
         }}
         showCloseIcon={false}
         isDeletedMessage={isQuotedMessageDeleted}
+        mentionsStyle={replyMentionsStyle}
       />
     );
 

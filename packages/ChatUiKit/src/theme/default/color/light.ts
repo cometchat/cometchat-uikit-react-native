@@ -40,6 +40,12 @@ const staticColors = {
   staticWhite: "#FFFFFF",
 };
 
+const overlayColors = {
+  overlayLight: "rgba(120, 120, 128, 0.70)",
+  overlayCodeBlock: "rgba(255, 255, 255, 0.20)",
+  overlayCodeBlockBorder: neutralColors.neutral300,
+};
+
 export const defaultColorLight = {
   primary: primaryColor,
   ...extendedPrimaryColors,
@@ -96,8 +102,14 @@ export const defaultColorLight = {
   receiveBubbleLink: alertColors.info,
   receiveBubbleTimestamp: neutralColors.neutral600,
   receiveBubbleIcon: primaryColor,
-};
 
+  // Reply preview inline code background
+  previewInlineCodeBackground: overlayColors.overlayLight,
+  // Reply preview code block background
+  previewCodeBlockBackground: overlayColors.overlayCodeBlock,
+  // Reply preview code block border
+  previewCodeBlockBorder: overlayColors.overlayCodeBlockBorder,
+};
 type EachColorValue<T extends typeof defaultColorLight> = {
   [P in keyof T]: ColorValue;
 };

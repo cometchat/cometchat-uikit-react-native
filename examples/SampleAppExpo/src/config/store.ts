@@ -40,6 +40,7 @@ interface LayoutConfig {
   withSideBar: boolean;
   tabs: string[];
   chatType: string;
+  compactMessageComposer: boolean;
 }
 
 interface CoreMessagingConfig {

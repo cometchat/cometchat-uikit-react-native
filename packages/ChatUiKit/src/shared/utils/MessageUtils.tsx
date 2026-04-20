@@ -5,6 +5,7 @@ import { MessageBubbleAlignmentType } from "../base";
 import {
   CometChatCustomMessageTypes,
   MessageCategoryConstants,
+  MentionsTargetElement,
   MessageReceipt,
   MessageTypeConstants,
 } from "../constants/UIKitConstants";
@@ -13,7 +14,9 @@ import { Icon, IconName } from "../icons/Icon";
 import { CometChatMessageTemplate } from "../modals";
 import { CometChatMessageBubble } from "../views/CometChatMessageBubble";
 import { BubbleStyles, CometChatTheme, OutgoingBubbleStyles } from "../../theme/type";
-import { CometChatUIKit } from "../CometChatUiKit";
+import { CometChatUIKit } from "../CometChatUiKit/CometChatUIKit";
+import { SuggestionItem } from "../views/CometChatSuggestionList/SuggestionItem";
+import { CommonUtils } from "./CommonUtils";
 import { deepMerge } from "../helper/helperFunctions";
 import { CometChatDate } from "../views/CometChatDate";
 import { CometChatAvatar, CometChatReceipt } from "../views";
@@ -374,6 +377,68 @@ export const getMessagePreviewInternal = (
       </Text>
     </>
   );
+};
+
+/**
+ * Applies mentions formatting to message content.
+ * Shared helper used by CometChatConversations subtitle and CometChatMessagePreview
+ * to ensure consistent @mention styling across the UI.
+ *
+ * @param message - The message containing mentioned users
+ * @param content - The current formatted content (string or JSX)
+ * @param rawText - The raw message text (for detecting @all alias tokens)
+ * @param mentionsStyle - Optional style overrides for mentions
+ * @returns The content with styled mentions applied
+ */
+export const applyMentionsFormatting = (
+  message: CometChat.BaseMessage,
+  content: string | JSX.Element,
+  rawText: string,
+  mentionsStyle?: any,
+): string | JSX.Element => {
+  const containsAllAlias = /<@all:(.*?)>/.test(rawText);
+  if (!message.getMentionedUsers?.().length && !containsAllAlias) {
+    return content;
+  }
+
+  try {
+    let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
+    mentionsFormatter.setContext("conversation");
+    mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser!);
+    mentionsFormatter.setTargetElement(MentionsTargetElement.conversation);
+    mentionsFormatter.setMessage(message);
+    if (mentionsStyle) {
+      mentionsFormatter.setMentionsStyle(mentionsStyle);
+    }
+
+    if (containsAllAlias) {
+      const match = rawText.match(/<@all:(.*?)>/);
+      const aliasLabel = match && match[1] ? match[1] : "all";
+      let existing = mentionsFormatter.getSuggestionItems();
+      const underlyingText = `<@all:${aliasLabel}>`;
+      const already = existing.find((it: any) => it.underlyingText === underlyingText);
+      if (!already) {
+        const aliasItem = new SuggestionItem({
+          id: aliasLabel,
+          name: aliasLabel,
+          promptText: aliasLabel,
+          trackingCharacter: "@",
+          underlyingText,
+          hideLeadingIcon: true,
+        });
+        mentionsFormatter.setSuggestionItems([...existing, aliasItem]);
+      }
+    }
+
+    let suggestionUsers = mentionsFormatter.getSuggestionItems();
+    mentionsFormatter.setMessage(message);
+    if (suggestionUsers.length > 0) mentionsFormatter.setSuggestionItems(suggestionUsers);
+    let _formatter = CommonUtils.clone(mentionsFormatter);
+    return _formatter.getFormattedText(content, mentionsStyle);
+  } catch (e) {
+    console.warn("Error applying mentions formatting:", e);
+    return content;
+  }
 };
 
 export const getModerationStatus = (message: CometChat.BaseMessage | any): string => {

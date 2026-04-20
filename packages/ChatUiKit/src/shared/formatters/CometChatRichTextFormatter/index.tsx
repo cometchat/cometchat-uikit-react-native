@@ -29,7 +29,7 @@ const LINK_REGEX = /\[([^\]]+)\]\(([^)]+)\)/;
 const URL_PROTOCOL_REGEX = /^(https?|mailto|tel):/i;
 // Patterns for detecting list items inside blockquote content (ENG-31998)
 const QUOTE_BULLET_REGEX = /^- (.*)$/;
-const QUOTE_ORDERED_REGEX = /^(\d+)\.\s(.*)$/;
+const QUOTE_ORDERED_REGEX = /^(\s*)(\d+)\.\s(.*)$/;
 // Mention pattern — used to exclude mention UIDs from markdown marker detection
 const MENTION_PATTERN_REGEX = /<@(?:uid|all):[^>]*>/g;
 
@@ -38,6 +38,49 @@ const LIST_ROW_STYLE = { flexDirection: 'row' as const, flexShrink: 1 as const }
 const BULLET_MARKER_STYLE = { width: 18 };
 const ORDERED_MARKER_STYLE = { width: 24 };
 const LIST_CONTENT_STYLE = { flexShrink: 1, flexGrow: 1 };
+
+/** Converts a number to lowercase alpha (1→a, 2→b, ..., 26→z, 27→aa) */
+function toAlpha(n: number): string {
+  let result = '';
+  while (n > 0) {
+    n--;
+    result = String.fromCharCode(97 + (n % 26)) + result;
+    n = Math.floor(n / 26);
+  }
+  return result;
+}
+
+/** Converts a number to lowercase roman numerals */
+function toRoman(n: number): string {
+  const vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+  const syms = ['m', 'cm', 'd', 'cd', 'c', 'xc', 'l', 'xl', 'x', 'ix', 'v', 'iv', 'i'];
+  let result = '';
+  for (let i = 0; i < vals.length; i++) {
+    while (n >= vals[i]) {
+      result += syms[i];
+      n -= vals[i];
+    }
+  }
+  return result;
+}
+
+/** Formats a list counter based on nesting level (0→decimal, 1→alpha, 2+→roman) */
+function formatListMarker(count: number, level: number): string {
+  if (level === 0) return `${count}. `;
+  if (level === 1) return `${toAlpha(count)}. `;
+  return `${toRoman(count)}. `;
+}
+
+/** Indentation width per nesting level for nested lists */
+const NESTED_LIST_INDENT = 20;
+
+/** Detect indentation level from leading spaces (4 spaces = 1 level) */
+function getIndentLevel(line: string): number {
+  const match = line.match(/^(\s*)/);
+  if (!match) return 0;
+  return Math.floor(match[1].length / 4);
+}
+
 const BQ_TEXT_ROW_STYLE = { flexDirection: 'row' as const, flexShrink: 1 as const };
 
 // Blockquote container styles — matches Figma spec (node 14736:1573987)
@@ -93,10 +136,12 @@ const defaultRichTextStyle: RichTextStyle = {
     color: "#6852D6",
   },
   inlineCodeContainerStyle: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 2,
-    paddingHorizontal: 2,
-    paddingVertical: 0,
+    backgroundColor: "rgba(120, 120, 128, 0.22)",
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: "rgba(120, 120, 128, 0.35)",
+    paddingHorizontal: 4,
+    paddingVertical: 1,
   },
   codeBlockStyle: {
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
@@ -296,14 +341,14 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
         }
         // Render blockquote content — detect list items (ENG-31998)
         const quoteContent: JSX.Element[] = [];
-        let quoteOrderedCounter = 0;
+        const quoteLevelCounters: Map<number, number> = new Map();
         for (let i = 0; i < quoteLines.length; i++) {
           const ql = quoteLines[i];
           const bulletMatch = ql.match(QUOTE_BULLET_REGEX);
           const orderedMatch = ql.match(QUOTE_ORDERED_REGEX);
           if (bulletMatch) {
             // Bullet items inside blockquote: render with marker + flex row
-            // Don't reset quoteOrderedCounter — numbering continues across bullet interruptions (Slack behavior)
+            // Don't reset quoteLevelCounters — numbering continues across bullet interruptions (Slack behavior)
             quoteContent.push(
               <View key={`ql-${i}`} style={LIST_ROW_STYLE}>
                 <Text style={BULLET_MARKER_STYLE}>{"‧ "}</Text>
@@ -313,20 +358,27 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
               </View>
             );
           } else if (orderedMatch) {
-            // Numbered item inside blockquote: render with counter + flex row
-            quoteOrderedCounter++;
+            // Numbered item inside blockquote: supports nested numbering (1. → a. → i.)
+            const level = Math.floor(orderedMatch[1].length / 4);
+            // Reset counters for deeper levels when returning to a shallower level
+            for (const [k] of quoteLevelCounters) {
+              if (k > level) quoteLevelCounters.delete(k);
+            }
+            const currentCount = (quoteLevelCounters.get(level) ?? 0) + 1;
+            quoteLevelCounters.set(level, currentCount);
+            const indent = level * NESTED_LIST_INDENT;
             quoteContent.push(
-              <View key={`ql-${i}`} style={LIST_ROW_STYLE}>
-                <Text style={ORDERED_MARKER_STYLE}>{`${quoteOrderedCounter}. `}</Text>
+              <View key={`ql-${i}`} style={[LIST_ROW_STYLE, indent > 0 ? { marginLeft: indent } : undefined]}>
+                <Text style={ORDERED_MARKER_STYLE}>{formatListMarker(currentCount, level)}</Text>
                 <Text style={LIST_CONTENT_STYLE}>
-                  {orderedMatch[2].trim() === '' ? ' ' : this.parseInlineFormats(orderedMatch[2])}
+                  {orderedMatch[3].trim() === '' ? ' ' : this.parseInlineFormats(orderedMatch[3])}
                 </Text>
               </View>
             );
           } else {
             // Plain blockquote text — inline formats supported (Req 15.3)
             // Wrap in View with flex:1 so long text wraps within blockquote bounds
-            quoteOrderedCounter = 0;
+            quoteLevelCounters.clear();
             quoteContent.push(
               <View key={`ql-${i}`} style={BQ_TEXT_ROW_STYLE}>
                 <Text style={LIST_CONTENT_STYLE}>
@@ -360,24 +412,26 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
         continue;
       }
 
-      // Bullet lists (- ) — also match empty items where trailing space is trimmed (Req 8.2)
+      // Bullet lists (- ) — supports nested lists via indentation (4 spaces per level)
       if (isBulletLine(line)) {
         hasViewChildren = true;
-        const listItems: string[] = [];
+        const listItems: Array<{ text: string; level: number }> = [];
         while (lineIndex < lines.length && isBulletLine(lines[lineIndex])) {
           const raw = lines[lineIndex];
-          // Extract content after "- " prefix; handle trimmed empty items
+          const level = getIndentLevel(raw);
           const trimmed = raw.trim();
           const itemText = trimmed.startsWith("- ") ? trimmed.substring(2) : "";
-          listItems.push(itemText);
+          listItems.push({ text: itemText, level });
           lineIndex++;
         }
         for (let i = 0; i < listItems.length; i++) {
+          const { text: itemText, level } = listItems[i];
+          const indent = level * NESTED_LIST_INDENT;
           elements.push(
-            <View key={`bullet-${elements.length}`} style={LIST_ROW_STYLE}>
+            <View key={`bullet-${elements.length}`} style={[LIST_ROW_STYLE, indent > 0 ? { marginLeft: indent } : undefined]}>
               <Text style={BULLET_MARKER_STYLE}>{"‧ "}</Text>
               <Text style={LIST_CONTENT_STYLE}>
-                {listItems[i].trim() === '' ? ' ' : this.parseInlineFormats(listItems[i])}
+                {itemText.trim() === '' ? ' ' : this.parseInlineFormats(itemText)}
               </Text>
             </View>
           );
@@ -387,27 +441,39 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
         continue;
       }
 
-      // Ordered lists (1. ) — regex handles empty items where content is trimmed away (Req 8.2)
+      // Ordered lists (1. ) — supports nested lists via indentation (4 spaces per level)
       const orderedMatch = trimmedLine.match(ORDERED_LIST_REGEX);
       if (orderedMatch) {
         hasViewChildren = true;
-        const listItems: string[] = [];
+        // Collect all consecutive ordered list lines with their indentation levels
+        const listItems: Array<{ text: string; level: number }> = [];
         while (lineIndex < lines.length) {
-          const itemMatch = lines[lineIndex].trim().match(ORDERED_LIST_REGEX);
+          const rawLine = lines[lineIndex];
+          const itemMatch = rawLine.trim().match(ORDERED_LIST_REGEX);
           if (itemMatch) {
-            listItems.push(itemMatch[2] ?? '');
+            const level = getIndentLevel(rawLine);
+            listItems.push({ text: itemMatch[2] ?? '', level });
             lineIndex++;
           } else {
             break;
           }
         }
+        // Track counters per nesting level
+        const levelCounters: Map<number, number> = new Map();
         for (let i = 0; i < listItems.length; i++) {
-          orderedListCounter++;
+          const { text: itemText, level } = listItems[i];
+          // Reset counters for deeper levels when we go back to a shallower level
+          for (const [k] of levelCounters) {
+            if (k > level) levelCounters.delete(k);
+          }
+          const currentCount = (levelCounters.get(level) ?? 0) + 1;
+          levelCounters.set(level, currentCount);
+          const indent = level * NESTED_LIST_INDENT;
           elements.push(
-            <View key={`ordered-${elements.length}`} style={LIST_ROW_STYLE}>
-              <Text style={ORDERED_MARKER_STYLE}>{`${orderedListCounter}. `}</Text>
+            <View key={`ordered-${elements.length}`} style={[LIST_ROW_STYLE, indent > 0 ? { marginLeft: indent } : undefined]}>
+              <Text style={ORDERED_MARKER_STYLE}>{formatListMarker(currentCount, level)}</Text>
               <Text style={LIST_CONTENT_STYLE}>
-                {listItems[i].trim() === '' ? ' ' : this.parseInlineFormats(listItems[i])}
+                {itemText.trim() === '' ? ' ' : this.parseInlineFormats(itemText)}
               </Text>
             </View>
           );

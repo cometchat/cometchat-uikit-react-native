@@ -75,8 +75,14 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
     if (!inputText) {
       return null;
     }
-    let formattedText = this.getFormatTextForLinks({ str: inputText, style: this.style });
-    return formattedText;
+    try {
+      let formattedText = this.getFormatTextForLinks({ str: inputText, style: this.style });
+      return formattedText;
+    } catch {
+      // Gracefully handle regex stack overflow on Android Hermes for very long messages.
+      // Return the input as-is rather than crashing the app.
+      return inputText;
+    }
   }
 
   getFormatTextForLinks = ({ str, style }: any): any => {

@@ -399,10 +399,12 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
         ?.fetchNext()
         .then((users: CometChat.User[]) => {
           let structuredData = this.convertCCUsersToSuggestionsItem(users);
-          // Preserve any pre-added items (like @all alias) in searchData when freshCall
-          this.searchData = freshCall
-            ? [...this.searchData, ...structuredData]
-            : [...this.searchData, ...structuredData];
+          // Deduplicate: only add items whose id is not already present
+          const existingIds = new Set(this.searchData.map((item) => item.id));
+          const uniqueNewItems = structuredData.filter(
+            (item) => !existingIds.has(item.id)
+          );
+          this.searchData = [...this.searchData, ...uniqueNewItems];
           this.setSearchData(this.searchData);
         })
         .catch((err) => {

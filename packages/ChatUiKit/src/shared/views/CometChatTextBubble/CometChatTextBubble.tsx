@@ -159,7 +159,29 @@ export const CometChatTextBubbleText = (
   const isViewBased = React.isValidElement(formattedText) &&
     (formattedText as React.ReactElement<any>).type === View;
 
-  // Only measure string content — View-based content can't use onTextLayout
+  // For View-based content, count children to determine truncatability and slice when collapsed.
+  // This avoids pixel-based clipping that cuts through the middle of list items.
+  const viewChildren = useMemo(() => {
+    if (!isViewBased) return null;
+    const children = React.Children.toArray(
+      (formattedText as React.ReactElement<any>).props.children
+    ).filter(React.isValidElement) as React.ReactElement<any>[];
+    return children;
+  }, [isViewBased, formattedText]);
+
+  const viewChildCount = viewChildren?.length ?? 0;
+  const isViewTruncatable = isViewBased && viewChildCount > collapseLines;
+
+  // Memoize styled children to avoid re-running applyTextStyleDeep on every render/toggle
+  const styledViewChildren = useMemo(() => {
+    if (!viewChildren) return null;
+    return viewChildren.map((child) => {
+      if (!React.isValidElement(child)) return child;
+      return applyTextStyleDeep(child as React.ReactElement<any>, textStyle);
+    });
+  }, [viewChildren, textStyle]);
+
+  // Only measure string content via onTextLayout — View-based uses child count instead
   const needsMeasurement = containerWidth !== null && !isViewBased && !measuredCacheRef.current[hiddenTextKey];
 
   return (
@@ -181,15 +203,9 @@ export const CometChatTextBubbleText = (
       )}
 
       {/* Visible text — View-based content (blockquotes, lists) rendered directly */}
-      {isViewBased ? (
+      {isViewBased && styledViewChildren ? (
         <View style={VIEW_BASED_WRAPPER_STYLE}>
-          {React.Children.map(
-            (formattedText as React.ReactElement<any>).props.children,
-            (child) => {
-              if (!React.isValidElement(child)) return child;
-              return applyTextStyleDeep(child as React.ReactElement<any>, textStyle);
-            }
-          )}
+          {isExpanded || !isViewTruncatable ? styledViewChildren : styledViewChildren.slice(0, collapseLines)}
         </View>
       ) : (
         <Text
@@ -202,7 +218,7 @@ export const CometChatTextBubbleText = (
       )}
 
       {/* Toggle - only show after measurement is complete to prevent flicker */}
-      {measurementComplete && isTruncatable && (
+      {((measurementComplete && isTruncatable) || isViewTruncatable) && (
         <View style={[{ alignItems: "flex-end", marginTop: 6 }, toggleContainerStyle]}>
           <TouchableOpacity onPress={toggle} accessibilityRole='button'>
             <Text style={[{ alignSelf: "flex-end" }, textStyle, toggleTextStyle]}>

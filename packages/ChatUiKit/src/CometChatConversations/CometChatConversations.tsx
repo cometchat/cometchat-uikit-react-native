@@ -32,7 +32,6 @@ import { SelectionMode } from "../shared/base/Types";
 import {
   ConversationTypeConstants,
   GroupTypeConstants,
-  MentionsTargetElement,
   MessageCategoryConstants,
   MessageReceipt,
   MessageStatusConstants,
@@ -43,7 +42,7 @@ import { Icon } from "../shared/icons/Icon";
 import { CommonUtils } from "../shared/utils/CommonUtils";
 import { stripMarkdown, preparePreviewText } from "../shared/utils/MarkdownUtils";
 import { CometChatRichTextFormatter } from "../shared/formatters/CometChatRichTextFormatter";
-import { getMessagePreviewInternal } from "../shared/utils/MessageUtils";
+import { getMessagePreviewInternal, applyMentionsFormatting } from "../shared/utils/MessageUtils";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
 import { CometChatConfirmDialog } from "../shared/views/CometChatConfirmDialog";
 import { CometChatDate } from "../shared/views/CometChatDate";
@@ -61,7 +60,6 @@ import { CometChatTheme } from "../theme/type";
 import { MenuItemInterface } from "../shared/views/CometChatTooltipMenu/CometChatTooltipMenu";
 import { JSX } from "react";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
-import { SuggestionItem } from "../shared/views/CometChatSuggestionList/SuggestionItem";
 
 // Unique listener IDs for conversation, user, group, message and call events.
 const conversationListenerId = "chatlist_" + new Date().getTime();
@@ -335,10 +333,12 @@ export const CometChatConversations = (props: ConversationInterface) => {
         color: theme.color.primary as string,
       },
       inlineCodeContainerStyle: {
-        backgroundColor: theme.color.background3 as string,
-        borderRadius: 2,
-        paddingHorizontal: 2,
-        paddingVertical: 0,
+        backgroundColor: "rgba(120, 120, 128, 0.22)",
+        borderRadius: 4,
+        borderWidth: 0.5,
+        borderColor: "rgba(120, 120, 128, 0.35)",
+        paddingHorizontal: 4,
+        paddingVertical: 1,
       },
     });
   }, [theme]);
@@ -834,7 +834,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     if (!lastMessage) return null;
     let messageText: string | JSX.Element = "";
     messageText = ChatConfigurator.getDataSource().getLastConversationMessage(conversations, theme);
-
+    
     // Detect block-level elements in text messages before stripMarkdown flattens them
     let blockType: 'blockquote' | 'codeBlock' | 'list' | null = null;
     let codeBlockLine = '';
@@ -912,6 +912,17 @@ export const CometChatConversations = (props: ConversationInterface) => {
           {messageText}
         </Text>
       );
+    } else if (messageText && typeof messageText !== 'string') {
+      // JSX element from rich text formatter — wrap with truncation
+      messageText = (
+        <Text
+          style={[mergedStyles.itemStyle.subtitleStyle, { flexShrink: 2 }]}
+          numberOfLines={1}
+          ellipsizeMode='tail'
+        >
+          {messageText}
+        </Text>
+      );
     }
 
     let groupText = "";
@@ -929,9 +940,9 @@ export const CometChatConversations = (props: ConversationInterface) => {
       <>
         {groupText && (
           <Text
-            style={[mergedStyles.itemStyle.subtitleStyle, { flexShrink: 1 }]}
+            style={[mergedStyles.itemStyle.subtitleStyle, { flexShrink: 0, maxWidth: '40%' }]}
             numberOfLines={1}
-            ellipsizeMode='middle'
+            ellipsizeMode='tail'
           >
             {groupText}
           </Text>
@@ -964,39 +975,9 @@ export const CometChatConversations = (props: ConversationInterface) => {
       messageTextTmp = stripMarkdown(subtitle);
     }
     let allFormatters = [...(textFormatters || [])];
-    // Detect presence of @all alias token in raw subtitle string (before formatting)
-    const containsAllAlias = /<@all:(.*?)>/.test(subtitle);
 
-    if (message.getMentionedUsers().length || containsAllAlias) {
-      let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
-      mentionsFormatter.setContext("conversation");
-      mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser!);
-      mentionsFormatter.setMentionsStyle(mergedStyles.mentionsStyles);
-      mentionsFormatter.setTargetElement(MentionsTargetElement.conversation);
-      mentionsFormatter.setMessage(message);
-
-      // Inject alias suggestion item if needed so formatter can render styled @All
-      if (containsAllAlias) {
-        const match = subtitle.match(/<@all:(.*?)>/);
-        const aliasLabel = match && match[1] ? match[1] : "all";
-        let existing = mentionsFormatter.getSuggestionItems();
-        const underlyingText = `<@all:${aliasLabel}>`;
-        const already = existing.find((it: any) => it.underlyingText === underlyingText);
-        if (!already) {
-          const aliasItem = new SuggestionItem({
-            id: aliasLabel,
-            name: aliasLabel,
-            promptText: aliasLabel,
-            trackingCharacter: "@",
-            underlyingText,
-            hideLeadingIcon: true,
-          });
-          mentionsFormatter.setSuggestionItems([...existing, aliasItem]);
-        }
-      }
-
-      allFormatters.push(mentionsFormatter);
-    }
+    // Apply mentions formatting using shared helper (DRY — same as CometChatMessagePreview)
+    messageTextTmp = applyMentionsFormatting(message, messageTextTmp, subtitle, mergedStyles.mentionsStyles);
 
     if (
       message instanceof CometChat.TextMessage &&

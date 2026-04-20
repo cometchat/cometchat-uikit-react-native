@@ -3590,23 +3590,29 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
     // ==================== Helper Methods ====================
 
-    /// Returns sub-ranges of `start..<end` that do NOT overlap any MentionSpan.
-    /// Used to skip mentions when applying inline formatting (Req 6.1).
+    /// Returns sub-ranges of `start..<end` that do NOT overlap any MentionSpan or URLSpan.
+    /// Used to skip mentions and links when applying inline formatting (Req 6.1).
     private fun nonMentionRanges(start: Int, end: Int, spannable: Spanned): List<IntRange> {
         val mentionSpans = spannable.getSpans(start, end, MentionSpan::class.java)
-        if (mentionSpans.isEmpty()) return listOf(start until end)
+        val urlSpans = spannable.getSpans(start, end, URLSpan::class.java)
 
-        val mentionRanges = mentionSpans.map {
-            spannable.getSpanStart(it) until spannable.getSpanEnd(it)
-        }.sortedBy { it.first }
+        val protectedRanges = mutableListOf<IntRange>()
+        mentionSpans.forEach {
+            protectedRanges.add(spannable.getSpanStart(it) until spannable.getSpanEnd(it))
+        }
+        urlSpans.forEach {
+            protectedRanges.add(spannable.getSpanStart(it) until spannable.getSpanEnd(it))
+        }
+        if (protectedRanges.isEmpty()) return listOf(start until end)
+        protectedRanges.sortBy { it.first }
 
         val result = mutableListOf<IntRange>()
         var cursor = start
-        for (mr in mentionRanges) {
-            if (cursor < mr.first) {
-                result.add(cursor until mr.first)
+        for (pr in protectedRanges) {
+            if (cursor < pr.first) {
+                result.add(cursor until pr.first)
             }
-            cursor = mr.last + 1 // IntRange.last is inclusive; advance past the mention
+            cursor = pr.last + 1 // IntRange.last is inclusive; advance past the protected range
         }
         if (cursor < end) {
             result.add(cursor until end)

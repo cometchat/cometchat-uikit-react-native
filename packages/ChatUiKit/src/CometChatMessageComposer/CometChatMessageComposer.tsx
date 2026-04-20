@@ -761,7 +761,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
         mentionMap.current = hashMap;
         setMessagePreview({
-          message: { ...message, text: textComponents },
+          message: message,
           mode: ConversationOptionConstants.edit,
         });
 
@@ -2306,7 +2306,7 @@ export const CometChatMessageComposer = React.forwardRef(
               {messagePreview && (
                 <CometChatMessagePreview
                   messagePreviewTitle={t("EDIT_MESSAGE")}
-                  messagePreviewSubtitle={messagePreview?.message?.text || "Message"}
+                  message={messagePreview?.message}
                   showCloseIcon={true}
                   closeIconURL={ICONS.CLOSE}
                   onCloseClick={() => {

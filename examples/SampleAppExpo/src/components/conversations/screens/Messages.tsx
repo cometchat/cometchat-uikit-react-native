@@ -23,6 +23,7 @@ import {
   CometChatMessageHeader,
   CometChatMessageList,
   CometChatCompactMessageComposer,
+  CometChatMessageComposer,
   useTheme,
   CometChatUIEventHandler,
   CometChatUIEvents,

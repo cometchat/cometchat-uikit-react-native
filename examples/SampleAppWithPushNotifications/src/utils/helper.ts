@@ -102,7 +102,8 @@ export async function displayLocalNotification(
 
     // Get badge count from payload
     const unreadCount = remoteMessage.data?.unreadMessageCount;
-    const badgeCount = unreadCount ? parseInt(unreadCount, 10) : undefined;
+    const parsedCount = unreadCount != null ? parseInt(String(unreadCount), 10) : NaN;
+    const badgeCount = !isNaN(parsedCount) && parsedCount >= 0 ? parsedCount : undefined;
 
     // Add unread count to title if more than 1
     const displayTitle = badgeCount && badgeCount > 1
@@ -110,30 +111,35 @@ export async function displayLocalNotification(
       : title || 'New Message';
 
     // Set badge count directly from backend unreadMessageCount
-    if (badgeCount && badgeCount > 0) {
+    if (badgeCount != null && badgeCount > 0) {
       await notifee.setBadgeCount(badgeCount);
     }
 
     // Use fixed notification ID so Samsung doesn't add badge counts from multiple notifications
     // This ensures badge shows exact unreadMessageCount from backend
+    // Build android config — only include badgeCount if it's a valid number
+    const androidConfig: any = {
+      channelId,
+      sortKey: skey,
+      autoCancel: true,
+      smallIcon: 'ic_notification',
+      largeIcon:
+        senderAvatar ||
+        'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+      importance: AndroidImportance.HIGH,
+      pressAction: {
+        id: 'default',
+      },
+    };
+    if (badgeCount != null) {
+      androidConfig.badgeCount = badgeCount;
+    }
+
     await notifee.displayNotification({
       id: 'chat-notification',
       title: displayTitle,
       body: body || 'You received a new message.',
-      android: {
-        channelId,
-        sortKey: skey,
-        autoCancel: true,
-        smallIcon: 'ic_notification',
-        largeIcon:
-          senderAvatar ||
-          'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-        importance: AndroidImportance.HIGH,
-        badgeCount: badgeCount,
-        pressAction: {
-          id: 'default',
-        },
-      },
+      android: androidConfig,
       data: notificationData,
     });
   } catch (error) {

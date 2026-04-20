@@ -1329,6 +1329,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
         updateToolbarPosition()
         updateToolbarButtonStates()
+        emitActiveStyles()
 
         // Strip mention-specific attributes from typingAttributes when cursor
         // lands adjacent to (or inherits from) a deleted mention.
@@ -3060,8 +3061,49 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         let regularFont = UIFont.systemFont(ofSize: 16)
 
         mutableAttrString.enumerateAttribute(.font, in: range, options: []) { value, attrRange, _ in
-            let newFont = hasMonospace ? regularFont : monoFont
-            mutableAttrString.addAttribute(.font, value: newFont, range: attrRange)
+            if hasMonospace {
+                // Removing code: restore to system font but preserve bold/italic traits
+                if let existingFont = value as? UIFont {
+                    let traits = existingFont.fontDescriptor.symbolicTraits
+                    var newFont = regularFont
+                    if traits.contains(.traitBold) && traits.contains(.traitItalic) {
+                        if let desc = regularFont.fontDescriptor.withSymbolicTraits([.traitBold, .traitItalic]) {
+                            newFont = UIFont(descriptor: desc, size: 16)
+                        }
+                    } else if traits.contains(.traitBold) {
+                        newFont = UIFont.boldSystemFont(ofSize: 16)
+                    } else if traits.contains(.traitItalic) {
+                        newFont = UIFont.italicSystemFont(ofSize: 16)
+                    }
+                    mutableAttrString.addAttribute(.font, value: newFont, range: attrRange)
+                } else {
+                    mutableAttrString.addAttribute(.font, value: regularFont, range: attrRange)
+                }
+            } else {
+                // Adding code: switch to monospace but preserve bold/italic traits
+                if let existingFont = value as? UIFont {
+                    let traits = existingFont.fontDescriptor.symbolicTraits
+                    var newFont = monoFont
+                    if traits.contains(.traitBold) && traits.contains(.traitItalic) {
+                        // Monospace bold italic
+                        if let desc = monoFont.fontDescriptor.withSymbolicTraits([.traitBold, .traitItalic, .traitMonoSpace]) {
+                            newFont = UIFont(descriptor: desc, size: 15)
+                        } else {
+                            // Fallback: at least try bold monospace
+                            newFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .bold)
+                        }
+                    } else if traits.contains(.traitBold) {
+                        newFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .bold)
+                    } else if traits.contains(.traitItalic) {
+                        if let desc = monoFont.fontDescriptor.withSymbolicTraits([.traitItalic, .traitMonoSpace]) {
+                            newFont = UIFont(descriptor: desc, size: 15)
+                        }
+                    }
+                    mutableAttrString.addAttribute(.font, value: newFont, range: attrRange)
+                } else {
+                    mutableAttrString.addAttribute(.font, value: monoFont, range: attrRange)
+                }
+            }
         }
 
         if !hasMonospace {
@@ -3079,6 +3121,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         saveToUndoStack()
         sendContentChange()
         emitActiveStyles()
+        updateToolbarButtonStates()
     }
 
     func toggleHighlight(color: String?) {
@@ -3626,6 +3669,8 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         isInternalChange = false
         saveToUndoStack()
         sendContentChange()
+        emitActiveStyles()
+        updateToolbarButtonStates()
     }
 
     private func toggleAttribute(key: NSAttributedString.Key, value: Int) {
@@ -3701,6 +3746,8 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         isInternalChange = false
         saveToUndoStack()
         sendContentChange()
+        emitActiveStyles()
+        updateToolbarButtonStates()
     }
 
     /// Applies pending style toggles to typingAttributes so newly typed text inherits them.
