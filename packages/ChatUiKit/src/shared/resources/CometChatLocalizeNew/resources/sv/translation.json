@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Redigera länk",
 	"LINK_TEXT": "Länktext",
 	"URL": "URL",
-	"INSERT": "Infoga"
+	"INSERT": "Infoga",
+	"GROUP_NO_LONGER_MEMBER": "Du kan inte skicka meddelande till denna grupp eftersom du inte längre är medlem."
 }

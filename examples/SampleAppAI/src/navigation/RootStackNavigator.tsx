@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import BottomTabNavigator from './BottomTabNavigator';
 import { SCREEN_CONSTANTS } from '../utils/AppConstants';
@@ -17,7 +17,7 @@ type Props = {
   hasValidAppCredentials: boolean;
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const RootStackNavigator = ({ isLoggedIn, hasValidAppCredentials }: Props) => {
   const theme = useTheme();
@@ -57,7 +57,6 @@ const RootStackNavigator = ({ isLoggedIn, hasValidAppCredentials }: Props) => {
           }
           screenOptions={{
             gestureEnabled: true,
-            gestureDirection: 'horizontal',
             headerShown: false,
             animation: 'slide_from_right',
           }}

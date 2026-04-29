@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Edit pautan",
 	"LINK_TEXT": "Teks pautan",
 	"URL": "URL",
-	"INSERT": "Masukkan"
+	"INSERT": "Masukkan",
+	"GROUP_NO_LONGER_MEMBER": "Anda tidak boleh menghantar mesej ke kumpulan ini kerana anda bukan lagi ahli."
 }

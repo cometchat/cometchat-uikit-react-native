@@ -3431,9 +3431,11 @@ export const CometChatMessageList = memo(
       };
 
       const shareMedia = async (messageObject: CometChat.MediaMessage | any) => {
-        let _plainString = getPlainString(messageObject?.getData()["text"] || "", messageObject);
-
-        let textMessage = stripMarkdown(_plainString);
+        // Strip markdown/HTML from raw text BEFORE mention replacement,
+        // because getPlainString can break HTML tags (e.g., </u> becomes /u>)
+        let rawText = messageObject?.getData()["text"] || "";
+        let strippedText = stripMarkdown(rawText);
+        let textMessage = getPlainString(strippedText, messageObject);
         let fileUrl = messageObject.getData()["url"];
 
         const getFileName = () => {
@@ -3452,8 +3454,14 @@ export const CometChatMessageList = memo(
               : (messageObject as CometChat.MediaMessage)?.getAttachment()?.getMimeType(), // get Mime Type
         };
 
-        NativeModules.FileManager.shareMessage(shareObj, (callback: any) => {
-        });
+        // Dismiss message options modal before presenting native share sheet
+        // to prevent screen freeze when share sheet is dismissed on iOS (Fabric).
+        // Use setTimeout with enough delay for the modal dismiss animation to complete.
+        setShowMessageOptions([]);
+        setTimeout(() => {
+          NativeModules.FileManager.shareMessage(shareObj, (callback: any) => {
+          });
+        }, 600);
       };
 
       const openOptionsForMessage = useCallback(

@@ -1274,7 +1274,7 @@ export const CometChatMessageComposer = React.forwardRef(
           iconStyle={mergedComposerStyle.attachmentIconStyle as ImageStyle}
         />
       );
-    }, [mergedComposerStyle]);
+    }, [mergedComposerStyle, actionSheetItems, hideAttachmentButton]);
 
     const RecordAudioButtonView = ({
       icon,

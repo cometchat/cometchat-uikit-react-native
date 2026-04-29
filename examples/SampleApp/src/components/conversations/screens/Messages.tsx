@@ -43,6 +43,7 @@ import { CommonUtils } from '../../../utils/CommonUtils';
 import Info from '../../../assets/icons/Info';
 import {useActiveChat} from '../../../utils/ActiveChatContext';
 import { useConfig } from '../../../config/store';
+import { useGroupMemberStatus } from '../../../hooks/useGroupMemberStatus';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -192,6 +193,11 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
     return false;
   }, [localUser]);
   const agentic = isAgenticUser();
+
+  // ============================================
+  // Group Kicked/Banned Detection (real-time)
+  // ============================================
+  const isNoLongerMember = useGroupMemberStatus(group);
 
   // Stop streaming when app goes to background for agentic users
   useEffect(() => {
@@ -642,7 +648,27 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
           </Modal>
         )}
 
-        {localUser?.getBlockedByMe() ? (
+        {isNoLongerMember ? (
+          <View
+            style={{
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              backgroundColor: theme.color.background1 as string,
+            }}
+          >
+            <Text
+              style={[
+                theme.typography.body.regular,
+                {
+                  color: theme.color.textPrimary as string,
+                  textAlign: 'center',
+                },
+              ]}
+            >
+              {t('GROUP_NO_LONGER_MEMBER')}
+            </Text>
+          </View>
+        ) : localUser?.getBlockedByMe() ? (
           <View
             style={[
               styles.blockedContainer,

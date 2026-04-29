@@ -20,6 +20,7 @@ import {
 
 import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import RootStackNavigator from './src/navigation/RootStackNavigator';
 import { AppConstants } from './src/utils/AppConstants';
@@ -631,6 +632,7 @@ const App = (): React.ReactElement => {
 
   // Once initialization is complete, render the main app UI.
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       {/* Render the incoming call UI if the user is logged in and a call is received */}
       <CometChatThemeProvider theme={theme}>
@@ -655,6 +657,7 @@ const App = (): React.ReactElement => {
         </CometChatI18nProvider>
       </CometChatThemeProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 };
 

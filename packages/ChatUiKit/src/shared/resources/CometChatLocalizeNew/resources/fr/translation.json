@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Modifier le lien",
 	"LINK_TEXT": "Texte du lien",
 	"URL": "URL",
-	"INSERT": "Insérer"
+	"INSERT": "Insérer",
+	"GROUP_NO_LONGER_MEMBER": "Vous ne pouvez pas envoyer de message à ce groupe car vous n'en êtes plus membre."
 }

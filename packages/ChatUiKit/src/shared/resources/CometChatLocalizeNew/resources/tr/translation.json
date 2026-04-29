@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Bağlantıyı düzenle",
 	"LINK_TEXT": "Bağlantı metni",
 	"URL": "URL",
-	"INSERT": "Ekle"
+	"INSERT": "Ekle",
+	"GROUP_NO_LONGER_MEMBER": "Artık üye olmadığınız için bu gruba mesaj gönderemezsiniz."
 }

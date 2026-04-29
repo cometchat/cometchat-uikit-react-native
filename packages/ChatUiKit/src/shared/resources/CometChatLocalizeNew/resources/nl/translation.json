@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Link bewerken",
 	"LINK_TEXT": "Linktekst",
 	"URL": "URL",
-	"INSERT": "Invoegen"
+	"INSERT": "Invoegen",
+	"GROUP_NO_LONGER_MEMBER": "U kunt geen bericht naar deze groep sturen omdat u geen lid meer bent."
 }

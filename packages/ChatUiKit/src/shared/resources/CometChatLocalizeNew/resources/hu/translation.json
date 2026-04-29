@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Link szerkesztése",
 	"LINK_TEXT": "Link szövege",
 	"URL": "URL",
-	"INSERT": "Beszúrás"
+	"INSERT": "Beszúrás",
+	"GROUP_NO_LONGER_MEMBER": "Nem küldhet üzenetet ebbe a csoportba, mert már nem tag."
 }

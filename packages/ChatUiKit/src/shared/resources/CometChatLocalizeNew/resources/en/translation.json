@@ -509,5 +509,6 @@
 	"SEARCH_NO_MESSAGES": "No messages",
   	"MESSAGE_REPORTED": "Message reported",
   	"MARK_AS_UNREAD": "Mark Unread",
-	"NEW": "New"
+	"NEW": "New",
+	"GROUP_NO_LONGER_MEMBER": "You can't send message to this group because you're no longer a member."
 }

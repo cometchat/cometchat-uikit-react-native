@@ -509,5 +509,6 @@
 	"EDIT_LINK": "Redaguoti nuorodą",
 	"LINK_TEXT": "Nuorodos tekstas",
 	"URL": "URL",
-	"INSERT": "Įterpti"
+	"INSERT": "Įterpti",
+	"GROUP_NO_LONGER_MEMBER": "Negalite siųsti žinutės šiai grupei, nes nebesate narys."
 }

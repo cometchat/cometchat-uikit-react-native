@@ -20,6 +20,7 @@ import {
 } from '@cometchat/chat-uikit-react-native';
 
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import RootStackNavigator from './src/navigation/RootStackNavigator';
 import { AppConstants } from './src/utils/AppConstants';
@@ -30,10 +31,12 @@ function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <AppContent />
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

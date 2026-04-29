@@ -39,6 +39,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CommonUtils } from '../../../utils/CommonUtils';
 import { useConfig } from '../../../config/store';
+import { useGroupMemberStatus } from '../../../hooks/useGroupMemberStatus';
 
 type ThreadViewRouteProp = RouteProp<RootStackParamList, 'ThreadView'>;
 type ThreadViewNavProp = StackNavigationProp<RootStackParamList>;
@@ -92,6 +93,11 @@ const ThreadView = () => {
   const [localUser, setLocalUser] = useState<CometChat.User | undefined>(
     params?.user,
   );
+
+  // ============================================
+  // Group Kicked/Banned Detection (real-time)
+  // ============================================
+  const isNoLongerMember = useGroupMemberStatus(group);
 
   // keep listener ids unique
   const userListenerId = 'thread_user_' + new Date().getTime();
@@ -298,7 +304,27 @@ const handleBack = useCallback(() => {
       </View>
 
       {/* Message Composer for Thread */}
-      {localUser?.getBlockedByMe() ? (
+      {isNoLongerMember ? (
+        <View
+          style={{
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            backgroundColor: theme.color.background1 as string,
+          }}
+        >
+          <Text
+            style={[
+              theme.typography.body.regular,
+              {
+                color: theme.color.textPrimary as string,
+                textAlign: 'center',
+              },
+            ]}
+          >
+            {t('GROUP_NO_LONGER_MEMBER')}
+          </Text>
+        </View>
+      ) : localUser?.getBlockedByMe() ? (
         <View
           style={[
             styles.blockedContainer,
