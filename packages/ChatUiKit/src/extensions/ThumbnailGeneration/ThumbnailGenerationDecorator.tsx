@@ -48,7 +48,11 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     let image: { uri: string } = { uri: "" };
     const thumbnailData = getExtensionData(message, ExtensionConstants.thumbnailGeneration);
     if (thumbnailData == undefined) {
-      image = message.getType() === "image" ? { uri: (message?.getData() as any)?.url } : image;
+      if (message.getType() === "image") {
+        const data = message?.getData() as any;
+        const fallbackUrl = data?.url ?? data?.attachments?.[0]?.url ?? "";
+        image = { uri: fallbackUrl };
+      }
     } else {
       const attachmentData = thumbnailData["attachments"];
       if (attachmentData.length) {

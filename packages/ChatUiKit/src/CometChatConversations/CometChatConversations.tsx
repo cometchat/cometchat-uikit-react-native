@@ -300,6 +300,9 @@ export const CometChatConversations = (props: ConversationInterface) => {
   const conversationListRef = React.useRef<CometChatListActionsInterface>(null);
   // Store the logged in user for comparison and event handling.
   const loggedInUser = React.useRef<CometChat.User>(undefined);
+  // Buffer receipts by messageId to handle race conditions where receipts arrive
+  // before the message becomes the conversation's last message (due to async updateLastMessage)
+  const pendingReceiptsMap = React.useRef<Map<string, { readAt?: number; deliveredAt?: number }>>(new Map());
   // State to control the confirmation dialog for deleting a conversation.
   const [confirmDelete, setConfirmDelete] = React.useState<string | undefined>(undefined);
   // State to control selection mode for conversation items.
@@ -445,6 +448,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
       (conversationListRef.current?.getListItem(
         `${loggedInUser.current?.getUid()}_user_${uid}`
       ) as unknown as CometChat.Conversation);
+    if (!item) return;
     const user: CometChat.User = item.getConversationWith();
     if (user.getBlockedByMe() || user.getHasBlockedMe()) return;
     if (item) {
@@ -513,6 +517,31 @@ export const CometChatConversations = (props: ConversationInterface) => {
         if (!conver) return;
         let lastMessageId = conver.getLastMessage().getId();
         if (lastMessageId == newMessage.getId()) {
+          // Preserve the real-time user status from the existing conversation.
+          // The server-returned conversation may have stale user status/lastActiveAt.
+          const existingWith = conver.getConversationWith();
+          const newWith = conversation.getConversationWith();
+          if (existingWith instanceof CometChat.User && newWith instanceof CometChat.User) {
+            if (existingWith.getStatus() === "online" && newWith.getStatus() !== "online") {
+              newWith.setStatus("online");
+              const existingLastActive = existingWith.getLastActiveAt();
+              if (existingLastActive) {
+                newWith.setLastActiveAt(existingLastActive);
+              }
+            }
+          }
+          // Preserve receipt status from the existing conversation if the server-returned
+          // conversation has stale receipt info (due to async timing)
+          const existingLastMsg = conver.getLastMessage();
+          const newLastMsg = conversation.getLastMessage();
+          if (existingLastMsg && newLastMsg && existingLastMsg.getId() === newLastMsg.getId()) {
+            if (existingLastMsg.getReadAt?.() && !newLastMsg.getReadAt?.()) {
+              newLastMsg.setReadAt(existingLastMsg.getReadAt());
+            }
+            if (existingLastMsg.getDeliveredAt?.() && !newLastMsg.getDeliveredAt?.()) {
+              newLastMsg.setDeliveredAt(existingLastMsg.getDeliveredAt());
+            }
+          }
           conversationListRef.current!.updateList(CommonUtils.clone(conversation));
         }
       }
@@ -593,6 +622,29 @@ export const CometChatConversations = (props: ConversationInterface) => {
             .catch((err) => onError && onError(err));
           return;
         }
+        // Preserve receipt status if the existing last message is the same message
+        // (receipts may have arrived while this async operation was in flight)
+        const existingLastMessage = oldConversation.getLastMessage();
+        if (existingLastMessage && existingLastMessage.getId() === newMessage.getId()) {
+          if (existingLastMessage.getReadAt?.() && !newMessage.getReadAt?.()) {
+            newMessage.setReadAt(existingLastMessage.getReadAt());
+          }
+          if (existingLastMessage.getDeliveredAt?.() && !newMessage.getDeliveredAt?.()) {
+            newMessage.setDeliveredAt(existingLastMessage.getDeliveredAt());
+          }
+        }
+        // Also check if a receipt arrived BEFORE this message was set as lastMessage
+        // (race condition: receipt fires before updateLastMessage completes)
+        const newMsgId = String(newMessage.getId?.() ?? "");
+        const bufferedReceipt = pendingReceiptsMap.current.get(newMsgId);
+        if (bufferedReceipt) {
+          if (bufferedReceipt.readAt && !newMessage.getReadAt?.()) {
+            newMessage.setReadAt(bufferedReceipt.readAt);
+          }
+          if (bufferedReceipt.deliveredAt && !newMessage.getDeliveredAt?.()) {
+            newMessage.setDeliveredAt(bufferedReceipt.deliveredAt);
+          }
+        }
         // Update last message and unread count.
         oldConversation.setLastMessage(newMessage);
         if (newMessage.getSender().getUid() != loggedInUser.current?.getUid())
@@ -641,6 +693,17 @@ export const CometChatConversations = (props: ConversationInterface) => {
    * @param receipt - The message receipt.
    */
   const updateMessageReceipt = (receipt: CometChat.MessageReceipt) => {
+    const receiptMessageId = typeof (receipt as any).getMessageId === 'function' ? String((receipt as any).getMessageId()) : String((receipt as any)["messageId"] ?? "");
+
+    // Always buffer the receipt by messageId — this handles race conditions where
+    // the receipt arrives before updateLastMessage has set the message as lastMessage
+    if (receiptMessageId) {
+      const existing = pendingReceiptsMap.current.get(receiptMessageId) || {};
+      if (receipt.getReadAt()) existing.readAt = receipt.getReadAt();
+      if (receipt.getDeliveredAt()) existing.deliveredAt = receipt.getDeliveredAt();
+      pendingReceiptsMap.current.set(receiptMessageId, existing);
+    }
+
     const conv: CometChat.Conversation | boolean =
       receipt?.getReceiverType() === ReceiverTypeConstants.user
         ? (conversationListRef.current?.getListItem(
@@ -659,25 +722,44 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
     if (
       conv &&
-      conv.getConversationType() == ConversationTypeConstants.group &&
-      conv.getLastMessage().getSender().getUid() !== loggedInUser.current!.getUid()
+      (conv as CometChat.Conversation).getConversationType() == ConversationTypeConstants.group &&
+      (conv as CometChat.Conversation).getLastMessage().getSender().getUid() !== loggedInUser.current!.getUid()
     ) {
       return;
     }
 
-    if (
-      conv &&
-      conv?.getLastMessage &&
-      (String(typeof conv.getLastMessage().getId === 'function' ? conv.getLastMessage().getId() : conv.getLastMessage().id) === String(receipt.getMessageId()))
-    ) {
-      let newConversation = CommonUtils.clone(conv);
-      if (receipt.getReadAt()) {
-        newConversation.getLastMessage().setReadAt(receipt.getReadAt());
+    if (conv && (conv as CometChat.Conversation)?.getLastMessage) {
+      let newConversation = CommonUtils.clone(conv as CometChat.Conversation);
+      const lastMessage = newConversation.getLastMessage();
+
+      // Only update if the last message was sent by the logged-in user (receipts are for outgoing messages)
+      if (lastMessage?.getSender?.()?.getUid?.() !== loggedInUser.current?.getUid()) {
+        return;
       }
-      if (receipt.getDeliveredAt()) {
-        newConversation.getLastMessage().setDeliveredAt(receipt.getDeliveredAt());
+
+      // Apply any buffered receipt for this specific message
+      const lastMsgId = String(lastMessage?.getId?.() ?? "");
+      const pending = pendingReceiptsMap.current.get(lastMsgId);
+
+      let updated = false;
+
+      // Apply read status — never downgrade (if already read, skip)
+      const readAtToApply = pending?.readAt || (receipt.getReadAt() && String(receiptMessageId) === lastMsgId ? receipt.getReadAt() : undefined);
+      if (readAtToApply && !lastMessage.getReadAt?.()) {
+        lastMessage.setReadAt(readAtToApply);
+        updated = true;
       }
-      conversationListRef.current?.updateList(newConversation);
+
+      // Apply delivered status — never downgrade (if already read or delivered, skip delivered)
+      const deliveredAtToApply = pending?.deliveredAt || (receipt.getDeliveredAt() && String(receiptMessageId) === lastMsgId ? receipt.getDeliveredAt() : undefined);
+      if (deliveredAtToApply && !lastMessage.getDeliveredAt?.() && !lastMessage.getReadAt?.()) {
+        lastMessage.setDeliveredAt(deliveredAtToApply);
+        updated = true;
+      }
+
+      if (updated) {
+        conversationListRef.current?.updateList(newConversation);
+      }
     }
   };
 
@@ -1156,7 +1238,11 @@ export const CometChatConversations = (props: ConversationInterface) => {
    * @returns The updated conversation.
    */
   const updateUnreadMessageCount = (conversation: CometChat.Conversation) => {
-    const oldConversation: CometChat.Conversation = conversationListRef.current!.getListItem(
+    if (!conversationListRef.current) {
+      conversation.setUnreadMessageCount(1);
+      return conversation;
+    }
+    const oldConversation: CometChat.Conversation = conversationListRef.current.getListItem(
       conversation["conversationId"]
     ) as unknown as CometChat.Conversation;
     if (oldConversation == undefined) {
@@ -1201,7 +1287,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
               }
               conversation = updateUnreadMessageCount(conversation);
               conversation.setLastMessage(call);
-              conversationListRef.current!.updateList(conversation);
+              conversationListRef.current?.updateList(conversation);
             })
             .catch((e) => {
               onError && onError(e);
@@ -1215,7 +1301,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
               }
               conversation = updateUnreadMessageCount(conversation);
               conversation.setLastMessage(call);
-              conversationListRef.current!.updateList(conversation);
+              conversationListRef.current?.updateList(conversation);
             })
             .catch((e) => {
               onError && onError(e);
@@ -1229,7 +1315,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
               }
               conversation = updateUnreadMessageCount(conversation);
               conversation.setLastMessage(call);
-              conversationListRef.current!.updateList(conversation);
+              conversationListRef.current?.updateList(conversation);
             })
             .catch((e) => {
               onError && onError(e);
@@ -1243,7 +1329,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
               }
               conversation = updateUnreadMessageCount(conversation);
               conversation.setLastMessage(call);
-              conversationListRef.current!.updateList(conversation);
+              conversationListRef.current?.updateList(conversation);
             })
             .catch((e) => {
               onError && onError(e);
@@ -1433,6 +1519,9 @@ export const CometChatConversations = (props: ConversationInterface) => {
         }
         messageEventHandler(customInteractiveMessage);
         !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+      },
+      onMessageModerated: (moderatedMessage: CometChat.BaseMessage) => {
+        checkAndUpdateLastMessage(moderatedMessage);
       },
     });
     // Listen for additional group events.

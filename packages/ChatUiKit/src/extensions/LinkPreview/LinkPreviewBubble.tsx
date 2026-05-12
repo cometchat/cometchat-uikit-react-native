@@ -56,9 +56,11 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
 
   const _style = style;
 
-  const [imageSource, setImageSource] = useState({
-    uri: image.startsWith("https:") ? image : `https:${image.split("http:")[1]}`,
-  });
+  const [imageSource, setImageSource] = useState(
+    image
+      ? { uri: image.startsWith("https:") ? image : `https:${image.split("http:")[1]}` }
+      : undefined
+  );
 
   const [imageHeight, setImageHeight] = useState<DimensionValue>();
   const [imageWidth, setImageWidth] = useState<DimensionValue>();
@@ -145,20 +147,22 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
       onTouchEnd={handleTouchEnd}
       onTouchMove={onTouchMove}
     >
-      <View
-        style={style?.headerImageContainerStyle}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={onTouchMove}
-      >
-        <Image
-          source={imageSource}
-          style={[{ height: imageHeight, width: imageWidth }, style?.headerImageStyle]}
-          onError={(err) => {
-            setImageSource(DefaultLinkPreview);
-          }}
-        />
-      </View>
+      {imageSource ? (
+        <View
+          style={style?.headerImageContainerStyle}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={onTouchMove}
+        >
+          <Image
+            source={imageSource}
+            style={[{ height: imageHeight, width: imageWidth }, style?.headerImageStyle]}
+            onError={(err) => {
+              setImageSource(DefaultLinkPreview);
+            }}
+          />
+        </View>
+      ) : null}
 
       <View style={style?.bodyStyle?.containerStyle}>
         <View style={{ flexDirection: "row" }}>
@@ -168,7 +172,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
             </Text>
           </View>
 
-          {!faviconError && (
+          {!imageSource && !faviconError && (
             <View style={style?.bodyStyle?.faviconContainerStyle}>
               <Image
                 source={faviconSource}

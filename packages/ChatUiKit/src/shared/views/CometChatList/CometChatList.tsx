@@ -251,7 +251,13 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
     const selectionEffectDidMountRef = useRef(false);
 
     const [list, setList] = useState<any[]>([]);
+    const listRef = useRef<any[]>([]);
     const [dataLoadingStatus, setDataLoadingStatus] = useState<string>(LOADING);
+
+    // Keep listRef in sync with list state for use in imperative methods
+    useEffect(() => {
+      listRef.current = list;
+    }, [list]);
 
     useEffect(() => {
       // Skip calling onSelection on initial mount; only trigger after a user-driven change
@@ -382,13 +388,16 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
      * @param
      */
     const updateList = (item: any) => {
-      let newList = [...list];
-      let itemKey = newList.findIndex((u) => u[listItemKey] === item[listItemKey]);
-      if (itemKey > -1) {
-        newList.splice(itemKey, 1, item);
-        if (newList.length === 0) setDataLoadingStatus(NO_DATA_FOUND);
-        setList(newList);
-      }
+      setList((prevList) => {
+        let newList = [...prevList];
+        let itemKey = newList.findIndex((u) => u[listItemKey] === item[listItemKey]);
+        if (itemKey > -1) {
+          newList.splice(itemKey, 1, item);
+          if (newList.length === 0) setDataLoadingStatus(NO_DATA_FOUND);
+          return newList;
+        }
+        return prevList;
+      });
     };
 
     /**
@@ -396,12 +405,14 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
      * @param item
      */
     const updateAndMoveToFirst = (item: any) => {
-      let newList = [...list];
-      let itemKey = newList.findIndex((u) => u[listItemKey] === item[listItemKey]);
-      if (itemKey > -1) {
-        newList.splice(itemKey, 1);
-      }
-      setList([item, ...newList]);
+      setList((prevList) => {
+        let newList = [...prevList];
+        let itemKey = newList.findIndex((u) => u[listItemKey] === item[listItemKey]);
+        if (itemKey > -1) {
+          newList.splice(itemKey, 1);
+        }
+        return [item, ...newList];
+      });
     };
 
     const addItemToList = (item: any, position?: number) => {
@@ -431,14 +442,14 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
     };
 
     const getListItem = (itemId: string | number): any => {
-      return list.find((item: any) => item[listItemKey] === itemId);
+      return listRef.current.find((item: any) => item[listItemKey] === itemId);
     };
 
     /**
      * Get all list items
      */
     const getAllListItems = (): any[] => {
-      return list;
+      return listRef.current;
     };
 
     /**

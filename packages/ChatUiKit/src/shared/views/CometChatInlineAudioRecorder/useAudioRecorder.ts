@@ -240,53 +240,68 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
   /**
    * Duration timer effect - increments duration during recording state.
-   * Replicates the EXACT logic from the old Timer component in CometChatMediaRecorder/Timer.tsx:
-   * - Uses a local ref to track time in milliseconds
-   * - Increments by 1000ms every second when recording (not paused)
-   * - Freezes (stops incrementing) when paused - time value is preserved
-   * - Resets to 0 when going back to idle state
-   * 
-   * The old Timer component:
-   * - Used `time` state in seconds, incremented by 1 every 1000ms
-   * - We use milliseconds for consistency with the rest of the codebase
+   * Uses wall-clock time (Date.now()) for accurate duration tracking,
+   * combined with a preserved offset for pause/resume support.
    * 
    * @validates Requirements 1.4, 3.1
    */
   const timerValueRef = useRef<number>(0);
+  const segmentStartTimeRef = useRef<number>(0);
+  /** Duration accumulated before the current active recording segment started. */
+  const offsetAtSegmentStartRef = useRef<number>(0);
+  /** Timestamp captured at the moment the user initiates a pause, before the async native call. */
+  const pauseRequestedAtRef = useRef<number>(0);
   
   useEffect(() => {
     if (reducerState.state === 'recording') {
-      // Not paused -> start counting (increment every 1 second like old Timer)
-      // This matches: intervalRef.current = setInterval(() => { setTime((prev) => prev + 1); }, 1000);
+      // Capture wall-clock start and the offset accumulated so far
+      segmentStartTimeRef.current = Date.now();
+      offsetAtSegmentStartRef.current = timerValueRef.current;
+      pauseRequestedAtRef.current = 0;
+
+      // Tick every 500ms, compute elapsed from Date.now() for accuracy
       durationTimerRef.current = setInterval(() => {
-        timerValueRef.current += 1000; // Increment by 1000ms (1 second)
-        dispatch({ type: 'UPDATE_DURATION', duration: timerValueRef.current });
-      }, 1000);
+        const elapsed = Date.now() - segmentStartTimeRef.current;
+        const totalMs = offsetAtSegmentStartRef.current + elapsed;
+        timerValueRef.current = totalMs;
+        dispatch({ type: 'UPDATE_DURATION', duration: totalMs });
+      }, 500);
     } else if (reducerState.state === 'paused') {
-      // Paused -> clear interval, so time is frozen (but value preserved in timerValueRef)
-      // This matches the old Timer's behavior when paused=true
+      // Paused -> stop interval, snap to exact elapsed time
       if (durationTimerRef.current) {
         clearInterval(durationTimerRef.current);
         durationTimerRef.current = null;
       }
-      // Note: timerValueRef.current is NOT reset here - time is frozen but preserved
+      if (segmentStartTimeRef.current > 0) {
+        // Use the timestamp from when pause was requested (before the async native call)
+        // to avoid overcounting the time the native call took to complete.
+        const pauseTime = pauseRequestedAtRef.current > 0
+          ? pauseRequestedAtRef.current
+          : Date.now();
+        const elapsed = pauseTime - segmentStartTimeRef.current;
+        timerValueRef.current = offsetAtSegmentStartRef.current + Math.max(0, elapsed);
+        dispatch({ type: 'UPDATE_DURATION', duration: timerValueRef.current });
+        segmentStartTimeRef.current = 0;
+        pauseRequestedAtRef.current = 0;
+      }
     } else if (reducerState.state === 'idle') {
-      // Reset timer when going back to idle (like resetKey changing in old Timer)
+      // Reset everything
       timerValueRef.current = 0;
+      segmentStartTimeRef.current = 0;
+      offsetAtSegmentStartRef.current = 0;
+      pauseRequestedAtRef.current = 0;
       if (durationTimerRef.current) {
         clearInterval(durationTimerRef.current);
         durationTimerRef.current = null;
       }
     } else {
       // For other states (completed, playing, error), just stop the interval
-      // but preserve the duration value
       if (durationTimerRef.current) {
         clearInterval(durationTimerRef.current);
         durationTimerRef.current = null;
       }
     }
 
-    // Cleanup when unmounting or when effect re-runs
     return () => {
       if (durationTimerRef.current) {
         clearInterval(durationTimerRef.current);
@@ -502,8 +517,11 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       // Reset state for new recording
       pausedDurationRef.current = 0;
       recordingStartTimeRef.current = 0;
-      // Reset timer value for new recording (like resetKey in old Timer)
+      // Reset timer value for new recording
       timerValueRef.current = 0;
+      segmentStartTimeRef.current = 0;
+      offsetAtSegmentStartRef.current = 0;
+      pauseRequestedAtRef.current = 0;
 
       return new Promise((resolve, reject) => {
         NativeModules.FileManager.startRecording((result: string) => {
@@ -550,6 +568,17 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   const pauseRecording = useCallback(async (): Promise<void> => {
     if (reducerState.state !== 'recording') {
       return;
+    }
+
+    // Capture the exact moment pause was requested, before the async native call.
+    // This prevents the timer from overcounting while the native call completes.
+    pauseRequestedAtRef.current = Date.now();
+
+    // Stop the duration timer immediately so it doesn't keep ticking
+    // while the async native call completes.
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+      durationTimerRef.current = null;
     }
 
     try {
@@ -1253,6 +1282,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     pausedDurationRef.current = 0;
     recordingStartTimeRef.current = 0;
     timerValueRef.current = 0;
+    segmentStartTimeRef.current = 0;
+    offsetAtSegmentStartRef.current = 0;
+    pauseRequestedAtRef.current = 0;
     seekOperationIdRef.current = 0;
     isSeekingRef.current = false;
     pendingSeekRef.current = null;

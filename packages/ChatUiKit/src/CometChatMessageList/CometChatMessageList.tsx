@@ -1114,7 +1114,13 @@ export const CometChatMessageList = memo(
               // as the user might want to keep messages unread for reference.
               if (messagesList.length === 0 && !navigatedFromSearch) {
                 //marking most recent unread message as read
-                if (user) {
+                // Use markAsRead on the latest message instead of markConversationAsRead
+                // to avoid marking thread replies as read when user only opens the main chat.
+                if (!parentMessageId && lastMessage) {
+                  CometChat.markAsRead(lastMessage).catch((e: any) => {
+                    console.log("Error marking message as read", e);
+                  });
+                } else if (user) {
                   CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
                     console.log("Error marking user conversation as read", e);
                   });
@@ -1146,7 +1152,8 @@ export const CometChatMessageList = memo(
                     CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
                       message,
                     });
-                } else break;
+                 }
+                 else break;
               }
             }
             previousMessagesFetched = previousMessagesFetched.map(
@@ -1304,7 +1311,13 @@ export const CometChatMessageList = memo(
             if (startFromUnreadMessages && isInitialLoad && !navigatedFromSearch && !goToMessageId) {
               shouldSuppressHighlightRef.current = true;
               //marking most recent unread message as read
-              if (user) {
+              // Use markAsRead on the latest message instead of markConversationAsRead
+              // to avoid marking thread replies as read when user only opens the main chat.
+              if (!parentMessageId && uniqueMessages[0]) {
+                CometChat.markAsRead(uniqueMessages[0]).catch((e: any) => {
+                  console.log("Error marking message as read", e);
+                });
+              } else if (user) {
                 CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
                   console.log("Error marking user conversation as read", e);
                 });
@@ -4444,7 +4457,13 @@ export const CometChatMessageList = memo(
           );
 
           if (indicatorItem) {
-            if (user) {
+            // Use markAsRead on the indicator message instead of markConversationAsRead
+            // to avoid marking thread replies as read when user only views the main chat.
+            if (!parentMessageId && indicatorItem.item) {
+              CometChat.markAsRead(indicatorItem.item).catch((e: any) => {
+                console.log("Error marking message as read", e);
+              });
+            } else if (user) {
               CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
                 console.log("Error marking user conversation as read", e);
               });
@@ -4456,7 +4475,7 @@ export const CometChatMessageList = memo(
             setUnreadCount(0);
           }
         }
-      }, [navigatedFromSearch, newMessageIndicatorId, unreadCount, user, group, hasManuallyMarkedUnread]);
+      }, [navigatedFromSearch, newMessageIndicatorId, unreadCount, user, group, hasManuallyMarkedUnread, parentMessageId]);
 
 
 

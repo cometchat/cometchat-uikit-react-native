@@ -12,7 +12,6 @@ export const MessageReceiptUtils = {
     // Moderation status (if available)
     const moderationStatus = getModerationStatus(message);
     if (moderationStatus === "disapproved") return MessageReceipt.ERROR;
-    if (moderationStatus === "pending") return MessageReceipt.WAIT;
 
     // Explicit error markers
     const hasError = (message as any)?.error || (message as any)?.metadata?.error;

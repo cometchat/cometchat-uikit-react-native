@@ -69,7 +69,7 @@ export class LinkPreviewExtensionDecorator extends DataSourceDecorator {
           ? theme.messageListStyles?.outgoingMessageBubbleStyles?.linkPreviewBubbleStyles
           : theme.messageListStyles?.incomingMessageBubbleStyles?.linkPreviewBubbleStyles;
       const { image, favicon, title, url, description } = linkData.links[0];
-      const img = image.length === 0 ? favicon : image;
+      const img = image.length === 0 || image === favicon ? "" : image;
       return (
         <LinkPreviewBubble
           link={url}
