@@ -1,6 +1,6 @@
 {
   "name": "@cometchat/chat-uikit-react-native",
-  "version": "5.3.5",
+  "version": "5.3.6",
   "description": "Ready-to-use Chat UI Components for React Native",
   "main": "src/index",
   "module": "src/index",
@@ -65,6 +65,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@cometchat/cards-react-native": "^1.0.0",
     "@types/prop-types": "^15.7.14",
     "prop-types": "^15.8.1",
     "react-native-markdown-display": "^7.0.2",

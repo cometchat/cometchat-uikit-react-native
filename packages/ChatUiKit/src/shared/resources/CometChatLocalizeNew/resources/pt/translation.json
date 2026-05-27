@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Texto do link",
 	"URL": "URL",
 	"INSERT": "Inserir",
-	"GROUP_NO_LONGER_MEMBER": "Você não pode enviar mensagem para este grupo porque não é mais membro."
+	"GROUP_NO_LONGER_MEMBER": "Você não pode enviar mensagem para este grupo porque não é mais membro.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Nada aqui ainda",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Novas atividades aparecerão aqui quando disponíveis.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Algo deu errado",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Não foi possível carregar as notificações. Tente novamente.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Carregando...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Não foi possível carregar mais",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Toque para tentar novamente"
 }

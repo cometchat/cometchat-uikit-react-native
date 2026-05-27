@@ -510,5 +510,12 @@
 	"LINK_TEXT": "링크 텍스트",
 	"URL": "URL",
 	"INSERT": "삽입",
-	"GROUP_NO_LONGER_MEMBER": "더 이상 멤버가 아니므로 이 그룹에 메시지를 보낼 수 없습니다."
+	"GROUP_NO_LONGER_MEMBER": "더 이상 멤버가 아니므로 이 그룹에 메시지를 보낼 수 없습니다.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "아직 아무것도 없습니다",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "새로운 활동이 있으면 여기에 표시됩니다.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "문제가 발생했습니다",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "알림을 불러올 수 없습니다. 다시 시도해 주세요.",
+	"NOTIFICATION_FEED_LOADING_MORE": "로딩 중...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "더 불러올 수 없습니다",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "탭하여 재시도"
 }

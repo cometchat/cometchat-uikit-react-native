@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Link szövege",
 	"URL": "URL",
 	"INSERT": "Beszúrás",
-	"GROUP_NO_LONGER_MEMBER": "Nem küldhet üzenetet ebbe a csoportba, mert már nem tag."
+	"GROUP_NO_LONGER_MEMBER": "Nem küldhet üzenetet ebbe a csoportba, mert már nem tag.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Még nincs itt semmi",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Az új tevékenységek itt jelennek meg, ha elérhetők.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Valami hiba történt",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Nem sikerült betölteni az értesítéseket. Kérjük, próbálja újra.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Betöltés...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Nem sikerült többet betölteni",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Koppintson az újrapróbálkozáshoz"
 }

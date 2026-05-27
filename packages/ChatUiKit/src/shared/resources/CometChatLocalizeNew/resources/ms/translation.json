@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Teks pautan",
 	"URL": "URL",
 	"INSERT": "Masukkan",
-	"GROUP_NO_LONGER_MEMBER": "Anda tidak boleh menghantar mesej ke kumpulan ini kerana anda bukan lagi ahli."
+	"GROUP_NO_LONGER_MEMBER": "Anda tidak boleh menghantar mesej ke kumpulan ini kerana anda bukan lagi ahli.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Belum ada apa-apa di sini",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Aktiviti baharu akan muncul di sini apabila tersedia.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Sesuatu telah berlaku",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Tidak dapat memuatkan pemberitahuan. Sila cuba lagi.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Memuatkan...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Tidak dapat memuatkan lagi",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Ketik untuk cuba semula"
 }

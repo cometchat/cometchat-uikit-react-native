@@ -510,5 +510,12 @@
   	"MESSAGE_REPORTED": "Message reported",
   	"MARK_AS_UNREAD": "Mark Unread",
 	"NEW": "New",
-	"GROUP_NO_LONGER_MEMBER": "You can't send message to this group because you're no longer a member."
+	"GROUP_NO_LONGER_MEMBER": "You can't send message to this group because you're no longer a member.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Nothing here yet",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "New activity will appear here when available.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Something went wrong",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Unable to load notifications. Please try again.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Loading...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Couldn't load more",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Tap to retry"
 }

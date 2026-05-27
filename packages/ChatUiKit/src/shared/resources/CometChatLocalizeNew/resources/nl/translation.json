@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Linktekst",
 	"URL": "URL",
 	"INSERT": "Invoegen",
-	"GROUP_NO_LONGER_MEMBER": "U kunt geen bericht naar deze groep sturen omdat u geen lid meer bent."
+	"GROUP_NO_LONGER_MEMBER": "U kunt geen bericht naar deze groep sturen omdat u geen lid meer bent.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Nog niets hier",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Nieuwe activiteit verschijnt hier wanneer beschikbaar.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Er is iets misgegaan",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Kan meldingen niet laden. Probeer het opnieuw.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Laden...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Kan niet meer laden",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Tik om opnieuw te proberen"
 }

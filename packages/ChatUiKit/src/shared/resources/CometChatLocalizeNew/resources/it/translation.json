@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Testo del link",
 	"URL": "URL",
 	"INSERT": "Inserisci",
-	"GROUP_NO_LONGER_MEMBER": "Non puoi inviare messaggi a questo gruppo perché non sei più un membro."
+	"GROUP_NO_LONGER_MEMBER": "Non puoi inviare messaggi a questo gruppo perché non sei più un membro.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Niente qui ancora",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Le nuove attività appariranno qui quando disponibili.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Qualcosa è andato storto",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Impossibile caricare le notifiche. Riprova.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Caricamento...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Impossibile caricare altro",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Tocca per riprovare"
 }

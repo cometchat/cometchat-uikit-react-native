@@ -510,5 +510,12 @@
 	"LINK_TEXT": "リンクテキスト",
 	"URL": "URL",
 	"INSERT": "挿入",
-	"GROUP_NO_LONGER_MEMBER": "あなたはもうメンバーではないため、このグループにメッセージを送信できません。"
+	"GROUP_NO_LONGER_MEMBER": "あなたはもうメンバーではないため、このグループにメッセージを送信できません。",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "まだ何もありません",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "新しいアクティビティが利用可能になるとここに表示されます。",
+	"NOTIFICATION_FEED_ERROR_TITLE": "問題が発生しました",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "通知を読み込めませんでした。もう一度お試しください。",
+	"NOTIFICATION_FEED_LOADING_MORE": "読み込み中...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "さらに読み込めませんでした",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "タップして再試行"
 }

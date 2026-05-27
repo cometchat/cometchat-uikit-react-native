@@ -510,5 +510,12 @@
 	"LINK_TEXT": "लिंक टेक्स्ट",
 	"URL": "URL",
 	"INSERT": "डालें",
-	"GROUP_NO_LONGER_MEMBER": "आप इस समूह में संदेश नहीं भेज सकते क्योंकि अब आप सदस्य नहीं हैं।"
+	"GROUP_NO_LONGER_MEMBER": "आप इस समूह में संदेश नहीं भेज सकते क्योंकि अब आप सदस्य नहीं हैं।",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "यहाँ अभी कुछ नहीं है",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "उपलब्ध होने पर नई गतिविधि यहाँ दिखाई देगी।",
+	"NOTIFICATION_FEED_ERROR_TITLE": "कुछ गलत हो गया",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "सूचनाएँ लोड नहीं हो सकीं। कृपया पुनः प्रयास करें।",
+	"NOTIFICATION_FEED_LOADING_MORE": "लोड हो रहा है...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "और लोड नहीं हो सका",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "पुनः प्रयास करने के लिए टैप करें"
 }

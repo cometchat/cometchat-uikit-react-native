@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Текст ссылки",
 	"URL": "URL",
 	"INSERT": "Вставить",
-	"GROUP_NO_LONGER_MEMBER": "Вы не можете отправить сообщение в эту группу, так как вы больше не являетесь участником."
+	"GROUP_NO_LONGER_MEMBER": "Вы не можете отправить сообщение в эту группу, так как вы больше не являетесь участником.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Здесь пока ничего нет",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Новая активность появится здесь, когда будет доступна.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Что-то пошло не так",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Не удалось загрузить уведомления. Попробуйте ещё раз.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Загрузка...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Не удалось загрузить ещё",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Нажмите, чтобы повторить"
 }

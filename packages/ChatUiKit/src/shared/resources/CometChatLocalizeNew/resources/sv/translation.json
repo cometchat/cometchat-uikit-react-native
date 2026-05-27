@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Länktext",
 	"URL": "URL",
 	"INSERT": "Infoga",
-	"GROUP_NO_LONGER_MEMBER": "Du kan inte skicka meddelande till denna grupp eftersom du inte längre är medlem."
+	"GROUP_NO_LONGER_MEMBER": "Du kan inte skicka meddelande till denna grupp eftersom du inte längre är medlem.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Inget här ännu",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Ny aktivitet visas här när den är tillgänglig.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Något gick fel",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Det gick inte att ladda aviseringar. Försök igen.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Laddar...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Kunde inte ladda mer",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Tryck för att försöka igen"
 }

@@ -490,5 +490,12 @@
 	"LINK_TEXT": "Linktext",
 	"URL": "URL",
 	"INSERT": "Einfügen",
-	"GROUP_NO_LONGER_MEMBER": "Sie können keine Nachricht an diese Gruppe senden, da Sie kein Mitglied mehr sind."
+	"GROUP_NO_LONGER_MEMBER": "Sie können keine Nachricht an diese Gruppe senden, da Sie kein Mitglied mehr sind.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Noch nichts hier",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Neue Aktivitäten werden hier angezeigt, sobald sie verfügbar sind.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Etwas ist schiefgelaufen",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Benachrichtigungen konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Laden...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Weitere konnten nicht geladen werden",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Zum Wiederholen tippen"
 }

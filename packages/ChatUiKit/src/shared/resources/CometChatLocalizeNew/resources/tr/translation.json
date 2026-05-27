@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Bağlantı metni",
 	"URL": "URL",
 	"INSERT": "Ekle",
-	"GROUP_NO_LONGER_MEMBER": "Artık üye olmadığınız için bu gruba mesaj gönderemezsiniz."
+	"GROUP_NO_LONGER_MEMBER": "Artık üye olmadığınız için bu gruba mesaj gönderemezsiniz.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Henüz burada bir şey yok",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Yeni etkinlikler mevcut olduğunda burada görünecektir.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Bir şeyler ters gitti",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Bildirimler yüklenemedi. Lütfen tekrar deneyin.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Yükleniyor...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Daha fazla yüklenemedi",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Tekrar denemek için dokunun"
 }

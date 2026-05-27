@@ -510,5 +510,12 @@
 	"LINK_TEXT": "連結文字",
 	"URL": "URL",
 	"INSERT": "插入",
-	"GROUP_NO_LONGER_MEMBER": "您無法向此群組發送訊息，因為您已不再是成員。"
+	"GROUP_NO_LONGER_MEMBER": "您無法向此群組發送訊息，因為您已不再是成員。",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "這裡還沒有內容",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "有新活動時將在此顯示。",
+	"NOTIFICATION_FEED_ERROR_TITLE": "出了點問題",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "無法載入通知。請重試。",
+	"NOTIFICATION_FEED_LOADING_MORE": "載入中...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "無法載入更多",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "點擊重試"
 }

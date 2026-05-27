@@ -510,5 +510,12 @@
 	"LINK_TEXT": "Nuorodos tekstas",
 	"URL": "URL",
 	"INSERT": "Įterpti",
-	"GROUP_NO_LONGER_MEMBER": "Negalite siųsti žinutės šiai grupei, nes nebesate narys."
+	"GROUP_NO_LONGER_MEMBER": "Negalite siųsti žinutės šiai grupei, nes nebesate narys.",
+	"NOTIFICATION_FEED_EMPTY_TITLE": "Čia dar nieko nėra",
+	"NOTIFICATION_FEED_EMPTY_SUBTITLE": "Nauja veikla bus rodoma čia, kai bus prieinama.",
+	"NOTIFICATION_FEED_ERROR_TITLE": "Kažkas nutiko",
+	"NOTIFICATION_FEED_ERROR_SUBTITLE": "Nepavyko įkelti pranešimų. Bandykite dar kartą.",
+	"NOTIFICATION_FEED_LOADING_MORE": "Kraunama...",
+	"NOTIFICATION_FEED_LOAD_MORE_ERROR": "Nepavyko įkelti daugiau",
+	"NOTIFICATION_FEED_TAP_TO_RETRY": "Bakstelėkite, kad bandytumėte dar kartą"
 }

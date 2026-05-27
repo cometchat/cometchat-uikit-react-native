@@ -111,6 +111,11 @@ import {
   ConversationInterface
 } from "./CometChatConversations";
 
+import {
+  CometChatNotificationFeed,
+  CometChatNotificationFeedInterface,
+} from "./CometChatNotificationFeed";
+
 import { CometChatGroupMembers, CometChatGroupMembersInterface } from "./CometChatGroupMembers";
 
 import {
@@ -213,6 +218,7 @@ export {
   //
   CometChatConversationUtils,
   CometChatConversations,
+  CometChatNotificationFeed,
   CometChatCreatePoll,
   CometChatDate,
   /* Reactions */
@@ -361,6 +367,7 @@ export type {
   CometChatUsersInterface,
   CometChatVideoBubbleInterface,
   ConversationInterface,
+  CometChatNotificationFeedInterface,
   LinkPreviewBubbleInterface,
   PollsConfigurationInterface,
   RecorderState,
