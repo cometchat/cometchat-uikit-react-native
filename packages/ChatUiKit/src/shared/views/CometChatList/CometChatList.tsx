@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import React, { JSX, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -160,7 +161,7 @@ let lastReject: Function;
 
 export const CometChatList = React.forwardRef<CometChatListActionsInterface, CometChatListProps>(
   (props, ref) => {
-    const connectionListenerId = "connectionListener_" + new Date().getTime();
+    const connectionListenerId = "connectionListener_" + Date.now() + "_" + (++__listenerIdCounter);
     const theme = useTheme();
     const { t } = useCometChatTranslation();
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -344,6 +345,8 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
               .then((newlist: any[]) => {
                 setDataLoadingStatus(NO_DATA_FOUND);
                 setList(newlist);
+                setHasMoreData(true); // Reset pagination since we rebuilt the request
+                props.onListFetched?.(newlist);
               })
               .catch((error) => {
                 if (error && error["message"] === "Promise cancelled") {
@@ -496,8 +499,10 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
             }
             setList(finalList);
           } else {
-            // Append to existing list
-            finalList = [...list, ...newlist];
+            // Append to existing list, deduplicating by listItemKey
+            const existingKeys = new Set(list.map((item: any) => item[listItemKey]));
+            const uniqueNewItems = newlist.filter((item: any) => !existingKeys.has(item[listItemKey]));
+            finalList = [...list, ...uniqueNewItems];
             setList(finalList);
 
             // When the backend returns nothing more, mark the end of data
@@ -643,8 +648,8 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
             TitleView={TitleView && TitleView(item.value)}
             title={
               item.value.uid &&
-              item.value.uid === CometChatUIKit.loggedInUser!.getUid() &&
-              item.value.name === CometChatUIKit.loggedInUser!.getName()
+              item.value.uid === CometChatUIKit.loggedInUser?.getUid() &&
+              item.value.name === CometChatUIKit.loggedInUser?.getName()
                 ? t("YOU")
                 : item.value.name
             }
@@ -669,11 +674,7 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
             onPress={() => {
               onListItemPress(item);
             }}
-            // onLongPress={() => {
-            //   onListItemLongPress(item);
-            // }}
             onLongPress={(id: any, e: any) => {
-              // const listItem = getListItem(id);
               onListItemLongPress(item, e);
             }}
           />
@@ -813,12 +814,7 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
       return messageContainer;
     }, [list, selectedItems, theme, dataLoadingStatus, isLoadingMore, hasMoreData, shouldSelect]);
 
-    /**
-     * Handle the rendering based on loading status
-     */
-    // if (list.length === 0 && dataLoadingStatus.toLowerCase() === LOADING) {
-    // if (LoadingView) return <LoadingView />;
-    // } else {
+
     return (
       <View style={{ flex: 1 }}>
         <Header

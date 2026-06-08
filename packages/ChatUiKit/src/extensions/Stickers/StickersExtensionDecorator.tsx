@@ -131,7 +131,7 @@ const StickerButton = ({ user, group, id, stickerIconStyle, stickerIcon, replyTo
     customMessage.setCategory(CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory);
     customMessage.setParentMessageId(parentId);
     customMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-    customMessage.setSender(loggedInUser.current!);
+    customMessage.setSender(loggedInUser.current);
     customMessage.setReceiver(user || group);
     customMessage.shouldUpdateConversation(true);
     customMessage.setMetadata({ incrementUnreadCount: true });
@@ -333,7 +333,7 @@ export class StickersExtensionDecorator extends DataSourceDecorator {
       message?.["data"]?.["customData"]?.["sticker_url"];
     let loggedInUser = CometChatUIKit.loggedInUser;
     const _style =
-      message.getSender().getUid() === loggedInUser!.getUid()
+      message.getSender()?.getUid() === loggedInUser?.getUid()
         ? theme.messageListStyles.outgoingMessageBubbleStyles
         : theme.messageListStyles.incomingMessageBubbleStyles;
     return (

@@ -65,7 +65,7 @@ export class LinkPreviewExtensionDecorator extends DataSourceDecorator {
       return super.getTextMessageContentView(message, alignment, theme, additionalParams);
     } else {
       const _style: DeepPartial<BubbleStyles["linkPreviewBubbleStyles"]> =
-        message.getSender().getUid() === loggedInUser!.getUid()
+        message.getSender()?.getUid() === loggedInUser?.getUid()
           ? theme.messageListStyles?.outgoingMessageBubbleStyles?.linkPreviewBubbleStyles
           : theme.messageListStyles?.incomingMessageBubbleStyles?.linkPreviewBubbleStyles;
       const { image, favicon, title, url, description } = linkData.links[0];

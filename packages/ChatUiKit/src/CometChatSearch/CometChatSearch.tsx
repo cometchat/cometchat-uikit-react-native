@@ -1016,8 +1016,9 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         return;
       }
 
-      conversationRequestRef.current = buildConversationsRequest();
-      const conversations = await conversationRequestRef.current!.fetchNext();
+      const request = buildConversationsRequest();
+      conversationRequestRef.current = request;
+      const conversations = await request.fetchNext();
 
       if (conversations.length > 0) {
         const limit = (guid || uid || searchState.activeFilters.length > 0) ? 30 : 3;
@@ -1145,8 +1146,9 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         return;
       }
 
-      messageRequestRef.current = buildMessagesRequest();
-      const messages = await messageRequestRef.current!.fetchPrevious();
+      const request = buildMessagesRequest();
+      messageRequestRef.current = request;
+      const messages = await request.fetchPrevious();
 
       if (messages.length > 0) {
         const reversedList = messages.reverse();
@@ -1811,7 +1813,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                     (message.getType() === 'image' || message.getType() === 'video') && mergedStyles.messageItemStyle?.textContainerStyle
                   ]}>
                     <Text style={mergedStyles.messageItemStyle?.titleStyle} numberOfLines={1}>
-                      {message.getSender().getName()}
+                      {message.getSender()?.getName()}
                     </Text>
                     <Text style={mergedStyles.messageItemStyle?.subtitleStyle} numberOfLines={2}>
                       {(() => {
@@ -2083,7 +2085,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                   (message.getType() === 'image' || message.getType() === 'video') && mergedStyles.messageItemStyle?.textContainerStyle
                 ]}>
                   <Text style={mergedStyles.messageItemStyle?.titleStyle} numberOfLines={1}>
-                    {message.getSender().getName()}
+                    {message.getSender()?.getName()}
                   </Text>
                   <Text style={mergedStyles.messageItemStyle?.subtitleStyle} numberOfLines={2}>
                     {(() => {

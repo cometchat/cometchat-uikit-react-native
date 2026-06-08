@@ -51,29 +51,27 @@ export class CometChatUIKit {
       async() => {
         CometChat.setSource("uikit-v5", Platform.OS, "react-native");
         ListenerInitializer.attachListeners();
-        await CometChat.getLoggedinUser()
-          .then((user: any) => {
-            CometChatUIKit.setLoggedInUser(user);
-            if (user) {
-              this.enableExtensions();
+        try {
+          const user = await CometChat.getLoggedinUser();
+          CometChatUIKit.setLoggedInUser(user);
+          if (user) {
+            this.enableExtensions();
+          }
+          const conversationUpdateSettings = await CometChat.getConversationUpdateSettings();
+          CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
+          permissionUtil.init().then((res) => {
+            if (res !== true) {
+              console.warn("[IOS] Permission initialization failed.");
             }
-            CometChat.getConversationUpdateSettings().then(
-              (conversationUpdateSettings: CometChat.ConversationUpdateSettings) => {
-                CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
-              }
-            );
-            permissionUtil.init().then((res) => {
-              if (res !== true) {
-                console.warn("[IOS] Permission initialization failed.");
-              }
-            });
-          })
-          .catch((error: any) => {
-            // CometChatUIKit.setLoggedInUser(null);
           });
+        } catch (error) {
+          CometChatUIKit.setLoggedInUser(null);
+          console.warn("[CometChatUIKit] Failed to restore session:", error);
+        }
       },
       (error: any) => {
-        // console.log("Initialization failed with error:", error);
+        console.error("[CometChatUIKit] SDK initialization failed:", error);
+        throw error;
       }
     );
   }
@@ -112,6 +110,26 @@ export class CometChatUIKit {
         },
       })
     );
+
+    // Re-fetch conversation update settings on every websocket reconnection
+    // This ensures dashboard setting changes are picked up without requiring a metro reload
+    CometChat.addConnectionListener(
+      "__CometChatUIKit_ConnectionListener__",
+      new CometChat.ConnectionListener({
+        onConnected: () => {
+          CometChat.getConversationUpdateSettings().then(
+            (conversationUpdateSettings: CometChat.ConversationUpdateSettings) => {
+              CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
+            }
+          ).catch(() => {
+            // Silently ignore — will retry on next reconnection
+          });
+        },
+        inConnecting: () => {},
+        onDisconnected: () => {},
+      })
+    );
+
     CometChatUIKit.isLoginListenerAttached = true;
   }
 
@@ -175,6 +193,7 @@ export class CometChatUIKit {
   private static removeListener() {
     if (CometChatUIKit.isLoginListenerAttached) {
       CometChat.removeLoginListener(CometChatUIKit.loginListenerID);
+      CometChat.removeConnectionListener("__CometChatUIKit_ConnectionListener__");
       CometChatUIKit.isLoginListenerAttached = false;
       CometChatUIKit.loginListenerID = ``;
     }
@@ -214,9 +233,18 @@ export class CometChatUIKit {
 
   static logout(): Promise<Object> {
     if (this.checkAuthSettings(Promise.reject)) {
+      return Promise.reject(
+        new CometChat.CometChatException({
+          code: "ERR",
+          message: "UIKit not initialized. Call CometChatUIKit.init() first.",
+        })
+      );
     }
 
-    return CometChat.logout();
+    return CometChat.logout().then(() => {
+      CometChatUIKit.loggedInUser = null;
+      return {};
+    });
   }
 
   static createUser(user: CometChat.User): Promise<CometChat.User> {

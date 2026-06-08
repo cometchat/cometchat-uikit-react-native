@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import React, { JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { ChatConfigurator, getLastSeenTime } from "../shared";
@@ -17,6 +18,7 @@ import { DeepPartial } from "../shared/helper/types";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
 import { CometChatAIAssistantChatHistory } from "../CometChatAIAssistantChatHistory/CometChatAIAssistantChatHistory";
 import { CometChatTooltipMenu, MenuItemInterface } from "../shared/views/CometChatTooltipMenu";
+import { skipNextAgentAutoLoad } from "../CometChatMessageList/CometChatMessageList";
 
 export type CometChatMessageHeaderInterface = {
   /**
@@ -133,9 +135,9 @@ interface Translations {
 
 /** CometChatMessageHeader renders the header for a conversation. */
 export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) => {
-  const userStatusListenerId = "user_status_" + new Date().getTime();
-  const msgTypingListenerId = "message_typing_" + new Date().getTime();
-  const groupListenerId = "head_group_" + new Date().getTime();
+  const userStatusListenerId = "user_status_" + Date.now() + "_" + (++__listenerIdCounter);
+  const msgTypingListenerId = "message_typing_" + Date.now() + "_" + (++__listenerIdCounter);
+  const groupListenerId = "head_group_" + Date.now() + "_" + (++__listenerIdCounter);
   const theme = useTheme();
   const { t } = useCometChatTranslation();
 
@@ -166,7 +168,6 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
   const [userObj, setUserObj] = useState<CometChat.User | undefined>(user);
   const [userStatus, setUserStatus] = useState(user && user.getStatus ? user.getStatus() : "");
   const [typingText, setTypingText] = useState("");
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ pageX: 0, pageY: 0 });
   const receiverTypeRef = useRef(
@@ -259,7 +260,7 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
                     : undefined
                   : undefined
             }
-            name={(userObj?.getName() ?? groupObj?.getName())!}
+            name={userObj?.getName() ?? groupObj?.getName() ?? ""}
           />
         </View>
       );
@@ -287,8 +288,8 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
       let subtitle = "";
 
       if (groupObj) {
-        const count = groupObj?.["membersCount"];
-        if (count || count === 0) {
+        const count = groupObj.getMembersCount?.() ?? groupObj?.["membersCount"];
+        if (count != null) {
           subtitle = `${count} ${t(count === 1 ? "MEMBER" : "MEMBERS")}`;
         }
       }
@@ -348,12 +349,12 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
       groupObj?.getGuid() === typist.getReceiverId()
     ) {
       setTypingText(
-        status === "typing" ? `${typist.getSender().getName()}: ${t("IS_TYPING")}` : ""
+        status === "typing" ? `${typist.getSender()?.getName()}: ${t("IS_TYPING")}` : ""
       );
     } else if (
       receiverTypeRef.current === CometChat.RECEIVER_TYPE.USER &&
       receiverTypeRef.current === typist.getReceiverType() &&
-      userObj?.getUid() === typist.getSender().getUid() &&
+      userObj?.getUid() === typist.getSender()?.getUid() &&
       !(userObj.getBlockedByMe() || userObj.getHasBlockedMe())
     ) {
       setTypingText(status === "typing" ? t("TYPING") : "");
@@ -361,7 +362,7 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
   };
 
   const handleGroupListener = (groupDetails: CometChat.Group) => {
-    if (groupDetails?.getGuid() === groupObj?.getGuid() && groupDetails.getMembersCount()) {
+    if (groupDetails?.getGuid() === groupObj?.getGuid() && groupDetails.getMembersCount() != null) {
       setGroupObj(CommonUtils.clone(groupDetails));
     }
   };
@@ -453,6 +454,7 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
     const iconSecondary = theme.color.iconSecondary;
 
     const handleNewChat = () => {
+      skipNextAgentAutoLoad();
       if (onNewChatButtonClick) {
         onNewChatButtonClick();
       }

@@ -42,7 +42,7 @@ export const listners = {
             changedGroup: CometChat.Group,
           ) => {
             console.log('changedGroup: ', message, changedGroup);
-            if (changedUser.getUid() == CometChatUIKit.loggedInUser!.getUid()) {
+            if (changedUser.getUid() == CometChatUIKit.loggedInUser?.getUid()) {
               changedGroup.setScope(newScope);
               handleGroupListener(changedGroup);
             }

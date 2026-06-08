@@ -1,5 +1,6 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
+import React, { JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ColorValue, KeyboardAvoidingView, Platform, View } from "react-native";
 import {
   CometChatList,
@@ -227,7 +228,7 @@ export const CometChatUsers = React.forwardRef<
   CometChatUsersActionsInterface,
   CometChatUsersInterface
 >((props, ref) => {
-  const userListenerId = "userStatus_" + new Date().getTime();
+  const userListenerId = useRef("userStatus_" + Date.now() + "_" + (++__listenerIdCounter)).current;
   const theme = useTheme();
   const {t}= useCometChatTranslation()
   const [hideSearchError, setHideSearchError] = useState(false);
@@ -263,20 +264,20 @@ export const CometChatUsers = React.forwardRef<
     ...newProps
   } = props;
   const userRef = useRef<CometChatUsersActionsInterface>(null);
-  const mergedStyle = deepMerge(theme.userStyles, style);
+  const mergedStyle = useMemo(() => deepMerge(theme.userStyles, style), [theme, style]);
 
   // ----- Tooltip functionality for users -----
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<CometChat.User | null>(null);
   const tooltipPosition = useRef({ pageX: 0, pageY: 0 });
 
-  const buildMenuItems = (user: CometChat.User): MenuItemInterface[] => {
+  const buildMenuItems = useCallback((user: CometChat.User): MenuItemInterface[] => {
     if (options) return options(user);
     if (addOptions) return addOptions(user);
     return [];
-  };
+  }, [options, addOptions]);
 
-  const handleItemLongPress = (user: CometChat.User, e?: any) => {
+  const handleItemLongPress = useCallback((user: CometChat.User, e?: any) => {
     if (props.onItemLongPress) {
       props.onItemLongPress(user);
       return;
@@ -293,7 +294,7 @@ export const CometChatUsers = React.forwardRef<
     }
     setSelectedUser(user);
     setTooltipVisible(true);
-  };
+  }, [props.onItemLongPress, buildMenuItems]);
 
   useEffect(() => {
     // Listen for changes in user online/offline status.
@@ -302,12 +303,12 @@ export const CometChatUsers = React.forwardRef<
       new CometChat.UserListener({
         onUserOnline: (onlineUser: CometChat.User) => {
           if (!onlineUser.getBlockedByMe()) {
-            userRef.current!.updateList(onlineUser);
+            userRef.current?.updateList(onlineUser);
           }
         },
         onUserOffline: (offlineUser: CometChat.User) => {
           if (!offlineUser.getBlockedByMe()) {
-            userRef.current!.updateList(offlineUser);
+            userRef.current?.updateList(offlineUser);
           }
         },
       })
@@ -324,7 +325,7 @@ export const CometChatUsers = React.forwardRef<
     const clonedUser = CommonUtils.clone(user);
     clonedUser.blockedByMe = true;
     clonedUser.hasBlockedMe = true;
-    userRef.current!.updateList(clonedUser);
+    userRef.current?.updateList(clonedUser);
   };
 
   /**
@@ -336,10 +337,10 @@ export const CometChatUsers = React.forwardRef<
     const clonedUser = CommonUtils.clone(user);
     clonedUser.blockedByMe = false;
     clonedUser.hasBlockedMe = false;
-    userRef.current!.updateList(clonedUser);
+    userRef.current?.updateList(clonedUser);
 
     CometChat.getUser(clonedUser.getUid()).then((updatedUser) => {
-      userRef.current!.updateList(updatedUser);
+      userRef.current?.updateList(updatedUser);
     });
   };
 
@@ -436,6 +437,45 @@ export const CometChatUsers = React.forwardRef<
     );
   }, [theme, mergedStyle, hideError]);
 
+  // Memoize tooltip menu items — avoids .map() creating new array on every render
+  const tooltipMenuItems = useMemo(() => {
+    if (!selectedUser) return [];
+    return buildMenuItems(selectedUser).map((menuItem) => ({
+      text: menuItem.text,
+      onPress: () => {
+        menuItem.onPress();
+        setTooltipVisible(false);
+      },
+      textColor: menuItem.textColor,
+      iconColor: menuItem.iconColor,
+      disabled: menuItem.disabled,
+    }));
+  }, [selectedUser, tooltipVisible, buildMenuItems]);
+
+  // Stable onListFetched callback
+  const handleListFetched = useCallback((users: CometChat.User[]) => {
+    if (users.length === 0) {
+      onEmpty?.();
+    } else {
+      onLoad?.(users);
+    }
+  }, [onEmpty, onLoad]);
+
+  // Stable request builder — avoids creating new instance every render
+  const defaultRequestBuilder = useMemo(
+    () => (usersRequestBuilder && usersRequestBuilder.setSearchKeyword(searchKeyword)) ||
+      new CometChat.UsersRequestBuilder()
+        .setLimit(30)
+        .hideBlockedUsers(false)
+        .setRoles([])
+        .friendsOnly(false)
+        .setStatus("")
+        .setTags([])
+        .setUIDs([])
+        .setSearchKeyword(searchKeyword),
+    [usersRequestBuilder, searchKeyword]
+  );
+
   return (
     <View style={theme.userStyles.containerStyle}>
       <CometChatList
@@ -453,30 +493,12 @@ export const CometChatUsers = React.forwardRef<
         LeadingView={LeadingView}
         onSelection={onSelection}
         onSubmit={onSubmit}
-        // Pass our custom long press handler which shows tooltip if options exist.
-        onItemLongPress={(user: CometChat.User, e: any) => handleItemLongPress(user, e)}
+        onItemLongPress={handleItemLongPress}
         ItemView={props.ItemView}
-        onListFetched={(users: CometChat.User[]) => {
-          if (users.length === 0) {
-            onEmpty?.();
-          } else {
-            onLoad?.(users);
-          }
-        }}
+        onListFetched={handleListFetched}
         ref={userRef}
         hideSearch={hideSearch ? hideSearch : hideSearchError}
-        requestBuilder={
-          (usersRequestBuilder && usersRequestBuilder.setSearchKeyword(searchKeyword)) ||
-          new CometChat.UsersRequestBuilder()
-            .setLimit(30)
-            .hideBlockedUsers(false)
-            .setRoles([])
-            .friendsOnly(false)
-            .setStatus("")
-            .setTags([])
-            .setUIDs([])
-            .setSearchKeyword(searchKeyword)
-        }
+        requestBuilder={defaultRequestBuilder}
         listStyle={mergedStyle}
         hideStickyHeader={!stickyHeaderVisibility}
         listItemKey='uid'
@@ -516,16 +538,7 @@ export const CometChatUsers = React.forwardRef<
             event={{
               nativeEvent: tooltipPosition.current,
             }}
-            menuItems={buildMenuItems(selectedUser).map((menuItem) => ({
-              text: menuItem.text,
-              onPress: () => {
-                menuItem.onPress();
-                setTooltipVisible(false);
-              },
-              textColor: menuItem.textColor,
-              iconColor: menuItem.iconColor,
-              disabled: menuItem.disabled,
-            }))}
+            menuItems={tooltipMenuItems}
           />
         </View>
       )}

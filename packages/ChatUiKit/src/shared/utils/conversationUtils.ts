@@ -35,7 +35,7 @@ export class CometChatConversationUtils {
     lastMessage: CometChat.BaseMessage,
     theme?: CometChatTheme
   ): string | JSX.Element => {
-    const uid = CometChatUIKit.loggedInUser!.getUid();
+    const uid = CometChatUIKit.loggedInUser?.getUid();
     if (lastMessage != undefined) {
       if (lastMessage.getDeletedAt() !== undefined) {
         return getMessagePreviewInternal("block-fill", t("DELETE_MSG_TEXT"), {theme});
@@ -56,7 +56,7 @@ export class CometChatConversationUtils {
         if (lastMessage.getType() == "audio") {
           text = "Voice call";
         }
-        if (uid === lastMessage.getSender().getUid()) {
+        if (uid === lastMessage.getSender()?.getUid()) {
           iconName = "phone-outgoing-fill";
         } else if ((lastMessage as CometChat.Call).getAction() === "unanswered") {
           color = theme?.color?.error;

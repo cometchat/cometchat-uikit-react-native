@@ -18,6 +18,7 @@ import { CometChatTooltipMenu } from "../shared/views/CometChatTooltipMenu";
 import { CometChatConfirmDialog } from "../shared/views/CometChatConfirmDialog";
 import Delete from "../shared/icons/components/delete";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
+import { skipNextAgentAutoLoad } from "../CometChatMessageList/CometChatMessageList";
 
 
 interface CometChatAIAssistantChatHistoryProps {
@@ -93,7 +94,7 @@ const CometChatAIAssistantChatHistory: React.FC<CometChatAIAssistantChatHistoryP
     return (theme as any).chatHistoryStyles || getChatHistoryStyleLight(theme.color, theme.spacing, theme.typography);
   }, [theme]);
   
-  const mergedStyle = deepMerge(defaultStyles, style);
+  const mergedStyle = useMemo(() => deepMerge(defaultStyles, style ?? {}), [defaultStyles, style]);
 
   // State variables
   // Only show text messages in history
@@ -139,6 +140,7 @@ const CometChatAIAssistantChatHistory: React.FC<CometChatAIAssistantChatHistoryP
           if (newList.length === 0) {
             setListState(States.empty);
             // Call parent to reset agentic/parent state
+            skipNextAgentAutoLoad();
             if (onNewChatButtonClick) {
               onNewChatButtonClick();
             }
@@ -253,7 +255,7 @@ const CometChatAIAssistantChatHistory: React.FC<CometChatAIAssistantChatHistoryP
    */
   const canDeleteMessage = useCallback((message: CometChat.BaseMessage): boolean => {
     // Only allow deletion if user is the sender, message is not deleted, and not system/group
-    const isSender = message.getSender().getUid() === loggedInUserRef.current?.getUid();
+    const isSender = message.getSender()?.getUid() === loggedInUserRef.current?.getUid();
     const isDeletableCategory = message.getCategory && message.getCategory() === 'message';
     const isNotDeleted = !message.getDeletedAt || !message.getDeletedAt();
     return isSender && isDeletableCategory && isNotDeleted;
@@ -592,7 +594,10 @@ const CometChatAIAssistantChatHistory: React.FC<CometChatAIAssistantChatHistoryP
       {/* New Chat Button */}
       <TouchableOpacity
         style={mergedStyle.newChatButtonStyle}
-        onPress={onNewChatButtonClick}
+        onPress={() => {
+          skipNextAgentAutoLoad();
+          onNewChatButtonClick?.();
+        }}
       >
         <Icon name="ai-new-chat" width={24} height={24} color={theme.color.textSecondary} />
         <Text style={mergedStyle.newChatTextStyle}>

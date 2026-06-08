@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import React, { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo } from 'react';
 import {
   Animated,
@@ -110,11 +111,11 @@ import { ExtensionTypeConstants } from '../extensions/ExtensionConstants';
 const { FileManager, CommonUtil } = NativeModules;
 
 // Listener IDs at module scope (v5 pattern)
-const editMessageListenerID = "editMessageListener_" + new Date().getTime();
-const replyMessageListenerID = "replyMessageListener_" + new Date().getTime();
-const uiEventListenerID = "uiEventListener_" + new Date().getTime();
-const uiEventListenerShowID = "uiEventListenerShow_" + new Date().getTime();
-const uiEventListenerHideID = "uiEventListenerHide_" + new Date().getTime();
+const editMessageListenerID = "editMessageListener_" + Date.now() + "_" + (++__listenerIdCounter);
+const replyMessageListenerID = "replyMessageListener_" + Date.now() + "_" + (++__listenerIdCounter);
+const uiEventListenerID = "uiEventListener_" + Date.now() + "_" + (++__listenerIdCounter);
+const uiEventListenerShowID = "uiEventListenerShow_" + Date.now() + "_" + (++__listenerIdCounter);
+const uiEventListenerHideID = "uiEventListenerHide_" + Date.now() + "_" + (++__listenerIdCounter);
 
 // Mic/sticker animation constants (hoisted to module level)
 const MIC_ANIM_DURATION = 150;
@@ -372,7 +373,7 @@ const EmojiButton = ({ user, group, composerIdMap, replyToMessage, closeReplyPre
     customMessage.setCategory(CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory);
     customMessage.setParentMessageId(parentId);
     customMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-    customMessage.setSender(loggedInUser.current!);
+    customMessage.setSender(loggedInUser.current);
     if (user || group) {
       customMessage.setReceiver((user || group)!);
     }
@@ -2033,7 +2034,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         receiverType
       );
 
-      mediaMessage.setSender(loggedInUser.current!);
+      mediaMessage.setSender(loggedInUser.current);
       mediaMessage.setReceiver((user || group)!);
       mediaMessage.setType(messageType);
       mediaMessage.setMuid(String(getUnixTimestampInMilliseconds()));
@@ -2066,7 +2067,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         receiverType
       );
 
-      localMessage.setSender(loggedInUser.current!);
+      localMessage.setSender(loggedInUser.current);
       localMessage.setReceiver((user || group)!);
       localMessage.setType(messageType);
       localMessage.setMuid(String(getUnixTimestampInMilliseconds()));
@@ -2142,12 +2143,14 @@ export const CometChatCompactMessageComposer = React.forwardRef(
      * Send recorded audio as a media message
      * Called when voice recording is completed and submitted
      */
+    const buildRecordedAudioFileName = (recordedFile: string): string => ((recordedFile || '').split(/[?#]/)[0]?.split('/').pop() || `audio-recording-${Date.now()}.m4a`).replace(/^audio-merged/, 'audio-recording');
+
     const _sendRecordedAudio = (recordedFile: string) => {
       // Invoke the onVoiceRecordingEnd callback if provided
       onVoiceRecordingEnd?.(recordedFile);
       
       const fileObj = {
-        name: 'audio-recording' + recordedFile.split('/audio-recording')[1],
+        name: buildRecordedAudioFileName(recordedFile),
         type: 'audio/mp4',
         uri: recordedFile,
       };
@@ -2166,7 +2169,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
      */
     const handleInlineRecorderSubmit = useCallback((recordedFile: string) => {
       const fileObj = {
-        name: 'audio-recording' + recordedFile.split('/audio-recording')[1],
+        name: buildRecordedAudioFileName(recordedFile),
         type: 'audio/mp4',
         uri: recordedFile,
       };
@@ -3721,7 +3724,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         chatWith.current
       );
 
-      textMessage.setSender(loggedInUser.current!);
+      textMessage.setSender(loggedInUser.current);
       textMessage.setReceiver((user || group)!);
       textMessage.setMuid(String(getUnixTimestampInMilliseconds()));
 

@@ -77,6 +77,7 @@ export const CometChatImageLoader = (props: CometChatImageLoaderPropType) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [imageSource, setImageSource] = useState<ImageSourcePropType>();
+  const isUpgraded = useRef(false);
 
   // Ref to record touch press time for detecting quick taps
   const pressTime = useRef<number | null>(0);
@@ -110,17 +111,27 @@ export const CometChatImageLoader = (props: CometChatImageLoaderPropType) => {
   };
 
   useEffect(() => {
-    // Prefetch the thumbnail if available, else fallback to the full image
+    isUpgraded.current = false;
+    // Show thumbnail quickly as placeholder, then upgrade to full-resolution image
     if (thumbnailUrl && typeof thumbnailUrl === "object" && "uri" in thumbnailUrl) {
+      // Start with thumbnail for fast display
       CommonUtils.prefetchThumbnail(thumbnailUrl.uri!).then((success: any) => {
-        if (success) {
+        if (success && !isUpgraded.current) {
           setImageSource(thumbnailUrl);
-        } else {
-          setImageSource(imageUrl); // Fallback to original imageUrl if prefetch fails
         }
       });
+
+      // Prefetch the full-resolution image and upgrade once ready
+      if (imageUrl && typeof imageUrl === "object" && "uri" in imageUrl && imageUrl.uri) {
+        CommonUtils.prefetchThumbnail(imageUrl.uri!).then((success: any) => {
+          if (success) {
+            isUpgraded.current = true;
+            setImageSource(imageUrl);
+          }
+        });
+      }
     } else {
-      setImageSource(imageUrl); // No thumbnail available, fallback to imageUrl
+      setImageSource(imageUrl); // No thumbnail available, use full image directly
     }
   }, [thumbnailUrl, imageUrl]);
 
@@ -152,6 +163,7 @@ export const CometChatImageLoader = (props: CometChatImageLoaderPropType) => {
         {/* Render the image. It is initially hidden until loaded. */}
         <Image
           resizeMode={imageResizeMode || "cover"}
+          resizeMethod="scale"
           source={imageSource}
           style={[styles.image, style]}
           onLoad={() => setIsLoaded(true)}

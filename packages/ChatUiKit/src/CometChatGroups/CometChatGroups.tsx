@@ -1,5 +1,6 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { ImageSourcePropType, Text, View } from "react-native";
 import { CometChatList, CometChatListActionsInterface, CometChatRetryButton } from "../shared";
 import { SelectionMode } from "../shared/base/Types";
@@ -21,8 +22,8 @@ import { JSX } from "react";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
 
 // Unique listener IDs for group events and UI events.
-const groupListenerId = "grouplist_" + new Date().getTime();
-const uiEventListener = "uiEvents_" + new Date().getTime();
+const groupListenerId = "grouplist_" + Date.now() + "_" + (++__listenerIdCounter);
+const uiEventListener = "uiEvents_" + Date.now() + "_" + (++__listenerIdCounter);
 
 /**
  * Props for the CometChatGroups component.
@@ -228,8 +229,8 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
   const [selectedGroup, setSelectedGroup] = useState<CometChat.Group | null>(null);
   const tooltipPosition = useRef({ pageX: 0, pageY: 0 });
 
-  // Merge theme styles with any overrides.
-  const mergedStyle = deepMerge(theme.groupStyles, style);
+  // Merge theme styles with any overrides — memoized to avoid deepMerge on every render.
+  const mergedStyle = useMemo(() => deepMerge(theme.groupStyles, style), [theme, style]);
 
   /**
    * Expose imperative methods via ref.
@@ -329,7 +330,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
    *  - If `options` is provided, it overrides everything.
    *  - Otherwise, if `addOptions` is provided, it returns those items only as no default as of now
    */
-  const buildMenuItems = (group: CometChat.Group): MenuItemInterface[] => {
+  const buildMenuItems = useCallback((group: CometChat.Group): MenuItemInterface[] => {
     if (options) {
       return options(group);
     }
@@ -338,14 +339,14 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     }
     // No default menu items, so return empty if no user-defined items.
     return [];
-  };
+  }, [options, addOptions]);
 
   /**
    * Invoked when a group item is long pressed.
    * If the developer passed `onItemLongPress`, call that and stop.
    * Otherwise, show the tooltip if there are any menu items for that group.
    */
-  const handleItemLongPress = (group: CometChat.Group, e?: any) => {
+  const handleItemLongPress = useCallback((group: CometChat.Group, e?: any) => {
     // Call developer callback if provided
     if (onItemLongPress) {
       onItemLongPress(group);
@@ -370,20 +371,20 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     // Show tooltip
     setSelectedGroup(group);
     setTooltipVisible(true);
-  };
+  }, [onItemLongPress, buildMenuItems]);
 
   /**
    * Methods below let you update/manipulate groups in the list.
    */
   const addGroup = (group: CometChat.Group) => {
-    groupListRef.current!.addItemToList(
+    groupListRef.current?.addItemToList(
       (grp: CometChat.Group) => grp.getGuid() === group.getGuid(),
       0
     );
   };
 
   const updateGroup = (group: CometChat.Group) => {
-    groupListRef.current!.updateList((grp: CometChat.Group) => grp.getGuid() === group.getGuid());
+    groupListRef.current?.updateList((grp: CometChat.Group) => grp.getGuid() === group.getGuid());
   };
 
   const removeGroup = (group: CometChat.Group) => {
@@ -395,22 +396,22 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
    */
   const handleGroupMemberRemoval = (...options: any) => {
     const group = options[3];
-    groupListRef.current!.updateList(group);
+    groupListRef.current?.updateList(group);
   };
 
   const handleGroupMemberBan = (...options: any) => {
     const group = options[3];
-    groupListRef.current!.updateList(group);
+    groupListRef.current?.updateList(group);
   };
 
   const handleGroupMemberAddition = (...options: any) => {
     const group = options[3];
-    groupListRef.current!.updateList(group);
+    groupListRef.current?.updateList(group);
   };
 
   const handleGroupMemberScopeChange = (...options: any) => {
     const group = options[4];
-    groupListRef.current!.updateList(group);
+    groupListRef.current?.updateList(group);
   };
 
   /**
@@ -513,28 +514,43 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     };
   }, []);
 
+  // Stable default SubtitleView — avoids inline lambda in render
+  const DefaultSubtitleView = useCallback((group: CometChat.Group) => (
+    <Text
+      style={[
+        style.itemStyle?.subtitleStyle,
+        theme.groupStyles.itemStyle?.subtitleStyle,
+      ]}
+    >
+      {group.getMembersCount() +
+        " " +
+        t(group.getMembersCount() === 1 ? "MEMBER" : "MEMBERS")}
+    </Text>
+  ), [style, theme, t]);
+
+  // Stable onListFetched callback
+  const handleListFetched = useCallback((fetchedList: CometChat.GroupMember[]) => {
+    if (fetchedList.length === 0) {
+      onEmpty?.();
+    } else {
+      onLoad?.(fetchedList);
+    }
+  }, [onEmpty, onLoad]);
+
+  // Stable request builder — avoids creating new instance every render
+  const defaultRequestBuilder = useMemo(
+    () => (groupsRequestBuilder && groupsRequestBuilder.setSearchKeyword(searchKeyword)) ||
+      new CometChat.GroupsRequestBuilder().setLimit(30).setSearchKeyword(searchKeyword),
+    [groupsRequestBuilder, searchKeyword]
+  );
+
   return (
     <View style={[Style.container, theme.groupStyles.containerStyle]}>
       <CometChatList
         hideHeader={hideHeader ?? hideHeader}
         onItemPress={onItemPress}
         onItemLongPress={handleItemLongPress}
-        SubtitleView={
-          SubtitleView
-            ? SubtitleView
-            : (group: CometChat.Group) => (
-                <Text
-                  style={[
-                    style.itemStyle?.subtitleStyle,
-                    theme.groupStyles.itemStyle?.subtitleStyle,
-                  ]}
-                >
-                  {group.getMembersCount() +
-                    " " +
-                    t(group.getMembersCount() === 1 ? "MEMBER" : "MEMBERS")}
-                </Text>
-              )
-        }
+        SubtitleView={SubtitleView ? SubtitleView : DefaultSubtitleView}
         statusIndicatorType={(group: CometChat.Group) =>
           !groupTypeVisibility
             ? null
@@ -555,10 +571,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         searchPlaceholderText={searchPlaceholderText}
         ref={groupListRef}
         listItemKey='guid'
-        requestBuilder={
-          (groupsRequestBuilder && groupsRequestBuilder.setSearchKeyword(searchKeyword)) ||
-          new CometChat.GroupsRequestBuilder().setLimit(30).setSearchKeyword(searchKeyword)
-        }
+        requestBuilder={defaultRequestBuilder}
         searchRequestBuilder={searchRequestBuilder}
         AppBarOptions={AppBarOptions}
         hideBackButton={!showBackButton}
@@ -568,13 +581,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
         ItemView={ItemView}
         onError={onError}
         hideError={hideError}
-        onListFetched={(fetchedList: CometChat.GroupMember[]) => {
-          if (fetchedList.length === 0) {
-            onEmpty?.();
-          } else {
-            onLoad?.(fetchedList);
-          }
-        }}
+        onListFetched={handleListFetched}
         onBack={onBack}
         {...newProps}
       />

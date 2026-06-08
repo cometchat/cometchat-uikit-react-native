@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, ListRenderItemInfo, View, Text } from "react-native";
 import { CometChatListItem } from "../CometChatListItem";
 import { SuggestionItem } from "./SuggestionItem";
@@ -52,7 +52,7 @@ export const CometChatSuggestionList = (props: CometChatSuggestionListInterface)
     }, 800);
   }, []);
 
-  const _render = ({ item, index }: ListRenderItemInfo<SuggestionItem>) => {
+  const _render = useCallback(({ item, index }: ListRenderItemInfo<SuggestionItem>) => {
     let shouldLoadAvatarName = item.hideLeadingIcon ? {} : { avatarName: item.name };
     const isAllAlias = item.underlyingText?.startsWith?.('<@all:');
     const TitleView = isAllAlias ? (
@@ -82,7 +82,7 @@ export const CometChatSuggestionList = (props: CometChatSuggestionListInterface)
         {...shouldLoadAvatarName}
       />
     );
-  };
+  }, [listStyle, theme, t, onPress]);
 
   return (
     <View>

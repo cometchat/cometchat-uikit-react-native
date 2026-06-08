@@ -9,6 +9,7 @@ import {
   CometChatUIEventHandler,
   CometChatUIEvents,
   CometChatUIKit,
+  MessageEvents,
 } from '@cometchat/chat-uikit-react-native';
 import {
   NavigationContainerRefWithCurrent,
@@ -185,7 +186,7 @@ export const leaveGroup = (
           CometChat.CATEGORY_ACTION as CometChat.MessageCategory,
         );
         actionMessage.setMessage(
-          `${CometChatUIKit.loggedInUser!.getName()} has left`,
+          `${CometChatUIKit.loggedInUser?.getName()} has left`,
         );
         // Initialize data to prevent crash when SDK accesses getData().metadata during render
         actionMessage.setData({ metadata: {} });
@@ -238,6 +239,24 @@ export async function navigateToConversation(
           : '';
       const group = await CometChat.getGroup(extractedId);
 
+      // Mark conversation as read when opening from push notification
+      CometChat.markConversationAsRead(extractedId, CometChat.RECEIVER_TYPE.GROUP)
+        .then(() => {
+          CometChat.getConversation(extractedId, CometChat.RECEIVER_TYPE.GROUP)
+            .then((conversation) => {
+              const lastMessage = conversation.getLastMessage();
+              if (lastMessage) {
+                CometChatUIEventHandler.emitMessageEvent(
+                  MessageEvents.ccMessageRead,
+                  { message: lastMessage }
+                );
+              }
+            })
+            .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+        })
+        .catch((e) => console.log('Error marking group conversation as read:', e));
+
+
       // Navigate with parent message ID if available (for agentic conversations)
       const params: any = {group};
       if (data.parentId) {
@@ -250,6 +269,24 @@ export async function navigateToConversation(
     // Handle user
     else if (data.receiverType === 'user') {
       const ccUser = await CometChat.getUser(data.sender);
+
+      // Mark conversation as read when opening from push notification
+      CometChat.markConversationAsRead(data.sender!, CometChat.RECEIVER_TYPE.USER)
+        .then(() => {
+          CometChat.getConversation(data.sender!, CometChat.RECEIVER_TYPE.USER)
+            .then((conversation) => {
+              const lastMessage = conversation.getLastMessage();
+              if (lastMessage) {
+                CometChatUIEventHandler.emitMessageEvent(
+                  MessageEvents.ccMessageRead,
+                  { message: lastMessage }
+                );
+              }
+            })
+            .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+        })
+        .catch((e) => console.log('Error marking user conversation as read:', e));
+
 
       // Navigate with parent message ID if available (for agentic conversations)
       const params: any = {user: ccUser};

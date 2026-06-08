@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import React, { useEffect, useState, useMemo, JSX } from "react";
 import { ScrollView, Text, View } from "react-native";
 import {
@@ -26,7 +27,7 @@ import { urlPattern } from "../shared/constants/UIKitConstants";
 /**
  * Unique UI event identifier for CometChatUIEventHandler.
  */
-const uiEventId = "ccUiEvent" + new Date().getTime();
+const uiEventId = "ccUiEvent" + Date.now() + "_" + (++__listenerIdCounter);
 
 /**
  * Interface for the props of CometChatThreadHeader component.
@@ -121,7 +122,7 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
 
   const theme = useTheme();
   const { t } = useCometChatTranslation();
-  const style = deepMerge(theme.threadHeaderStyles, props.style ?? {});
+  const style = useMemo(() => deepMerge(theme.threadHeaderStyles, props.style ?? {}), [theme, props.style]);
 
   /**
    * Checks if an updated message belongs to the same thread as the current message.
@@ -270,7 +271,7 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
                   }),
             alignment: alignment
               ? alignment
-              : message.getSender().getUid() === CometChatUIKit.loggedInUser!.getUid()
+              : message.getSender()?.getUid() === CometChatUIKit.loggedInUser?.getUid()
                 ? "right"
                 : "left",
             theme: mergedTheme,

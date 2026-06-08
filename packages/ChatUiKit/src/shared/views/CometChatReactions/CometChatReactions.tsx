@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import React, { JSX, useLayoutEffect } from "react";
 import { PixelRatio, Text, TouchableOpacity, View } from "react-native";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
@@ -106,7 +107,7 @@ const CometChatReactions = (props: CometChatReactionsInterface) => {
         onLongPress={() => {
           onReactionLongPress && onReactionLongPress(AllObj, messageObject);
         }}
-        key={new Date().getTime()}
+        key={"extra_reactions_view"}
         style={
           reactedByMe
             ? style?.extraReactionStyle?.activeContainerStyle

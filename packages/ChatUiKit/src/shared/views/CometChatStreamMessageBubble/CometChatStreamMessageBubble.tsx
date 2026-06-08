@@ -164,14 +164,25 @@ const CometChatStreamMessageBubble: React.FC<CometChatStreamMessageBubbleProps> 
   }, []);
 
   useEffect(() => {
+    let disconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     const sub = streamConnection$.subscribe(({ status, error }) => {
       setConnectionStatus(status);
-      if (status === 'disconnected' || status === 'error') {
-        setHasError(true);
-        stopStreamingForRunId();
+      if (status === 'connected') {
+        if (disconnectTimeout) {
+          clearTimeout(disconnectTimeout);
+          disconnectTimeout = null;
+        }
+        setHasError(false);
+      } else if (status === 'disconnected' || status === 'error') {
+        disconnectTimeout = setTimeout(() => {
+          setHasError(true);
+        }, 5000);
       }
     });
-    return () => sub.unsubscribe();
+    return () => {
+      sub.unsubscribe();
+      if (disconnectTimeout) clearTimeout(disconnectTimeout);
+    };
   }, []);
 
   // Create markdown styles based on theme

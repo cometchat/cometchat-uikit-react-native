@@ -7,6 +7,10 @@ import {
   getConversationStyleLight,
 } from "../../CometChatConversations/style";
 import {
+  getNotificationFeedStyleDark,
+  getNotificationFeedStyleLight,
+} from "../../CometChatNotificationFeed/style";
+import {
   getGroupMemberStyleDark,
   getGroupMemberStyleLight,
 } from "../../CometChatGroupMembers/style";
@@ -130,6 +134,7 @@ export const lightThemeMaker = (
     dateStyles: getDateStyleLight(color, spacing, typography),
     dateSeparatorStyles: getDateSeparatorStyleLight(color, spacing, typography),
     conversationStyles: getConversationStyleLight(color, spacing, typography),
+    notificationFeedStyles: getNotificationFeedStyleLight(color, spacing, typography),
     confirmDialogStyles: getConfirmDialogStyleLight(color, spacing, typography),
     reportDialogStyles: getReportDialogStyleLight(color, spacing, typography),
     messageHeaderStyles: getMessageHeaderStyle(color, spacing, typography),
@@ -171,6 +176,7 @@ export const darkThemeMaker = (
     dateStyles: getDateStyleDark(color, spacing, typography),
     dateSeparatorStyles: getDateSeparatorStyleDark(color, spacing, typography),
     conversationStyles: getConversationStyleDark(color, spacing, typography),
+    notificationFeedStyles: getNotificationFeedStyleDark(color, spacing, typography),
     confirmDialogStyles: getConfirmDialogStyleDark(color, spacing, typography),
     reportDialogStyles: getReportDialogStyleDark(color, spacing, typography),
     messageHeaderStyles: getMessageHeaderStyle(color, spacing, typography),

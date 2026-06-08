@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Keyboard } from "react-native";
 import {
@@ -74,8 +75,8 @@ type MentionOverlap = {
 
 const { FileManager, CommonUtil } = NativeModules;
 
-const uiEventListenerShow = "uiEvent_show_" + new Date().getTime();
-const uiEventListenerHide = "uiEvent_hide_" + new Date().getTime();
+const uiEventListenerShow = "uiEvent_show_" + Date.now() + "_" + (++__listenerIdCounter);
+const uiEventListenerHide = "uiEvent_hide_" + Date.now() + "_" + (++__listenerIdCounter);
 
 
 
@@ -453,9 +454,9 @@ export interface CometChatMessageComposerInterface {
 
 export const CometChatMessageComposer = React.forwardRef(
   (props: CometChatMessageComposerInterface, ref) => {
-    const editMessageListenerID = "editMessageListener_" + new Date().getTime();
-    const replyMessageListenerID = "replyMessageListener_" + new Date().getTime();
-    const UiEventListenerID = "UiEventListener_" + new Date().getTime();
+    const editMessageListenerID = "editMessageListener_" + Date.now() + "_" + (++__listenerIdCounter);
+    const replyMessageListenerID = "replyMessageListener_" + Date.now() + "_" + (++__listenerIdCounter);
+    const UiEventListenerID = "UiEventListener_" + Date.now() + "_" + (++__listenerIdCounter);
 
     const theme = useTheme();
     const {t} = useCometChatTranslation()
@@ -1410,7 +1411,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
       if (!disableMentions) {
         let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
-        mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser!);
+        mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser);
         mentionsFormatter.setContext("composer");
         mentionsFormatter.setMentionsStyle(
           mergedComposerStyle.mentionsStyle as CometChatTheme["mentionsStyle"]
@@ -1663,9 +1664,11 @@ export const CometChatMessageComposer = React.forwardRef(
       };
     }, []);
 
+    const buildRecordedAudioFileName = (recordedFile: string): string => ((recordedFile || "").split(/[?#]/)[0]?.split("/").pop() || `audio-recording-${Date.now()}.m4a`).replace(/^audio-merged/, "audio-recording");
+
     const _sendRecordedAudio = (recordedFile: String) => {
       let fileObj = {
-        name: "audio-recording" + recordedFile.split("/audio-recording")[1],
+        name: buildRecordedAudioFileName(String(recordedFile)),
         type: "audio/mp4",
         uri: recordedFile,
       };

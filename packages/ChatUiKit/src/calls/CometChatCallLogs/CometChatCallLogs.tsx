@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,7 +31,7 @@ import { CometChatTooltipMenu, MenuItemInterface } from "../../shared/views/Come
 import { JSX } from "react";
 import { useCometChatTranslation, useLocalizedDate, LocalizedDateHelper } from "../../shared";
 
-const listenerId = "callEventListener_" + new Date().getTime();
+const listenerId = "callEventListener_" + Date.now() + "_" + (++__listenerIdCounter);
 const CometChatCalls = CallingPackage.CometChatCalls;
 
 /**
@@ -210,10 +211,10 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
    */
   function setRequestBuilder() {
     const reqBuilder = callLogRequestBuilder
-      ? callLogRequestBuilder.setAuthToken(loggedInUser.current!.getAuthToken())
+      ? callLogRequestBuilder.setAuthToken(loggedInUser.current?.getAuthToken())
       : new CometChatCalls.CallLogRequestBuilder()
         .setLimit(30)
-        .setAuthToken(loggedInUser.current!.getAuthToken() || "")
+        .setAuthToken(loggedInUser.current?.getAuthToken() || "")
         .setCallCategory("call");
     callLogRequestBuilderRef.current = reqBuilder.build();
   }
@@ -225,9 +226,9 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
   const fetchCallLogs = (isAppending: boolean = true) => {
     setListState("loading");
     callLogRequestBuilderRef
-      .current!.fetchNext()
+      .current?.fetchNext()
       .then((callLogs: any) => {
-        if (callLogRequestBuilderRef.current!.limit > callLogs.length) {
+        if (callLogRequestBuilderRef.current?.limit > callLogs.length) {
           setHasMoreData(false);
         }
         if (callLogs.length > 0) {
@@ -409,7 +410,7 @@ export const CometChatCallLogs = (props: CometChatCallLogsConfigurationInterface
     if (ItemView) return ItemView(item);
 
     const { title, avatarUrl } = getCallDetails(item);
-    const callStatus = CallUtils.getCallStatusForCallLogs(item, loggedInUser.current!);
+    const callStatus = CallUtils.getCallStatusForCallLogs(item, loggedInUser.current);
 
     return (
       <TouchableOpacity

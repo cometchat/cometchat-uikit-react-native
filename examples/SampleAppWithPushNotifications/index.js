@@ -58,6 +58,11 @@ if (Platform.OS === 'android') {
               : '';
           CometChat.getGroup(extractedId).then(
             group => {
+              // Mark conversation as read when opening from push notification
+              CometChat.markConversationAsRead(extractedId, CometChat.RECEIVER_TYPE.GROUP).catch(
+                e => console.log('Error marking group conversation as read:', e),
+              );
+
               navigationRef.current?.dispatch(
                 StackActions.push('Messages', {
                   group,
@@ -70,6 +75,11 @@ if (Platform.OS === 'android') {
         } else if (data.receiverType === 'user') {
           CometChat.getUser(data.sender).then(
             ccUser => {
+              // Mark conversation as read when opening from push notification
+              CometChat.markConversationAsRead(data.sender, CometChat.RECEIVER_TYPE.USER).catch(
+                e => console.log('Error marking user conversation as read:', e),
+              );
+
               navigationRef.current?.dispatch(
                 StackActions.push('Messages', {
                   user: ccUser,

@@ -53,9 +53,9 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
     }
 
     if (
-      conversation.getLastMessage().getType() == ExtensionTypeConstants.document &&
-      conversation.getLastMessage().getCategory() == MessageCategoryConstants.custom &&
-      conversation.getLastMessage().getDeletedAt() === undefined
+      conversation.getLastMessage()?.getType() == ExtensionTypeConstants.document &&
+      conversation.getLastMessage()?.getCategory() == MessageCategoryConstants.custom &&
+      conversation.getLastMessage()?.getDeletedAt() === undefined
     ) {
       return getMessagePreviewInternal(
         "collaborative-document-fill",
@@ -253,7 +253,7 @@ export class CollaborativeDocumentExtensionDecorator extends DataSourceDecorator
         let url: string = documentData.document_url;
 
         const _style =
-          message.getSender().getUid() === loggedInUser!.getUid()
+          message.getSender()?.getUid() === loggedInUser?.getUid()
             ? theme.messageListStyles.outgoingMessageBubbleStyles?.collaborativeBubbleStyles
             : theme.messageListStyles.incomingMessageBubbleStyles?.collaborativeBubbleStyles;
 

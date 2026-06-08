@@ -31,11 +31,11 @@ export const useGroupMemberStatus = (group?: CometChat.Group): boolean => {
     CometChat.getGroup(group.getGuid())
       .then((freshGroup: CometChat.Group) => {
         if (!freshGroup.getHasJoined()) {
-          setIsNoLongerMember(true);
+          console.log('useGroupMemberStatus: Error fetching group details:', error);
         }
       })
-      .catch(() => {
-        setIsNoLongerMember(true);
+      .catch((error: any) => {
+        console.log('useGroupMemberStatus: Error fetching group details:', error);
       });
   }, [group]);
 
@@ -48,13 +48,13 @@ export const useGroupMemberStatus = (group?: CometChat.Group): boolean => {
     CometChatUIEventHandler.addGroupListener(uiListenerId, {
       ccGroupMemberKicked: ({ kickedUser }: any) => {
         if (kickedUser?.getUid?.() === loggedInUser.current?.getUid?.()) {
-          setIsNoLongerMember(true);
+          console.log('useGroupMemberStatus: Error fetching group details:', error);
         }
       },
       ccGroupMemberBanned: ({ kickedUser, bannedUser }: any) => {
         const affected = bannedUser || kickedUser;
         if (affected?.getUid?.() === loggedInUser.current?.getUid?.()) {
-          setIsNoLongerMember(true);
+          console.log('useGroupMemberStatus: Error fetching group details:', error);
         }
       },
       ccGroupMemberAdded: ({ usersAdded }: any) => {
@@ -84,7 +84,7 @@ export const useGroupMemberStatus = (group?: CometChat.Group): boolean => {
             kickedFrom?.getGuid?.() === group.getGuid() &&
             kickedUser?.getUid?.() === loggedInUser.current?.getUid?.()
           ) {
-            setIsNoLongerMember(true);
+            console.log('useGroupMemberStatus: Error fetching group details:', error);
           }
         },
         onGroupMemberBanned: (
@@ -97,7 +97,7 @@ export const useGroupMemberStatus = (group?: CometChat.Group): boolean => {
             bannedFrom?.getGuid?.() === group.getGuid() &&
             bannedUser?.getUid?.() === loggedInUser.current?.getUid?.()
           ) {
-            setIsNoLongerMember(true);
+            console.log('useGroupMemberStatus: Error fetching group details:', error);
           }
         },
         onMemberAddedToGroup: (

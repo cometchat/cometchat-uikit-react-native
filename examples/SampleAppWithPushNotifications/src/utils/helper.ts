@@ -14,6 +14,7 @@ import {
   CometChatUIEventHandler,
   CometChatUIEvents,
   CometChatUIKit,
+  MessageEvents,
 } from '@cometchat/chat-uikit-react-native';
 import {
   NavigationContainerRefWithCurrent,
@@ -115,8 +116,6 @@ export async function displayLocalNotification(
       await notifee.setBadgeCount(badgeCount);
     }
 
-    // Use fixed notification ID so Samsung doesn't add badge counts from multiple notifications
-    // This ensures badge shows exact unreadMessageCount from backend
     // Build android config — only include badgeCount if it's a valid number
     const androidConfig: any = {
       channelId,
@@ -135,6 +134,8 @@ export async function displayLocalNotification(
       androidConfig.badgeCount = badgeCount;
     }
 
+    // Use fixed notification ID so Samsung doesn't add badge counts from multiple notifications
+    // This ensures badge shows exact unreadMessageCount from backend
     await notifee.displayNotification({
       id: 'chat-notification',
       title: displayTitle,
@@ -205,6 +206,24 @@ export async function checkInitialNotificationIOS() {
         if (data.receiverType === 'group') {
           try {
             const group = await CometChat.getGroup(data.receiver);
+
+            // Mark conversation as read when opening from push notification
+            CometChat.markConversationAsRead(data.receiver, CometChat.RECEIVER_TYPE.GROUP)
+              .then(() => {
+                CometChat.getConversation(data.receiver, CometChat.RECEIVER_TYPE.GROUP)
+                  .then((conversation) => {
+                    const lastMessage = conversation.getLastMessage();
+                    if (lastMessage) {
+                      CometChatUIEventHandler.emitMessageEvent(
+                        MessageEvents.ccMessageRead,
+                        { message: lastMessage }
+                      );
+                    }
+                  })
+                  .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+              })
+              .catch((e) => console.log('Error marking group conversation as read from iOS notification:', e));
+
             const params: any = { group };
             if (parentId) {
               params.parentMessageId = parentId;
@@ -216,6 +235,24 @@ export async function checkInitialNotificationIOS() {
         } else if (data.receiverType === 'user') {
           try {
             const user = await CometChat.getUser(data.sender);
+
+            // Mark conversation as read when opening from push notification
+            CometChat.markConversationAsRead(data.sender, CometChat.RECEIVER_TYPE.USER)
+              .then(() => {
+                CometChat.getConversation(data.sender, CometChat.RECEIVER_TYPE.USER)
+                  .then((conversation) => {
+                    const lastMessage = conversation.getLastMessage();
+                    if (lastMessage) {
+                      CometChatUIEventHandler.emitMessageEvent(
+                        MessageEvents.ccMessageRead,
+                        { message: lastMessage }
+                      );
+                    }
+                  })
+                  .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+              })
+              .catch((e) => console.log('Error marking user conversation as read from iOS notification:', e));
+
             const params: any = { user };
             if (parentId) {
               params.parentMessageId = parentId;
@@ -266,6 +303,24 @@ export async function onRemoteNotificationIOS(notification: any) {
       if (data.receiverType === 'group') {
         try {
           const group = await CometChat.getGroup(data.receiver);
+
+          // Mark conversation as read when opening from push notification
+          CometChat.markConversationAsRead(data.receiver, CometChat.RECEIVER_TYPE.GROUP)
+            .then(() => {
+              CometChat.getConversation(data.receiver, CometChat.RECEIVER_TYPE.GROUP)
+                .then((conversation) => {
+                  const lastMessage = conversation.getLastMessage();
+                  if (lastMessage) {
+                    CometChatUIEventHandler.emitMessageEvent(
+                      MessageEvents.ccMessageRead,
+                      { message: lastMessage }
+                    );
+                  }
+                })
+                .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+            })
+            .catch((e) => console.log('Error marking group conversation as read from iOS notification:', e));
+
           const params: any = { group };
           if (parentId) {
             params.parentMessageId = parentId;
@@ -277,6 +332,24 @@ export async function onRemoteNotificationIOS(notification: any) {
       } else if (data.receiverType === 'user') {
         try {
           const user = await CometChat.getUser(data.sender);
+
+          // Mark conversation as read when opening from push notification
+          CometChat.markConversationAsRead(data.sender, CometChat.RECEIVER_TYPE.USER)
+            .then(() => {
+              CometChat.getConversation(data.sender, CometChat.RECEIVER_TYPE.USER)
+                .then((conversation) => {
+                  const lastMessage = conversation.getLastMessage();
+                  if (lastMessage) {
+                    CometChatUIEventHandler.emitMessageEvent(
+                      MessageEvents.ccMessageRead,
+                      { message: lastMessage }
+                    );
+                  }
+                })
+                .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+            })
+            .catch((e) => console.log('Error marking user conversation as read from iOS notification:', e));
+
           const params: any = { user };
           if (parentId) {
             params.parentMessageId = parentId;
@@ -291,6 +364,8 @@ export async function onRemoteNotificationIOS(notification: any) {
   // Must call finish to let iOS know we're done processing the notification
   notification.finish(PushNotificationIOS.FetchResult.NoData);
 }
+
+
 
 /**
  * Retrieve and register the FCM token with CometChat (Android only).
@@ -490,7 +565,7 @@ export const leaveGroup = (
           CometChat.CATEGORY_ACTION as CometChat.MessageCategory,
         );
         actionMessage.setMessage(
-          `${CometChatUIKit.loggedInUser!.getName()} has left`,
+          `${CometChatUIKit.loggedInUser?.getName()} has left`,
         );
         // Initialize data to prevent crash when SDK accesses getData().metadata during render
         actionMessage.setData({ metadata: {} });
@@ -543,6 +618,27 @@ export async function navigateToConversation(
           : '';
       const group = await CometChat.getGroup(extractedId);
 
+      // Mark conversation as read immediately when opening from push notification
+      // and emit ccMessageRead event so the conversation list clears the unread badge
+      CometChat.markConversationAsRead(extractedId, CometChat.RECEIVER_TYPE.GROUP)
+        .then(() => {
+          // Fetch the conversation to get the last message for the event
+          CometChat.getConversation(extractedId, CometChat.RECEIVER_TYPE.GROUP)
+            .then((conversation) => {
+              const lastMessage = conversation.getLastMessage();
+              if (lastMessage) {
+                CometChatUIEventHandler.emitMessageEvent(
+                  MessageEvents.ccMessageRead,
+                  { message: lastMessage }
+                );
+              }
+            })
+            .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+        })
+        .catch((e) => {
+          console.log('Error marking group conversation as read from notification:', e);
+        });
+
       // Navigate with parent message ID if available (for agentic conversations)
       const params: any = {group};
       if (data.parentId) {
@@ -555,6 +651,27 @@ export async function navigateToConversation(
     // Handle user
     else if (data.receiverType === 'user') {
       const ccUser = await CometChat.getUser(data.sender);
+
+      // Mark conversation as read immediately when opening from push notification
+      // and emit ccMessageRead event so the conversation list clears the unread badge
+      CometChat.markConversationAsRead(data.sender!, CometChat.RECEIVER_TYPE.USER)
+        .then(() => {
+          // Fetch the conversation to get the last message for the event
+          CometChat.getConversation(data.sender!, CometChat.RECEIVER_TYPE.USER)
+            .then((conversation) => {
+              const lastMessage = conversation.getLastMessage();
+              if (lastMessage) {
+                CometChatUIEventHandler.emitMessageEvent(
+                  MessageEvents.ccMessageRead,
+                  { message: lastMessage }
+                );
+              }
+            })
+            .catch((e) => console.log('Error fetching conversation after markAsRead:', e));
+        })
+        .catch((e) => {
+          console.log('Error marking user conversation as read from notification:', e);
+        });
 
       // Navigate with parent message ID if available (for agentic conversations)
       const params: any = {user: ccUser};

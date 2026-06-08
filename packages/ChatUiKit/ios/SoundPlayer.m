@@ -51,6 +51,19 @@ RCT_EXPORT_METHOD(prepareMediaPlayer:(NSString *) url
 
 RCT_EXPORT_METHOD(play:(NSString *) url
                   callback:(RCTResponseSenderBlock) resolve) {
+   // Set audio session to Playback category to ensure audio plays even in silent mode
+   // Don't override if recording is active (PlayAndRecord category)
+   AVAudioSession *session = [AVAudioSession sharedInstance];
+   if (![session.category isEqualToString:AVAudioSessionCategoryPlayAndRecord]) {
+       NSError *sessionError = nil;
+       if (![session setCategory:AVAudioSessionCategoryPlayback error:&sessionError]) {
+           NSString *response = [NSString stringWithFormat:@"{\"success\":0, \"error\":\"%@\"}", [sessionError localizedDescription]];
+           resolve(@[response]);
+           return;
+       }
+   }
+   [session setActive:YES error:nil];
+
    NSURL *nsurl;
     if ([url hasPrefix:@"http"] || [url hasPrefix:@"https"]) {
         nsurl = [NSURL URLWithString:url];
@@ -58,12 +71,22 @@ RCT_EXPORT_METHOD(play:(NSString *) url
         nsurl = [NSURL fileURLWithPath:url]; // Use fileURLWithPath for local files
     }
    NSData *data = [NSData dataWithContentsOfURL:nsurl];
+   if (!data) {
+       resolve(@[@"{\"success\":0, \"error\":\"Failed to load audio data\"}"]);
+       return;
+   }
    if ([audioPlayer isPlaying]) {
        [audioPlayer stop];
        [self sendEventWithName:@"soundPlayStatus" body:@{@"url": currentUrl}];
    }
    currentUrl = url;
-   audioPlayer = [[AVAudioPlayer alloc] initWithData:data error:nil];
+   NSError *playerError = nil;
+   audioPlayer = [[AVAudioPlayer alloc] initWithData:data error:&playerError];
+   if (!audioPlayer) {
+       NSString *response = [NSString stringWithFormat:@"{\"success\":0, \"error\":\"%@\"}", [playerError localizedDescription]];
+       resolve(@[response]);
+       return;
+   }
     [audioPlayer setDelegate: self];
 
    int playSuccess = [audioPlayer play];

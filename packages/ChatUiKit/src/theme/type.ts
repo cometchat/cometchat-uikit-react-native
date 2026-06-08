@@ -24,6 +24,7 @@ import { DateSeparatorStyle } from "../shared/views/CometChatDateSeperator/style
 import { JSX } from "react";
 import { ChatHistoryStyle } from "../CometChatAIAssistantChatHistory/style";
 import { ReportDialogStyle } from "../shared/views/CometChatReportDialog/style";
+import { NotificationFeedStyle } from "../CometChatNotificationFeed/style";
 
 export type BubbleStyles = {
   containerStyle: ViewStyle;
@@ -468,6 +469,7 @@ export interface CometChatTheme {
   badgeStyle: BadgeStyle;
   callLogsStyles: CallLogsStyle;
   conversationStyles: ConversationStyle;
+  notificationFeedStyles: NotificationFeedStyle;
   confirmDialogStyles: ConfirmDialogStyle;
   reportDialogStyles: ReportDialogStyle;
   quickReactionStyle: {

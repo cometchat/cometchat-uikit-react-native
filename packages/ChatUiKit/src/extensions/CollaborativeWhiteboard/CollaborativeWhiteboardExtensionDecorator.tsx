@@ -36,7 +36,7 @@ const t = getCometChatTranslation();
 export class CollaborativeWhiteboardExtensionDecorator extends DataSourceDecorator {
   whiteboardUrl: string = "v1/create";
 
-  loggedInUser!: CometChat.User;
+  loggedInUser: CometChat.User | null = null;
 
   /**
    * Creates an instance of CollaborativeWhiteboardExtensionDecorator.
@@ -48,7 +48,9 @@ export class CollaborativeWhiteboardExtensionDecorator extends DataSourceDecorat
 
     CometChat.getLoggedinUser()
       .then((u) => {
-        this.loggedInUser = u!;
+        if (u) {
+          this.loggedInUser = u;
+        }
       })
       .catch((err) => console.log(err));
   }
@@ -330,7 +332,7 @@ export class CollaborativeWhiteboardExtensionDecorator extends DataSourceDecorat
         const username = this.loggedInUser?.getName()?.replace(" ", "_");
         const url: string = whiteboardData.board_url + "&username=" + username;
         const _style =
-          message.getSender().getUid() === loggedInUser!.getUid()
+          message.getSender()?.getUid() === loggedInUser?.getUid()
             ? theme.messageListStyles.outgoingMessageBubbleStyles?.collaborativeBubbleStyles
             : theme.messageListStyles.incomingMessageBubbleStyles?.collaborativeBubbleStyles;
 

@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useRef, useCallback, useMemo, JSX } from "react";
+import React, { useLayoutEffect, useEffect, useState, useRef, useCallback, useMemo, JSX } from "react";
 import {
   StyleProp,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   LayoutChangeEvent,
   TextLayoutEvent,
+  Platform,
 } from "react-native";
 import {
   CometChatMentionsFormatter,
@@ -119,6 +120,19 @@ export const CometChatTextBubbleText = (
       setMeasurementComplete(false);
     }
   }, [text]);
+
+  // Android fallback: onTextLayout doesn't fire reliably for short texts.
+  // If measurement hasn't completed after 100ms, force it to resolve.
+  useEffect(() => {
+    if (Platform.OS === 'android' && !measurementComplete && containerWidth != null) {
+      const timeout = setTimeout(() => {
+        if (!measurementComplete) {
+          setMeasurementComplete(true);
+        }
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [text, containerWidth, measurementComplete]);
 
   // Handler to capture container width - use functional update to avoid dependency
   const onContainerLayout = useCallback((e: LayoutChangeEvent) => {

@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import Clipboard from "@react-native-clipboard/clipboard";
 import React, {
@@ -109,6 +110,22 @@ let _defaultRequestBuilder: CometChat.MessagesRequestBuilder;
 const SEPARATOR_HEIGHT = 40;
 const AVERAGE_ITEM_LENGTH = 120;
 const SMALL_LIST_THRESHOLD = 30;
+
+/**
+ * Module-level flag to skip auto-loading the last agent conversation.
+ * Set to true by `skipNextAgentAutoLoad()` (called by "New Chat" button).
+ * Consumed and cleared on the next message list mount.
+ */
+let _skipAgentAutoLoad = false;
+
+/**
+ * Call this before remounting the message list to prevent it from
+ * auto-loading the last agent conversation. Used by the "New Chat" button
+ * to ensure a fresh empty state on remount.
+ */
+export function skipNextAgentAutoLoad(): void {
+  _skipAgentAutoLoad = true;
+}
 /**
  * Helper function to safely get message ID
  * Prevents "undefined is not a function" errors in release builds
@@ -504,6 +521,13 @@ export interface CometChatMessageListProps {
    * and maintain their unread message state for later review.
    */
   navigatedFromSearch?: boolean;
+  /**
+   * If true, the message list will automatically load the most recent agent conversation
+   * on mount (only applies to @agentic users). When false or omitted, a new agent chat
+   * is started each time (current default behavior).
+   * @defaultValue false
+   */
+  loadLastAgentConversation?: boolean;
 }
 
 /**
@@ -628,6 +652,7 @@ export const CometChatMessageList = memo(
         NewMessageIndicatorView,
         newMessageIndicatorStyle,
         newMessageIndicatorText,
+        loadLastAgentConversation = false,
       } = props;
 
       // Helper to check if user is agentic - memoized as boolean for performance
@@ -650,17 +675,17 @@ export const CometChatMessageList = memo(
       const hideFlagMessageOption = isAgenticUser ? true : propHideFlagMessageOption;
       const hideMarkAsUnreadOption = (isAgenticUser || !!parentMessageId) ? true : !showMarkAsUnreadOption;//hide for threads and agentic users
 
-      const callListenerId = "call_" + new Date().getTime();
+      const callListenerId = "call_" + Date.now() + "_" + (++__listenerIdCounter);
       const effectiveHideModeration = hideModerationStatus;
-      const groupListenerId = "group_" + new Date().getTime();
-      const uiEventListener = "uiEvent_" + new Date().getTime();
-      const callEventListener = "callEvent_" + new Date().getTime();
-      const uiEventListenerShow = "uiEvent_show_" + new Date().getTime();
-      const uiEventListenerHide = "uiEvent_hide_" + new Date().getTime();
-      const connectionListenerId = "connectionListener_" + new Date().getTime();
-      const messageEventListener = "messageEvent_" + new Date().getTime();
-      const groupEventListener = "groupEvent_" + new Date().getTime();
-      const streamListenerId = "agent_" + new Date().getTime();
+      const groupListenerId = "group_" + Date.now() + "_" + (++__listenerIdCounter);
+      const uiEventListener = "uiEvent_" + Date.now() + "_" + (++__listenerIdCounter);
+      const callEventListener = "callEvent_" + Date.now() + "_" + (++__listenerIdCounter);
+      const uiEventListenerShow = "uiEvent_show_" + Date.now() + "_" + (++__listenerIdCounter);
+      const uiEventListenerHide = "uiEvent_hide_" + Date.now() + "_" + (++__listenerIdCounter);
+      const connectionListenerId = "connectionListener_" + Date.now() + "_" + (++__listenerIdCounter);
+      const messageEventListener = "messageEvent_" + Date.now() + "_" + (++__listenerIdCounter);
+      const groupEventListener = "groupEvent_" + Date.now() + "_" + (++__listenerIdCounter);
+      const streamListenerId = "agent_" + Date.now() + "_" + (++__listenerIdCounter);
       const deleteItem = useRef<CometChat.BaseMessage>(undefined);
       const shouldSuppressHighlightRef = useRef(false);
 
@@ -897,18 +922,20 @@ export const CometChatMessageList = memo(
       const messagesLength = useRef(0); // Tracks total message count to detect additions/updates
       const prevMessagesLength = useRef(0); // Tracks previous message count to handle scroll position adjustments when loading history
       const messageListRef = useRef<FlatList | null>(null); // Reference to the FlatList for programmatic scrolling
-      const loggedInUser = useRef<CometChat.User | null | any>(null); // Stores current user to check sender identity (me vs others)
+      const loggedInUser = useRef<CometChat.User | null>(null); // Stores current user to check sender identity (me vs others)
       const messageRequest = useRef<CometChat.MessagesRequest | null>(null); // Manages pagination state for fetching messages
       const messagesContentListRef = useRef<any[]>([]); // "Main Stage": Source of Truth for visible messages. Kept in sync with state to handle real-time updates without closure staleness.
       const temporaryMessageListRef = useRef<any[]>([]); // "Waiting Room": Buffer for new messages arriving while scrolled up. Prevents UI jumps/insertions while reading history.
 
       const msgRequestBuilder = useRef<CometChat.MessagesRequestBuilder>(undefined);
-      const lastMessageDate = useRef(new Date().getTime());
+      const lastMessageDate = useRef(Date.now());
 
       // states
-      const [messagesList, setMessagesList] = useState<any[]>([]);
+      const [messagesList, setMessagesList] = useState<any[]>([]);      
       const [listState, setListState] = useState(
-        isAgenticUser && !parentMessageId ? "loaded" : "loading"
+        isAgenticUser && !parentMessageId
+          ? (loadLastAgentConversation && !_skipAgentAutoLoad ? "loading" : "loaded")
+          : "loading"
       );
       const [loadingMessages, setLoadingMessages] = useState(false);
       /** this is required to prevent duplicate api calls. Cannot use state for this since this is being used in scrollHandler  **/
@@ -1035,8 +1062,8 @@ export const CometChatMessageList = memo(
           return;
         }
         loadingPrevMessagesRef.current = true;
-        // For agent chats (non-thread), don't fetch previous messages
-        if (isAgenticUser && !parentMessageId) {
+        // For agent chats with no conversation loaded, don't fetch previous messages
+        if (isAgenticUser && !parentMessageId && !agenticParentMessageIdRef.current) {
           return;
         }
 
@@ -1053,21 +1080,52 @@ export const CometChatMessageList = memo(
           setLoadingMessages(true);
           loadingMessagesRef.current = true;
         }
-        // TODO: this condition is applied because somewhere from whiteboard extention group scope is set to undefined.
-        if (group != undefined && group.getGuid() == undefined) {
-          let fetchedGroup: any = await CometChat.getGroup(group.getGuid()).catch((e: any) => {
-            console.log("Error: fetching group", e);
+        // Fixed: Previously passed undefined GUID to getGroup() which always failed.
+        // Now we skip the scope fetch entirely when GUID is missing — the scope
+        // will be populated when the group data arrives from a valid source.
+        if (group != undefined && !group.getGuid()) {
+          console.warn("[CometChatMessageList] Group has no GUID — skipping scope fetch.");
+        } else if (group != undefined && group.getGuid() && !group.getScope()) {
+          try {
+            const fetchedGroup = await CometChat.getGroup(group.getGuid());
+            if (fetchedGroup) {
+              group.setScope(fetchedGroup.getScope?.() ?? "participant");
+            }
+          } catch (e: any) {
+            console.warn("[CometChatMessageList] Failed to fetch group scope:", e);
             onError && onError(e);
-          });
-          group.setScope(fetchedGroup["scope"]);
+          }
         }
-        messageRequest.current
+        return messageRequest.current
           ?.fetchPrevious()
           .then((msgs: any[]) => {
-            if (messageRequest.current!.getLimit() > msgs.length) {
+            if ((messageRequest.current?.getLimit() ?? 0) > msgs.length) {
               reachedFirstMessage.current = true;
             }
             let previousMessagesFetched = [...msgs].reverse(); // Reverse for UI use
+
+            // For agentic users with parentMessageId: the server returns the parent
+            // message (via withParent) at the END of the array, out of chronological order.
+            // Sort by ID to restore correct order (higher ID = newer message = first in inverted list).
+            if (isAgenticUser && parentMessageId) {
+              previousMessagesFetched.sort((a, b) => {
+                const aId = Number(typeof a.getId === 'function' ? a.getId() : 0);
+                const bId = Number(typeof b.getId === 'function' ? b.getId() : 0);
+                return bId - aId;
+              });
+            }
+
+            // Deduplicate within the batch for agentic users
+            // (withParent can include parent as both the thread parent and a reply)
+            if (isAgenticUser) {
+              const seenIds = new Set<number>();
+              previousMessagesFetched = previousMessagesFetched.filter((msg) => {
+                const msgId = Number(typeof msg.getId === 'function' ? msg.getId() : (msg as any)?.id);
+                if (!msgId || seenIds.has(msgId)) return false;
+                seenIds.add(msgId);
+                return true;
+              });
+            }
 
             if (messagesList.length === 0 && msgs?.length > 0) {
               CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, {
@@ -1097,7 +1155,7 @@ export const CometChatMessageList = memo(
               if (!goToMessageId && messagesList.length === 0) {
                 // If we are not navigating to a specific message, we want to show the new message indicator
                 // above the oldest unread message (which is the last one in the fetched list since it's reversed).
-                const oldestMessage = previousMessagesFetched[previousMessagesFetched.length];
+                const oldestMessage = previousMessagesFetched[previousMessagesFetched.length - 1];
 
                 if (oldestMessage) {
                   const msgId = safeGetId(oldestMessage);
@@ -1110,17 +1168,9 @@ export const CometChatMessageList = memo(
               // Only mark conversation as read on initial load.
               // If we do this on every fetch (pagination), it would reset the unread count
               // even if the user manually marked a message as unread.
-              // The !navigatedFromSearch condition ensures we don't mark as read when navigating from search results,
-              // as the user might want to keep messages unread for reference.
-              if (messagesList.length === 0 && !navigatedFromSearch) {
-                //marking most recent unread message as read
-                // Use markAsRead on the latest message instead of markConversationAsRead
-                // to avoid marking thread replies as read when user only opens the main chat.
-                if (!parentMessageId && lastMessage) {
-                  CometChat.markAsRead(lastMessage).catch((e: any) => {
-                    console.log("Error marking message as read", e);
-                  });
-                } else if (user) {
+              if (messagesContentListRef.current.length === 0 && !navigatedFromSearch) {
+                // Mark entire conversation as read — clears unread count on server
+                if (user) {
                   CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
                     console.log("Error marking user conversation as read", e);
                   });
@@ -1130,6 +1180,7 @@ export const CometChatMessageList = memo(
                   });
                 }
                 setUnreadCount(0);
+                setNewMessageIndicatorId(null);
                 //emitting event to update read receipts in other components
                 CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
                   message: lastMessage,
@@ -1166,10 +1217,24 @@ export const CometChatMessageList = memo(
               }
             );
             if (previousMessagesFetched.length > 0) {
-              messagesContentListRef.current = [
-                ...messagesContentListRef.current,
-                ...previousMessagesFetched,
-              ];
+              // For agentic users, deduplicate across batches to prevent duplicate keys
+              if (isAgenticUser && messagesContentListRef.current.length > 0) {
+                const existingIds = new Set(
+                  messagesContentListRef.current.map((msg) =>
+                    Number(typeof msg.getId === 'function' ? msg.getId() : (msg as any)?.id)
+                  )
+                );
+                previousMessagesFetched = previousMessagesFetched.filter((msg) => {
+                  const msgId = Number(typeof msg.getId === 'function' ? msg.getId() : (msg as any)?.id);
+                  return !msgId || !existingIds.has(msgId);
+                });
+              }
+              if (previousMessagesFetched.length > 0) {
+                messagesContentListRef.current = [
+                  ...messagesContentListRef.current,
+                  ...previousMessagesFetched,
+                ];
+              }
               setMessagesList(messagesContentListRef.current);
             }
             if (messagesContentListRef.current.length == 0) {
@@ -1219,7 +1284,7 @@ export const CometChatMessageList = memo(
           return;
         }
 
-        if (isAgenticUser && !parentMessageId) {
+        if (isAgenticUser && !parentMessageId && !agenticParentMessageIdRef.current) {
           return;
         }
 
@@ -1310,14 +1375,8 @@ export const CometChatMessageList = memo(
             // as the user might want to keep messages unread for reference.
             if (startFromUnreadMessages && isInitialLoad && !navigatedFromSearch && !goToMessageId) {
               shouldSuppressHighlightRef.current = true;
-              //marking most recent unread message as read
-              // Use markAsRead on the latest message instead of markConversationAsRead
-              // to avoid marking thread replies as read when user only opens the main chat.
-              if (!parentMessageId && uniqueMessages[0]) {
-                CometChat.markAsRead(uniqueMessages[0]).catch((e: any) => {
-                  console.log("Error marking message as read", e);
-                });
-              } else if (user) {
+              // Mark entire conversation as read — clears unread count on server
+              if (user) {
                 CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
                   console.log("Error marking user conversation as read", e);
                 });
@@ -1489,8 +1548,8 @@ export const CometChatMessageList = memo(
       };
 
       const getUpdatedPreviousMessages = () => {
-        // For agent chats (non-thread), don't fetch updated previous messages
-        if (isAgenticUser && !parentMessageId) {
+        // For agent chats with no conversation loaded, don't fetch updated previous messages
+        if (isAgenticUser && !parentMessageId && !agenticParentMessageIdRef.current) {
           return;
         }
 
@@ -1547,7 +1606,7 @@ export const CometChatMessageList = memo(
               setMessagesList(tmpList);
               onLoad && onLoad([...messagesContentListRef.current].reverse());
               for (let i = 0; i < newMessages.length; i++) {
-                if (newMessages[i].getSender().getUid() !== loggedInUser.current.getUid()) {
+                if (newMessages[i].getSender()?.getUid() !== loggedInUser.current?.getUid()) {
                   bottomHandler(newMessages[i], true, true);
                   break;
                 }
@@ -1658,7 +1717,7 @@ export const CometChatMessageList = memo(
 
         let allFormatters = [...(textFormatters || [])];
         let mentionsTextFormatter = ChatConfigurator.getDataSource().getMentionsFormatter(
-          loggedInUser.current
+          loggedInUser.current ?? undefined
         );
         allFormatters.push(mentionsTextFormatter);
 
@@ -1849,7 +1908,7 @@ export const CometChatMessageList = memo(
         }
 
         if (isAgenticUser) {
-          if (parentMessageId && agenticParentMessageIdRef.current) {
+          if (agenticParentMessageIdRef.current) {
             return (
               message.getParentMessageId &&
               String(message.getParentMessageId()) === String(agenticParentMessageIdRef.current)
@@ -1971,6 +2030,19 @@ export const CometChatMessageList = memo(
           return;
         }
 
+        // Thread mismatch check — must run BEFORE the sender check to prevent
+        // messages from appearing in the wrong context (main list vs thread)
+        // when the same user is logged in on multiple devices.
+        if (
+          (!parentMessageId && newMessage.getParentMessageId()) ||
+          (parentMessageId && !newMessage.getParentMessageId()) ||
+          (parentMessageId &&
+            newMessage.getParentMessageId() &&
+            parentMessageId != newMessage.getParentMessageId())
+        ) {
+          return;
+        }
+
         if (
           (newMessage.getSender()?.getUid() || newMessage?.["sender"]?.["uid"]) ==
           loggedInUser.current?.["uid"]
@@ -1982,15 +2054,6 @@ export const CometChatMessageList = memo(
           return;
         }
         if (!isReceived) {
-          return;
-        }
-        if (
-          (!parentMessageId && newMessage.getParentMessageId()) ||
-          (parentMessageId && !newMessage.getParentMessageId()) ||
-          (parentMessageId &&
-            newMessage.getParentMessageId() &&
-            parentMessageId != newMessage.getParentMessageId())
-        ) {
           return;
         }
         if (isAtBottom() || isNearBottom() || scrollToBottomOnNewMessages) {
@@ -2157,11 +2220,44 @@ export const CometChatMessageList = memo(
             (firstMsgMuid && latestMsgMuid && String(firstMsgMuid) !== String(latestMsgMuid));
 
           if (hasGap) {
+            // A gap means our list is behind the server. Rebuild it from the server,
+            // then only prepend the incoming message if the rebuilt page didn't
+            // already include it. This avoids the double-insert that caused the
+            // duplicate, while still covering the race where the read API hasn't
+            // caught up with the just-received message yet.
             reachedFirstMessage.current = false;
             msgRequestBuilder.current?.setMessageId(0);
             messageRequest.current = msgRequestBuilder.current?.build() || null;
             messagesContentListRef.current = [];
             await getPreviousMessages();
+
+            const incomingId = newMessage?.getId?.() ?? (newMessage as any)?.id;
+            const incomingMuid =
+              (newMessage as any)?.muid ??
+              (typeof newMessage?.getMuid === "function" ? newMessage.getMuid() : undefined);
+            const alreadyPresent = messagesContentListRef.current.some((msg: any) => {
+              const mid = typeof msg?.getId === "function" ? msg.getId() : msg?.id;
+              const mmuid = (msg as any)?.muid ?? (typeof msg?.getMuid === "function" ? msg.getMuid() : undefined);
+              return (
+                (incomingId != null && mid != null && String(mid) === String(incomingId)) ||
+                (incomingMuid != null && mmuid != null && String(mmuid) === String(incomingMuid))
+              );
+            });
+
+            if (!alreadyPresent) {
+              messagesContentListRef.current = [newMessage, ...messagesContentListRef.current];
+            }
+
+            latestMessageRef.current = messagesContentListRef.current[0] ?? newMessage;
+            onLoad && onLoad([...messagesContentListRef.current].reverse());
+            batchStateUpdates(() => {
+              setMessagesList([...messagesContentListRef.current]);
+              if (hideScrollToBottomButton === false && unreadCount < 1 && !hasTargetMessageId) {
+                setHideScrollToBottomButton(true);
+              }
+            });
+            aMessageWasSentByMeRef.current = true;
+            return;
           }
         }
         messagesContentListRef.current = [newMessage, ...messagesContentListRef.current];
@@ -2255,39 +2351,48 @@ export const CometChatMessageList = memo(
           return;
         }
         // Use getter method for messageId (SDK receipt objects expose it via getMessageId())
-        let receiptMessageId = typeof receipt.getMessageId === 'function' ? receipt.getMessageId() : receipt["messageId"];
-        let index = messagesContentListRef.current.findIndex(
+        const receiptMessageId = typeof receipt.getMessageId === 'function' ? receipt.getMessageId() : receipt["messageId"];
+        const index = messagesContentListRef.current.findIndex(
           (msg) => {
             const msgId = typeof msg.getId === 'function' ? msg.getId() : msg["id"];
             return String(msgId) === String(receiptMessageId);
           }
         );
 
-        if (index == -1) return;
+        if (index === -1) return;
 
-        let tmpList: Array<CometChat.BaseMessage> = [...messagesContentListRef.current];
+        // Clone-first approach: shallow copy the array, then clone only messages
+        // whose receipt status actually changes. Unchanged items keep original references
+        // so FlatList skips re-rendering them.
+        const updatedList = [...messagesContentListRef.current];
+        let hasChanges = false;
 
-        for (let i = index; i < messagesContentListRef.current.length; i++) {
-          if (tmpList[i]?.getReadAt && tmpList[i]?.getReadAt()) break;
+        for (let i = index; i < updatedList.length; i++) {
+          const msg = updatedList[i];
+          // Skip messages already marked as read — they're implicitly delivered too
+          if (msg?.getReadAt?.()) continue;
 
-          let tmpMsg = tmpList[i];
-          if (!Number.isNaN(Number(tmpMsg.getId()))) {
-            if (tmpMsg.getCategory() === MessageCategoryConstants.interactive) {
-              //todo show unsupported bubble
-            }
-            if (receipt.getDeliveredAt()) {
-              tmpMsg.setDeliveredAt(receipt.getDeliveredAt());
-            }
-            if (receipt.getReadAt()) {
-              tmpMsg.setReadAt(receipt.getReadAt());
+          if (!Number.isNaN(Number(msg.getId()))) {
+            const deliveredNeedsUpdate = receipt.getDeliveredAt() && !msg.getDeliveredAt?.();
+            const readNeedsUpdate = receipt.getReadAt() && !msg.getReadAt?.();
+
+            if (deliveredNeedsUpdate || readNeedsUpdate) {
+              // Clone BEFORE mutating — never mutate objects React is holding
+              const cloned = CommonUtils.clone(msg);
+              if (deliveredNeedsUpdate) cloned.setDeliveredAt(receipt.getDeliveredAt());
+              if (readNeedsUpdate) cloned.setReadAt(receipt.getReadAt());
+              updatedList[i] = cloned;
+              hasChanges = true;
             }
           }
-          tmpList[i] = CommonUtils.clone(tmpMsg);
         }
 
-        messagesContentListRef.current = tmpList;
-        onLoad && onLoad([...messagesContentListRef.current].reverse());
-        setMessagesList(tmpList);
+        // Only trigger re-render if at least one message was actually updated
+        if (hasChanges) {
+          messagesContentListRef.current = updatedList;
+          onLoad && onLoad([...messagesContentListRef.current].reverse());
+          setMessagesList(updatedList);
+        }
       };
 
       const handlePannel = (item: any) => {
@@ -2322,13 +2427,109 @@ export const CometChatMessageList = memo(
             loggedInUser.current = u;
             if (isAgenticUser && !parentMessageId) {
               messageRequest.current = null;
+              // Auto-load the last agent conversation if enabled
+              if (loadLastAgentConversation && !_skipAgentAutoLoad) {
+                try {
+                  const lastMsgBuilder = new CometChat.MessagesRequestBuilder()
+                    .setLimit(1)
+                    .setCategories(ChatConfigurator.dataSource.getAllMessageCategories())
+                    .setTypes(ChatConfigurator.dataSource.getAllMessageTypes())
+                    .hideDeletedMessages(true)
+                    .hideReplies(true)
+        
+                    
+                  if (user) {
+                    lastMsgBuilder.setUID(user.getUid());
+                  }
+                  if (group) {
+                    lastMsgBuilder.setGUID(group.getGuid());
+                  }
+                  const lastMessages = await lastMsgBuilder.build().fetchPrevious();
+                  if (lastMessages && lastMessages.length > 0) {
+                    const lastMsg = lastMessages[0];
+                    // Determine the conversation's parent message ID
+                    const rawParentId = typeof lastMsg.getParentMessageId === 'function'
+                      ? lastMsg.getParentMessageId()
+                      : 0;
+                    const lastParentId = rawParentId && Number(rawParentId) > 0
+                      ? String(rawParentId)
+                      : String(lastMsg.getId());
+                    agenticParentMessageIdRef.current = lastParentId;
+                    latestMessageRef.current = lastMsg;
+
+                    // Build request to fetch messages for this conversation
+                    let agentRequestBuilder = new CometChat.MessagesRequestBuilder()
+                      .setLimit(30)
+                      .setTags([]);
+                    if (user) {
+                      agentRequestBuilder = agentRequestBuilder.setUID(user.getUid());
+                    }
+                    if (group) {
+                      agentRequestBuilder = agentRequestBuilder.setGUID(group.getGuid());
+                    }
+                    agentRequestBuilder = agentRequestBuilder.setParentMessageId(
+                      parseInt(lastParentId)
+                    );
+                    agentRequestBuilder.hideReplies(false);
+                    agentRequestBuilder.withParent(true);
+                    agentRequestBuilder.setTypes(
+                      ChatConfigurator.dataSource.getAllMessageTypes()
+                    );
+                    agentRequestBuilder.setCategories(
+                      ChatConfigurator.dataSource.getAllMessageCategories()
+                    );
+
+                    messageRequest.current = agentRequestBuilder.build();
+                    setListState("loading");
+                    const msgs = await messageRequest.current.fetchPrevious();
+                    if (msgs && msgs.length > 0) {
+                      // Sort by ID descending (newest first for inverted list)
+                      // Server returns parent (via withParent) at end, out of chronological order
+                      const sorted = [...msgs].sort((a, b) => {
+                        const aId = Number(typeof a.getId === 'function' ? a.getId() : 0);
+                        const bId = Number(typeof b.getId === 'function' ? b.getId() : 0);
+                        return bId - aId;
+                      });
+                      // Deduplicate (withParent may include parent twice)
+                      const seenIds = new Set<number>();
+                      const uniqueMsgs = sorted.filter((msg) => {
+                        const msgId = Number(typeof msg.getId === 'function' ? msg.getId() : 0);
+                        if (!msgId || seenIds.has(msgId)) return false;
+                        seenIds.add(msgId);
+                        return true;
+                      });
+                      if (msgs.length < 30) {
+                        reachedFirstMessage.current = true;
+                      }
+                      messagesContentListRef.current = uniqueMsgs;
+                      setMessagesList(uniqueMsgs);
+                      onLoad && onLoad([...uniqueMsgs].reverse());
+                      setListState("loaded");
+                    } else {
+                      setListState("loaded");
+                      onEmpty && onEmpty();
+                    }
+                  } else {
+                    // No previous conversation — show empty/greeting state
+                    setListState("loaded");
+                    onEmpty && onEmpty();
+                  }
+                } catch (e) {
+                  console.log("Error auto-loading last agent conversation", e);
+                  setListState("loaded");
+                  onEmpty && onEmpty();
+                }
+              } else {
+                // Clear skip flag if it was set
+                _skipAgentAutoLoad = false;
+              }
             } else {
               messageRequest.current = msgRequestBuilder.current?.build() || null;
             }
             if (!isAgenticUser || (isAgenticUser && parentMessageId)) {
               if (goToMessageId) {
                 getMessagesAroundId(goToMessageId);
-              } else if (startFromUnreadMessages) {
+              } else if (startFromUnreadMessages && !(isAgenticUser && parentMessageId)) {
 
 
                 try {
@@ -2349,7 +2550,29 @@ export const CometChatMessageList = memo(
                       const lastReadMessageId = conversation.getLastReadMessageId();
                       //if lastReadMessageId is 0, it means no messages have been read yet
                       if (lastReadMessageId && Number(lastReadMessageId) !== 0) {
-                        getMessagesAroundId(String(lastReadMessageId));
+                        // Validate that lastReadMessageId is not a thread reply.
+                        // getLastReadMessageId() can return a thread reply's ID when the user
+                        // read messages inside a thread. Using a thread reply as the anchor
+                        // for getMessagesAroundId causes it to leak into the main message list.
+                        if (!parentMessageId) {
+                          try {
+                            const lastReadMsg = await CometChat.getMessageDetails(Number(lastReadMessageId));
+                            const lastReadParentId = lastReadMsg?.getParentMessageId
+                              ? lastReadMsg.getParentMessageId()
+                              : (lastReadMsg as any)?.parentMessageId;
+                            if (lastReadParentId) {
+                              // Last read message is a thread reply — use its parent as anchor instead
+                              getMessagesAroundId(String(lastReadParentId));
+                            } else {
+                              getMessagesAroundId(String(lastReadMessageId));
+                            }
+                          } catch (e) {
+                            // If we can't validate, fall back to normal load
+                            getPreviousMessages();
+                          }
+                        } else {
+                          getMessagesAroundId(String(lastReadMessageId));
+                        }
                       } else {
                         getPreviousMessages();
                       }
@@ -2396,6 +2619,18 @@ export const CometChatMessageList = memo(
         if (group) {
           messageRequestBuilder.setGUID(group.getGuid());
         }
+
+        // Mirror the main list's population so latestMessageRef stays comparable to
+        // the list head. The main list hides thread replies (hideReplies), while a
+        // thread view scopes to its parent. Without this, latestMessageRef could be
+        // set to a thread reply that never appears in the main list, which makes the
+        // gap check in addToMessageList read a false "gap" on the next message.
+        if (parentMessageId) {
+          messageRequestBuilder.setParentMessageId(parseInt(parentMessageId)).hideReplies(false);
+        } else {
+          messageRequestBuilder.hideReplies(true);
+        }
+
         messageRequestBuilder
           .build()
           .fetchPrevious()
@@ -2404,7 +2639,7 @@ export const CometChatMessageList = memo(
               latestMessageRef.current = messages[0];
             }
           });
-      }, []);
+      }, [user, group, parentMessageId]);
 
       // Callback to add stream message and register queue completion callback
       const createStreamMessage = useCallback(
@@ -2420,7 +2655,7 @@ export const CometChatMessageList = memo(
           if (user) {
             streamMessage.setSender(user);
           }
-          streamMessage.setReceiver(loggedInUser.current);
+          streamMessage.setReceiver(loggedInUser.current as CometChat.User);
           streamMessage.setReceiverType(CometChat.RECEIVER_TYPE.USER);
           streamMessage.setSentAt(Math.floor(Date.now() / 1000));
           (streamMessage as any).targetMessageId = runId;
@@ -2465,7 +2700,7 @@ export const CometChatMessageList = memo(
               if (
                 message.getConversationId &&
                 (!message.getConversationId()?.includes(user.getUid()) ||
-                  !message.getConversationId()?.includes(loggedInUser.current?.getUid()))
+                  !message.getConversationId()?.includes(loggedInUser.current?.getUid() ?? ""))
               ) {
                 return;
               }
@@ -2577,16 +2812,6 @@ export const CometChatMessageList = memo(
         CometChatUIEventHandler.addMessageListener(messageEventListener, {
           ccMessageSent: ({ message, status }: any) => {
             if (status == MessageStatusConstants.inprogress) {
-              // Remove incomplete stream messages before adding new user message (for agentic users)
-              if (isAgenticUser) {
-                const filteredList = messagesContentListRef.current.filter(
-                  (msg) => !(msg as any).isStreamMessage
-                );
-                if (filteredList.length !== messagesContentListRef.current.length) {
-                  messagesContentListRef.current = filteredList;
-                  setMessagesList(filteredList);
-                }
-              }
               newMessage(message, false);
             }
 
@@ -2595,7 +2820,7 @@ export const CometChatMessageList = memo(
               if (
                 isAgenticUser &&
                 agenticParentMessageIdRef.current === undefined &&
-                messagesList.length !== 0 &&
+                messagesContentListRef.current.length !== 0 &&
                 message.getType() === MessageTypeConstants.text &&
                 message.getCategory() === MessageCategoryConstants.message
               ) {
@@ -2835,7 +3060,7 @@ export const CometChatMessageList = memo(
           new CometChat.ConnectionListener({
             onConnected: () => {
               streamOnConnected();
-              if (lastID.current) {
+              if (lastID.current && !isAgenticUser) {
                 getUpdatedPreviousMessages();
               }
             },
@@ -2914,7 +3139,10 @@ export const CometChatMessageList = memo(
       });
 
       const getMessageById = (messageId: string): CometChat.BaseMessage => {
-        const message = messagesList.find((message) => message.getId() === messageId);
+        // Read from the live ref so reactions resolve against the current list.
+        const message = messagesContentListRef.current.find(
+          (message) => message.getId() === messageId
+        );
         return message;
       };
 
@@ -2922,29 +3150,41 @@ export const CometChatMessageList = memo(
         const receiverId = receipt?.getReceiverId();
         const receiverType = receipt?.getReceiverType();
         const reactedById = receipt?.getReaction()?.getReactedBy()?.getUid();
-        const parentMessageId = receipt?.getParentMessageId();
-        const listParentMessageId = parentMessageId && String(parentMessageId);
-        if (listParentMessageId) {
-          if (parentMessageId === listParentMessageId) {
+        const reactionMessageId = receipt?.getReaction()?.getMessageId();
+
+        // If the reacted message is rendered in this list, the reaction belongs here.
+        if (reactionMessageId != null) {
+          const exists = messagesContentListRef.current.some(
+            (msg) => String(msg.getId?.() ?? msg.id) === String(reactionMessageId)
+          );
+          if (exists) return true;
+        }
+
+        const reactionParentId = receipt?.getParentMessageId();
+
+        // Thread list: message not loaded yet, accept only if it belongs to this thread.
+        if (parentMessageId) {
+          return (
+            Boolean(reactionParentId) &&
+            String(reactionParentId) === String(parentMessageId)
+          );
+        }
+
+        // Main list: reject reactions that belong to a thread.
+        if (reactionParentId) {
+          return false;
+        }
+
+        if (user) {
+          if (
+            receiverType === ReceiverTypeConstants.user &&
+            (receiverId === user.getUid() || reactedById === user.getUid())
+          ) {
             return true;
-          } else {
-            return false;
           }
-        } else {
-          if (receipt.getParentMessageId()) {
-            return false;
-          }
-          if (user) {
-            if (
-              receiverType === ReceiverTypeConstants.user &&
-              (receiverId === user.getUid() || reactedById === user.getUid())
-            ) {
-              return true;
-            }
-          } else if (group) {
-            if (receiverType === ReceiverTypeConstants.group && receiverId === group.getGuid()) {
-              return true;
-            }
+        } else if (group) {
+          if (receiverType === ReceiverTypeConstants.group && receiverId === group.getGuid()) {
+            return true;
           }
         }
         return false;
@@ -3029,7 +3269,7 @@ export const CometChatMessageList = memo(
             <CometChatAvatar
               image={
                 item?.getSender()?.getAvatar && item?.getSender()?.getAvatar()
-                  ? { uri: item.getSender().getAvatar() }
+                  ? { uri: item.getSender()?.getAvatar() }
                   : undefined
               }
               name={
@@ -3056,7 +3296,7 @@ export const CometChatMessageList = memo(
           ) {
             const senderName = (item.getSender()?.getName() || "").trim();
             return (
-              <View style={{ flexDirection: "row" }}>
+              <View style={staticStyles.flexRow}>
                 {Boolean(senderName) && (
                   <Text
                     style={_style.senderNameTextStyles}
@@ -3169,7 +3409,7 @@ export const CometChatMessageList = memo(
                   alignment !== "leftAligned" &&
                   isOutgoingMessage &&
                   !item.getDeletedAt?.() ? (
-                  <View style={{ marginLeft: 2, alignItems: "center", justifyContent: "center" }}>
+                  <View style={staticStyles.receiptContainer}>
                     <CometChatReceipt
                       receipt={messageState}
                       style={{
@@ -3434,7 +3674,7 @@ export const CometChatMessageList = memo(
 
       const privateMessage = (item: CometChat.BaseMessage) => {
         setShowMessageOptions([]);
-        CometChat.getUser(item.getSender().getUid())
+        CometChat.getUser(item.getSender()?.getUid())
           .then((user: any) => {
             CometChatUIEventHandler.emitUIEvent("openChat", { user });
           })
@@ -3801,7 +4041,7 @@ export const CometChatMessageList = memo(
 
             return (
               message.getCategory() === MessageCategoryConstants.action || isAgenticUser ? (
-                <View style={{ position: 'relative' }}>
+                <View style={staticStyles.positionRelative}>
                   <TouchableOpacity
                     activeOpacity={1}
                     onPress={Platform.OS === "ios" ? onPress : undefined}
@@ -3830,7 +4070,7 @@ export const CometChatMessageList = memo(
                   failOffsetY={[-50, 50]}
                 >
                   <Animated.View style={{ transform: [{ translateX: swipeAnimatedValue }] }}>
-                    <View style={{ position: 'relative' }}>
+                    <View style={staticStyles.positionRelative}>
                       <TouchableOpacity
                         activeOpacity={1}
                         onPress={Platform.OS === "ios" ? onPress : undefined}
@@ -4208,7 +4448,7 @@ export const CometChatMessageList = memo(
         if (LoadingView) return LoadingView();
 
         return (
-          <View style={{ padding: 16 }}>
+          <View style={staticStyles.skeletonPadding}>
             <MessageSkeleton />
           </View>
         );
@@ -4278,7 +4518,7 @@ export const CometChatMessageList = memo(
       const renderFooter = () => {
         if (!bottomLoading) return null;
         return (
-          <View style={{ padding: 10, alignItems: "center" }}>
+          <View style={staticStyles.footerContainer}>
             <ActivityIndicator size='small' color={mergedTheme.color.primary} />
           </View>
         );
@@ -4457,13 +4697,8 @@ export const CometChatMessageList = memo(
           );
 
           if (indicatorItem) {
-            // Use markAsRead on the indicator message instead of markConversationAsRead
-            // to avoid marking thread replies as read when user only views the main chat.
-            if (!parentMessageId && indicatorItem.item) {
-              CometChat.markAsRead(indicatorItem.item).catch((e: any) => {
-                console.log("Error marking message as read", e);
-              });
-            } else if (user) {
+            // Mark entire conversation as read when user scrolls to the unread indicator
+            if (user) {
               CometChat.markConversationAsRead(user.getUid(), CometChat.RECEIVER_TYPE.USER).catch((e) => {
                 console.log("Error marking user conversation as read", e);
               });
@@ -4473,6 +4708,9 @@ export const CometChatMessageList = memo(
               });
             }
             setUnreadCount(0);
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageRead, {
+              message: indicatorItem.item,
+            });
           }
         }
       }, [navigatedFromSearch, newMessageIndicatorId, unreadCount, user, group, hasManuallyMarkedUnread, parentMessageId]);
@@ -4555,9 +4793,9 @@ export const CometChatMessageList = memo(
             messagesList.length == 0 ? (
               getEmptyStateView()
             ) : (
-              <View style={{ height: "100%", width: "100%" }}>
+              <View style={staticStyles.listContainer}>
                 {HeaderView && (
-                  <View style={[{ top: 0 }]}>
+                  <View style={staticStyles.headerContainer}>
                     <HeaderView
                       group={group}
                       user={user}
@@ -4570,7 +4808,7 @@ export const CometChatMessageList = memo(
                   </View>
                 )}
                 {loadingMessages && (
-                  <View style={{ position: "absolute", alignSelf: "center" }}>
+                  <View style={staticStyles.activityIndicatorContainer}>
                     <ActivityIndicator size='small' color={mergedTheme.color.primary} />
                   </View>
                 )}
@@ -4803,4 +5041,20 @@ const staticStyles = StyleSheet.create({
     textAlign: "center",
     textAlignVertical: "center",
   },
-})//30/dec/2025 6.48pm
+  receiptContainer: {
+    marginLeft: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  positionRelative: {
+    position: 'relative',
+  },
+  flexRow: {
+    flexDirection: "row",
+  },
+  skeletonPadding: {
+    padding: 16,
+  },
+})
+
+

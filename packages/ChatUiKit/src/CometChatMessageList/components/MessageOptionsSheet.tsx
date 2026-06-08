@@ -77,12 +77,15 @@ export const MessageOptionsSheet: React.FC<MessageOptionsSheetProps> = ({
         onDismiss?.();
       }}
       isOpen={isOpen}
+      doNotOccupyEntireHeight={!messageInfo && !ExtensionsComponent}
       style={{
         paddingHorizontal: 0,
         maxHeight: messageInfo
           ? Dimensions.get('window').height * 0.9
           : Dimensions.get('window').height * 0.52,
-        minHeight: Dimensions.get('window').height * 0.5,
+        ...(messageInfo || ExtensionsComponent
+          ? { minHeight: Dimensions.get('window').height * 0.5 }
+          : { minHeight: 50 }),
       }}
     >
       {ExtensionsComponent ? (

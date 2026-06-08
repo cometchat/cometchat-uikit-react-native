@@ -146,7 +146,7 @@ export class CommonUtils {
   static getComponentIdFromMessage(message: CometChat.BaseMessage): Object {
     let id: any = {};
     if (message.getReceiver() instanceof CometChat.User) {
-      id["uid"] = message.getSender().getUid();
+      id["uid"] = message.getSender()?.getUid();
     } else if (message.getReceiver() instanceof CometChat.Group) {
       id["guid"] = (message.getReceiver() as CometChat.Group).getGuid();
     }

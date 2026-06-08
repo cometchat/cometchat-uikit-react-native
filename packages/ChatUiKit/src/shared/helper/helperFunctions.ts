@@ -76,9 +76,11 @@ export function deepClone<T>(obj: T, seen = new WeakMap()): T {
 
 export function getLastSeenTime(timestamp: number | null | undefined): string {
   try {
+    // Hook must be called unconditionally (Rules of Hooks)
+    const { language, t } = useCometChatTranslation();
+
     if (timestamp === null || timestamp === undefined) {
-      // Move the hook call inside the function, just like in functions.js
-      return "";
+      return t("OFFLINE");
     }
 
     // Convert to milliseconds if in seconds
@@ -86,8 +88,7 @@ export function getLastSeenTime(timestamp: number | null | undefined): string {
       timestamp *= 1000;
     }
 
-    // Get user's current language from the translation hook (exactly like functions.js)
-    const { language, t } = useCometChatTranslation();
+    // Set the appropriate Day.js locale
 
     // Set the appropriate Day.js locale
     dayjs.locale(language);

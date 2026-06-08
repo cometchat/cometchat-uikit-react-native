@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ColorValue,
   ImageSourcePropType,
   Modal,
   Platform,
@@ -232,7 +231,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
     hideError,
     onBack,
     selectionMode = "none",
-    style = {},
+    style,
     TrailingView,
     LeadingView,
     onEmpty,
@@ -254,7 +253,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
 
   // Get theme information and merge with provided style overrides.
   const theme = useTheme();
-  const mergedStyle = deepMerge(theme.groupMemberStyle, style);
+  const mergedStyle = useMemo(() => deepMerge(theme.groupMemberStyle, style ?? {}), [theme, style]);
 
   // State management for UI elements
   const [hideSearchError, setHideSearchError] = useState(false);
@@ -268,7 +267,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const listRef = useRef<any>(null);
   const [isToolTipDismissed, setIsToolTipDismissed] = useState(false);
-  const loggedInUser = React.useRef(CometChatUIKit.loggedInUser!);
+  const loggedInUser = React.useRef(CometChatUIKit.loggedInUser);
 
   // Derived: whether selected scope equals current user scope
   const isScopeUnchanged = React.useMemo(() => {
@@ -302,7 +301,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
 
   // Set current user role based on whether the logged in user is the owner or not.
   useEffect(() => {
-    if (CometChatUIKit.loggedInUser!.getUid() === group.getOwner()) {
+    if (CometChatUIKit.loggedInUser?.getUid() === group.getOwner()) {
       setCurrentUserRole("owner");
     } else {
       setCurrentUserRole(group.getScope());
@@ -448,7 +447,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
       action.setActionBy(loggedInUser.current);
       action.setActionOn(user);
       action.setActionFor(group);
-      action.setMessage(`${loggedInUser.current.getName()} kicked ${user.getName()}`);
+      action.setMessage(`${loggedInUser.current?.getName()} kicked ${user.getName()}`);
       action.setSentAt(getUnixTimestamp());
       action.setMuid(String(getUnixTimestampInMilliseconds()));
       action.setSender(loggedInUser.current);
@@ -493,7 +492,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
       action.setActionBy(loggedInUser.current);
       action.setActionOn(user);
       action.setActionFor(group);
-      action.setMessage(`${loggedInUser.current.getName()} banned ${user.getName()}`);
+      action.setMessage(`${loggedInUser.current?.getName()} banned ${user.getName()}`);
       action.setSentAt(getUnixTimestamp());
       action.setMuid(String(getUnixTimestampInMilliseconds()));
       action.setSender(loggedInUser.current);
@@ -698,7 +697,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
           }
 
           // Only open if user is not self
-          if (member.uid === CometChatUIKit.loggedInUser!.getUid()) {
+          if (member.uid === CometChatUIKit.loggedInUser?.getUid()) {
             return;
           }
 
@@ -722,7 +721,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
           }
         }}
         onListFetched={(fetchedList: CometChat.GroupMember[]) => {
-          const selfUid = loggedInUser.current.getUid();
+          const selfUid = loggedInUser.current?.getUid();
           let finalList = fetchedList;
           if (excludeOwner) {
             finalList = fetchedList.filter((m) => m.getUid() !== selfUid);
@@ -926,7 +925,7 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
                       action.setActionOn(selectedItem);
                       action.setActionFor(group);
                       action.setMessage(
-                        `${loggedInUser.current.getName()} made ${selectedItem.getName()} ${scopeToSet} `
+                        `${loggedInUser.current?.getName()} made ${selectedItem.getName()} ${scopeToSet} `
                       );
                       action.setSentAt(getUnixTimestamp());
                       action.setMuid(String(getUnixTimestampInMilliseconds()));

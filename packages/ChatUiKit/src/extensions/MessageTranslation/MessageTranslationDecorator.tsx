@@ -294,7 +294,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
     let textFormatters = [...(additionalParams?.textFormatters || [])];
 
     // Determine if the message was sent by the logged-in user.
-    const isMessageSentByLoggedInUser = message.getSender().getUid() === loggedInUser!.getUid();
+    const isMessageSentByLoggedInUser = message.getSender()?.getUid() === loggedInUser?.getUid();
 
     // Select the appropriate style based on the sender.
     const _style: Partial<CometChatTheme["textBubbleStyles"]> = isMessageSentByLoggedInUser
@@ -304,9 +304,9 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
           .textBubbleStyles as CometChatTheme["textBubbleStyles"]);
 
     // Create URL formatter and set properties.
-    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser!);
+    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser);
     let mentionsTextFormatter = ChatConfigurator.getDataSource().getMentionsFormatter(
-      loggedInUser!,
+      loggedInUser,
       theme
     );
     linksTextFormatter.setMessage(message);
@@ -319,7 +319,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
 
     // Configure mentions formatter if mentioned users are present.
     if (!additionalParams?.disableMentions && mentionedUsers && mentionedUsers.length) {
-      mentionsTextFormatter.setLoggedInUser(loggedInUser!);
+      mentionsTextFormatter.setLoggedInUser(loggedInUser);
       mentionsTextFormatter.setMessage(message);
       mentionsTextFormatter.setId("ccDefaultMentionFormatterId");
     }
@@ -337,7 +337,7 @@ export class MessageTranslationExtensionDecorator extends DataSourceDecorator {
         mentionsFormatterExists = true;
         formatter.setMessage(message);
         formatter.setTargetElement(MentionsTargetElement.textbubble);
-        formatter.setLoggedInUser(CometChatUIKit.loggedInUser!);
+        formatter.setLoggedInUser(CometChatUIKit.loggedInUser);
         formatter.setContext(isMessageSentByLoggedInUser ? "outgoing" : "incoming");
       }
       formatter.setMessage(message);

@@ -6,6 +6,7 @@
 #import <React/RCTConvert.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <AVFoundation/AVFoundation.h>
+#import <UIKit/UIKit.h>
 
 static NSString *const E_DOCUMENT_PICKER_CANCELED = @"DOCUMENT_PICKER_CANCELED";
 static NSString *const E_INVALID_DATA_RETURNED = @"INVALID_DATA_RETURNED";
@@ -411,9 +412,14 @@ RCT_EXPORT_METHOD(startRecording:(RCTResponseSenderBlock)callback) {
         [self.recordingSession requestRecordPermission:^(BOOL granted) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (granted) {
-                    //                    [self setupRecorderWithResult]; //setupRecorderWithResult
-                    [self setupRecorderWithResult:callback];
-                    //                    callback(@[@"{\"success\": true}"]);
+                    // Disable idle timer to prevent device from sleeping during recording
+                    [UIApplication sharedApplication].idleTimerDisabled = YES;
+                    @try {
+                        [self setupRecorderWithResult:callback];
+                    } @catch (NSException *exception) {
+                        [UIApplication sharedApplication].idleTimerDisabled = NO;
+                        callback(@[[NSString stringWithFormat:@"{\"success\": false, \"error\": \"%@\"}", exception.reason]]);
+                    }
                 } else {
                     callback(@[@"{\"granted\": false}"]);
                     // Failed to record
@@ -459,6 +465,7 @@ RCT_EXPORT_METHOD(resumeRecording:(RCTPromiseResolveBlock)resolve
     self.audioRecorder = [[AVAudioRecorder alloc] initWithURL:self.audioFilename settings:settings error:&error];
     if (error) {
         [self stopRecordingWithSuccess:NO];
+        callback(@[[NSString stringWithFormat:@"{\"success\": false, \"error\": \"%@\"}", [error localizedDescription]]]);
     } else {
         self.audioRecorder.delegate = self;
         self.audioRecorder.meteringEnabled = YES;
@@ -508,6 +515,10 @@ RCT_EXPORT_METHOD(stopRecordingAudio:(RCTResponseSenderBlock)callback) {
 
 - (NSString *)stopRecordingWithSuccess:(BOOL)success {
     [self stopAmplitudeTimer];
+    // Re-enable idle timer since recording has stopped
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [UIApplication sharedApplication].idleTimerDisabled = NO;
+    });
     if (success) {
         [self.audioRecorder stop];
         self.audioRecorder = nil;

@@ -151,7 +151,7 @@ const getLeadingView = (
       <CometChatAvatar
         image={
           item?.getSender()?.getAvatar && item?.getSender()?.getAvatar()
-            ? { uri: item.getSender().getAvatar() }
+            ? { uri: item.getSender()?.getAvatar() }
             : undefined
         }
         name={
@@ -189,7 +189,7 @@ const getHeaderView = (
   return undefined;
 };
 const getBubbleStyle = (item: CometChat.BaseMessage, theme: CometChatTheme): BubbleStyles => {
-  const loggedInUser = CometChatUIKit.loggedInUser!;
+  const loggedInUser = CometChatUIKit.loggedInUser;
   const type = (() => {
     if (item.getDeletedAt()) {
       return MessageTypeConstants.messageDeleted;
@@ -197,7 +197,7 @@ const getBubbleStyle = (item: CometChat.BaseMessage, theme: CometChatTheme): Bub
     return item.getType();
   })();
 
-  if (item.getSender().getUid() != loggedInUser.getUid()) {
+  if (item.getSender()?.getUid() != loggedInUser?.getUid()) {
     return (
       getOverridenBubbleStyles(theme).get(type)?.incoming ??
       theme.messageListStyles.incomingMessageBubbleStyles
@@ -226,9 +226,9 @@ const getStatusInfoView = (
   receiptsVisibility: boolean = true,
   datePattern?: (message: CometChat.BaseMessage) => string
 ): JSX.Element | undefined => {
-  const loggedInUser = CometChatUIKit.loggedInUser!;
+  const loggedInUser = CometChatUIKit.loggedInUser;
 
-  let isOutgoingMessage = item.getSender()?.getUid() == loggedInUser.getUid();
+  let isOutgoingMessage = item.getSender()?.getUid() == loggedInUser?.getUid();
   let _style = getBubbleStyle(item, theme);
 
   let messageState;
@@ -286,12 +286,12 @@ export const MessageUtils = {
       receiptsVisibility,
       avatarVisibility,
     } = params;
-    const templatesMap = getTemplatesMap(templates!);
+    const templatesMap = getTemplatesMap(templates ?? []);
     const baseStyle = getBubbleStyle(message, theme);
     
     let hasTemplate = templatesMap.get(`${message.getCategory()}_${message.getType()}`);
-    if (templates!.length > 0) {
-      let customTemplate = templates!.find(
+    if ((templates?.length ?? 0) > 0) {
+      let customTemplate = templates?.find(
         (template) =>
           template.type == message.getType() && template.category == message.getCategory()
       );
@@ -322,8 +322,8 @@ export const MessageUtils = {
         id={`${message.getId()}`}
         alignment={alignment}
         ContentView={
-          hasTemplate!.ContentView!(message, alignment!) ||
-          MessageContentView({ message, alignment: alignment!, theme: theme! })
+          hasTemplate?.ContentView?.(message, alignment ?? "left") ||
+          MessageContentView({ message, alignment: alignment ?? "left", theme: theme! })
         }
         LeadingView={
           message.getReceiverType() === "group"
@@ -335,10 +335,10 @@ export const MessageUtils = {
         }
         BottomView={
           DefaultModerationBottomView ||
-          (hasTemplate?.BottomView && hasTemplate?.BottomView(message, alignment!))
+          (hasTemplate?.BottomView && hasTemplate?.BottomView(message, alignment ?? "left"))
         }
         StatusInfoView={
-          (hasTemplate?.StatusInfoView && hasTemplate!.StatusInfoView(message, alignment!)) ||
+          (hasTemplate?.StatusInfoView && hasTemplate?.StatusInfoView(message, alignment ?? "left")) ||
           getStatusInfoView(message, theme, receiptsVisibility, datePattern)
         }
         style={styleForThisMessage}
@@ -404,7 +404,9 @@ export const applyMentionsFormatting = (
   try {
     let mentionsFormatter = ChatConfigurator.getDataSource().getMentionsFormatter();
     mentionsFormatter.setContext("conversation");
-    mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser!);
+    if (CometChatUIKit.loggedInUser) {
+      mentionsFormatter.setLoggedInUser(CometChatUIKit.loggedInUser);
+    }
     mentionsFormatter.setTargetElement(MentionsTargetElement.conversation);
     mentionsFormatter.setMessage(message);
     if (mentionsStyle) {

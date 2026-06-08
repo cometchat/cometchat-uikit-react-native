@@ -193,7 +193,7 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
    */
   const handleResult = (id: string) => {
     let newOptionsMetaData = { ...optionsMetaData };
-    if (newOptionsMetaData.results?.options[id]?.["voters"]?.[loggedInUser!.getUid()]) return;
+    if (newOptionsMetaData.results?.options[id]?.["voters"]?.[loggedInUser?.getUid()]) return;
     // Set the loading option id here
     setLoadingOption(id);
     setIsLoading(true);

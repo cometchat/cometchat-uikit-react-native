@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { MessageTypeConstants } from "../constants/UIKitConstants";
 import { CometChatUIEventHandler } from "./CometChatUIEventHandler/CometChatUIEventHandler";
@@ -6,7 +7,7 @@ import * as CometChatUIKitConstants from '../constants/UIKitConstants';
 
 export class ListenerInitializer {
   private static messageListenerId = `ListenerInitializer_listener`;
-    static streamListenerId: string = "agent_" + new Date().getTime();
+    static streamListenerId: string = "agent_" + Date.now() + "_" + (++__listenerIdCounter);
 
   public static attachListeners(user?: CometChat.User) {
     CometChat.addMessageListener(this.messageListenerId, this.getMessageListenerObject());

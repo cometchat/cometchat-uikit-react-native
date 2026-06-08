@@ -77,7 +77,6 @@ function checkQueueEmptyStatus(runId: string) {
   if (
     queue && queue.length === 0 &&
     streamingComplete[runId] === true &&
-    renderingComplete[runId] === true &&
     queueCompletionCallbacks[runId]
   ) {
     const aiMsgEntry = lastAIAssistantMessages.find(item => item.runId === runId);

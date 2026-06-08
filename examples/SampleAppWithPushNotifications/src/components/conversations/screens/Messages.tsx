@@ -615,6 +615,7 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
             navigatedFromSearch={navigatedFromSearch}
             showMarkAsUnreadOption={true}
             startFromUnreadMessages={true}
+            loadLastAgentConversation={true}
           />
         </View>
 

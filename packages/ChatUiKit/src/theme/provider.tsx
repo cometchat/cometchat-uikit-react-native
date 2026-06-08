@@ -42,10 +42,9 @@ export const CometChatThemeProvider = ({
   theme = {} as any,
 }: PropsWithChildren<CometChatThemeProviderProps>) => {
   const rawScheme = useColorScheme();
-  // For iOS, debounce the scheme value (300ms delay in this example).
-  // For Android, use the raw value.
-  const scheme =
-    Platform.OS === "ios" ? useDebounce(rawScheme, 300) : rawScheme;
+  // Always call the hook unconditionally (Rules of Hooks), use result conditionally
+  const debouncedScheme = useDebounce(rawScheme, 300);
+  const scheme = Platform.OS === "ios" ? debouncedScheme : rawScheme;
 
   const parentProviderTheme = useThemeInternal();
   const {
@@ -113,15 +112,15 @@ export const CometChatThemeProvider = ({
     return parentProviderTheme.dark;
   }, [dark, parentProviderTheme.dark]);
 
-  const themeValue = {
+  const resolvedMode = mode === "auto"
+    ? (typeof scheme === "string" ? scheme : "light")
+    : mode;
+
+  const themeValue = useMemo(() => ({
     light: lightTheme,
     dark: darkTheme,
-    // Use the (conditionally) debounced scheme when determining the mode
-    mode:
-      mode === "auto"
-        ? (typeof scheme === "string" ? scheme : "light")
-        : mode,
-  };
+    mode: resolvedMode,
+  }), [lightTheme, darkTheme, resolvedMode]);
 
   return (
     <ThemeContext.Provider value={themeValue}>
@@ -138,8 +137,9 @@ export const CometChatCompThemeProvider = ({
   children,
   theme = {} as any,
 }: PropsWithChildren<CometChatCompThemeProviderProps>) => {
+  const stableTheme = useMemo(() => theme, [theme]);
   return (
-    <CompThemeContext.Provider value={theme}>
+    <CompThemeContext.Provider value={stableTheme}>
       {children}
     </CompThemeContext.Provider>
   );

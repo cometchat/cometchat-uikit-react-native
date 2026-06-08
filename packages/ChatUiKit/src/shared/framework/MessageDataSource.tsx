@@ -1030,7 +1030,7 @@ export class MessageDataSource implements DataSource {
 
     // Check if the original message is outgoing to determine styling
     const loggedInUser = CometChatUIKit.loggedInUser;
-    const isOutgoingMessage = loggedInUser && message.getSender().getUid() === loggedInUser.getUid();
+    const isOutgoingMessage = loggedInUser && message.getSender()?.getUid() === loggedInUser?.getUid();
     
     const isQuotedMessageDeleted = hasQuotedMessage.getDeletedBy() != null;
     
@@ -1099,7 +1099,7 @@ export class MessageDataSource implements DataSource {
     let loggedInUser = CometChatUIKit.loggedInUser;
 
     const _style =
-      loggedInUser && message.getSender().getUid() === loggedInUser.getUid()
+      loggedInUser && message.getSender()?.getUid() === loggedInUser?.getUid()
         ? theme.messageListStyles.outgoingMessageBubbleStyles
         : theme.messageListStyles.incomingMessageBubbleStyles;
     return <CometChatDeletedBubble style={_style?.deletedBubbleStyles} />;
@@ -1114,7 +1114,7 @@ export class MessageDataSource implements DataSource {
     let loggedInUser = CometChatUIKit.loggedInUser;
     if (isVideoMessage(message)) {
       const _style =
-        message.getSender().getUid() === loggedInUser!.getUid()
+        message.getSender()?.getUid() === loggedInUser?.getUid()
           ? theme.messageListStyles.outgoingMessageBubbleStyles?.videoBubbleStyles
           : theme.messageListStyles.incomingMessageBubbleStyles?.videoBubbleStyles;
       return (
@@ -1142,21 +1142,21 @@ export class MessageDataSource implements DataSource {
     let loggedInUser = CometChatUIKit.loggedInUser;
     let mentionedUsers = message.getMentionedUsers();
     let textFormatters = [...(additionalParams?.textFormatters || [])];
-    const isMessageSentByLoggedInUser = message.getSender().getUid() === loggedInUser!.getUid();
+    const isMessageSentByLoggedInUser = message.getSender()?.getUid() === loggedInUser?.getUid();
     const _style: Partial<CometChatTheme["textBubbleStyles"]> = isMessageSentByLoggedInUser
       ? (theme.messageListStyles.outgoingMessageBubbleStyles
           .textBubbleStyles as CometChatTheme["textBubbleStyles"])
       : (theme.messageListStyles.incomingMessageBubbleStyles
           .textBubbleStyles as CometChatTheme["textBubbleStyles"]);
 
-    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser!);
+    let linksTextFormatter = ChatConfigurator.getDataSource().getUrlsFormatter(loggedInUser ?? undefined);
     let mentionsTextFormatter = ChatConfigurator.getDataSource().getMentionsFormatter(
-      loggedInUser!,
+      loggedInUser ?? undefined,
       theme
     );
 
     // Create rich text formatter for markdown parsing
-    let richTextFormatter = new CometChatRichTextFormatter(loggedInUser!);
+    let richTextFormatter = new CometChatRichTextFormatter(loggedInUser ?? undefined);
     richTextFormatter.setMessage(message);
     richTextFormatter.setId("ccDefaultRichTextFormatterId");
     // Use same link color as CometChatUrlsFormatter for consistency
@@ -1243,7 +1243,9 @@ export class MessageDataSource implements DataSource {
     }
 
     if (!additionalParams?.disableMentions && mentionedUsers && mentionedUsers.length) {
-      mentionsTextFormatter.setLoggedInUser(loggedInUser!);
+      if (loggedInUser) {
+        mentionsTextFormatter.setLoggedInUser(loggedInUser);
+      }
       mentionsTextFormatter.setMessage(message);
       mentionsTextFormatter.setId("ccDefaultMentionFormatterId");
     }
@@ -1263,7 +1265,9 @@ export class MessageDataSource implements DataSource {
         mentionsFormatterExists = true;
         formatter.setMessage(message);
         formatter.setTargetElement(MentionsTargetElement.textbubble);
-        formatter.setLoggedInUser(CometChatUIKit.loggedInUser!);
+        if (CometChatUIKit.loggedInUser) {
+          formatter.setLoggedInUser(CometChatUIKit.loggedInUser);
+        }
         formatter.setContext(isMessageSentByLoggedInUser ? "outgoing" : "incoming");
       }
 
@@ -1307,7 +1311,7 @@ export class MessageDataSource implements DataSource {
     let loggedInUser = CometChatUIKit.loggedInUser;
     if (isImageMessage(message)) {
       const _style =
-        message.getSender().getUid() === loggedInUser!.getUid()
+        message.getSender()?.getUid() === loggedInUser?.getUid()
           ? theme.messageListStyles.outgoingMessageBubbleStyles?.imageBubbleStyles
           : theme.messageListStyles.incomingMessageBubbleStyles?.imageBubbleStyles;
 
@@ -1326,7 +1330,7 @@ export class MessageDataSource implements DataSource {
     let loggedInUser = CometChatUIKit.loggedInUser;
     if (isAudioMessage(message)) {
       const _style =
-        message.getSender().getUid() === loggedInUser!.getUid()
+        message.getSender()?.getUid() === loggedInUser?.getUid()
           ? theme.messageListStyles.outgoingMessageBubbleStyles?.audioBubbleStyles
           : theme.messageListStyles.incomingMessageBubbleStyles?.audioBubbleStyles;
       return (
@@ -1392,7 +1396,7 @@ export class MessageDataSource implements DataSource {
       }
 
       const _style =
-        message.getSender().getUid() === loggedInUser!.getUid()
+        message.getSender()?.getUid() === loggedInUser?.getUid()
           ? theme.messageListStyles.outgoingMessageBubbleStyles?.fileBubbleStyles
           : theme.messageListStyles.incomingMessageBubbleStyles?.fileBubbleStyles;
       return (
@@ -1645,7 +1649,7 @@ export class MessageDataSource implements DataSource {
       ContentView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
         const loggedInUser = CometChatUIKit.loggedInUser;
         const _style =
-          loggedInUser && message.getSender().getUid() === loggedInUser.getUid()
+          loggedInUser && message.getSender()?.getUid() === loggedInUser?.getUid()
             ? theme.messageListStyles.outgoingMessageBubbleStyles
             : theme.messageListStyles.incomingMessageBubbleStyles;
         return (
@@ -1672,7 +1676,7 @@ export class MessageDataSource implements DataSource {
       ContentView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
         const loggedInUser = CometChatUIKit.loggedInUser;
         const _style =
-          loggedInUser && message.getSender().getUid() === loggedInUser.getUid()
+          loggedInUser && message.getSender()?.getUid() === loggedInUser?.getUid()
             ? theme.messageListStyles.outgoingMessageBubbleStyles
             : theme.messageListStyles.incomingMessageBubbleStyles;
         return (
@@ -1699,7 +1703,7 @@ export class MessageDataSource implements DataSource {
       ContentView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
         const loggedInUser = CometChatUIKit.loggedInUser;
         const _style =
-          loggedInUser && message.getSender().getUid() === loggedInUser.getUid()
+          loggedInUser && message.getSender()?.getUid() === loggedInUser?.getUid()
             ? theme.messageListStyles.outgoingMessageBubbleStyles
             : theme.messageListStyles.incomingMessageBubbleStyles;
         return (

@@ -245,7 +245,7 @@ export class PollsExtensionDecorator extends DataSourceDecorator {
     if (message && _loggedInUser) {
       const metaData = getExtensionData(message, MetadataConstants.extensions?.polls);
       const _style =
-        message.getSender().getUid() === _loggedInUser.getUid()
+        message.getSender()?.getUid() === _loggedInUser.getUid()
           ? theme.messageListStyles.outgoingMessageBubbleStyles?.pollBubbleStyles
           : theme.messageListStyles.incomingMessageBubbleStyles?.pollBubbleStyles;
 

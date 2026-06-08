@@ -58,8 +58,12 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
       if (attachmentData.length) {
         const dataObj = attachmentData[0];
         if (!dataObj["error"]) {
-          const imageLink = dataObj?.["data"]?.["thumbnails"]?.["url_small"];
-          image = imageLink ? { uri: dataObj["data"]["thumbnails"]["url_small"] } : image;
+          const thumbnails = dataObj?.["data"]?.["thumbnails"] ?? {};
+          const imageLink =
+            thumbnails["url_large"] ??
+            thumbnails["url_medium"] ??
+            thumbnails["url_small"];
+          image = imageLink ? { uri: imageLink } : image;
         }
       }
     }
@@ -85,7 +89,7 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     const image = this.checkThumbnail(message);
     const loggedInUser = CometChatUIKit.loggedInUser;
     const _style =
-      message.getSender().getUid() === loggedInUser!.getUid()
+      message.getSender()?.getUid() === loggedInUser?.getUid()
         ? theme.messageListStyles.outgoingMessageBubbleStyles?.videoBubbleStyles
         : theme.messageListStyles.incomingMessageBubbleStyles?.videoBubbleStyles;
     return (
@@ -118,9 +122,9 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
     theme: CometChatTheme
   ): JSX.Element {
     const image = this.checkThumbnail(message);
-    const loggedInUser = CometChatUIKit.loggedInUser!;
+    const loggedInUser = CometChatUIKit.loggedInUser;
     const _style =
-      message.getSender().getUid() === loggedInUser.getUid()
+      message.getSender()?.getUid() === loggedInUser?.getUid()
         ? theme.messageListStyles.outgoingMessageBubbleStyles?.imageBubbleStyles
         : theme.messageListStyles.incomingMessageBubbleStyles?.imageBubbleStyles;
     return (

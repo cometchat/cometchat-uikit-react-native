@@ -74,7 +74,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
 
   Hooks(props, setActionList);
 
-  const _render = ({ item }: { item: any }) => {
+  const _render = useCallback(({ item }: { item: any }) => {
     return (
       <OptionListView
         id={item.id}
@@ -83,7 +83,7 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
         style={deepMerge(actionSheetStyles.optionsItemStyle, item?.style ?? {})}
       />
     );
-  };
+  }, [actionSheetStyles]);
 
   const getList = () => {
     return (

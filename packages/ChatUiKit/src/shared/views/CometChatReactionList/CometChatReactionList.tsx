@@ -269,7 +269,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
   );
 
   const removeReaction = (reactionObj: CometChat.Reaction) => {
-    let reactedByMe = loggedInUser.current!.getUid() === reactionObj?.getReactedBy()?.getUid();
+    let reactedByMe = loggedInUser.current?.getUid() === reactionObj?.getReactedBy()?.getUid();
     if (onPress) {
       onPress(reactionObj, newMessageObj.current);
       return;
@@ -332,7 +332,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
   };
 
   const subtitleView = useCallback((item: any) => {
-    let reactedByMe = loggedInUser.current!.getUid() === item?.reactedBy?.uid;
+    let reactedByMe = loggedInUser.current?.getUid() === item?.reactedBy?.uid;
     return reactedByMe ? (
       <Text style={reactionListStyleFromTheme.subtitleStyle}>{t("TAP_TO_REMOVE")}</Text>
     ) : null;
@@ -340,7 +340,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
 
   const _render = ({ item, index }: { item: any; index: number }) => {
     function getName() {
-      let reactedByMe = loggedInUser.current!.getUid() === item?.reactedBy?.uid;
+      let reactedByMe = loggedInUser.current?.getUid() === item?.reactedBy?.uid;
       return reactedByMe ? t("YOU") : item?.reactedBy?.name;
     }
 

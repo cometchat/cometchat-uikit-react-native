@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -27,7 +28,7 @@ import { JSX } from "react";
 
 const CometChatCalls = CallingPackage.CometChatCalls;
 
-const listenerId = "callEventListener_" + new Date().getTime();
+const listenerId = "callEventListener_" + Date.now() + "_" + (++__listenerIdCounter);
 
 /**
  * Props for the CometChatCallButtons component.
@@ -153,7 +154,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface): JSX.
         );
         customMessage.setCategory(CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory);
         customMessage.setMuid(String(getUnixTimestampInMilliseconds()));
-        customMessage.setSender(loggedInUser.current!);
+        customMessage.setSender(loggedInUser.current);
         customMessage.setReceiver(group);
         customMessage.setMetadata({
           ...customMessage.getMetadata(),

@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Text, TouchableOpacity, View, StyleSheet } from "react-native";
@@ -20,7 +21,7 @@ import { JSX } from "react";
 import { useCometChatTranslation } from "../../shared/resources/CometChatLocalizeNew";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const listnerID = "CALL_LISTENER_" + new Date().getTime();
+const listnerID = "CALL_LISTENER_" + Date.now() + "_" + (++__listenerIdCounter);
 const CometChatCalls = CallingPackage.CometChatCalls;
 
 /**

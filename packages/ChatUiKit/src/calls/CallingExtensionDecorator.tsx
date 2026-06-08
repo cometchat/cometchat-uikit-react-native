@@ -220,7 +220,7 @@ export class CallingExtensionDecorator extends DataSourceDecorator {
     if (this.isDeletedMessage(message))
       return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
 
-    const isSentByMe = message.getSender().getUid() === loggedInUser!.getUid();
+    const isSentByMe = message.getSender()?.getUid() === loggedInUser?.getUid();
 
     const _style = isSentByMe
       ? theme.messageListStyles.outgoingMessageBubbleStyles?.meetCallBubbleStyles

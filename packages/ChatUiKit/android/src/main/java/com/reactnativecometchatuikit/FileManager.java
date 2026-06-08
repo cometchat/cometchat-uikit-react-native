@@ -561,6 +561,12 @@ public class FileManager extends ReactContextBaseJavaModule {
         audioRecorder.setAudioSamplingRate(44100);
         audioRecorder.setOutputFile(fileName);
 
+        // Keep screen on during recording to prevent device sleep
+        // Set BEFORE starting recorder to avoid race with auto-lock
+        activity.runOnUiThread(() -> {
+            activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        });
+
         audioRecorder.prepare();
         audioRecorder.start();
         
@@ -573,6 +579,10 @@ public class FileManager extends ReactContextBaseJavaModule {
         try { if (audioRecorder != null) audioRecorder.release(); } catch (Exception ignore) {}
         audioRecorder = null;
         stopAmplitudePolling();
+        // Clear the keep-screen-on flag since recording failed
+        activity.runOnUiThread(() -> {
+            activity.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        });
         callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
     }
     }
@@ -849,6 +859,14 @@ public class FileManager extends ReactContextBaseJavaModule {
         audioRecorder = null;
     }
 
+    // Re-enable screen sleep since recording has stopped
+    Activity activity = getCurrentActivity();
+    if (activity != null) {
+        activity.runOnUiThread(() -> {
+            activity.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        });
+    }
+
     // Stop any playback
     if (audioPlayer != null) {
         try {
@@ -860,7 +878,6 @@ public class FileManager extends ReactContextBaseJavaModule {
 
     // Build result JSON your JS expects: it parses .file (Android) and .duration (iOS use-case)
     try {
-        Activity activity = getCurrentActivity();
         JSONObject res = new JSONObject();
 
         if (fileName != null) {

@@ -1,3 +1,4 @@
+let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { FlatList, ScrollView, Text, View } from "react-native";
@@ -21,7 +22,7 @@ import { deepMerge } from "../shared/helper/helperFunctions";
 import { DeepPartial } from "../shared/helper/types";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
 
-const listenerId = "uiEvents_" + new Date().getTime();
+const listenerId = "uiEvents_" + Date.now() + "_" + (++__listenerIdCounter);
 
 type Recipient = {
   sender: CometChat.User | CometChat.Group;
@@ -261,8 +262,8 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
 
         const receiptIndex = receipts.findIndex((rec) => {
           return (
-            (rec as CometChat.MessageReceipt).getSender().getUid() ===
-            newReceipt.getSender().getUid()
+            (rec as CometChat.MessageReceipt).getSender()?.getUid() ===
+            newReceipt.getSender()?.getUid()
           );
         });
 
