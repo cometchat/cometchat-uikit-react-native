@@ -76,6 +76,64 @@ export class CometChatUIKit {
     );
   }
 
+  /**
+   * File-based init for AI agent skills.
+   * Calls CometChat.initFromSettings(settings) which writes
+   * integrationSource = "ai-agent" to persistent storage.
+   */
+  static initFromSettings(settings: CometChat.CometChatSettings) {
+    // Extract authKey from credentials (UIKit uses this for login — SDK ignores it)
+    const authKey = settings.credentials?.authKey;
+
+    // Extract UIKit-specific settings
+    const subscribePresence =
+      (settings.uiKit as { subscribePresenceForAllUsers?: boolean })
+        ?.subscribePresenceForAllUsers ?? true;
+
+    // Store internally so login/createUser/updateUser keep working
+    CometChatUIKit.uiKitSettings = {
+      appId: settings.appId,
+      region: settings.region,
+      authKey,
+      subscriptionType: subscribePresence
+        ? CometChat.AppSettings.SUBSCRIPTION_TYPE_ALL_USERS as UIKitSettings["subscriptionType"]
+        : undefined,
+    };
+
+    CometChatUIKit.attachListener();
+
+    // CRITICAL: Call initFromSettings — NOT init(). Only initFromSettings writes "ai-agent".
+    return CometChat.initFromSettings(settings).then(
+      async () => {
+        CometChat.setSource("uikit-v5", Platform.OS, "react-native");
+        ListenerInitializer.attachListeners();
+        await CometChat.getLoggedinUser()
+          .then((user: any) => {
+            CometChatUIKit.setLoggedInUser(user);
+            if (user) {
+              this.enableExtensions();
+            }
+            CometChat.getConversationUpdateSettings().then(
+              (conversationUpdateSettings: CometChat.ConversationUpdateSettings) => {
+                CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
+              }
+            );
+            permissionUtil.init().then((res) => {
+              if (res !== true) {
+                console.warn("[IOS] Permission initialization failed.");
+              }
+            });
+          })
+          .catch((error: any) => {
+            // CometChatUIKit.setLoggedInUser(null);
+          });
+      },
+      (error: any) => {
+        // console.log("Initialization failed with error:", error);
+      }
+    );
+  }
+
   static defaultExtensions: ExtensionsDataSource[] = [
     new StickersExtension(),
     new CollaborativeWhiteboardExtension(),
