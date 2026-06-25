@@ -97,6 +97,9 @@ export class ListenerInitializer {
       },
       onMessagesReadByAll: (messageReceipt: CometChat.MessageReceipt) => {
         CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessagesReadByAll, messageReceipt);
+      },
+      onCardMessageReceived: (cardMessage: any) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onCardMessageReceived, cardMessage);
       }
     });
   }

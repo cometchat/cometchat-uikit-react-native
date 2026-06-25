@@ -12,6 +12,7 @@ import { useTheme } from "../theme";
 import { Icon } from "../shared/icons/Icon";
 import { deepMerge } from "../shared/helper/helperFunctions";
 import { DeepPartial } from "../shared/helper/types";
+import { stripRichText } from "../shared/utils/stripRichText";
 import { ChatHistoryStyle, getChatHistoryStyleLight } from "./style";
 import { Skeleton } from "./Skeleton";
 import { CometChatTooltipMenu } from "../shared/views/CometChatTooltipMenu";
@@ -225,7 +226,9 @@ const CometChatAIAssistantChatHistory: React.FC<CometChatAIAssistantChatHistoryP
   const getMessageText = useCallback((message: CometChat.BaseMessage): string => {
     try {
       if (message instanceof CometChat.TextMessage) {
-        return message.getText();
+        // Plain text only in the history list — strip rich-text markup (e.g. <u>…</u>,
+        // **bold**) so titles read cleanly instead of showing raw tags/markers.
+        return stripRichText(message.getText());
       } else if (message instanceof CometChat.MediaMessage) {
         return `${message.getType()} message`;
       } else if (message instanceof CometChat.CustomMessage) {
@@ -233,9 +236,9 @@ const CometChatAIAssistantChatHistory: React.FC<CometChatAIAssistantChatHistoryP
         if (message.getType() === 'assistant' && message.getData()) {
           const data = message.getData();
           if (data.assistantMessageData?.getText) {
-            return data.assistantMessageData.getText();
+            return stripRichText(data.assistantMessageData.getText());
           } else if (data.text) {
-            return data.text;
+            return stripRichText(data.text);
           }
         }
         return 'Custom message';

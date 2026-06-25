@@ -708,8 +708,10 @@ export const CometChatMessageList = memo(
             .setGUID(group.getGuid());
         }
 
+
         _defaultRequestBuilder.setTypes(ChatConfigurator.dataSource.getAllMessageTypes());
         _defaultRequestBuilder.setCategories(ChatConfigurator.dataSource.getAllMessageCategories());
+
 
         //updating users request builder
         let _updatedCustomRequestBuilder = _defaultRequestBuilder;
@@ -2914,7 +2916,18 @@ export const CometChatMessageList = memo(
             newMessage(formMessage);
           },
           onCardMessageReceived: (cardMessage: any) => {
-            newMessage(cardMessage);
+            if (isAgenticUser) {
+              if (
+                cardMessage.getSender?.()?.getRole?.() === "@agentic" ||
+                cardMessage.getCategory?.() === MessageCategoryConstants.agentic ||
+                cardMessage.getCategory?.() ===
+                CometChatUiKitConstants.MessageCategoryConstants.stream
+              ) {
+                newMessage(cardMessage);
+              }
+            } else {
+              newMessage(cardMessage);
+            }
           },
           onSchedulerMessageReceived: (schedulerMessage: any) => {
             newMessage(schedulerMessage);
@@ -3830,6 +3843,9 @@ export const CometChatMessageList = memo(
             // (from mergeObjects during history fetch dedup) overwrote `category` and `type`
             let lookupCategory: string = message.getCategory();
             let lookupType: string = message.getType();
+            if (lookupCategory === MessageCategoryConstants.card) {
+              lookupType = MessageTypeConstants.card;
+            }
 
             const hasInteractiveData =
               typeof (message as any).getInteractiveData === 'function' &&

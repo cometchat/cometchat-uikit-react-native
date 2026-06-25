@@ -1,9 +1,11 @@
-import React, { useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, StyleSheet } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { CometChatCardView } from '@cometchat/cards-react-native';
 import { useTheme } from '../../../theme';
 import { CometChatTheme } from '../../../theme/type';
+import { CometChatUIEventHandler, CometChatUIEvents } from '../../events';
 
 export interface CometChatAIAssistantMessageBubbleProps {
   message: any;
@@ -34,53 +36,39 @@ const CometChatAIAssistantMessageBubble: React.FC<CometChatAIAssistantMessageBub
   const theme = useTheme();
   const text = getMessageText(message);
 
+  // Check if message has elements (agent card blocks)
+  const elements: any[] | undefined = useMemo(() => {
+    try {
+      if (typeof message?.getElements === 'function') {
+        const els = message.getElements();
+        if (Array.isArray(els) && els.length > 0) return els;
+      }
+    } catch {}
+    return undefined;
+  }, [message]);
+
+  const resolvedThemeMode: "light" | "dark" =
+    theme?.mode === "dark" ? "dark" : "light";
+
   // Use the bubbleStyle passed from parent, with theme fallbacks
-  const styles = StyleSheet.create({
+  const styles = useMemo(() => StyleSheet.create({
     container: {
       backgroundColor: bubbleStyle?.containerStyle?.backgroundColor || 'transparent',
       borderRadius: bubbleStyle?.containerStyle?.borderRadius || theme.spacing.radius.r3,
       minWidth: bubbleStyle?.containerStyle?.minWidth || 90,
       alignSelf: bubbleStyle?.containerStyle?.alignSelf || 'flex-start',
       maxWidth: '100%',
+      overflow: 'hidden',
       ...bubbleStyle?.containerStyle,
     },
-    textContainer: {
-      ...bubbleStyle?.textContainerStyle,
+    cardBlock: {
+      alignSelf: 'stretch',
+      overflow: 'visible',
+      borderRadius: theme.spacing.radius.r3,
+      marginVertical: 8,
+      marginHorizontal: -4,
     },
-    text: {
-      color: bubbleStyle?.textStyle?.color || theme.color.receiveBubbleText,
-      fontFamily: bubbleStyle?.textStyle?.fontFamily || theme.typography.body.regular.fontFamily,
-      fontSize: bubbleStyle?.textStyle?.fontSize || theme.typography.body.regular.fontSize,
-      ...bubbleStyle?.textStyle,
-    },
-    placeholderText: {
-      color: bubbleStyle?.placeholderTextStyle?.color || theme.color.receiveBubbleText,
-      fontFamily: bubbleStyle?.placeholderTextStyle?.fontFamily || theme.typography.body.regular.fontFamily,
-      fontSize: bubbleStyle?.placeholderTextStyle?.fontSize || theme.typography.body.regular.fontSize,
-      opacity: bubbleStyle?.placeholderTextStyle?.opacity || 0.6,
-      fontStyle: 'italic',
-      ...bubbleStyle?.placeholderTextStyle,
-    },
-    copyButton: {
-      backgroundColor: bubbleStyle?.copyButtonStyle?.backgroundColor || theme.color.primary,
-      padding: bubbleStyle?.copyButtonStyle?.padding || theme.spacing.padding.p1,
-      borderRadius: bubbleStyle?.copyButtonStyle?.borderRadius || theme.spacing.radius.r1,
-      ...bubbleStyle?.copyButtonStyle,
-    },
-    errorContainer: {
-      backgroundColor: bubbleStyle?.errorContainerStyle?.backgroundColor || theme.color.error,
-      padding: bubbleStyle?.errorContainerStyle?.padding || theme.spacing.padding.p2,
-      borderRadius: bubbleStyle?.errorContainerStyle?.borderRadius || theme.spacing.radius.r2,
-      marginTop: bubbleStyle?.errorContainerStyle?.marginTop || theme.spacing.margin.m1,
-      ...bubbleStyle?.errorContainerStyle,
-    },
-    errorText: {
-      color: bubbleStyle?.errorTextStyle?.color || theme.color.background1,
-      fontFamily: bubbleStyle?.errorTextStyle?.fontFamily || theme.typography.caption1.regular.fontFamily,
-      fontSize: bubbleStyle?.errorTextStyle?.fontSize || theme.typography.caption1.regular.fontSize,
-      ...bubbleStyle?.errorTextStyle,
-    },
-  });
+  }), [bubbleStyle, theme]);
 
   // Create markdown styles based on theme
   const markdownStyles = useMemo(() => ({
@@ -97,7 +85,7 @@ const CometChatAIAssistantMessageBubble: React.FC<CometChatAIAssistantMessageBub
       fontFamily: bubbleStyle?.textStyle?.fontFamily || theme.typography.body.regular.fontFamily,
       fontSize: bubbleStyle?.textStyle?.fontSize || theme.typography.body.regular.fontSize,
       ...(bubbleStyle?.textStyle && Object.fromEntries(
-        Object.entries(bubbleStyle.textStyle).filter(([key]) => key !== 'color')
+        Object.entries(bubbleStyle.textStyle).filter(([key]: [string, any]) => key !== 'color')
       )),
     },
     paragraph: {
@@ -246,17 +234,88 @@ const CometChatAIAssistantMessageBubble: React.FC<CometChatAIAssistantMessageBub
     },
   }), [bubbleStyle?.textStyle, theme]);
 
-  const MemoMarkdown = useMemo(() => {
+  // Handle card action from a nested agent-card block (event-only, no prop).
+  const handleCardAction = (actionEvent: any) => {
+    // Renderer emits { action, elementId, cardJson }. Forward the raw action.
+    const action = actionEvent?.action ?? actionEvent;
+    if (!action) return;
+    CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.ccCardActionClicked, {
+      message,
+      action,
+    });
+  };
+
+  // Render elements walk (§2.7(b)): when getElements() is non-empty, walk
+  // blocks in array order, switch on element.getType().
+  const renderElements = useMemo(() => {
+    if (!elements) return null;
+    return elements.map((element: any, index: number) => {
+      const type = typeof element.getType === 'function' ? element.getType() : element.type;
+      const data = typeof element.getData === 'function' ? element.getData() : element.value;
+
+      if (type === 'card') {
+        // data is { card: {...}, cardId: "..." }
+        const cardPayload = data?.card;
+        if (!cardPayload) {
+          // Empty/invalid block payload (§2.8): skip the renderer and fall back to
+          // the block's fallbackText, else the block's text. Other blocks render normally.
+          const blockFallback = data?.fallbackText ?? data?.text ?? '';
+          if (!blockFallback || !String(blockFallback).trim()) return null;
+          return (
+            <View key={`card-fb-${index}`} style={{ marginTop: index > 0 ? 8 : 0 }}>
+              <Markdown style={markdownStyles} mergeStyle={true}>
+                {String(blockFallback).trim()}
+              </Markdown>
+            </View>
+          );
+        }
+        const cardJson = JSON.stringify(cardPayload);
+        return (
+          <View key={`card-${index}`} style={styles.cardBlock}>
+            <CometChatCardView
+              cardJson={cardJson}
+              themeMode={resolvedThemeMode}
+              onAction={handleCardAction}
+            />
+          </View>
+        );
+      }
+
+      if (type === 'text') {
+        // data is the text string
+        const textContent = typeof data === 'string' ? data : (data?.text ?? '');
+        if (!textContent.trim()) return null;
+        return (
+          <View key={`text-${index}`} style={{ marginTop: index > 0 ? 8 : 0 }}>
+            <Markdown style={markdownStyles} mergeStyle={true}>
+              {textContent.trim()}
+            </Markdown>
+          </View>
+        );
+      }
+
+      // Other element types — skip for now (renderer owns unknown handling)
+      return null;
+    });
+  }, [elements, styles, markdownStyles, resolvedThemeMode, message]);
+
+  // If elements are present, render them in order. Otherwise fall back to getText().
+  if (elements) {
     return (
       <View style={styles.container}>
-        <Markdown style={markdownStyles} mergeStyle={true}>
-          {text.trim()}
-        </Markdown>
+        {renderElements}
       </View>
-    )
-  }, [text, markdownStyles, styles]);
+    );
+  }
 
-  return MemoMarkdown;
+  // Fallback: existing getText() rendering (older messages without elements)
+  return (
+    <View style={styles.container}>
+      <Markdown style={markdownStyles} mergeStyle={true}>
+        {text.trim()}
+      </Markdown>
+    </View>
+  );
 };
 
 export default CometChatAIAssistantMessageBubble;

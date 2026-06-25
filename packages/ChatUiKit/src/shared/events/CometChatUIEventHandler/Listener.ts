@@ -234,6 +234,7 @@ type UIEvents = {
   ccComposeMessage?: (item: any) => void;
   // ccMentionClick?:(item)=>void,
   ccSuggestionData?: (item: { id: string | number; data: Array<SuggestionItem> }) => void;
+  ccCardActionClicked?: (item: { message: any; action: any }) => void;
 };
 export class UIEventListener {
   showPanel?: (item: any) => void;
@@ -243,6 +244,7 @@ export class UIEventListener {
   ccComposeMessage?: (item: any) => void;
   // ccMentionClick?:(item)=>void;
   ccSuggestionData?: (item: { id: string | number; data: Array<SuggestionItem> }) => void;
+  ccCardActionClicked?: (item: { message: any; action: any }) => void;
   constructor({
     showPanel,
     hidePanel,
@@ -251,6 +253,7 @@ export class UIEventListener {
     ccComposeMessage,
     // ccMentionClick,
     ccSuggestionData,
+    ccCardActionClicked,
   }: UIEvents) {
     if (!isFalsy(hidePanel)) this.hidePanel = hidePanel;
     if (!isFalsy(showPanel)) this.showPanel = showPanel;
@@ -259,6 +262,7 @@ export class UIEventListener {
     if (!isFalsy(ccComposeMessage)) this.ccComposeMessage = ccComposeMessage;
     // if (!isFalsy(ccMentionClick)) this.ccMentionClick = ccMentionClick;
     if (!isFalsy(ccSuggestionData)) this.ccSuggestionData = ccSuggestionData;
+    if (!isFalsy(ccCardActionClicked)) this.ccCardActionClicked = ccCardActionClicked;
   }
 }
 export class GroupUIEventListener {

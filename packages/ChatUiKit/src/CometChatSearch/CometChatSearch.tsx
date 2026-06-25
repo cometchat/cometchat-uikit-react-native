@@ -1833,6 +1833,14 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                           return formatted || messageType || 'Message';
                         }
 
+                        // For developer card messages, show the card's text content
+                        // (detected by category — the card `type` is arbitrary).
+                        if (message.getCategory() === MessageCategoryConstants.card) {
+                          const cardText =
+                            (typeof (message as any).getText === 'function' && (message as any).getText()) || '';
+                          return cardText || t('CARD_MESSAGE') || 'Card Message';
+                        }
+
                         // For custom messages, try to localize the type
                         const customTypeKey = `CUSTOM_MESSAGE_${messageType.toUpperCase()}`;
                         const localizedType = t(customTypeKey);
@@ -2103,6 +2111,14 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                         const raw = (message as CometChat.TextMessage).getText?.();
                         const formatted = formatMentionsInText(raw, message);
                         return formatted || msgType || 'Message';
+                      }
+
+                      // For developer card messages, show the card's text content
+                      // (detected by category — the card `type` is arbitrary).
+                      if (message.getCategory() === MessageCategoryConstants.card) {
+                        const cardText =
+                          (typeof (message as any).getText === 'function' && (message as any).getText()) || '';
+                        return cardText || t('CARD_MESSAGE') || 'Card Message';
                       }
 
                       // For custom messages, try to localize the type

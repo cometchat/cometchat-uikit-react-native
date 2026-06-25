@@ -221,6 +221,13 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
         }
       } else if (messageCategory === CometChat.CATEGORY_ACTION) {
         return t("ACTION_MESSAGE") || "Action";
+      } else if (messageCategory === CometChat.CATEGORY_CARD) {
+        // Developer card preview: getText() if present, else localized "Card Message".
+        const cardMessage = message as any;
+        const cardText =
+          (typeof cardMessage.getText === "function" && cardMessage.getText()) ||
+          "";
+        return cardText || t("CARD_MESSAGE") || "Card Message";
       }
       
       return t("MESSAGE") || "Message";

@@ -38,6 +38,7 @@ import { CometChatTextBubble } from "../views/CometChatTextBubble";
 import { CometChatVideoBubble } from "../views/CometChatVideoBubble";
 import CometChatAIAssistantMessageBubble from '../views/CometChatAIAssistantMessageBubble/CometChatAIAssistantMessageBubble';
 import CometChatStreamMessageBubble from '../views/CometChatStreamMessageBubble/CometChatStreamMessageBubble';
+import { CometChatCardBubble } from "../views/CometChatCardBubble";
 import { ChatConfigurator } from "./ChatConfigurator";
 import { DataSource } from "./DataSource";
 import { CommonUtils } from "../utils/CommonUtils";
@@ -1733,6 +1734,53 @@ export class MessageDataSource implements DataSource {
     });
   }
 
+  // --- Developer card (category: "card") ----------------------------------
+  getCardBubbleContentView(
+    message: CometChat.BaseMessage,
+    alignment: MessageBubbleAlignmentType,
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
+  ): JSX.Element {
+    return <CometChatCardBubble message={message} theme={theme} />;
+  }
+
+  getCardBubbleTemplate(
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
+  ): CometChatMessageTemplate {
+    return new CometChatMessageTemplate({
+      // Sentinel type; developer card `type` is arbitrary and resolved on category alone.
+      type: MessageTypeConstants.card,
+      category: MessageCategoryConstants.card,
+      ContentView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+        if (isDeletedMessage(message)) {
+          return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
+        }
+        return ChatConfigurator.dataSource.getCardBubbleContentView(
+          message,
+          alignment,
+          theme,
+          additionalParams
+        );
+      },
+      // Same option set as the text bubble, minus edit and copy.
+      options: (loggedInuser, message, theme, group) =>
+        ChatConfigurator.dataSource
+          .getTextMessageOptions(loggedInuser, message, theme, group, additionalParams)
+          .filter(
+            (o: CometChatMessageOption) =>
+              o.id !== MessageOptionConstants.editMessage &&
+              o.id !== MessageOptionConstants.copyMessage
+          ),
+      ReplyView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+        return ChatConfigurator.dataSource.getReplyView?.(message, theme, additionalParams) || null;
+      },
+      BottomView: (message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) => {
+        return ChatConfigurator.dataSource.getBottomView(message, alignment);
+      },
+    });
+  }
+
   getAllMessageTemplates(
     theme: CometChatTheme,
     additionalParams?: AdditionalParams
@@ -1748,6 +1796,7 @@ export class MessageDataSource implements DataSource {
       ChatConfigurator.dataSource.getFormMessageTemplate(theme, additionalParams),
       ChatConfigurator.dataSource.getSchedulerMessageTemplate(theme, additionalParams),
       ChatConfigurator.dataSource.getCardMessageTemplate(theme, additionalParams),
+      ChatConfigurator.dataSource.getCardBubbleTemplate(theme, additionalParams),
       ChatConfigurator.dataSource.getAgentAssistantMessageTemplate(theme, additionalParams),
     ];
   }
@@ -1763,6 +1812,11 @@ export class MessageDataSource implements DataSource {
 
     //in case of call message return undefined
     if (MessageCategory == MessageCategoryConstants.call) return null;
+
+    // Developer card: resolve on category alone (developer `type` is arbitrary).
+    if (MessageCategory == MessageCategoryConstants.card) {
+      return ChatConfigurator.dataSource.getCardBubbleTemplate(theme, additionalParams);
+    }
 
     switch (messageType) {
       case MessageTypeConstants.text:
@@ -1819,7 +1873,8 @@ export class MessageDataSource implements DataSource {
       MessageCategoryConstants.message,
       MessageCategoryConstants.action,
       MessageCategoryConstants.interactive,
-      MessageCategoryConstants.agentic
+      MessageCategoryConstants.agentic,
+      MessageCategoryConstants.card
     ];
   }
   getAuxiliaryOptions(

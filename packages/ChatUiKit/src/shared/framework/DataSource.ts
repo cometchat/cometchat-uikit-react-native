@@ -192,6 +192,16 @@ export interface DataSource {
     theme: CometChatTheme,
     additionalParams?: AdditionalParams
   ): CometChatMessageTemplate;
+  getCardBubbleTemplate(
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
+  ): CometChatMessageTemplate;
+  getCardBubbleContentView(
+    message: CometChat.BaseMessage,
+    alignment: MessageBubbleAlignmentType,
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
+  ): JSX.Element;
 
   //attachment options
   // getAttachmentOptions(theme: CometChatTheme, conversation: CometChat.User | CometChat.Group): Array<CometChatMessageComposerAction>

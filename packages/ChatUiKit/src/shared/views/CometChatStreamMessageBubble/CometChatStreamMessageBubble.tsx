@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from '
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import { CometChatCardView } from '@cometchat/cards-react-native';
 import { useTheme } from '../../../theme';
 import { messageStream, streamingState$, IStreamData, getAIAssistantTools, stopStreamingForRunId, handleWebsocketMessage, startStreamingForRunId, streamConnection$, notifyStreamRenderComplete } from '../../services/stream-message.service';
 import { CometChatUiKitConstants } from '../../index';
+import { CometChatUIEventHandler, CometChatUIEvents } from '../../events';
 
 export interface CometChatStreamMessageBubbleProps {
   message: any;
@@ -26,6 +28,7 @@ const CometChatStreamMessageBubble: React.FC<CometChatStreamMessageBubbleProps> 
   const [contentStreamStarted, setContentStreamStarted] = useState(false);
   const [runStarted, setRunStarted] = useState(false);
   const [showingExecutionText, setShowingExecutionText] = useState(false);
+  const [streamCards, setStreamCards] = useState<{ cardId: string; cardJson: string }[]>([]);
   const shimmerAnimation = useRef(new Animated.Value(-1)).current;
   const theme = useTheme();
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('connected');
@@ -42,6 +45,13 @@ const CometChatStreamMessageBubble: React.FC<CometChatStreamMessageBubbleProps> 
     CometChatUiKitConstants.streamMessageTypes.tool_call_end,
     CometChatUiKitConstants.streamMessageTypes.tool_call_result,
     CometChatUiKitConstants.streamMessageTypes.tool_call_start
+  ];
+
+  // Card stream events mapping
+  const cardEventsMap = [
+    CometChatUiKitConstants.streamMessageTypes.card_start,
+    CometChatUiKitConstants.streamMessageTypes.card,
+    CometChatUiKitConstants.streamMessageTypes.card_end,
   ];
   useEffect(() => {
   if (finished && fullMessage && contentStreamStarted) {
@@ -121,6 +131,40 @@ const CometChatStreamMessageBubble: React.FC<CometChatStreamMessageBubbleProps> 
             if (toolCallName && assistantTools) {
               const handler = assistantTools.getAction(toolCallName);
               handler?.(toolCallDataRef.current);
+            }
+            setShowingExecutionText(false);
+            setExecutionText('');
+          }
+        }
+
+        // Handle card stream events (§2.6.2)
+        if (cardEventsMap.includes(eventType)) {
+          if (eventType === CometChatUiKitConstants.streamMessageTypes.card_start) {
+            // Show skeleton loader with executionText label
+            const execText = streamData.message.getData()?.executionText;
+            if (execText) {
+              setExecutionText(execText);
+            } else {
+              setExecutionText('Building card...');
+            }
+            setShowingExecutionText(true);
+            setContentStreamStarted(false);
+          }
+          if (eventType === CometChatUiKitConstants.streamMessageTypes.card_end) {
+            // No-op: the persisted message swap handles the rest
+            setShowingExecutionText(false);
+            setExecutionText('');
+          }
+          if (eventType === CometChatUiKitConstants.streamMessageTypes.card) {
+            const ev: any = streamData.message;
+            const cardObj = ev.getCard?.() ?? ev.getData?.()?.card;
+            const cardId: string = ev.getData?.()?.cardId ?? `${streamData.message.getMessageId?.()}`;
+            if (cardObj) {
+              const cardJson = typeof cardObj === 'string' ? cardObj : JSON.stringify(cardObj);
+              setStreamCards((prev) => [
+                ...prev.filter((c) => c.cardId !== cardId),
+                { cardId, cardJson },
+              ]);
             }
             setShowingExecutionText(false);
             setExecutionText('');
@@ -491,6 +535,25 @@ const CometChatStreamMessageBubble: React.FC<CometChatStreamMessageBubbleProps> 
       )}
 
       {fullMessage && contentStreamStarted && MemoMarkdown}
+
+      {streamCards.length > 0 && streamCards.map((card) => (
+        <View key={card.cardId} style={{ alignSelf: 'stretch', marginTop: 8, overflow: 'hidden', borderRadius: theme.spacing.radius.r3 }}>
+          <CometChatCardView
+            cardJson={card.cardJson}
+            themeMode={theme?.mode === 'dark' ? 'dark' : 'light'}
+            onAction={(actionEvent: any) => {
+              // Renderer emits { action, elementId, cardJson }. Forward the raw action.
+              const action = actionEvent?.action ?? actionEvent;
+              if (action) {
+                CometChatUIEventHandler.emitUIEvent(CometChatUIEvents.ccCardActionClicked, {
+                  message: data,
+                  action,
+                });
+              }
+            }}
+          />
+        </View>
+      ))}
 
       {hasError && (
         <View style={styles.errorContainer}>

@@ -400,6 +400,11 @@ export class CometChatUIEventHandler {
             param as { id: string; data: Array<SuggestionItem> }
           );
           break;
+        case listener._eventListener?.ccCardActionClicked?.name:
+          listener._eventListener?.ccCardActionClicked?.(
+            param as { message: any; action: any }
+          );
+          break;
       }
     });
   }

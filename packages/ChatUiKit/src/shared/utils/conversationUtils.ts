@@ -49,6 +49,14 @@ export class CometChatConversationUtils {
         );
       }
 
+      if (lastMessage.getCategory() === MessageCategoryConstants.card) {
+        const cardText =
+          (typeof (lastMessage as any).getText === "function" && (lastMessage as any).getText()) ||
+          t("CARD_MESSAGE") ||
+          "Card Message";
+        return cardText;
+      }
+
       if (lastMessage.getCategory() == "call") {
         let color: ColorValue | undefined = theme?.color?.textSecondary;
         let text = "Video call";

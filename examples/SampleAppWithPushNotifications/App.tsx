@@ -6,6 +6,7 @@ import {
   PlatformColor,
   AppState,
   AppStateStatus,
+  Linking,
 } from 'react-native';
 import {
   CometChatI18nProvider,
@@ -22,6 +23,7 @@ import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import RootStackNavigator from './src/navigation/RootStackNavigator';
 import { AppConstants } from './src/utils/AppConstants';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
@@ -369,6 +371,41 @@ const App = (): React.ReactElement => {
       CometChat.removeCallListener(listenerId);
     };
   }, [userLoggedIn]);
+
+  // Card Messages — single app-level dispatcher for card element actions.
+  // The UI Kit forwards only the raw action; behavior lives here.
+  useEffect(() => {
+    const cardActionListenerId = 'cardAction_app';
+    CometChatUIEventHandler.addUIListener(cardActionListenerId, {
+      ccCardActionClicked: (event: { message: any; action: any }) => {
+        const action = event?.action;
+        if (!action) return;
+        const actionType = action?.type ?? action?.action ?? '';
+        switch (actionType) {
+          case 'openUrl':
+            if (action.url) {
+              Linking.openURL(action.url).catch(() => {});
+            }
+            break;
+          case 'copyToClipboard':
+            if (action.value || action.text) {
+              Clipboard.setString(action.value ?? action.text);
+            }
+            break;
+          case 'downloadFile':
+            if (action.url) {
+              Linking.openURL(action.url).catch(() => {});
+            }
+            break;
+          default:
+            break;
+        }
+      },
+    });
+    return () => {
+      CometChatUIEventHandler.removeUIListener(cardActionListenerId);
+    };
+  }, []);
 
   /**
    * Android only: Listen for incoming FCM messages while the app is in the foreground.

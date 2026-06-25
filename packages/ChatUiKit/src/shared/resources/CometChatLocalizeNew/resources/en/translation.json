@@ -390,6 +390,7 @@
 	"REACHED_MAX_LIMIT": "You’ve reached the limit. You can add up to 12 options.",
 	"REQUIRED_FIELDS_WARNING": "Please fill in all required fields before creating a poll.",
 	"NOT_SUPPORTED": "This message type is not supported",
+"CARD_MESSAGE": "Card Message",
 	"NO_USERS_FOUND": "No Users Found",
 	"USERS_EMPTY_STATE_MESSAGE": "We couldn’t find any users matching your search. Try adjusting your search.",
 	"SAVE": "Save",

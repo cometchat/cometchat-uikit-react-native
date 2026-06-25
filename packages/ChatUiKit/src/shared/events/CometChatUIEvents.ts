@@ -17,4 +17,5 @@ export enum CometChatUIEvents {
   ccComposeMessage = "ccComposeMessage",
   // ccMentionClick = "ccMentionClick",
   ccSuggestionData = "ccSuggestionData",
+  ccCardActionClicked = "ccCardActionClicked",
 }

@@ -225,6 +225,19 @@ export class DataSourceDecorator implements DataSource {
     return this.dataSource.getCardMessageTemplate(theme, additionalParams);
   }
 
+  getCardBubbleTemplate(theme: CometChatTheme, additionalParams?: AdditionalParams): CometChatMessageTemplate {
+    return this.dataSource.getCardBubbleTemplate(theme, additionalParams);
+  }
+
+  getCardBubbleContentView(
+    message: CometChat.BaseMessage,
+    alignment: MessageBubbleAlignmentType,
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
+  ): JSX.Element {
+    return this.dataSource.getCardBubbleContentView(message, alignment, theme, additionalParams);
+  }
+
   getAudioMessageTemplate(theme: CometChatTheme, additionalParams?: AdditionalParams): CometChatMessageTemplate {
     return this.dataSource.getAudioMessageTemplate(theme, additionalParams);
   }

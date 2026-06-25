@@ -12,6 +12,7 @@ import {
   CometChatTextBubble,
   CometChatTextBubbleInterface,
 } from "./CometChatTextBubble";
+import { CometChatCardBubble } from "./CometChatCardBubble";
 import {
   CometChatVideoBubble,
   CometChatVideoBubbleInterface
@@ -177,6 +178,7 @@ export {
   CometChatTextBubble,
   CometChatVideoBubble,
   SuggestionItem,
+  CometChatCardBubble,
   CometChatNewMessageIndicator,
   CometChatInlineAudioRecorder,
   formatDuration,

@@ -9,6 +9,12 @@ import { CometChatTheme } from '../../theme/type';
 import { CometChatMessageTemplate } from '../../shared/modals/CometChatMessageTemplate';
 import { getModerationStatus } from '../../shared/utils/MessageUtils';
 
+const WINDOW_HEIGHT = Dimensions.get('window').height;
+const SHEET_MAX_HEIGHT_RATIO = 0.52;
+// Quick reactions row height (~56) + sheet paddingTop (25) + safety margin
+const RESERVED_HEIGHT = 100;
+const ACTION_SHEET_MAX_HEIGHT = WINDOW_HEIGHT * SHEET_MAX_HEIGHT_RATIO - RESERVED_HEIGHT;
+
 interface MessageOptionsSheetProps {
   bottomSheetRef: React.RefObject<any>;
   isOpen: boolean;
@@ -122,10 +128,12 @@ export const MessageOptionsSheet: React.FC<MessageOptionsSheetProps> = ({
             />
           )}
 
-          <CometChatActionSheet
-            actions={showMessageOptions}
-            style={mergedTheme.messageListStyles.messageOptionsStyles}
-          />
+          <View style={{ maxHeight: ACTION_SHEET_MAX_HEIGHT }}>
+            <CometChatActionSheet
+              actions={showMessageOptions}
+              style={mergedTheme.messageListStyles.messageOptionsStyles}
+            />
+          </View>
         </View>
       )}
     </CometChatBottomSheet>

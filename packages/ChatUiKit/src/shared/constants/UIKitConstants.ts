@@ -159,6 +159,7 @@ export const MessageCategoryConstants = {
   call: CometChat.CATEGORY_CALL,
   interactive: CometChat.CATEGORY_INTERACTIVE,
   agentic: CometChat.CATEGORY_AGENTIC,
+  card: CometChat.CATEGORY_CARD,
   stream: "stream_message",
 };
 
@@ -207,7 +208,10 @@ export const streamMessageTypes = {
   tool_call_start: CometChat.AI_ASSISTANT_EVENTS.TOOL_CALL_STARTED,
   tool_call_end: CometChat.AI_ASSISTANT_EVENTS.TOOL_CALL_ENDED,
   tool_call_args: CometChat.AI_ASSISTANT_EVENTS.TOOL_CALL_ARGUMENT,
-  tool_call_result: CometChat.AI_ASSISTANT_EVENTS.TOOL_CALL_RESULT
+  tool_call_result: CometChat.AI_ASSISTANT_EVENTS.TOOL_CALL_RESULT,
+  card_start: CometChat.AI_ASSISTANT_EVENTS.CARD_START,
+  card: CometChat.AI_ASSISTANT_EVENTS.CARD,
+  card_end: CometChat.AI_ASSISTANT_EVENTS.CARD_END,
 }
 
 export const ReceiverTypeConstants = {
