@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Memuatkan...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Tidak dapat memuatkan lagi",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Ketik untuk cuba semula",
-    "CARD_MESSAGE": "Mesej Kad"
+    "CARD_MESSAGE": "Mesej Kad",
+    "AI_AGENT_MESSAGE": "Mesej ejen AI"
 }

@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Betöltés...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Nem sikerült többet betölteni",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Koppintson az újrapróbálkozáshoz",
-    "CARD_MESSAGE": "Kártyaüzenet"
+    "CARD_MESSAGE": "Kártyaüzenet",
+    "AI_AGENT_MESSAGE": "MI-ügynök üzenet"
 }

@@ -392,6 +392,7 @@
     "REQUIRED_FIELDS_WARNING": "Bitte füllen Sie alle Pflichtfelder aus, bevor Sie eine Umfrage erstellen",
     "NOT_SUPPORTED": "Dieser Nachrichtentyp wird nicht unterstützt",
     "CARD_MESSAGE": "Kartennachricht",
+    "AI_AGENT_MESSAGE": "KI-Agent-Nachricht",
     "NO_USERS_FOUND": "Keine Benutzer gefunden",
     "USERS_EMPTY_STATE_MESSAGE": "Wir konnten keine Benutzer finden, die Ihrer Suche entsprechen. Versuchen Sie, Ihre Suche anzupassen.",
     "SAVE": "Speichern",

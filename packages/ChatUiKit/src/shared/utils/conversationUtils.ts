@@ -57,6 +57,24 @@ export class CometChatConversationUtils {
         return cardText;
       }
 
+      // Edit D — Agent (agentic/assistant) last-message preview. The text lives in
+      // getAssistantMessageData().getText() for an AIAssistantMessage; fall back to
+      // getText(), then a localized label (previously fell through to empty string).
+      if (lastMessage.getCategory() === MessageCategoryConstants.agentic) {
+        const agentMsg = lastMessage as any;
+        let agentText = "";
+        if (typeof agentMsg.getAssistantMessageData === "function") {
+          const assistantData = agentMsg.getAssistantMessageData();
+          if (assistantData && typeof assistantData.getText === "function") {
+            agentText = assistantData.getText() || "";
+          }
+        }
+        if (!agentText && typeof agentMsg.getText === "function") {
+          agentText = agentMsg.getText() || "";
+        }
+        return agentText || t("AI_AGENT_MESSAGE") || "AI agent message";
+      }
+
       if (lastMessage.getCategory() == "call") {
         let color: ColorValue | undefined = theme?.color?.textSecondary;
         let text = "Video call";

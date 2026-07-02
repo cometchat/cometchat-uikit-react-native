@@ -391,6 +391,7 @@
 	"REQUIRED_FIELDS_WARNING": "Please fill in all required fields before creating a poll.",
 	"NOT_SUPPORTED": "This message type is not supported",
 "CARD_MESSAGE": "Card Message",
+"AI_AGENT_MESSAGE": "AI agent message",
 	"NO_USERS_FOUND": "No Users Found",
 	"USERS_EMPTY_STATE_MESSAGE": "We couldn’t find any users matching your search. Try adjusting your search.",
 	"SAVE": "Save",

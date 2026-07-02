@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Laden...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Kan niet meer laden",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Tik om opnieuw te proberen",
-    "CARD_MESSAGE": "Kaartbericht"
+    "CARD_MESSAGE": "Kaartbericht",
+    "AI_AGENT_MESSAGE": "AI-agentbericht"
 }

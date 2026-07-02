@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "लोड हो रहा है...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "और लोड नहीं हो सका",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "पुनः प्रयास करने के लिए टैप करें",
-    "CARD_MESSAGE": "कार्ड संदेश"
+    "CARD_MESSAGE": "कार्ड संदेश",
+    "AI_AGENT_MESSAGE": "एआई एजेंट संदेश"
 }

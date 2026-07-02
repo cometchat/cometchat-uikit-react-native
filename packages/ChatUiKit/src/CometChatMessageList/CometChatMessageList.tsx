@@ -1963,9 +1963,23 @@ export const CometChatMessageList = memo(
         }
 
         if (isAgenticUser) {
+          // A 1:1 agent conversation only ever contains user-receiver messages. Reject
+          // anything addressed to a group (e.g. a group agent reply that reached this
+          // listener) — otherwise a top-level group message matches the parent-id check
+          // below (String(undefined) === String(undefined)) and leaks into the 1:1 chat.
+          //
+          // In a 1:1 agent chat the `parentMessageId` prop is undefined, but messages
+          // from the 2nd onward are stamped with the first message's id (the thread
+          // root), tracked in agenticParentMessageIdRef. Accept those too, otherwise
+          // every message after the first is filtered out until a remount refetch.
+          const agenticParentId = agenticParentMessageIdRef.current;
           if (
-            String(baseMessage.getParentMessageId()) === String(parentMessageId) ||
-            String(baseMessage.getId()) === String(parentMessageId)
+            baseMessage.getReceiverType?.() === ReceiverTypeConstants.user &&
+            (String(baseMessage.getParentMessageId()) === String(parentMessageId) ||
+              String(baseMessage.getId()) === String(parentMessageId) ||
+              (agenticParentId !== undefined &&
+                (String(baseMessage.getParentMessageId()) === String(agenticParentId) ||
+                  String(baseMessage.getId()) === String(agenticParentId))))
           ) {
             CometChat.markAsDelivered(newMessage);
             bottomHandler(newMessage, isReceived);
@@ -2035,8 +2049,22 @@ export const CometChatMessageList = memo(
         // Thread mismatch check — must run BEFORE the sender check to prevent
         // messages from appearing in the wrong context (main list vs thread)
         // when the same user is logged in on multiple devices.
+        //
+        // Exception: in a 1:1 agent chat the `parentMessageId` prop is undefined,
+        // but messages from the 2nd onward carry the agent thread-root id (tracked
+        // in agenticParentMessageIdRef). Those belong in this list, so don't treat
+        // them as a thread mismatch — otherwise every message after the first is
+        // dropped here until a remount refetch.
+        const isAgenticThreadRootMessage =
+          isAgenticUser &&
+          !parentMessageId &&
+          agenticParentMessageIdRef.current !== undefined &&
+          String(newMessage.getParentMessageId()) ===
+            String(agenticParentMessageIdRef.current);
         if (
-          (!parentMessageId && newMessage.getParentMessageId()) ||
+          (!parentMessageId &&
+            newMessage.getParentMessageId() &&
+            !isAgenticThreadRootMessage) ||
           (parentMessageId && !newMessage.getParentMessageId()) ||
           (parentMessageId &&
             newMessage.getParentMessageId() &&
@@ -2951,6 +2979,26 @@ export const CometChatMessageList = memo(
             ) {
               return;
             }
+            // Group agent reply belongs ONLY to its own group conversation. In a 1:1
+            // agent chat `group` is undefined, and a different group won't match the
+            // guid — so the reply can never leak outside its own group list.
+            if (
+              aiAssistantMessage.getReceiverType?.() === ReceiverTypeConstants.group
+            ) {
+              if (group && aiAssistantMessage.getReceiverId?.() === group.getGuid()) {
+                newMessage(aiAssistantMessage);
+              }
+              return;
+            }
+            // 1:1 agent reply belongs ONLY to the matching 1:1 agent conversation — its
+            // sender is the agent represented by `user`. Anything else (a group list, or
+            // a different agent's chat) ignores it so it can't leak across conversations.
+            if (
+              !user ||
+              aiAssistantMessage.getSender?.()?.getUid?.() !== user.getUid()
+            ) {
+              return;
+            }
             if (runId) {
               storeAIAssistantMessage(String(runId), aiAssistantMessage);
             }
@@ -3245,6 +3293,12 @@ export const CometChatMessageList = memo(
           })();
 
           if (item.getSender()?.getUid() != loggedInUser.current?.getUid()) {
+            // Agent (assistant) replies use the normal incoming bubble — which has a
+            // background container and no negative top margin — so the reply is visually
+            // contained like other messages. Applies to both group and 1:1 AI chat.
+            if (type === MessageTypeConstants.assistant) {
+              return mergedTheme.messageListStyles.incomingMessageBubbleStyles as BubbleStyles;
+            }
             return (
               overridenBubbleStyles.get(type)?.incoming ??
               mergedTheme.messageListStyles.incomingMessageBubbleStyles
@@ -4055,8 +4109,17 @@ export const CometChatMessageList = memo(
               }
             }, [onReply, message]);
 
+            // Disable swipe-to-reply for agent ("@agentic") messages. Covers both the
+            // 1:1 AI chat (isAgenticUser, whole conversation) and agent messages inside a
+            // group — where the reply context-menu option is already removed, so the swipe
+            // gesture is suppressed to match (otherwise mobile users could still swipe-reply).
+            const isAgenticMessage =
+              isAgenticUser ||
+              message.getSender?.()?.getRole?.() === "@agentic" ||
+              message.getCategory?.() === MessageCategoryConstants.agentic;
+
             return (
-              message.getCategory() === MessageCategoryConstants.action || isAgenticUser ? (
+              message.getCategory() === MessageCategoryConstants.action || isAgenticMessage ? (
                 <View style={staticStyles.positionRelative}>
                   <TouchableOpacity
                     activeOpacity={1}

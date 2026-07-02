@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "加载中...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "无法加载更多",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "点击重试",
-    "CARD_MESSAGE": "卡片消息"
+    "CARD_MESSAGE": "卡片消息",
+    "AI_AGENT_MESSAGE": "AI 代理消息"
 }

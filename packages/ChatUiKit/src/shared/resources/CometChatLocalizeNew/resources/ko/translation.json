@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "로딩 중...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "더 불러올 수 없습니다",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "탭하여 재시도",
-    "CARD_MESSAGE": "카드 메시지"
+    "CARD_MESSAGE": "카드 메시지",
+    "AI_AGENT_MESSAGE": "AI 에이전트 메시지"
 }

@@ -1558,6 +1558,15 @@ export const CometChatConversations = (props: ConversationInterface) => {
         messageEventHandler(customInteractiveMessage);
         !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
       },
+      // Agent (agentic/assistant) reply — update the conversation's last message + unread
+      // count in real time, otherwise the subtitle only refreshes after a re-fetch.
+      onAIAssistantMessageReceived: (aiAssistantMessage: any) => {
+        if (!shouldUpdateLastMessageAndUnreadCount(aiAssistantMessage)) {
+          return;
+        }
+        messageEventHandler(aiAssistantMessage);
+        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+      },
       onMessageModerated: (moderatedMessage: CometChat.BaseMessage) => {
         checkAndUpdateLastMessage(moderatedMessage);
       },

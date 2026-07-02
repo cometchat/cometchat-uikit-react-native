@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "載入中...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "無法載入更多",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "點擊重試",
-    "CARD_MESSAGE": "卡片訊息"
+    "CARD_MESSAGE": "卡片訊息",
+    "AI_AGENT_MESSAGE": "AI 代理訊息"
 }

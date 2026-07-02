@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Chargement...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Impossible de charger plus",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Appuyez pour réessayer",
-    "CARD_MESSAGE": "Message de carte"
+    "CARD_MESSAGE": "Message de carte",
+    "AI_AGENT_MESSAGE": "Message de l'agent IA"
 }

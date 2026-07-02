@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Kraunama...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Nepavyko įkelti daugiau",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Bakstelėkite, kad bandytumėte dar kartą",
-    "CARD_MESSAGE": "Kortelės žinutė"
+    "CARD_MESSAGE": "Kortelės žinutė",
+    "AI_AGENT_MESSAGE": "DI agento žinutė"
 }

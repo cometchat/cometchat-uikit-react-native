@@ -22,6 +22,7 @@ import {
   MessageCategoryConstants,
   MessageOptionConstants,
   MessageTypeConstants,
+  ReceiverTypeConstants,
 } from "../constants/UIKitConstants";
 import { CometChatUiKitConstants } from "../index";
 import { CometChatMessageComposerAction } from "../helper/types";
@@ -131,12 +132,23 @@ export class MessageDataSource implements DataSource {
   };
 
 
-  getAgentAssistantMessageTemplate(theme: CometChatTheme): CometChatMessageTemplate {
+  getAgentAssistantMessageTemplate(
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
+  ): CometChatMessageTemplate {
     return new CometChatMessageTemplate({
       type: 'assistant',
       category: 'agentic',
-      ContentView: (message: CometChat.BaseMessage) => 
+      ContentView: (message: CometChat.BaseMessage) =>
         this.getAgentAssistantMessageBubble(message, theme),
+      ReplyView: (message: CometChat.BaseMessage, _alignment: MessageBubbleAlignmentType) => {
+        if (message.getReceiverType() !== ReceiverTypeConstants.group) {
+          return null;
+        }
+        const replyView = ChatConfigurator.dataSource.getReplyView?.(message, theme, additionalParams) || null;
+        if (!replyView) return null;
+        return <View style={{ marginTop: 2, marginBottom: 6 }}>{replyView}</View>;
+      },
 
       options: undefined,
 

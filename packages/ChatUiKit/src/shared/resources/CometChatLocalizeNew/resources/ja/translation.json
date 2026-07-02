@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "読み込み中...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "さらに読み込めませんでした",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "タップして再試行",
-    "CARD_MESSAGE": "カードメッセージ"
+    "CARD_MESSAGE": "カードメッセージ",
+    "AI_AGENT_MESSAGE": "AIエージェントメッセージ"
 }

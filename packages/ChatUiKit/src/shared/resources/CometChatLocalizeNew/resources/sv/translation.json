@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Laddar...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Kunde inte ladda mer",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Tryck för att försöka igen",
-    "CARD_MESSAGE": "Kortmeddelande"
+    "CARD_MESSAGE": "Kortmeddelande",
+    "AI_AGENT_MESSAGE": "AI-agentmeddelande"
 }

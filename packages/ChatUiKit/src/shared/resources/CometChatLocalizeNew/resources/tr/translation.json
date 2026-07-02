@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Yükleniyor...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Daha fazla yüklenemedi",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Tekrar denemek için dokunun",
-    "CARD_MESSAGE": "Kart Mesajı"
+    "CARD_MESSAGE": "Kart Mesajı",
+    "AI_AGENT_MESSAGE": "AI aracı mesajı"
 }

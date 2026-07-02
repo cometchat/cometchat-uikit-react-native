@@ -518,5 +518,6 @@
     "NOTIFICATION_FEED_LOADING_MORE": "Caricamento...",
     "NOTIFICATION_FEED_LOAD_MORE_ERROR": "Impossibile caricare altro",
     "NOTIFICATION_FEED_TAP_TO_RETRY": "Tocca per riprovare",
-    "CARD_MESSAGE": "Messaggio con scheda"
+    "CARD_MESSAGE": "Messaggio con scheda",
+    "AI_AGENT_MESSAGE": "Messaggio dell'agente IA"
 }
