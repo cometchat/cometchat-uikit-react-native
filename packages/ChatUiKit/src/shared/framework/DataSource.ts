@@ -68,6 +68,12 @@ export interface DataSource {
     group?: CometChat.Group,
     additionalParams?: AdditionalParams
   ): Array<CometChatMessageOption>;
+  /**
+   * §8.5 — "Download all" option shown on multi-attachment messages.
+   * Optional so external `DataSource` implementers aren't forced to implement it (PR review B2);
+   * the default `MessageDataSource` still provides an implementation.
+   */
+  getDownloadAllOption?(theme: CometChatTheme): CometChatMessageOption | undefined;
 
   //views
   getBottomView(
@@ -126,22 +132,26 @@ export interface DataSource {
   getAudioMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element;
   getVideoMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element | null;
   getImageMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element | null;
   getFileMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element;
 
   //templates

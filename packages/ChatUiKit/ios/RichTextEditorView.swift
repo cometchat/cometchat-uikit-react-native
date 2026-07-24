@@ -1,5 +1,7 @@
 import UIKit
 import React
+import UniformTypeIdentifiers
+import MobileCoreServices
 
 class FloatingToolbar: UIView, UIScrollViewDelegate {
     weak var editorView: RichTextEditorView?
@@ -574,9 +576,22 @@ class RichTextView: UITextView {
         setNeedsDisplay()
     }
 
-    /// Intercept paste to detect URL-on-selected-text → create styled hyperlink
-    /// (matches Android onTextContextMenuItem paste handling).
+    /// Intercept paste to detect:
+    ///  1. Media (images / files) on the clipboard → extract to temp files and emit
+    ///     the `onPasteMedia` event to JS (does NOT insert anything into the editor).
+    ///  2. URL-on-selected-text → create styled hyperlink
+    ///     (matches Android onTextContextMenuItem paste handling).
+    ///  3. Markdown text → parse and insert as styled text.
+    ///  4. Otherwise → normal system text paste.
     override func paste(_ sender: Any?) {
+        // ── (1) Media paste: images and/or file item providers ──
+        // Detect media BEFORE the string check because an image/file copied from
+        // Photos or a file provider may have NO plain-text representation, which
+        // would otherwise fall through to super.paste() and paste nothing useful.
+        if editorContainer?.handlePasteMediaIfAvailable() == true {
+            return
+        }
+
         guard let pastedString = UIPasteboard.general.string else {
             super.paste(sender)
             return
@@ -782,9 +797,12 @@ class RichTextView: UITextView {
     }
 
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
-        // Allow paste so clipboard content can be inserted and placeholder hides correctly
+        // Allow paste so clipboard content can be inserted and placeholder hides correctly.
+        // Also enable paste when the clipboard carries file item providers (e.g. a file
+        // copied from Files/another app) so media paste can be triggered.
         if action == #selector(UIResponderStandardEditActions.paste(_:)) {
-            return UIPasteboard.general.hasStrings || UIPasteboard.general.hasImages || UIPasteboard.general.hasURLs
+            let pb = UIPasteboard.general
+            return pb.hasStrings || pb.hasImages || pb.hasURLs || !pb.itemProviders.isEmpty
         }
         // Allow standard text editing actions (matching Android system context menu)
         if action == #selector(UIResponderStandardEditActions.cut(_:)) ||
@@ -874,6 +892,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         tv.textContainerInset = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: 4)
         tv.translatesAutoresizingMaskIntoConstraints = false
         tv.backgroundColor = .clear
+        #if DEBUG
+        // e2e only: expose the inner UITextView to UI automation (Detox) so tests can type a caption.
+        // DEBUG-gated → not present in release builds.
+        tv.accessibilityIdentifier = "rich-text-editor-input"
+        #endif
 
         // Set default paragraph style with consistent line height
         let paragraphStyle = NSMutableParagraphStyle()
@@ -990,6 +1013,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     @objc var onSizeChange: RCTDirectEventBlock?
     @objc var onActiveStylesChange: RCTDirectEventBlock?
     @objc var onLinkTap: RCTDirectEventBlock?
+    @objc var onPasteMedia: RCTDirectEventBlock?
 
     // Props sent from JS that need @objc declarations to avoid doesNotRecognizeSelector crash
     @objc var toolbarMode: String?
@@ -2866,6 +2890,290 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             "text": cleanText,
             "blocksJson": blocksJson
         ])
+    }
+
+    // MARK: - Paste Media (images / files)
+
+    /// Inspects `UIPasteboard.general` for media content (images and/or file item
+    /// providers). If found, extracts each item to a temp file in NSTemporaryDirectory()
+    /// and emits the `onPasteMedia` event to JS with an `items` array of
+    /// `{ uri, mimeType, name, size }`. Returns `true` if media was detected and a
+    /// paste-media flow was started (so the caller should NOT fall through to text paste).
+    ///
+    /// For text-only clipboards this returns `false` so normal text paste proceeds.
+    ///
+    /// Note: file representation loading is asynchronous; the event is emitted once all
+    /// providers have finished loading. `true` is returned synchronously as soon as we
+    /// know the clipboard carries media, so text paste is suppressed immediately.
+    @objc func handlePasteMediaIfAvailable() -> Bool {
+        let pb = UIPasteboard.general
+
+        // Prefer item providers (they carry real UTIs + file data for images AND files).
+        let providers = pb.itemProviders
+        if !providers.isEmpty {
+            let mediaProviders = providers.filter { provider in
+                // Consider it media if it can vend a file/data representation for any
+                // non-plain-text type. Plain text / URLs alone should NOT be treated as media.
+                return provider.registeredTypeIdentifiers.contains { typeId in
+                    return Self.isMediaTypeIdentifier(typeId)
+                }
+            }
+            if !mediaProviders.isEmpty {
+                extractItemProviders(mediaProviders)
+                return true
+            }
+        }
+
+        // Fallback: raw images on the pasteboard with no item provider (rare, e.g. a
+        // screenshot placed directly as a UIImage).
+        if pb.hasImages, let images = pb.images, !images.isEmpty {
+            extractRawImages(images)
+            return true
+        }
+
+        return false
+    }
+
+    /// Returns true when a UTI represents pasteable media (image/video/audio/file),
+    /// and false for plain text / URLs which should paste as text.
+    private static func isMediaTypeIdentifier(_ typeId: String) -> Bool {
+        if #available(iOS 14.0, *) {
+            guard let type = UTType(typeId) else { return false }
+            // Exclude plain text and URLs — those are handled by the text-paste path.
+            if type.conforms(to: .plainText) || type.conforms(to: .url) || type.conforms(to: .text) {
+                return false
+            }
+            return type.conforms(to: .image)
+                || type.conforms(to: .movie)
+                || type.conforms(to: .audio)
+                || type.conforms(to: .fileURL)
+                || type.conforms(to: .data)
+                || type.conforms(to: .item)
+        } else {
+            // Pre-iOS 14 fallback using MobileCoreServices.
+            let cf = typeId as CFString
+            if UTTypeConformsTo(cf, kUTTypePlainText) || UTTypeConformsTo(cf, kUTTypeText) || UTTypeConformsTo(cf, kUTTypeURL) {
+                return false
+            }
+            return UTTypeConformsTo(cf, kUTTypeImage)
+                || UTTypeConformsTo(cf, kUTTypeMovie)
+                || UTTypeConformsTo(cf, kUTTypeAudio)
+                || UTTypeConformsTo(cf, kUTTypeData)
+                || UTTypeConformsTo(cf, kUTTypeItem)
+        }
+    }
+
+    /// Loads each NSItemProvider's file representation to a temp file, then emits
+    /// `onPasteMedia` once all providers finish. Robust: items that fail are skipped.
+    private func extractItemProviders(_ providers: [NSItemProvider]) {
+        let group = DispatchGroup()
+        // Guard concurrent appends from provider completion handlers on different queues.
+        let lock = NSLock()
+        var items: [[String: Any]] = []
+
+        for provider in providers {
+            // Pick the best (most specific media) type identifier this provider offers.
+            guard let typeId = bestMediaTypeIdentifier(for: provider) else { continue }
+
+            group.enter()
+            // loadFileRepresentation gives us a temp URL we must copy out of before the
+            // completion handler returns (the vended URL is only valid inside the block).
+            provider.loadFileRepresentation(forTypeIdentifier: typeId) { [weak self] (url, error) in
+                defer { group.leave() }
+                guard let self = self, let srcURL = url, error == nil else {
+                    if let error = error { print("[RichTextEditor] paste file load failed: \(error)") }
+                    return
+                }
+                if let item = self.copyToTempAndBuildItem(
+                    from: srcURL,
+                    typeIdentifier: typeId,
+                    suggestedName: provider.suggestedName
+                ) {
+                    lock.lock()
+                    items.append(item)
+                    lock.unlock()
+                }
+            }
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, !items.isEmpty else { return }
+            self.emitPasteMedia(items: items)
+        }
+    }
+
+    /// Chooses the most appropriate media type identifier from a provider's registered
+    /// identifiers (prefers concrete image/movie/audio/file types over generic ones).
+    private func bestMediaTypeIdentifier(for provider: NSItemProvider) -> String? {
+        let ids = provider.registeredTypeIdentifiers.filter { Self.isMediaTypeIdentifier($0) }
+        if ids.isEmpty { return nil }
+        if #available(iOS 14.0, *) {
+            // Prefer image, then movie, then audio, then any file/data.
+            let preferenceOrder: [UTType] = [.image, .movie, .audio, .pdf, .fileURL, .data, .item]
+            for pref in preferenceOrder {
+                if let match = ids.first(where: { UTType($0)?.conforms(to: pref) == true }) {
+                    return match
+                }
+            }
+        }
+        return ids.first
+    }
+
+    /// Copies the data at `srcURL` to a uniquely-named temp file in NSTemporaryDirectory()
+    /// and returns the JS item dict { uri, mimeType, name, size }, or nil on failure.
+    private func copyToTempAndBuildItem(from srcURL: URL, typeIdentifier: String, suggestedName: String?) -> [String: Any]? {
+        let fm = FileManager.default
+
+        // Resolve the REAL mime type + preferred extension from the UTI (do NOT hardcode).
+        let mimeType = Self.mimeType(forTypeIdentifier: typeIdentifier)
+            ?? Self.mimeType(forPathExtension: srcURL.pathExtension)
+            ?? "application/octet-stream"
+        let preferredExt = Self.preferredExtension(forTypeIdentifier: typeIdentifier)
+
+        // Build a display name with an extension.
+        let srcExt = srcURL.pathExtension
+        let ext = !srcExt.isEmpty ? srcExt : (preferredExt ?? "")
+        let baseName: String
+        if let suggested = suggestedName, !suggested.isEmpty {
+            if (suggested as NSString).pathExtension.isEmpty, !ext.isEmpty {
+                baseName = "\(suggested).\(ext)"
+            } else {
+                baseName = suggested
+            }
+        } else {
+            let srcNameNoExt = srcURL.deletingPathExtension().lastPathComponent
+            let core = srcNameNoExt.isEmpty ? "pasted_media_\(Int(Date().timeIntervalSince1970 * 1000))" : srcNameNoExt
+            baseName = ext.isEmpty ? core : "\(core).\(ext)"
+        }
+
+        // Unique temp destination so multiple pasted items never collide.
+        let uniquePrefix = "paste_\(UUID().uuidString)_"
+        let destURL = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("\(uniquePrefix)\(baseName)")
+
+        do {
+            if fm.fileExists(atPath: destURL.path) {
+                try fm.removeItem(at: destURL)
+            }
+            try fm.copyItem(at: srcURL, to: destURL)
+        } catch {
+            // Fallback: try reading data then writing (handles providers whose URL
+            // can't be copied directly).
+            do {
+                let data = try Data(contentsOf: srcURL)
+                try data.write(to: destURL)
+            } catch {
+                print("[RichTextEditor] paste temp copy failed: \(error)")
+                return nil
+            }
+        }
+
+        let size = Self.fileSize(atPath: destURL.path)
+
+        return [
+            "uri": destURL.absoluteString,   // file:///... (absoluteString yields file:// URL)
+            "mimeType": mimeType,
+            "name": baseName,
+            "size": size
+        ]
+    }
+
+    /// Returns the byte size of the file at `path`, or 0 if it cannot be read.
+    private static func fileSize(atPath path: String) -> Int {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+              let size = attrs[.size] as? Int else {
+            return 0
+        }
+        return size
+    }
+
+    /// Handles raw UIImage(s) on the pasteboard that arrive without an item provider.
+    private func extractRawImages(_ images: [UIImage]) {
+        var items: [[String: Any]] = []
+        for (idx, image) in images.enumerated() {
+            // Prefer PNG to preserve transparency/quality; fall back to JPEG.
+            let isPng: Bool
+            let data: Data?
+            if let png = image.pngData() {
+                data = png; isPng = true
+            } else {
+                data = image.jpegData(compressionQuality: 0.9); isPng = false
+            }
+            guard let imageData = data else { continue }
+            let ext = isPng ? "png" : "jpg"
+            let mimeType = isPng ? "image/png" : "image/jpeg"
+            let name = "pasted_image_\(Int(Date().timeIntervalSince1970 * 1000))_\(idx).\(ext)"
+            let destURL = URL(fileURLWithPath: NSTemporaryDirectory())
+                .appendingPathComponent("paste_\(UUID().uuidString)_\(name)")
+            do {
+                try imageData.write(to: destURL)
+                let size = Self.fileSize(atPath: destURL.path)
+                items.append([
+                    "uri": destURL.absoluteString,
+                    "mimeType": mimeType,
+                    "name": name,
+                    "size": size > 0 ? size : imageData.count
+                ])
+            } catch {
+                print("[RichTextEditor] paste raw image write failed: \(error)")
+            }
+        }
+        if !items.isEmpty {
+            emitPasteMedia(items: items)
+        }
+    }
+
+    /// Emits the onPasteMedia event to JS on the main thread.
+    private func emitPasteMedia(items: [[String: Any]]) {
+        guard !items.isEmpty else { return }
+        let payload: [String: Any] = ["items": items]
+        if Thread.isMainThread {
+            onPasteMedia?(payload)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.onPasteMedia?(payload)
+            }
+        }
+    }
+
+    /// Resolves a mime type string from a UTI type identifier.
+    private static func mimeType(forTypeIdentifier typeId: String) -> String? {
+        if #available(iOS 14.0, *) {
+            return UTType(typeId)?.preferredMIMEType
+        } else {
+            guard let mime = UTTypeCopyPreferredTagWithClass(typeId as CFString, kUTTagClassMIMEType)?.takeRetainedValue() else {
+                return nil
+            }
+            return mime as String
+        }
+    }
+
+    /// Resolves a mime type string from a file path extension.
+    private static func mimeType(forPathExtension ext: String) -> String? {
+        guard !ext.isEmpty else { return nil }
+        if #available(iOS 14.0, *) {
+            return UTType(filenameExtension: ext)?.preferredMIMEType
+        } else {
+            guard let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, ext as CFString, nil)?.takeRetainedValue() else {
+                return nil
+            }
+            guard let mime = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue() else {
+                return nil
+            }
+            return mime as String
+        }
+    }
+
+    /// Resolves the preferred filename extension for a UTI type identifier.
+    private static func preferredExtension(forTypeIdentifier typeId: String) -> String? {
+        if #available(iOS 14.0, *) {
+            return UTType(typeId)?.preferredFilenameExtension
+        } else {
+            guard let ext = UTTypeCopyPreferredTagWithClass(typeId as CFString, kUTTagClassFilenameExtension)?.takeRetainedValue() else {
+                return nil
+            }
+            return ext as String
+        }
     }
 
     /// Returns sub-ranges of the given range that do NOT overlap with any mention.

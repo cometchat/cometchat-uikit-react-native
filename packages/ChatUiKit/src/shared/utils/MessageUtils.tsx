@@ -355,7 +355,10 @@ export const getMessagePreviewInternal = (
   const fontScale = PixelRatio.getFontScale();
   const iconSize = (theme?.spacing?.spacing?.s4 ?? 16) * fontScale;
   return (
-    <>
+    // Self-contained center-aligned row so the icon and label align to EACH OTHER (not to the taller
+    // receipt/thread siblings in the parent row). Matching the text's line-box to the icon height keeps
+    // the glyph on the icon's centre on both platforms.
+    <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, minWidth: 0 }}>
       {iconName && (
         <Icon
           name={iconName}
@@ -370,12 +373,16 @@ export const getMessagePreviewInternal = (
         style={{
           color: theme?.color?.textSecondary,
           ...theme?.typography?.body?.regular,
-          flexShrink: 2,
+          flexShrink: 1,
+          minWidth: 0,
+          lineHeight: iconSize,
+          includeFontPadding: false,
+          textAlignVertical: 'center',
         }}
       >
         {text}
       </Text>
-    </>
+    </View>
   );
 };
 
@@ -471,7 +478,8 @@ export const ModerationBottomView = ({
   const { t } = useCometChatTranslation();
   const theme = useTheme();
   if (status !== "disapproved") return null;
-
+  // The "blocked due to moderation" banner: a message whose media uploaded but whose send was
+  // disapproved (uploaded-but-not-delivered state).
   const bubblePadH =
   theme.messageListStyles.outgoingMessageBubbleStyles?.containerStyle?.paddingHorizontal ??
   theme.spacing?.spacing?.s3 ?? 12;
@@ -489,6 +497,7 @@ export const ModerationBottomView = ({
 
   return (
     <View
+      testID="moderation-blocked"
       style={[
         {
         marginHorizontal: -bubblePadH,

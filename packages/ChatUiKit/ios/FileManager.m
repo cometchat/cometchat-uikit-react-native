@@ -7,6 +7,7 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <AVFoundation/AVFoundation.h>
 #import <UIKit/UIKit.h>
+#import <PhotosUI/PhotosUI.h>
 
 static NSString *const E_DOCUMENT_PICKER_CANCELED = @"DOCUMENT_PICKER_CANCELED";
 static NSString *const E_INVALID_DATA_RETURNED = @"INVALID_DATA_RETURNED";
@@ -22,7 +23,7 @@ static NSString *const FIELD_TYPE = @"type";
 static NSString *const FIELD_SIZE = @"size";
 
 
-@interface CometChatFileManager () <UIDocumentPickerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, AVAudioRecorderDelegate, AVAudioPlayerDelegate, UIDocumentInteractionControllerDelegate>
+@interface CometChatFileManager () <UIDocumentPickerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, AVAudioRecorderDelegate, AVAudioPlayerDelegate, UIDocumentInteractionControllerDelegate, PHPickerViewControllerDelegate>
 
 @property (nonatomic, strong) AVAudioSession *recordingSession;
 @property (nonatomic, strong) AVAudioRecorder *audioRecorder;
@@ -45,6 +46,7 @@ static NSString *const FIELD_SIZE = @"size";
     NSString *_url;
     RCTResponseSenderBlock callback;
     bool hasListeners;
+    BOOL _multipleSelection;
 }
 
 - (void)startObserving {
@@ -61,33 +63,60 @@ static NSString *const FIELD_SIZE = @"size";
 
 RCT_EXPORT_MODULE(FileManager)
 
+// Private — download the remote file into the app's Documents dir. On success sets self->_url to the
+// local file:// path and calls back {"success":true}; on failure {"success":false}. ONE async fetch
+// (the old code did a blocking dataWithContentsOfURL AND a downloadTask — a double download that also
+// never fired the callback when that pre-fetch failed, leaving JS stuck in "downloading").
+- (void)downloadToDocuments:(NSString *)urlToDownload name:(NSString *)name callback:(RCTResponseSenderBlock)callback {
+    NSURL *url = [NSURL URLWithString:urlToDownload];
+    if (url == nil) { callback(@[@"{\"success\": false, \"error\": \"invalid url\"}"]); return; }
+
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *destPath = [[paths objectAtIndex:0] stringByAppendingPathComponent:name];
+    NSURL *destinationFileURL = [NSURL fileURLWithPath:destPath];
+
+    NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL:url
+        completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            if (error != nil || location == nil) {
+                callback(@[@"{\"success\": false, \"error\": \"download failed\"}"]);
+                return;
+            }
+            NSFileManager *fm = [NSFileManager defaultManager];
+            [fm removeItemAtURL:destinationFileURL error:nil];              // overwrite any prior copy
+            NSError *moveErr = nil;
+            [fm moveItemAtURL:location toURL:destinationFileURL error:&moveErr];
+            if (moveErr != nil) {
+                callback(@[@"{\"success\": false, \"error\": \"could not save file\"}"]);
+                return;
+            }
+            self->_url = [NSString stringWithFormat:@"file://%@", destPath];
+            callback(@[@"{\"success\": true}"]);
+        }];
+    [task resume];
+}
+
+// The download button. Downloads the file, then presents the iOS share sheet so the user can Save to
+// Files / Save to Photos / AirDrop — the sandbox-legal equivalent of Android's visible DownloadManager
+// save (iOS apps cannot write to a shared public "Downloads" folder). Previously this saved into the
+// app's PRIVATE Documents dir with no UI, so on iOS the download appeared to do nothing.
 RCT_EXPORT_METHOD(checkAndDownload:(NSString *) urlToDownload name:(NSString *) name callback:(RCTResponseSenderBlock) callback) {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSURL  *url = [NSURL URLWithString:urlToDownload];
-        NSData *urlData = [NSData dataWithContentsOfURL:url];
-        if (urlData)
-        {
-            NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-            NSString *documentsDirectory = [paths objectAtIndex:0];
-            
-            NSString *filePath = [NSString stringWithFormat:@"file://%@/%@", documentsDirectory,name];
-            NSURL *destinationFileURL = [NSURL URLWithString:filePath];
-            
-            NSURL *url = [NSURL URLWithString:urlToDownload];
-            [[[NSURLSession sharedSession] downloadTaskWithURL:url completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-                if (error == nil) {
-                    NSLog(@"down moving %@ to %@", location, destinationFileURL);
-                    [[NSFileManager defaultManager] moveItemAtURL:location toURL:destinationFileURL error:nil];
-                    NSLog(@"downloaded to %@", filePath);
-                    self->_url = filePath;
-                    NSString *response = [NSString stringWithFormat:@"{\"success\": true, \"filePath\":%d}", filePath];
-                    callback(@[response]);
-                    return;
+    [self downloadToDocuments:urlToDownload name:name callback:^(NSArray *response) {
+        NSString *res = response.firstObject ?: @"";
+        if ([res containsString:@"\"success\": true"]) {
+            NSString *destPath = [[NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject] stringByAppendingPathComponent:name];
+            NSURL *fileURL = [NSURL fileURLWithPath:destPath];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                UIActivityViewController *share = [[UIActivityViewController alloc] initWithActivityItems:@[fileURL] applicationActivities:nil];
+                UIViewController *presenter = RCTPresentedViewController();
+                if (share.popoverPresentationController != nil) {          // iPad anchor
+                    share.popoverPresentationController.sourceView = presenter.view;
+                    share.popoverPresentationController.sourceRect = CGRectMake(CGRectGetMidX(presenter.view.bounds), CGRectGetMidY(presenter.view.bounds), 0, 0);
                 }
-                callback(@[@""]);
-            }] resume];
+                [presenter presentViewController:share animated:YES completion:nil];
+            });
         }
-    });
+        callback(response);
+    }];
 }
 
 - (void) openMedia:(NSString *) path {
@@ -134,12 +163,19 @@ RCT_EXPORT_METHOD(openFile:(NSString *) url name:(NSString *) fileName myCallbac
         } else {
             if (hasListeners)
                 [self sendEventWithName:@"status" body:@{@"url": url, @"state": @"downloading"}];
-            [self checkAndDownload:url name:fileName callback:^(NSArray *response) {
-                self->_url = [NSString stringWithFormat:@"%@",response[0]];
-                [self openMedia:self->_url];
-                if (self->hasListeners)
-                    [self sendEventWithName:@"status" body:@{@"url": url, @"state": @"opening"}];
-                callback(@[@"{\"success\": true}"]);
+            // Use the private helper (NOT checkAndDownload) — checkAndDownload now shows the share sheet,
+            // which must not pop up when we're only downloading in order to preview. The helper sets
+            // self->_url to the real local file path on success (the old code set it to the JSON string).
+            [self downloadToDocuments:url name:fileName callback:^(NSArray *response) {
+                NSString *res = response.firstObject ?: @"";
+                if ([res containsString:@"\"success\": true"]) {
+                    [self openMedia:self->_url];
+                    if (self->hasListeners)
+                        [self sendEventWithName:@"status" body:@{@"url": url, @"state": @"opening"}];
+                    callback(@[@"{\"success\": true}"]);
+                } else {
+                    callback(@[@"{\"success\": false}"]);
+                }
             }];
         }
     } @catch (NSException *exception) {
@@ -335,6 +371,45 @@ RCT_EXPORT_METHOD(openFileChooser:(NSString *)type callback:(RCTResponseSenderBl
     });
 }
 
+
+RCT_EXPORT_METHOD(openFileChooserMulti:(NSString *)type maxSelection:(nonnull NSNumber *)maxSelection callback:(RCTResponseSenderBlock)call) {
+    callback = call;
+    UIViewController *presentedViewController = RCTPresentedViewController();
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if ([@"image" isEqualToString:type]) {
+            // Use PHPickerViewController — opens the Photos library with a proper multi-select grid.
+            // Does NOT require NSPhotoLibraryUsageDescription (runs in a separate process on iOS 14+).
+            PHPickerConfiguration *config = [[PHPickerConfiguration alloc] init];
+            config.selectionLimit = maxSelection.integerValue; // remaining allowance (server count limit − already staged); 0 = unlimited
+            config.filter = [PHPickerFilter anyFilterMatchingSubfilters:@[[PHPickerFilter imagesFilter], [PHPickerFilter videosFilter]]];
+            PHPickerViewController *picker = [[PHPickerViewController alloc] initWithConfiguration:config];
+            picker.delegate = self;
+            [presentedViewController presentViewController:picker animated:YES completion:nil];
+        } else {
+            _multipleSelection = YES;
+            NSArray *documentTypes;
+            if ([@"audio" isEqualToString:type]) {
+                documentTypes = @[@"public.audio"];
+            } else if ([@"video" isEqualToString:type]) {
+                documentTypes = @[@"public.movie", @"public.video"];
+            } else if ([@"text" isEqualToString:type]) {
+                documentTypes = @[@"public.text"];
+            } else if ([@"zip" isEqualToString:type]) {
+                documentTypes = @[@"com.pkware.zip-archive"];
+            } else {
+                documentTypes = @[@"public.data"];
+            }
+            UIDocumentPickerViewController *documentController =
+                [[UIDocumentPickerViewController alloc] initWithDocumentTypes:documentTypes
+                                                                       inMode:UIDocumentPickerModeImport];
+            // Single-select when the cap is 1 (allowMultipleSelection=false, or only one slot left).
+            documentController.allowsMultipleSelection = (maxSelection.integerValue != 1);
+            documentController.delegate = self;
+            [presentedViewController presentViewController:documentController animated:YES completion:nil];
+        }
+    });
+}
 
 RCT_EXPORT_METHOD(shareMessage: (NSDictionary *) shareObj myCallback:(RCTResponseSenderBlock)callback) {
     NSString *message = shareObj[@"message"];
@@ -1040,7 +1115,10 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
                 NSString *type = [self getMimeType:new_image_url];
                 NSString *name = [new_image_url lastPathComponent];
                 NSString *uri = [NSString stringWithFormat:@"%@", new_image_url];
-                callback(@[@{@"name": name, @"type": type, @"uri": uri}]);
+                // The SDK presign step rejects a 0/missing size (same fix as the document
+                // picker + PHPicker paths). The captured image is saved locally above, so
+                // stat it for the real byte size — otherwise the attachment errors on upload.
+                callback(@[@{@"name": name, @"type": type, @"uri": uri, @"size": [self getFileSizeForURL:new_image_url]}]);
             } else {
                 NSLog(@"failed to get image");
                 callback(@[@{@"error": @"unable to get image"}]);
@@ -1099,14 +1177,98 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
     [picker dismissViewControllerAnimated:TRUE completion:nil];
 }
 
+// PHPickerViewControllerDelegate — handles multi-select from Photos library (images and videos)
+- (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results {
+    [picker dismissViewControllerAnimated:YES completion:nil];
+    if (results.count == 0) {
+        return;
+    }
+
+    dispatch_group_t group = dispatch_group_create();
+    NSMutableArray *fileInfoArray = [NSMutableArray array];
+
+    for (PHPickerResult *result in results) {
+        NSString *typeIdentifier = nil;
+        if ([result.itemProvider hasItemConformingToTypeIdentifier:@"public.image"]) {
+            typeIdentifier = @"public.image";
+        } else if ([result.itemProvider hasItemConformingToTypeIdentifier:@"public.movie"]) {
+            typeIdentifier = @"public.movie";
+        }
+        if (!typeIdentifier) continue;
+
+        dispatch_group_enter(group);
+        [result.itemProvider loadFileRepresentationForTypeIdentifier:typeIdentifier
+                                                  completionHandler:^(NSURL *url, NSError *error) {
+            if (url && !error) {
+                NSString *dirPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
+                [[NSFileManager defaultManager] createDirectoryAtPath:dirPath
+                                        withIntermediateDirectories:YES
+                                                         attributes:nil
+                                                              error:nil];
+                NSString *destPath = [dirPath stringByAppendingPathComponent:url.lastPathComponent];
+                NSError *copyError;
+                [[NSFileManager defaultManager] copyItemAtPath:url.path toPath:destPath error:&copyError];
+                if (!copyError) {
+                    NSURL *destURL = [NSURL fileURLWithPath:destPath];
+                    NSString *mimeType = [self getMimeType:destURL] ?: @"image/jpeg";
+                    NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:destPath error:nil];
+                    NSNumber *fileSize = attrs[NSFileSize] ?: @0;
+                    NSDictionary *fileInfo = @{
+                        @"name": destURL.lastPathComponent,
+                        @"type": mimeType,
+                        @"uri": destURL.absoluteString,
+                        @"size": fileSize,
+                    };
+                    @synchronized(fileInfoArray) {
+                        [fileInfoArray addObject:fileInfo];
+                    }
+                }
+            }
+            dispatch_group_leave(group);
+        }];
+    }
+
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        if (fileInfoArray.count > 0) {
+            callback(@[fileInfoArray]);
+        }
+    });
+}
+
+- (NSNumber *)getFileSizeForURL:(NSURL *)url {
+    // Import-mode document picks are copied into the app sandbox, so we can stat the local path
+    // directly (no security-scoped access needed). The SDK's presign step REQUIRES a real byte
+    // size — a 0/missing size is rejected server-side ("Failed to validate the data sent…").
+    NSError *error = nil;
+    NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:url.path error:&error];
+    if (attrs && !error) {
+        return @([attrs fileSize]);
+    }
+    return @(0);
+}
+
 - (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
-    NSLog(@"document selected %@", urls[0]);
-    NSString *uri = [NSString stringWithFormat:@"%@", urls[0]];
-    NSString *type = [self getMimeType:urls[0]];
-    NSString *name = [urls[0] lastPathComponent];
-    if (!name) name = @"Unknown";
-    if (!type) type = @"Unknown";
-    callback(@[@{@"name": name, @"type": type, @"uri": uri}]);
+    if (_multipleSelection) {
+        _multipleSelection = NO;
+        NSMutableArray *results = [NSMutableArray array];
+        for (NSURL *url in urls) {
+            NSString *uri = [NSString stringWithFormat:@"%@", url];
+            NSString *type = [self getMimeType:url];
+            NSString *name = [url lastPathComponent];
+            if (!name) name = @"Unknown";
+            if (!type) type = @"application/octet-stream";
+            [results addObject:@{@"name": name, @"type": type, @"uri": uri, @"size": [self getFileSizeForURL:url]}];
+        }
+        callback(@[results]);
+    } else {
+        NSLog(@"document selected %@", urls[0]);
+        NSString *uri = [NSString stringWithFormat:@"%@", urls[0]];
+        NSString *type = [self getMimeType:urls[0]];
+        NSString *name = [urls[0] lastPathComponent];
+        if (!name) name = @"Unknown";
+        if (!type) type = @"Unknown";
+        callback(@[@{@"name": name, @"type": type, @"uri": uri, @"size": [self getFileSizeForURL:urls[0]]}]);
+    }
 }
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {

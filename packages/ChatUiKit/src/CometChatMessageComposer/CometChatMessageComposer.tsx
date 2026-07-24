@@ -39,6 +39,7 @@ import { ChatConfigurator, CometChatSoundManager } from "../shared";
 import { commonVars } from "../shared/base/vars";
 import {
   ConversationOptionConstants,
+  DISABLED_BUTTON_OPACITY,
   MentionsTargetElement,
   MentionsVisibility,
   MessageTypeConstants,
@@ -65,6 +66,17 @@ import { CometChatTheme } from "../theme/type";
 import { deepMerge } from "../shared/helper/helperFunctions";
 import { JSX } from "react";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
+// Multiple Attachment Support — U8
+// §5.0 — canonical DD name (CometChatAttachmentPreview is the back-compat alias)
+import { CometChatAttachmentTray } from "../shared/views/CometChatAttachmentPreview";
+import { CometChatMediaViewer } from "../shared/views/CometChatMediaViewer";
+import { SelectedAttachment, toAttachmentFile } from "../shared/modals/SelectedAttachment";
+import { UploadQueueService } from "../shared/services/UploadQueueService";
+import { openMultiFileChooser } from "../shared/utils/openMultiFileChooser";
+import { getFileUploadLimits, clampToServer, acceptPickedAttachments, toastAttachmentRejection } from "../shared/utils/attachmentLimits";
+import { partitionAttachmentsByKind, AttachmentKindGroup } from "../shared/utils/partitionAttachmentsByKind";
+import { attachmentCountLabel } from "../shared/utils/conversationUtils";
+import { CometChatComposerErrorBanner } from "../shared/views/CometChatComposerErrorBanner";
 
 type MentionOverlap = {
   key: string;
@@ -78,15 +90,13 @@ const { FileManager, CommonUtil } = NativeModules;
 const uiEventListenerShow = "uiEvent_show_" + Date.now() + "_" + (++__listenerIdCounter);
 const uiEventListenerHide = "uiEvent_hide_" + Date.now() + "_" + (++__listenerIdCounter);
 
-
-
 const AttachIconButton = (props: {
   onPress: TouchableWithoutFeedbackProps["onPress"];
   icon: ImageSourcePropType | JSX.Element;
   iconStyle: ImageStyle;
 }) => {
   return (
-    <TouchableOpacity onPress={props.onPress}>
+    <TouchableOpacity testID="CometChatComposer.attach" onPress={props.onPress}>
       <Icon
         name='add-circle'
         icon={props.icon}
@@ -100,12 +110,13 @@ const AttachIconButton = (props: {
 };
 
 const ActionSheetBoard = (props: any) => {
-  const { shouldShow = false, onClose = () => {}, options = [], sheetRef, style } = props;
+  const { shouldShow = false, onClose = () => {}, onDismiss, options = [], sheetRef, style } = props;
   return (
     <CometChatBottomSheet
       style={{ maxHeight: Dimensions.get("window").height * 0.49 }}
       ref={sheetRef}
       onClose={onClose}
+      onDismiss={onDismiss}
       isOpen={shouldShow}
       doNotOccupyEntireHeight
     >
@@ -360,6 +371,14 @@ export interface CometChatMessageComposerInterface {
   imageQuality?: IntRange<1, 100>;
 
   /**
+   * Enables the multiple-attachment workflow (staging tray + multi-upload; a send
+   * fans out into one message per kind). When `false`, attachments use the legacy
+   * single-select, send-immediately path (one picker → one message, no tray).
+   * @default true
+   */
+  enableMultipleAttachments?: boolean;
+
+  /**
    * If true, hides the camera option from the attachment options.
    */
   hideCameraOption?: boolean;
@@ -460,6 +479,16 @@ export const CometChatMessageComposer = React.forwardRef(
 
     const theme = useTheme();
     const {t} = useCometChatTranslation()
+    // Attachment error/info messages show as a red banner just above the tray (rendered below).
+    const [attachmentBannerMessage, setAttachmentBannerMessage] = React.useState<string | null>(null);
+    const [attachmentBannerHeight, setAttachmentBannerHeight] = React.useState(0);
+    const attachmentBannerTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const showToast = useCallback((message: string) => {
+      setAttachmentBannerMessage(message);
+      if (attachmentBannerTimer.current) clearTimeout(attachmentBannerTimer.current);
+      attachmentBannerTimer.current = setTimeout(() => setAttachmentBannerMessage(null), 4000);
+    }, []);
+    useEffect(() => () => { if (attachmentBannerTimer.current) clearTimeout(attachmentBannerTimer.current); }, []);
     const {
       id,
       user,
@@ -499,6 +528,8 @@ export const CometChatMessageComposer = React.forwardRef(
       addAttachmentOptions,
       auxiliaryButtonsAlignment = "left",
       AgentSendButtonView,
+      // §1 — false → legacy single-select, send-immediately attachments (no tray/fan-out).
+      enableMultipleAttachments = true,
     } = props;
 
     // Helper function to check if user is agentic
@@ -565,6 +596,10 @@ export const CometChatMessageComposer = React.forwardRef(
     const [showActionSheet, setShowActionSheet] = React.useState(false);
     const [showRecordAudio, setShowRecordAudio] = React.useState(false);
     const [actionSheetItems, setActionSheetItems] = React.useState<any[]>([]);
+    // iOS: holds a picker launch that must wait until the action sheet's modal has
+    // fully dismissed — UIKit can't present the picker while the modal is dismissing.
+    // Fired from the sheet's onDismiss. Unused on Android (picker launches inline).
+    const pendingAttachmentActionRef = React.useRef<(() => void) | null>(null);
     const [messagePreview, setMessagePreview] = React.useState<any>();
     const [replyMessage, setReplyMessage] = React.useState<any>();
     // Ref to hold current replyMessage value to avoid stale closures in attachment handlers
@@ -582,6 +617,17 @@ export const CometChatMessageComposer = React.forwardRef(
     const [warningMessage, setWarningMessage] = React.useState("");
     const [originalText, setOriginalText] = React.useState<string>("");
     const [hasEdited, setHasEdited] = React.useState<boolean>(false);
+    const [selectedAttachments, setSelectedAttachments] = React.useState<SelectedAttachment[]>([]);
+    // Live mirror of the staged count — the picker/paste handlers can be invoked from
+    // memoized closures that captured an older count, so read the CURRENT tray size from
+    // this ref when enforcing the count limit (avoids letting picks slip past the max).
+    const selectedAttachmentsRef = React.useRef<SelectedAttachment[]>([]);
+    React.useEffect(() => {
+      selectedAttachmentsRef.current = selectedAttachments;
+    }, [selectedAttachments]);
+
+    const [trayViewerVisible, setTrayViewerVisible] = React.useState(false);
+    const [trayViewerIndex, setTrayViewerIndex] = React.useState(0);
     const [plainText, setPlainText] = React.useState(initialComposertext ?? "");
     const bottomSheetRef = React.useRef<any>(null);
     const [showStopButton, setShowStopButton] = React.useState(false);
@@ -607,6 +653,158 @@ export const CometChatMessageComposer = React.forwardRef(
       });
     }, [mergedComposerStyle, hideStickersButton, hideAuxiliaryButtons, replyMessage, closeReplyPreview]);
 
+    // Multi-attachment: one UploadQueueService per composer mount
+    const uploadQueue = useMemo(
+      () =>
+        new UploadQueueService({
+          onProgress: (fileId, percent) => {
+            setSelectedAttachments(prev =>
+              prev.map(a =>
+                a.fileId === fileId ? { ...a, uploadState: 'UPLOADING', uploadProgress: percent } : a
+              )
+            );
+          },
+          onFileComplete: (fileId, attachment) => {
+            setSelectedAttachments(prev =>
+              prev.map(a =>
+                a.fileId === fileId
+                  ? { ...a, uploadState: 'COMPLETED', uploadProgress: 100, uploadedAttachment: attachment }
+                  : a
+              )
+            );
+          },
+          onFileFailed: (fileId, error) => {
+            // Retryable network/server failure — show ⚠ tap-to-retry affordance
+            setSelectedAttachments(prev =>
+              prev.map(a =>
+                a.fileId === fileId ? { ...a, uploadState: 'FAILED', errorKey: 'UPLOAD_FAILED', rawError: error } : a
+              )
+            );
+          },
+          onFileRejected: (fileId, error) => {
+            // Store the SDK error code; the user sees WHY by tapping the errored tile (no auto-toast,
+            // so several rejections can't spam). See handleTrayTilePress → toastAttachmentRejection.
+            const code = error?.code ?? (error as any)?.getCode?.();
+            setSelectedAttachments(prev =>
+              prev.map(a =>
+                a.fileId === fileId ? { ...a, uploadState: 'REJECTED', errorKey: 'ATTACHMENT_UPLOAD_UNAVAILABLE', errorCode: code, rawError: error } : a
+              )
+            );
+          },
+          onAllComplete: () => {
+            // Send is driven by the send button, not by this callback.
+          },
+        }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
+
+    const updateAttachment = useCallback(
+      (fileId: string, patch: Partial<SelectedAttachment>) => {
+        setSelectedAttachments(prev =>
+          prev.map(a => (a.fileId === fileId ? { ...a, ...patch } : a))
+        );
+      },
+      []
+    );
+
+    const handlePickFiles = useCallback(
+      async (pickerType: 'media' | 'document' | 'camera' | 'audio') => {
+        // Live staged count (ref), not the possibly-stale closure value.
+        const existingCount = selectedAttachmentsRef.current.length;
+        // Server-authoritative upload limits (file.count.max / per-file file.size.max),
+        // clamped tighten-only against any developer override (§5.1 / §6.1).
+        const serverLimits = await getFileUploadLimits();
+        const maxCount = clampToServer(undefined, serverLimits.fileCountMax);
+
+        // Always open the picker (even at capacity) so the button never feels broken. Enforcement is
+        // on selection: acceptPickedAttachments rejects the whole over-limit pick + shows the toast.
+        const picked = await openMultiFileChooser(pickerType, existingCount, maxCount);
+        if (picked.length === 0) return;
+
+        // §6.3 — over the count limit → reject the whole pick (see acceptPickedAttachments). Per-file
+        // SIZE is enforced by the SDK (ERR_FILE_SIZE_EXCEEDED → onFileRejected), not here.
+        const accepted = acceptPickedAttachments(picked, { maxCount, existingCount }, { showToast, t });
+        if (accepted.length === 0) return;
+
+        const newAttachments: SelectedAttachment[] = accepted.map(f => ({
+          fileId: '_' + Math.random().toString(36).substr(2, 9),
+          file: toAttachmentFile(f),
+          uploadState: 'NONE',
+          uploadProgress: 0,
+        }));
+
+        setSelectedAttachments(prev => {
+          const next = [...prev, ...newAttachments];
+          // Mirror the ref SYNCHRONOUSLY so a quick second pick reads the exact count (not the stale
+          // post-render useEffect value). Otherwise existingCount under-counts, the pick gate lets too
+          // many through, and the shared SDK upload group overflows file.count.max → ERR_FILE_COUNT_EXCEEDED
+          // even though the tray shows fewer than the limit.
+          selectedAttachmentsRef.current = next;
+          return next;
+        });
+        // Pass the target conversation so the SDK can hand receiver/receiverType to the server for
+        // RBAC/SBAC presign authorization. Read the refs fresh here (uploadQueue is memoized at mount,
+        // the refs are not) — constructor-time capture would be stale.
+        newAttachments.forEach(a =>
+          uploadQueue.enqueue(a, { receiver: chatWithId.current, receiverType: chatWith.current })
+        );
+      },
+      [selectedAttachments, uploadQueue]
+    );
+
+    const handleRemoveAttachment = useCallback(
+      (fileId: string) => {
+        uploadQueue.dequeue(fileId);
+        setSelectedAttachments(prev => {
+          const next = prev.filter(a => a.fileId !== fileId);
+          selectedAttachmentsRef.current = next;   // keep the ref exact for the next pick's count gate
+          return next;
+        });
+      },
+      [uploadQueue]
+    );
+
+    const handleRetryAttachment = useCallback(
+      (fileId: string) => {
+        const attachment = selectedAttachments.find(a => a.fileId === fileId);
+        if (!attachment) return;
+        updateAttachment(fileId, { uploadState: 'NONE', uploadProgress: 0, errorKey: undefined });
+        uploadQueue.retry(fileId, { ...attachment, uploadState: 'NONE', uploadProgress: 0 });
+      },
+      [selectedAttachments, updateAttachment, uploadQueue]
+    );
+
+    // §8.2 — staged-attachment media items for tray preview viewer (local URIs)
+    const trayMediaItems = React.useMemo(() => {
+      return selectedAttachments
+        .filter(a => a.file.type.startsWith('image/') || a.file.type.startsWith('video/'))
+        .map(a => ({
+          getUrl: () => a.file.uri,
+          getMimeType: () => a.file.type,
+          getName: () => a.file.name,
+          getSize: () => a.file.size || 0,
+        } as unknown as CometChat.Attachment));
+    }, [selectedAttachments]);
+
+    const handleTrayTilePress = useCallback((fileId: string) => {
+      const att = selectedAttachments.find(a => a.fileId === fileId);
+      if (!att) return;
+      // DEBUG — dump the real SDK error for a tapped errored tile.
+      // Rejected tile → tap reveals WHY it failed (size, etc.) as a toast.
+      if (att.uploadState === 'REJECTED') {
+        toastAttachmentRejection(att, { showToast, t });
+        return;
+      }
+      const mediaOnly = selectedAttachments.filter(
+        a => a.file.type.startsWith('image/') || a.file.type.startsWith('video/')
+      );
+      const idx = mediaOnly.findIndex(a => a.fileId === fileId);
+      if (idx < 0) return;
+      setTrayViewerIndex(idx);
+      setTrayViewerVisible(true);
+    }, [selectedAttachments, showToast, t]);
+
     useEffect(() => {
       setShowStopButton(false);
       setIsStreaming(false);
@@ -616,6 +814,7 @@ export const CometChatMessageComposer = React.forwardRef(
         if (sendButtonDelayTimer.current) {
           clearTimeout(sendButtonDelayTimer.current);
         }
+        uploadQueue.cancelAll();
       };
     }, []);
 
@@ -644,6 +843,11 @@ export const CometChatMessageComposer = React.forwardRef(
       previewMessageForEdit: previewMessage,
       sendTextMessage,
       getText: () => messageInputRef.current?.getText?.() ?? "",
+      setText: (text: string) => {
+        plainTextInput.current = text;
+        setPlainText(text);
+        messageInputRef.current?.setNativeProps?.({ text });
+      },
       clear: () => messageInputRef.current?.clear?.(),
       resetStreaming: () => {
         setShowStopButton(false);
@@ -700,9 +904,14 @@ export const CometChatMessageComposer = React.forwardRef(
         // Don't clear reply preview here - it needs to remain available for sendMediaMessage
         // The reply preview will be cleared after successful send in sendMediaMessage (line 1127)
 
-        let textComponents = message?.text;
+        // Media messages carry their editable text in the caption, not `.text`.
+        const editSourceText =
+          typeof message?.getCaption === "function"
+            ? (message.getCaption() ?? "")
+            : (message?.text ?? "");
+        let textComponents = editSourceText;
 
-        let rawText = message?.text;
+        let rawText = editSourceText;
 
         let users: any = {};
         let regexes: Array<RegExp> = [];
@@ -742,7 +951,7 @@ export const CometChatMessageComposer = React.forwardRef(
         // Sort edits by startIndex to apply them in order
         edits.sort((a: any, b: any) => a.startIndex - b.startIndex);
 
-        plainTextInput.current = getPlainString(message?.text, edits);
+        plainTextInput.current = getPlainString(editSourceText, edits) ?? "";
         setPlainText(plainTextInput.current);
         setOriginalText(plainTextInput.current.trim());
         setHasEdited(false);
@@ -806,21 +1015,49 @@ export const CometChatMessageComposer = React.forwardRef(
       sendMediaMessage(chatWithId.current, file, MessageTypeConstants.image, chatWith.current);
     };
 
-    const fileInputHandler = async (fileType: string) => {
-      if (fileType === MessageTypeConstants.takePhoto) {
-        if (!(await permissionUtil.startResourceBasedTask(["camera"]))) {
+    // The actual picker presentation. Split out from fileInputHandler so it can be
+    // launched inline (Android) or deferred to the sheet's onDismiss (iOS).
+    const launchPicker = async (fileType: string) => {
+      // §1 — MULTI (default): route image/video/file/camera through the staging tray.
+      if (enableMultipleAttachments) {
+        if (
+          fileType === MessageTypeConstants.image ||
+          fileType === MessageTypeConstants.video
+        ) {
+          await handlePickFiles('media');
           return;
         }
-        let quality = imageQuality;
-        if (isNaN(imageQuality) || imageQuality < 1 || imageQuality > 100) {
-          quality = 20;
+        if (fileType === MessageTypeConstants.file) {
+          await handlePickFiles('document');
+          return;
         }
-        if (Platform.OS === "android") {
-          FileManager.openCamera(fileType, Math.round(quality), cameraCallback);
-        } else {
-          FileManager.openCamera(fileType, cameraCallback);
+        if (fileType === MessageTypeConstants.audio) {
+          await handlePickFiles('audio');
+          return;
         }
-      } else if (Platform.OS === "ios" && fileType === MessageTypeConstants.video) {
+        if (fileType === MessageTypeConstants.takePhoto) {
+          if (!(await permissionUtil.startResourceBasedTask(["camera"]))) {
+            return;
+          }
+          await handlePickFiles('camera');
+          return;
+        }
+      }
+
+      // §1 — LEGACY single-select, send-immediately (flag=false, or audio/other types):
+      // one picker → one MediaMessage, no tray/multi-upload.
+      if (fileType === MessageTypeConstants.takePhoto) {
+        if (!(await permissionUtil.startResourceBasedTask(["camera"]))) return;
+        const onCapture = (result: any) => {
+          if (result && !CheckPropertyExists(result, "error") && result.uri) {
+            sendMediaMessage(chatWithId.current, { name: result.name, type: result.type, uri: result.uri }, MessageTypeConstants.image, chatWith.current);
+          }
+        };
+        if (Platform.OS === "ios") FileManager.openCamera("image", onCapture);
+        else FileManager.openCamera("image", 50, onCapture);
+        return;
+      }
+      if (Platform.OS === "ios" && fileType === MessageTypeConstants.video) {
         NativeModules.VideoPickerModule.pickVideo((file: any) => {
           if (file.uri)
             sendMediaMessage(
@@ -845,6 +1082,23 @@ export const CometChatMessageComposer = React.forwardRef(
         });
     };
 
+    const fileInputHandler = (fileType: string) => {
+      // Always close the attachment sheet first.
+      // iOS: UIKit can't present the picker while the sheet's modal is still
+      // dismissing, so stash the launch and fire it from the modal's onDismiss
+      // (see the ActionSheetBoard below). Android has no such restriction, so launch
+      // immediately as the sheet closes.
+      if (Platform.OS === "ios") {
+        pendingAttachmentActionRef.current = () => {
+          void launchPicker(fileType);
+        };
+        setShowActionSheet(false);
+        return;
+      }
+      setShowActionSheet(false);
+      void launchPicker(fileType);
+    };
+
     const playAudio = () => {
       if (customSoundForOutgoingMessage) {
         CometChatSoundManager.play(
@@ -855,6 +1109,136 @@ export const CometChatMessageComposer = React.forwardRef(
         CometChatSoundManager.play(CometChatSoundManager.SoundOutput.outgoingMessage);
       }
     };
+
+    const sendMultiAttachmentMediaMessage = useCallback(() => {
+      // Guard: never ship a partial batch. If any staged tile errored (FAILED/REJECTED), block
+      // the send until the user removes it (the send button is also disabled in this state).
+      if (selectedAttachmentsRef.current.some(a => a.uploadState === 'FAILED' || a.uploadState === 'REJECTED')) {
+        return;
+      }
+      const completed = uploadQueue.completedAttachments;
+      if (completed.length === 0) return;
+
+      // Prefer the SDK's upload batch id (DD §5.3) as the message batchId; captured BEFORE cancelAll
+      // releases the request. Fall back to a client timestamp id when the SDK doesn't expose one.
+      const sdkBatchId = uploadQueue.batchId;
+
+      // Release the SDK upload group + clear the queue's completed set so the NEXT pick starts a FRESH
+      // group. Without this the already-sent attachments linger in `completed` and get re-included in
+      // the next send (e.g. send 3 images, then add 1 → the next send ships all 4).
+      uploadQueue.cancelAll();
+
+      // §7 — FAN OUT: partition the completed tiles by kind and send ONE MediaMessage per
+      // non-empty kind (Images → Videos → Files; picker audio → file), all sharing one
+      // batchId. Each message gets its own muid; the caption goes on the LAST message only.
+      const groups = partitionAttachmentsByKind(completed);
+      if (groups.length === 0) return;
+
+      const batchId = sdkBatchId ?? String(getUnixTimestampInMilliseconds());
+      // §8.4 — total attachments across the whole batch, so the conversation-list preview can
+      // aggregate ("N attachments") from just the last fanned-out message it receives.
+      const batchTotalCount = groups.reduce((sum, g) => sum + g.attachments.length, 0);
+      const caption = plainTextInput.current.trim();
+      const currentReplyMessage = replyMessageRef.current;
+      const replyMessageId = currentReplyMessage?.message?.getId?.() ?? null;
+
+      // ENG-36991 — clear the swipe-to-reply preview UP-FRONT (the quote is captured above), so a
+      // throw anywhere in the fan-out/teardown below can't leave the reply preview stuck on a real
+      // device (it worked on the emulator, not on device). The reset block below is now redundant.
+      setReplyMessage(null);
+      replyMessageRef.current = null;
+
+      // Fresh MediaMessage for a group — used for both the optimistic echo and the send.
+      const buildMessage = (group: AttachmentKindGroup, index: number, muid: string) => {
+        const m = new CometChat.MediaMessage(chatWithId.current, null, group.type, chatWith.current);
+        m.setSender(loggedInUser.current);
+        m.setMuid(muid);
+        // setAttachments() writes data.attachments (validateMessage + FormData read there).
+        m.setAttachments(group.attachments);
+        // §7/§8.3a batch contract — lets the message list group the fanned-out messages.
+        m.setMetadata({ batchId, batchIndex: index, batchSize: groups.length, batchTotalCount });
+        if (index === groups.length - 1 && caption) m.setCaption(caption); // caption on LAST only
+        if (parentMessageId) m.setParentMessageId(parentMessageId as number); // thread parent on ALL
+        // Quoted reply on the FIRST message of the batch only — otherwise every fanned-out bubble
+        // shows the "replying to X" quote. (Thread parentMessageId above stays on all.)
+        if (replyMessageId && currentReplyMessage?.message && index === 0) {
+          if (typeof m.setQuotedMessage === 'function') m.setQuotedMessage(currentReplyMessage.message);
+          if (typeof m.setQuotedMessageId === 'function') m.setQuotedMessageId(replyMessageId);
+          (m as any).quotedMessage = currentReplyMessage.message;
+          (m as any).quotedMessageId = replyMessageId;
+        }
+        return m;
+      };
+
+      groups.forEach((group, index) => {
+        const muid = `${batchId}_${index}`;
+        const localMessage = buildMessage(group, index, muid);
+
+        // Optimistic (in-progress) bubble for this kind's message, keyed by its muid.
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+          message: localMessage,
+          status: messageStatus.inprogress,
+        });
+
+        // §7/§12.1 — independent per-message send: one kind can fail while others deliver.
+        const outgoing = buildMessage(group, index, muid);
+        CometChat.sendMediaMessage(outgoing)
+          .then((msg: any) => {
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+              message: msg,
+              status: messageStatus.success,
+            });
+            if (replyMessageId) {
+              CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
+                message: msg,
+                status: messageStatus.success,
+              });
+            }
+          })
+          .catch((error: any) => {
+            // Preserve the batch metadata; just flag this message's optimistic echo as failed.
+            const currentData = localMessage.getData() || {};
+            localMessage.setData({ ...currentData, metaData: { error: true } });
+            const md = (localMessage.getMetadata?.() as Record<string, unknown>) || {};
+            localMessage.setMetadata({ ...md, error: true });
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+              message: localMessage,
+              status: messageStatus.error,
+            });
+            onError && onError(error);
+          });
+      });
+
+      // Clear composer state immediately
+      setSelectedAttachments([]);
+      selectedAttachmentsRef.current = [];   // keep the ref exact so a pick right after send isn't gated on a stale count
+      plainTextInput.current = '';
+      inputValueRef.current = '';
+      setPlainText('');
+      setInputMessage('');
+      setReplyMessage(null);
+
+      if (!disableSoundForOutgoingMessages) {
+        if (customSoundForOutgoingMessage) {
+          CometChatSoundManager.play(
+            CometChatSoundManager.SoundOutput.outgoingMessage,
+            customSoundForOutgoingMessage
+          );
+        } else {
+          CometChatSoundManager.play(CometChatSoundManager.SoundOutput.outgoingMessage);
+        }
+      }
+    }, [
+      uploadQueue,
+      chatWithId,
+      chatWith,
+      loggedInUser,
+      parentMessageId,
+      replyMessageRef,
+      disableSoundForOutgoingMessages,
+      customSoundForOutgoingMessage,
+      onError,
+    ]);
 
     const clearInputBox = () => {
       inputValueRef.current = "";
@@ -1025,13 +1409,41 @@ export const CometChatMessageComposer = React.forwardRef(
       let finalTextInput = getRegexString(plainTextInput.current);
 
       let messageText = finalTextInput.trim();
-      let textMessage = new CometChat.TextMessage(
-        chatWithId.current,
-        messageText,
-        chatWith.current
-      );
-      textMessage.setId(message.id);
-      parentMessageId && textMessage.setParentMessageId(parentMessageId as number);
+
+      // Media caption edit — keep the media (attachments) and update only the caption.
+      // Mirrors the text path (fresh minimal message) so we don't PUT stale receipt/entity fields.
+      const isMediaEdit =
+        typeof message?.getCaption === "function" &&
+        typeof message?.setCaption === "function";
+
+      let outgoing: any;
+      if (isMediaEdit) {
+        // Same approach as the text edit below: build a FRESH message rather than reusing the one
+        // the server sent us (which carries stale metadata + the prior moderation verdict). A clean
+        // payload is re-moderated by the server just like a fresh send. Attachments are carried over
+        // so the media survives the caption edit.
+        const mediaMessage = new CometChat.MediaMessage(
+          chatWithId.current,
+          undefined as any,
+          message.getType(),
+          chatWith.current
+        );
+        mediaMessage.setId(message.getId ? message.getId() : message.id);
+        const existingAttachments = message.getAttachments?.() ?? [];
+        if (existingAttachments.length) mediaMessage.setAttachments(existingAttachments);
+        mediaMessage.setCaption(messageText);
+        parentMessageId && mediaMessage.setParentMessageId(parentMessageId as number);
+        outgoing = mediaMessage;
+      } else {
+        let textMessage = new CometChat.TextMessage(
+          chatWithId.current,
+          messageText,
+          chatWith.current
+        );
+        textMessage.setId(message.id);
+        parentMessageId && textMessage.setParentMessageId(parentMessageId as number);
+        outgoing = textMessage;
+      }
 
       inputValueRef.current = "";
       clearInputBox();
@@ -1040,13 +1452,13 @@ export const CometChatMessageComposer = React.forwardRef(
       setMessagePreview(null);
 
       if (onSendButtonPress) {
-        onSendButtonPress(textMessage);
+        onSendButtonPress(outgoing);
         return;
       }
 
       if (!disableSoundForOutgoingMessages) playAudio();
 
-      CometChat.editMessage(textMessage)
+      CometChat.editMessage(outgoing)
         .then((editedMessage: any) => {
           inputValueRef.current = "";
           setInputMessage("");
@@ -1065,7 +1477,8 @@ export const CometChatMessageComposer = React.forwardRef(
       receiverId?: any,
       messageInput?: any,
       messageType?: any,
-      receiverType?: any
+      receiverType?: any,
+      extraMetadata?: Record<string, any>
     ) => {
       setShowActionSheet(false);
       let mediaMessage = new CometChat.MediaMessage(
@@ -1075,10 +1488,19 @@ export const CometChatMessageComposer = React.forwardRef(
         receiverType
       );
 
+      // The optimistic echo (localMessage) and the message actually sent
+      // (mediaMessage) MUST share ONE muid. CometChatMessageList reconciles the
+      // in-progress bubble with the delivered message via messageEdited(), which
+      // matches by muid — and when no match is found it does nothing, so the
+      // delivered message is dropped and the optimistic bubble is orphaned (no
+      // echo until a refetch). Two independent getUnixTimestampInMilliseconds()
+      // calls can land in different milliseconds, so they must not be used
+      // separately here. This mirrors the working multi-attachment path.
+      const sharedMuid = String(getUnixTimestampInMilliseconds());
       mediaMessage.setSender(loggedInUser.current);
       mediaMessage.setReceiver(receiverType);
       mediaMessage.setType(messageType);
-      mediaMessage.setMuid(String(getUnixTimestampInMilliseconds()));
+      mediaMessage.setMuid(sharedMuid);
       mediaMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -1087,6 +1509,12 @@ export const CometChatMessageComposer = React.forwardRef(
         url: messageInput["uri"],
         sender: loggedInUser.current,
       });
+      // setMetadata MUST run AFTER setData: the SDK stores metadata inside `data`, and setData
+      // replaces `data` wholesale — tagging before it would be wiped from the server payload
+      // (e.g. audioType:"voice_note" would never round-trip, so recorded audio shows the wrong bubble).
+      if (extraMetadata) {
+        mediaMessage.setMetadata({ ...(mediaMessage.getMetadata() || {}), ...extraMetadata });
+      }
       // Use ref to get current replyMessage value (avoids stale closure)
       const currentReplyMessage = replyMessageRef.current;
       const replyMessageId = currentReplyMessage?.message?.getId?.() ?? null;
@@ -1118,7 +1546,9 @@ export const CometChatMessageComposer = React.forwardRef(
       localMessage.setSender(loggedInUser.current);
       localMessage.setReceiver(receiverType);
       localMessage.setType(messageType);
-      localMessage.setMuid(String(getUnixTimestampInMilliseconds()));
+      // Same muid as the sent mediaMessage above — see note there. This is what
+      // lets messageEdited() replace this optimistic bubble with the delivered one.
+      localMessage.setMuid(sharedMuid);
       localMessage.setData({
         type: messageType,
         category: CometChat.CATEGORY_MESSAGE,
@@ -1161,6 +1591,11 @@ export const CometChatMessageComposer = React.forwardRef(
           },
         },
       });
+      // setMetadata AFTER the final setData (SDK stores metadata inside `data`, which setData
+      // replaces) so the optimistic bubble carries the tag and matches the sent message.
+      if (extraMetadata) {
+        localMessage.setMetadata({ ...(localMessage.getMetadata() || {}), ...extraMetadata });
+      }
 
       CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
         message: localMessage,
@@ -1265,7 +1700,9 @@ export const CometChatMessageComposer = React.forwardRef(
 
     const SecondaryButtonViewElem = useMemo(() => {
       if (hideAttachmentButton || !actionSheetItems.length) return <></>;
-      return (
+      // Always open the action sheet (even at capacity) so the button never feels broken; an over-limit
+      // pick is rejected on selection (acceptPickedAttachments + count toast).
+      const attachBtn = (
         <AttachIconButton
           onPress={() => {
             Keyboard.dismiss();
@@ -1275,7 +1712,9 @@ export const CometChatMessageComposer = React.forwardRef(
           iconStyle={mergedComposerStyle.attachmentIconStyle as ImageStyle}
         />
       );
-    }, [mergedComposerStyle, actionSheetItems, hideAttachmentButton]);
+      // Edit mode: attachments are disabled (greyed, non-interactive) — only Send and Sticker stay active.
+      return messagePreview ? <View pointerEvents="none" style={{ opacity: DISABLED_BUTTON_OPACITY }}>{attachBtn}</View> : attachBtn;
+    }, [mergedComposerStyle, actionSheetItems, hideAttachmentButton, messagePreview]);
 
     const RecordAudioButtonView = ({
       icon,
@@ -1306,13 +1745,18 @@ export const CometChatMessageComposer = React.forwardRef(
     const voiceRecoringButtonElem = useMemo(() => {
       const isAgenticUser = user?.getRole?.() === '@agentic';
 
-      return (hideVoiceRecordingButton || isAgenticUser) ? undefined : (
+      if (hideVoiceRecordingButton || isAgenticUser) return undefined;
+      // Once attachments are staged, hide the mic — Send takes over (matches the compact composer).
+      if (selectedAttachments.length > 0) return undefined;
+      const micBtn = (
         <RecordAudioButtonView
           icon={mergedComposerStyle.voiceRecordingIcon as ImageSourcePropType | JSX.Element}
           iconStyle={mergedComposerStyle.voiceRecordingIconStyle as ImageStyle}
         />
       );
-    }, [hideVoiceRecordingButton, mergedComposerStyle, user]);
+      // Edit mode: voice recording is disabled — only Send and Sticker stay active.
+      return messagePreview ? <View pointerEvents="none" style={{ opacity: DISABLED_BUTTON_OPACITY }}>{micBtn}</View> : micBtn;
+    }, [hideVoiceRecordingButton, mergedComposerStyle, user, messagePreview, selectedAttachments.length]);
 
     const AuxiliaryButtonViewElem = useCallback(() => {
       const isAgenticUser = user?.getRole?.() === '@agentic';
@@ -1324,7 +1768,23 @@ export const CometChatMessageComposer = React.forwardRef(
         return <></>;
       }
 
-      if (defaultAuxiliaryButtonOptions)
+      if (defaultAuxiliaryButtonOptions) {
+        // Edit mode: keep only the Sticker button active; disable (grey + non-interactive) the rest.
+        const items = messagePreview
+          ? (defaultAuxiliaryButtonOptions as any[]).map((el, idx) =>
+              el?.key === "sticker-button"
+                ? el
+                : (
+                  <View
+                    key={el?.key ?? `aux-${idx}`}
+                    pointerEvents="none"
+                    style={{ opacity: DISABLED_BUTTON_OPACITY }}
+                  >
+                    {el}
+                  </View>
+                )
+            )
+          : defaultAuxiliaryButtonOptions;
         return (
           <View
             style={{
@@ -1333,12 +1793,13 @@ export const CometChatMessageComposer = React.forwardRef(
               gap: theme.spacing.spacing.s2,
             }}
           >
-            {defaultAuxiliaryButtonOptions}
+            {items}
           </View>
         );
+      }
 
       return <></>;
-    }, [defaultAuxiliaryButtonOptions, user, AuxiliaryButtonView, group, id, theme]);
+    }, [defaultAuxiliaryButtonOptions, user, AuxiliaryButtonView, group, id, theme, messagePreview]);
 
     const DefaultAgentSendButtonView = useCallback(
       ({ isButtonDisabled, composerRef }: { isButtonDisabled: boolean; composerRef: any }) => (
@@ -1359,7 +1820,20 @@ export const CometChatMessageComposer = React.forwardRef(
       const isAgenticUserCheck = isAgenticUser();
 
       if (isAgenticUserCheck) {
-        const disabled = isStreaming || plainTextInput.current.trim().length === 0|| (messagePreview && !hasEdited) || isSendButtonDisabledForDelay;
+        const hasPendingUploadsAgentic = selectedAttachments.some(
+          a => a.uploadState === 'NONE' || a.uploadState === 'UPLOADING'
+        );
+        // Errored (FAILED/REJECTED) tiles block send until the user removes them — no partial batch.
+        const hasErroredUploadsAgentic = selectedAttachments.some(
+          a => a.uploadState === 'FAILED' || a.uploadState === 'REJECTED'
+        );
+        const disabled =
+          isStreaming ||
+          (plainTextInput.current.trim().length === 0 && selectedAttachments.length === 0) ||
+          (messagePreview && !hasEdited) ||
+          isSendButtonDisabledForDelay ||
+          hasPendingUploadsAgentic ||
+          hasErroredUploadsAgentic;
         const SendButtonComponent =  DefaultAgentSendButtonView;
         // Create a ref-like object that matches what CometChatSendButtonView expects
         const composerRef = {
@@ -1375,10 +1849,25 @@ export const CometChatMessageComposer = React.forwardRef(
       }
 
       if (SendButtonView) return <SendButtonView user={user} group={group} composerId={id!} />;
-      const disabled = isStreaming || plainText.trim().length === 0 || (messagePreview && !hasEdited);
+      const hasPendingUploads = selectedAttachments.some(
+        a => a.uploadState === 'NONE' || a.uploadState === 'UPLOADING'
+      );
+      // Errored (FAILED/REJECTED) tiles block send until the user removes them — no partial batch.
+      const hasErroredUploads = selectedAttachments.some(
+        a => a.uploadState === 'FAILED' || a.uploadState === 'REJECTED'
+      );
+      const disabled =
+        isStreaming ||
+        (plainText.trim().length === 0 && selectedAttachments.length === 0) ||
+        (messagePreview && !hasEdited) ||
+        hasPendingUploads ||
+        hasErroredUploads;
+      const handleSendPress = selectedAttachments.length > 0
+        ? sendMultiAttachmentMediaMessage
+        : sendTextMessage;
       return (
         <TouchableOpacity
-          onPress={sendTextMessage}
+          onPress={handleSendPress}
           style={[
             {
               borderRadius: theme.spacing.radius.max,
@@ -1402,7 +1891,7 @@ export const CometChatMessageComposer = React.forwardRef(
           />
         </TouchableOpacity>
       );
-    }, [mergedComposerStyle, inputMessage, plainText, messagePreview, hasEdited, isStreaming, DefaultAgentSendButtonView, user, isAgenticUser, sendTextMessage, hideSendButton, SendButtonView, isSendButtonDisabledForDelay]);
+    }, [mergedComposerStyle, inputMessage, plainText, messagePreview, hasEdited, isStreaming, DefaultAgentSendButtonView, user, isAgenticUser, sendTextMessage, sendMultiAttachmentMediaMessage, hideSendButton, SendButtonView, isSendButtonDisabledForDelay, selectedAttachments]);
 
     //fetch logged in user
     useEffect(() => {
@@ -1440,6 +1929,23 @@ export const CometChatMessageComposer = React.forwardRef(
     }, []);
 
     useEffect(() => {
+      const newChatWithId = user?.getUid()
+        ? user.getUid()
+        : group?.getGuid()
+        ? group.getGuid()
+        : chatWithId.current;
+
+      // Conversation switch guard: if the receiver IDENTITY changed, drop any staged / in-flight
+      // attachments so they can't be sent to the new receiver (wrong-destination leak). Compare the
+      // uid/guid — NOT the user/group object refs — so a parent re-render that passes fresh objects
+      // for the SAME conversation doesn't wipe a tray the user is mid-staging. Skip the first
+      // assignment (chatWithId.current === null → nothing staged yet).
+      if (chatWithId.current != null && chatWithId.current !== newChatWithId) {
+        uploadQueue.cancelAll();
+        setSelectedAttachments([]);
+        selectedAttachmentsRef.current = [];
+      }
+
       //update receiver user
       if (user && user.getUid()) {
         chatRef.current = {
@@ -1672,9 +2178,11 @@ export const CometChatMessageComposer = React.forwardRef(
         type: "audio/mp4",
         uri: recordedFile,
       };
-      // console.log("fileObj", fileObj); // Removed debug log
-      sendMediaMessage(chatWithId.current, fileObj, MessageTypeConstants.audio, chatWith.current);
-      // console.log("Send Audio"); // Removed debug log
+      // §8.1a — tag recorded audio as a voice note so it renders in the WAVEFORM bubble
+      // (CometChatAudioBubble), distinct from picked/shared audio files which use the
+      // headphone+filename bubble. Always tagged (independent of enableMultipleAttachments).
+      const voiceNoteMeta = { audioType: "voice_note" }; // always tag → recorded audio is ALWAYS the waveform bubble
+      sendMediaMessage(chatWithId.current, fileObj, MessageTypeConstants.audio, chatWith.current, voiceNoteMeta);
     };
 
     function shouldOpenList(
@@ -2245,13 +2753,44 @@ export const CometChatMessageComposer = React.forwardRef(
               mergedComposerStyle.containerStyle as ViewStyle,
             ]}
           >
+            {/* Error banner floats ABOVE the composer, over the message list. */}
+            <View
+              onLayout={(e) => {
+                const h = e.nativeEvent.layout.height;
+                if (h > 0 && h !== attachmentBannerHeight) setAttachmentBannerHeight(h);
+              }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                // Sit fully ABOVE the composer with a gap: top = -(measured banner height + gap), so it
+                // clears the composer regardless of text length. Hidden until measured (avoids a flash).
+                top: -(attachmentBannerHeight + theme.spacing.spacing.s3),
+                paddingHorizontal: theme.spacing.padding.p2, // match the composer's side inset
+                opacity: attachmentBannerHeight > 0 ? 1 : 0,
+              }}
+              pointerEvents="box-none"
+            >
+              <CometChatComposerErrorBanner
+                message={attachmentBannerMessage}
+                onDismiss={() => setAttachmentBannerMessage(null)}
+              />
+            </View>
             <ActionSheetBoard
               sheetRef={bottomSheetRef}
               options={actionSheetItems}
               shouldShow={showActionSheet}
               onClose={() => setShowActionSheet(false)}
+              // iOS: launch the deferred picker only after the sheet's modal has
+              // fully dismissed, so UIKit isn't asked to present while dismissing.
+              onDismiss={() => {
+                const action = pendingAttachmentActionRef.current;
+                pendingAttachmentActionRef.current = null;
+                action?.();
+              }}
               style={mergedComposerStyle.attachmentOptionsStyles}
             />
+
             <RecordAudio
               sheetRef={bottomSheetRef}
               options={actionSheetItems}
@@ -2288,12 +2827,20 @@ export const CometChatMessageComposer = React.forwardRef(
               style={[
                 {
                   flexDirection: "column",
+                  // Give this "above-input" area the composer surface when there's an edit/reply
+                  // preview, with NO bottom edge so it joins the input below into ONE continuous,
+                  // bordered composer surface. (The attachment tray now uses a matching surface
+                  // BELOW the input instead.)
                   ...(messagePreview || replyMessage ? {
                     backgroundColor: theme.color.background1,
-                    borderTopRightRadius: 8,
-                    borderTopLeftRadius: 8,
+                    // radius.r2 + borderDefault + (s0_5 / 2) width — the SAME tokens the input's
+                    // messageInputStyles.containerStyle uses, so the tray joins it seamlessly.
+                    borderTopRightRadius: theme.spacing.radius.r2,
+                    borderTopLeftRadius: theme.spacing.radius.r2,
                     paddingHorizontal: theme.spacing.padding.p1,
-                    // paddingTop: theme.spacing.padding.p1,
+                    borderWidth: theme.spacing.spacing.s0_5 / 2,
+                    borderColor: theme.color.borderDefault,
+                    borderBottomWidth: 0,
                   } : {}),
                 },
               ]}
@@ -2310,6 +2857,16 @@ export const CometChatMessageComposer = React.forwardRef(
                 <CometChatMessagePreview
                   messagePreviewTitle={t("EDIT_MESSAGE")}
                   message={messagePreview?.message}
+                  // Editing a media caption: caption text is the editable subtitle; a muted overline
+                  // (media-type icon + attachment count) restores the context the hidden thumbnail gave.
+                  {...(typeof messagePreview?.message?.getCaption === "function"
+                    ? {
+                        messagePreviewSubtitle:
+                          messagePreview.message.getCaption() ?? "",
+                        hideSubtitleIcon: true,
+                        overlineText: attachmentCountLabel(messagePreview.message.getType?.(), messagePreview.message.getAttachments?.()?.length ?? 1),
+                      }
+                    : {})}
                   showCloseIcon={true}
                   closeIconURL={ICONS.CLOSE}
                   onCloseClick={() => {
@@ -2346,6 +2903,14 @@ export const CometChatMessageComposer = React.forwardRef(
                 />
               )}
             </View>
+            {trayMediaItems.length > 0 && (
+              <CometChatMediaViewer
+                mediaItems={trayMediaItems}
+                startIndex={trayViewerIndex}
+                visible={trayViewerVisible}
+                onClose={() => setTrayViewerVisible(false)}
+              />
+            )}
             <CometChatMessageInput
               messageInputRef={messageInputRef}
               text={inputMessage as string}
@@ -2354,9 +2919,18 @@ export const CometChatMessageComposer = React.forwardRef(
                 ...mergedComposerStyle.messageInputStyles,
                 containerStyle: {
                   ...mergedComposerStyle.messageInputStyles?.containerStyle,
+                  // Square the TOP for previews above (edit/reply) and the BOTTOM for the tray below,
+                  // so the input joins whichever surface is attached into one continuous composer.
                   ...(messagePreview || replyMessage ? {
                     borderTopLeftRadius: 0,
                     borderTopRightRadius: 0,
+                  } : {}),
+                  ...(selectedAttachments.length > 0 ? {
+                    borderBottomLeftRadius: 0,
+                    borderBottomRightRadius: 0,
+                    // No bottom edge either — the tray surface below closes the box, so input + tray
+                    // read as one seamless container (like the single-line composer), not two pieces.
+                    borderBottomWidth: 0,
                   } : {}),
                 },
               }}
@@ -2365,7 +2939,6 @@ export const CometChatMessageComposer = React.forwardRef(
                 const mentionRange = getMentionRangeAtCursor(mentionMap.current, cursorPos);
 
                 if (mentionRange) {
-                  console.log('Mention boundary positions:', mentionRange);
                   const distanceToStart = cursorPos - mentionRange.start;
                   const distanceToEnd = mentionRange.end - cursorPos;
                   let targetPosition: number;
@@ -2376,6 +2949,11 @@ export const CometChatMessageComposer = React.forwardRef(
                   }
                   if (targetPosition !== cursorPos) {
                     InteractionManager.runAfterInteractions(() => {
+                      // Move the cursor IMPERATIVELY — the input is uncontrolled (the `selection`
+                      // prop was removed). A controlled `selection` prop re-fires onSelectionChange
+                      // on every re-render, which hard-freezes iOS once the attachment tray adds
+                      // layout churn. This mirrors the compact composer's proven approach.
+                      messageInputRef.current?.setSelection?.(targetPosition, targetPosition);
                       setSelectionPosition({ start: targetPosition, end: targetPosition });
                     });
                     return;
@@ -2385,7 +2963,6 @@ export const CometChatMessageComposer = React.forwardRef(
                 setSelectionPosition(selection);
                 openList(selection);
               }}
-              selection={selectionPosition}
               onChangeText={textChangeHandler}
               VoiceRecordingButtonView={voiceRecoringButtonElem}
               SecondaryButtonView={SecondaryButtonViewElem}
@@ -2393,6 +2970,29 @@ export const CometChatMessageComposer = React.forwardRef(
               PrimaryButtonView={SendButtonViewElem}
               auxiliaryButtonAlignment={auxiliaryButtonsAlignment}
             />
+            {/* Staged attachment tray — BELOW the input, on a matching composer surface with NO top
+                edge so it joins the input above into ONE continuous box (mirrors the above-input
+                surface, just bottom-rounded instead of top-rounded — same tokens). */}
+            {selectedAttachments.length > 0 && (
+              <View
+                style={{
+                  backgroundColor: theme.color.background1,
+                  borderBottomRightRadius: theme.spacing.radius.r2,
+                  borderBottomLeftRadius: theme.spacing.radius.r2,
+                  paddingHorizontal: theme.spacing.padding.p1,
+                  borderWidth: theme.spacing.spacing.s0_5 / 2,
+                  borderColor: theme.color.borderDefault,
+                  borderTopWidth: 0,
+                }}
+              >
+                <CometChatAttachmentTray
+                  attachments={selectedAttachments}
+                  onRemove={handleRemoveAttachment}
+                  onRetry={handleRetryAttachment}
+                  onPressTile={handleTrayTilePress}
+                />
+              </View>
+            )}
           </View>
         </KeyboardAvoidingView>
         {CustomViewFooter ? (

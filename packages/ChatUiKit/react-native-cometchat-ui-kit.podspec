@@ -18,6 +18,7 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.static_framework = true  # Set static_framework for the main spec if needed
+  s.frameworks = ["PhotosUI"]
   s.dependency "React-Core"
 
   s.subspec "Video" do |ss|

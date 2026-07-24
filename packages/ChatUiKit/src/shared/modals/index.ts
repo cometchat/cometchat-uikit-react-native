@@ -8,3 +8,7 @@ export {
   CometChatAIAssistantTools,
   StreamMessage
 };
+
+// Multiple Attachment Support — U2
+export type { UploadState } from './UploadState';
+export type { SelectedAttachment } from './SelectedAttachment';

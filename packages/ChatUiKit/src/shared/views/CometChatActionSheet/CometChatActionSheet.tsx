@@ -46,6 +46,7 @@ const OptionListView = ({
   return (
     <Pressable
       key={id}
+      testID={`ActionSheet.${id}`}
       onPress={onPress}
       onPressIn={() => setIsPressed(true)}
       onPressOut={() => setIsPressed(false)}

@@ -26,10 +26,11 @@ import {
 } from "../constants/UIKitConstants";
 import { CometChatUiKitConstants } from "../index";
 import { CometChatMessageComposerAction } from "../helper/types";
-import { Icon } from "../icons/Icon";
+import { Icon, IconName } from "../icons/Icon";
+import { getMessagePreviewInternal } from "../utils/MessageUtils";
 import { CometChatMessageOption } from "../modals/CometChatMessageOption";
 import { CometChatMessageTemplate } from "../modals/CometChatMessageTemplate";
-import { CometChatConversationUtils } from "../utils/conversationUtils";
+import { CometChatConversationUtils, attachmentCountLabel } from "../utils/conversationUtils";
 import { CometChatAudioBubble } from "../views/CometChatAudioBubble";
 import { CometChatDeletedBubble } from "../views/CometChatDeletedBubble";
 import { CometChatFileBubble } from "../views/CometChatFileBubble";
@@ -43,10 +44,17 @@ import { CometChatCardBubble } from "../views/CometChatCardBubble";
 import { ChatConfigurator } from "./ChatConfigurator";
 import { DataSource } from "./DataSource";
 import { CommonUtils } from "../utils/CommonUtils";
-import { DimensionValue, TouchableOpacity, ViewStyle, View, Text, Platform } from "react-native";
+import { DimensionValue, Modal, NativeModules, StyleSheet, TouchableOpacity, ViewStyle, View, Text, Platform } from "react-native";
+const { FileManager } = NativeModules;
+// Multiple Attachment Support — U9
+import { groupAttachments, isGalleryMessage } from "../utils/groupAttachments";
+import { CometChatImagesBubble } from "../views/CometChatImagesBubble";
+import { CometChatVideosBubble } from "../views/CometChatVideosBubble";
+import { CometChatFilesBubble } from "../views/CometChatFilesBubble";
+import { CometChatAudiosBubble } from "../views/CometChatAudiosBubble";
+import { CometChatVoiceNoteBubble } from "../views/CometChatVoiceNoteBubble";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/LocalizationManager";
-import { CometChatMessageEvents } from "../events/CometChatMessageEvents";
 
 const t = getCometChatTranslation();
 
@@ -96,6 +104,72 @@ function isImageMessage(message: CometChat.BaseMessage): message is CometChat.Me
 
 function isDeletedMessage(message: CometChat.BaseMessage): boolean {
   return message.getDeletedBy() != null;
+}
+
+// Kind-specific icon + "N Photos/Videos/Audios/Files" label for a conversation-list preview, keyed by
+// the message TYPE. Files are the default (documents + everything else). Never a generic "attachments".
+function kindPreview(type: string, count: number): { icon: IconName; label: string } {
+  const label = attachmentCountLabel(type, count); // shared "N Files/Photos/…" label
+  switch (type) {
+    case MessageTypeConstants.image: return { icon: 'photo-fill', label };
+    case MessageTypeConstants.video: return { icon: 'videocam-fill', label };
+    case MessageTypeConstants.audio: return { icon: 'mic-fill', label };
+    default: return { icon: 'description-fill', label };
+  }
+}
+
+// U10 — Conversation list subtitle for multi-attachment messages (design doc §17.2)
+function buildMultiAttachmentSubtitle(
+  mediaAttachments: CometChat.Attachment[],
+  audioAttachments: CometChat.Attachment[],
+  fileAttachments: CometChat.Attachment[],
+  message: CometChat.MediaMessage
+): string {
+  const caption = (message.getCaption() ?? '').trim();
+  const imageCount = mediaAttachments.filter(a =>
+    a.getMimeType().startsWith('image/')
+  ).length;
+  const videoCount = mediaAttachments.filter(a =>
+    a.getMimeType().startsWith('video/')
+  ).length;
+  const mediaCount = mediaAttachments.length;
+  const audioCount = audioAttachments.length;
+  const fileCount = fileAttachments.length;
+  const totalCount = mediaCount + audioCount + fileCount;
+
+  // Mixed kinds → generic label
+  const kindCount = [mediaCount > 0, audioCount > 0, fileCount > 0].filter(Boolean).length;
+  if (kindCount > 1) {
+    return t('ATTACHMENT_COUNT').replace('{count}', String(totalCount));
+  }
+
+  // Audio only
+  if (audioCount > 0) {
+    return t('PREVIEW_AUDIOS_COUNT').replace('{count}', String(audioCount));
+  }
+
+  // Files only
+  if (fileCount > 0) {
+    return t('PREVIEW_FILES_COUNT').replace('{count}', String(fileCount));
+  }
+
+  // Media only — caption takes priority over image/video breakdown
+  if (caption) {
+    const truncated = caption.length > 40 ? caption.substring(0, 40) + '…' : caption;
+    const mediaLabel = imageCount > 0 && videoCount === 0
+      ? t('PREVIEW_PHOTOS_COUNT').replace('{count}', String(imageCount))
+      : videoCount > 0 && imageCount === 0
+        ? t('PREVIEW_VIDEOS_COUNT').replace('{count}', String(videoCount))
+        : `📷 ${mediaCount} media`;
+    return `${mediaLabel} · ${truncated}`;
+  }
+  if (imageCount > 0 && videoCount === 0) {
+    return t('PREVIEW_PHOTOS_COUNT').replace('{count}', String(imageCount));
+  }
+  if (videoCount > 0 && imageCount === 0) {
+    return t('PREVIEW_VIDEOS_COUNT').replace('{count}', String(videoCount));
+  }
+  return `${t('PREVIEW_PHOTOS_COUNT').replace('{count}', String(imageCount))} & ${t('PREVIEW_VIDEOS_COUNT').replace('{count}', String(videoCount))}`;
 }
 
 export class MessageDataSource implements DataSource {
@@ -154,7 +228,7 @@ export class MessageDataSource implements DataSource {
 
       FooterView: (message: CometChat.BaseMessage) => (
         <TouchableOpacity onPress={() => this.handleCopy(message as CometChat.AIAssistantMessage)}>
-          <Icon name="ai-copy-option" width={24} height={24} containerStyle={{marginLeft: 10, marginBottom: -20}} color={theme.color.textSecondary} />
+          <Icon name="ai-copy-option" width={24} height={24} containerStyle={styles.aiCopyIcon} color={theme.color.textSecondary} />
         </TouchableOpacity>
       ),
     });
@@ -525,7 +599,7 @@ export class MessageDataSource implements DataSource {
     additionalParams?: AdditionalParams
   ): CometChatMessageOption[] {
     let optionsList: Array<CometChatMessageOption> = [];
-    if (!isDeletedMessage(messageObject))
+    if (!isDeletedMessage(messageObject)) {
       optionsList.push(
         ...ChatConfigurator.dataSource.getCommonOptions(
           loggedInUser,
@@ -535,8 +609,64 @@ export class MessageDataSource implements DataSource {
           additionalParams
         )
       );
+      this.pushCaptionEditOption(
+        optionsList,
+        loggedInUser,
+        messageObject,
+        theme,
+        group,
+        additionalParams
+      );
+    }
     return optionsList;
   }
+  /** §8.5 — Download all attachments sequentially via FileManager.checkAndDownload. */
+  getDownloadAllOption(theme: CometChatTheme): CometChatMessageOption {
+    return {
+      id: MessageOptionConstants.downloadAll,
+      title: t('ATTACHMENT_DOWNLOAD_ALL') ?? 'Download all',
+      onPress: (message: CometChat.BaseMessage) => {
+        const mediaMsg = message as CometChat.MediaMessage;
+        const attachments = mediaMsg.getAttachments?.() ?? [];
+        attachments.forEach((att) => {
+          FileManager?.checkAndDownload(att.getUrl(), att.getName(), () => {});
+        });
+      },
+    };
+  }
+
+  /**
+   * Media messages get an Edit option only when they carry a caption — you edit the
+   * caption of a media attachment, not the file. Inserted before Delete to mirror text ordering.
+   */
+  private pushCaptionEditOption(
+    optionsList: CometChatMessageOption[],
+    loggedInUser: CometChat.User,
+    messageObject: CometChat.BaseMessage,
+    theme: CometChatTheme,
+    group?: CometChat.Group,
+    additionalParams?: AdditionalParams
+  ) {
+    const caption = ((messageObject as CometChat.MediaMessage).getCaption?.() ?? '').trim();
+    if (!caption.length) return;
+    if (
+      !this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.editMessage,
+        group,
+        additionalParams
+      )
+    )
+      return;
+    const editOption = this.getEditOption(theme);
+    const deleteIdx = optionsList.findIndex(
+      (o) => o.id === MessageOptionConstants.deleteMessage
+    );
+    if (deleteIdx >= 0) optionsList.splice(deleteIdx, 0, editOption);
+    else optionsList.push(editOption);
+  }
+
   getVideoMessageOptions(
     loggedInUser: CometChat.User,
     messageObject: CometChat.BaseMessage,
@@ -545,7 +675,7 @@ export class MessageDataSource implements DataSource {
     additionalParams?: AdditionalParams
   ): CometChatMessageOption[] {
     let optionsList: Array<CometChatMessageOption> = [];
-    if (!isDeletedMessage(messageObject))
+    if (!isDeletedMessage(messageObject)) {
       optionsList.push(
         ...ChatConfigurator.dataSource.getCommonOptions(
           loggedInUser,
@@ -555,6 +685,15 @@ export class MessageDataSource implements DataSource {
           additionalParams
         )
       );
+      this.pushCaptionEditOption(
+        optionsList,
+        loggedInUser,
+        messageObject,
+        theme,
+        group,
+        additionalParams
+      );
+    }
     return optionsList;
   }
   getImageMessageOptions(
@@ -565,7 +704,7 @@ export class MessageDataSource implements DataSource {
     additionalParams?: AdditionalParams
   ): CometChatMessageOption[] {
     let optionsList: Array<CometChatMessageOption> = [];
-    if (!isDeletedMessage(messageObject))
+    if (!isDeletedMessage(messageObject)) {
       optionsList.push(
         ...ChatConfigurator.dataSource.getCommonOptions(
           loggedInUser,
@@ -575,6 +714,15 @@ export class MessageDataSource implements DataSource {
           additionalParams
         )
       );
+      this.pushCaptionEditOption(
+        optionsList,
+        loggedInUser,
+        messageObject,
+        theme,
+        group,
+        additionalParams
+      );
+    }
     return optionsList;
   }
   getFileMessageOptions(
@@ -585,7 +733,7 @@ export class MessageDataSource implements DataSource {
     additionalParams?: AdditionalParams
   ): CometChatMessageOption[] {
     let optionsList: Array<CometChatMessageOption> = [];
-    if (!isDeletedMessage(messageObject))
+    if (!isDeletedMessage(messageObject)) {
       optionsList.push(
         ...ChatConfigurator.dataSource.getCommonOptions(
           loggedInUser,
@@ -595,6 +743,15 @@ export class MessageDataSource implements DataSource {
           additionalParams
         )
       );
+      this.pushCaptionEditOption(
+        optionsList,
+        loggedInUser,
+        messageObject,
+        theme,
+        group,
+        additionalParams
+      );
+    }
     return optionsList;
   }
   getMessageOptions(
@@ -1033,19 +1190,24 @@ export class MessageDataSource implements DataSource {
     theme: CometChatTheme,
     additionalParams?: AdditionalParams
   ): JSX.Element | null {
-    const hasQuotedMessage = message.getQuotedMessage();
-    
-    if (!hasQuotedMessage || 
-        message instanceof CometChat.Action || 
-        message.getDeletedAt()) {
+   // A quoted message can arrive method-less (raw data, no prototype — same symlinked-SDK issue as
+   // the conversation list). Every accessor below is guarded, and the whole builder is wrapped in
+   // try/catch: a bad quoted message must, at worst, hide the reply preview — NEVER throw and blank
+   // the entire message bubble (which is what made replies-to-attachments vanish from the list).
+   try {
+    const hasQuotedMessage = message.getQuotedMessage?.();
+
+    if (!hasQuotedMessage ||
+        message instanceof CometChat.Action ||
+        message.getDeletedAt?.()) {
       return null;
     }
 
     // Check if the original message is outgoing to determine styling
     const loggedInUser = CometChatUIKit.loggedInUser;
-    const isOutgoingMessage = loggedInUser && message.getSender()?.getUid() === loggedInUser?.getUid();
-    
-    const isQuotedMessageDeleted = hasQuotedMessage.getDeletedBy() != null;
+    const isOutgoingMessage = loggedInUser && message.getSender?.()?.getUid?.() === loggedInUser?.getUid?.();
+
+    const isQuotedMessageDeleted = ((hasQuotedMessage as any).getDeletedBy?.() ?? null) != null;
     
     // Create custom theme with overridden colors for reply view
     const replyTheme = {
@@ -1060,7 +1222,7 @@ export class MessageDataSource implements DataSource {
     // Handle click to navigate to quoted message
     const handleReplyClick = () => {
       if (!isQuotedMessageDeleted) {
-        const messageId = String(hasQuotedMessage.getId());
+        const messageId = String((hasQuotedMessage as any).getId?.() ?? '');
         if (additionalParams?.onReplyClick) {
           additionalParams.onReplyClick(messageId);
         }
@@ -1099,13 +1261,18 @@ export class MessageDataSource implements DataSource {
     if (additionalParams?.onReplyClick && !isQuotedMessageDeleted) {
       const replyTouchableStyle = { padding: theme.spacing.padding.p0_5 };
       return (
-        <TouchableOpacity onPress={handleReplyClick} activeOpacity={0.7} style={replyTouchableStyle}>
+        <TouchableOpacity testID="bubble-quoted-reply" onPress={handleReplyClick} activeOpacity={0.7} style={replyTouchableStyle}>
           {previewComponent}
         </TouchableOpacity>
       );
     }
 
-    return previewComponent;
+    return <View testID="bubble-quoted-reply">{previewComponent}</View>;
+   } catch (e) {
+     // A malformed quoted message must not crash the whole list — degrade gracefully by
+     // hiding just the reply preview; the message bubble itself still renders.
+     return null;
+   }
   }
 
   getDeleteMessageBubble(message: CometChat.BaseMessage, theme: CometChatTheme): JSX.Element {
@@ -1323,12 +1490,24 @@ export class MessageDataSource implements DataSource {
   ): JSX.Element {
     let loggedInUser = CometChatUIKit.loggedInUser;
     if (isImageMessage(message)) {
-      const _style =
-        message.getSender()?.getUid() === loggedInUser?.getUid()
-          ? theme.messageListStyles.outgoingMessageBubbleStyles?.imageBubbleStyles
-          : theme.messageListStyles.incomingMessageBubbleStyles?.imageBubbleStyles;
+      const isSentByMe = message.getSender()?.getUid() === loggedInUser?.getUid();
+      const _style = isSentByMe
+        ? theme.messageListStyles.outgoingMessageBubbleStyles?.imageBubbleStyles
+        : theme.messageListStyles.incomingMessageBubbleStyles?.imageBubbleStyles;
 
-      return <CometChatImageBubble imageUrl={{ uri: imageUrl }} style={_style?.imageStyle} />;
+      return (
+        <View>
+          <CometChatImageBubble imageUrl={{ uri: imageUrl }} style={_style?.imageStyle} />
+          {Boolean(caption) && (
+            <Text style={{
+              color: isSentByMe ? theme.color.staticWhite : theme.color.neutral900,
+              paddingHorizontal: 8,
+              paddingTop: 6,
+              paddingBottom: 4,
+            }}>{caption}</Text>
+          )}
+        </View>
+      );
     }
     return <></>;
   }
@@ -1443,9 +1622,35 @@ export class MessageDataSource implements DataSource {
   getAudioMessageContentView(
     message: CometChat.MediaMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element {
-    let attachment = message.getAttachment();
+    // DD §9 — enableMultipleAttachments=false on the message list → deprecated single-attachment bubble.
+    if (additionalParams?.enableMultipleAttachments === false) {
+      const attachment = message.getAttachment();
+      return ChatConfigurator.dataSource.getAudioMessageBubble(
+        attachment.getUrl(), attachment.getName(), {}, message, theme
+      );
+    }
+    // §8.1a — audio rendering matches WhatsApp:
+    //  • SHARED / picked audio file (no audioType) → the headphone-chip + filename player
+    //    (CometChatAudiosBubble), single or multiple.
+    //  • RECORDED voice note (metadata.audioType === "voice_note") → the WAVEFORM player
+    //    (CometChatVoiceNoteBubble for a stack; the single-audio CometChatAudioBubble for one).
+    // An AUDIO message ALWAYS renders the audio bubble — no fallback to a file list. Any attachment
+    // that isn't a playable audio file (unsupported audio format, or a non-audio image/video/doc)
+    // shows a "no preview" file card (icon + name + Download) inside the bubble (see CometChatAudiosBubble).
+    const audioType = (message.getMetadata?.() as Record<string, any> | undefined)?.audioType;
+    if (audioType !== "voice_note") {
+      // shared/picked audio file(s) → headphone + filename cards
+      return <CometChatAudiosBubble message={message} theme={theme} />;
+    }
+    // DD §8.1a — recorded voice note → waveform: a STACK (2+) uses CometChatVoiceNoteBubble; a SINGLE
+    // recording (the usual case — voice notes are recorded one at a time) uses the single-audio bubble.
+    if (isGalleryMessage(message)) {
+      return <CometChatVoiceNoteBubble message={message} theme={theme} />;
+    }
+    const attachment = message.getAttachment();
     return ChatConfigurator.dataSource.getAudioMessageBubble(
       attachment.getUrl(),
       attachment.getName(),
@@ -1457,45 +1662,55 @@ export class MessageDataSource implements DataSource {
   getVideoMessageContentView(
     message: CometChat.MediaMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element | null {
-    let attachment = message.getAttachment();
-    return ChatConfigurator.dataSource.getVideoMessageBubble(
-      attachment.getUrl(),
-      "",
-      message,
-      theme
-    );
+    // DD §9 — enableMultipleAttachments=false → deprecated single-attachment video bubble.
+    if (additionalParams?.enableMultipleAttachments === false) {
+      const attachment = message.getAttachment();
+      return ChatConfigurator.dataSource.getVideoMessageBubble(
+        attachment.getUrl(), attachment.getUrl(), message, theme
+      );
+    }
+    // A VIDEO message ALWAYS renders the video grid — no fallback to a file list. Any attachment that
+    // isn't a video (image / audio / file) shows a "no preview" placeholder cell inside the grid, and
+    // a "No preview available" fullscreen on tap (see CometChatVideosBubble + CometChatMediaViewer).
+    return <CometChatVideosBubble message={message} theme={theme} />;
   }
   getImageMessageContentView(
     message: CometChat.MediaMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element | null {
-    let attachment = message.getAttachment();
-    let url: string = attachment.getUrl();
-    if (url == undefined) url = message["data"]["url"];
-
-    return ChatConfigurator.dataSource.getImageMessageBubble(
-      url,
-      attachment.getName(),
-      message,
-      theme
-    );
+    const caption = message.getCaption() ?? '';
+    // DD §9 — enableMultipleAttachments=false → deprecated single-attachment image bubble.
+    if (additionalParams?.enableMultipleAttachments === false) {
+      const attachment = message.getAttachment();
+      return ChatConfigurator.dataSource.getImageMessageBubble(
+        attachment.getUrl(), caption, message, theme
+      );
+    }
+    // An IMAGE message ALWAYS renders the image grid — no fallback to a file list. Any attachment that
+    // can't be previewed (unsupported format / load error) shows a "no preview" placeholder cell inside
+    // the grid instead (see CometChatImagesBubble's ImageCell).
+    return <CometChatImagesBubble message={message} theme={theme} />;
   }
   getFileMessageContentView(
     message: CometChat.MediaMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ): JSX.Element {
-    let attachment = message.getAttachment();
-    return ChatConfigurator.dataSource.getFileMessageBubble(
-      attachment.getUrl(),
-      attachment.getName(),
-      {},
-      message,
-      theme
-    );
+    // DD §9 — enableMultipleAttachments=false → deprecated single-attachment file bubble.
+    if (additionalParams?.enableMultipleAttachments === false) {
+      const attachment = message.getAttachment();
+      return ChatConfigurator.dataSource.getFileMessageBubble(
+        attachment.getUrl(), attachment.getName(), {}, message, theme
+      );
+    }
+    // DD §9 (flag=true, default): the new FilesBubble renders 1..N — including a single file.
+    return <CometChatFilesBubble message={message} theme={theme} />;
   }
 
   getTextMessageTemplate(
@@ -1546,7 +1761,7 @@ export class MessageDataSource implements DataSource {
         if (isDeletedMessage(message)) {
           return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
         } else
-          return ChatConfigurator.dataSource.getAudioMessageContentView(message, alignment, theme);
+          return ChatConfigurator.dataSource.getAudioMessageContentView(message, alignment, theme, additionalParams);
       },
       options: (loggedInuser, message, theme, group) =>
         ChatConfigurator.dataSource.getAudioMessageOptions(
@@ -1575,7 +1790,7 @@ export class MessageDataSource implements DataSource {
         if (isDeletedMessage(message)) {
           return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
         } else
-          return ChatConfigurator.dataSource.getVideoMessageContentView(message, alignment, theme);
+          return ChatConfigurator.dataSource.getVideoMessageContentView(message, alignment, theme, additionalParams);
       },
       options: (loggedInuser, message, theme, group) =>
         ChatConfigurator.dataSource.getVideoMessageOptions(
@@ -1604,7 +1819,7 @@ export class MessageDataSource implements DataSource {
         if (isDeletedMessage(message)) {
           return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
         } else
-          return ChatConfigurator.dataSource.getImageMessageContentView(message, alignment, theme);
+          return ChatConfigurator.dataSource.getImageMessageContentView(message, alignment, theme, additionalParams);
       },
       options: (loggedInuser, message, theme, group) =>
         ChatConfigurator.dataSource.getImageMessageOptions(
@@ -1633,7 +1848,7 @@ export class MessageDataSource implements DataSource {
         if (isDeletedMessage(message)) {
           return ChatConfigurator.dataSource.getDeleteMessageBubble(message, theme);
         } else
-          return ChatConfigurator.dataSource.getFileMessageContentView(message, alignment, theme);
+          return ChatConfigurator.dataSource.getFileMessageContentView(message, alignment, theme, additionalParams);
       },
       options: (loggedInuser, message, theme, group) =>
         ChatConfigurator.dataSource.getFileMessageOptions(
@@ -2219,6 +2434,27 @@ export class MessageDataSource implements DataSource {
       const actionMsg = this.getActionMessage(lastMessage);
       if (actionMsg) return actionMsg;
     }
+    // Multi-attachment subtitle (design doc §17.2 / §8.4). Drive the label + icon off the message's
+    // COARSE TYPE (image/video/audio/file) — NOT per-attachment mime. A file message can carry a file
+    // whose mime is image/* (e.g. "image (1).png" sent as a document); classifying by mime would split
+    // it and mislabel a files-only message as a mixed "N attachments". The coarse type is single-kind.
+    if (lastMessage instanceof CometChat.MediaMessage) {
+      // §8.4 — batch-aware: a multi-KIND batch is fanned out into N messages, each single-kind. Prefer
+      // the batch total (stamped on every member's metadata) so the row summarizes the whole send.
+      const md = lastMessage.getMetadata?.() as any;
+      const batchSize = md?.batchSize;
+      const batchTotalCount = md?.batchTotalCount;
+      const isBatch =
+        md?.batchId != null &&
+        typeof batchSize === "number" && batchSize > 1 &&
+        typeof batchTotalCount === "number" && batchTotalCount > 1;
+      const count = isBatch ? batchTotalCount : (lastMessage.getAttachments?.() ?? []).length;
+      if (count > 1) {
+        const { icon, label } = kindPreview(lastMessage.getType(), count);
+        const caption = (lastMessage.getCaption?.() ?? '').trim();
+        return getMessagePreviewInternal(icon, caption ? `${label} · ${caption}` : label, { theme });
+      }
+    }
     return CometChatConversationUtils.getMessagePreview(lastMessage, theme);
   }
 
@@ -2247,6 +2483,10 @@ export class MessageDataSource implements DataSource {
     if (message instanceof CometChat.TextMessage) {
       return message.getText() || "";
     } else if (message instanceof CometChat.MediaMessage) {
+      if (isGalleryMessage(message)) {
+        const { mediaAttachments, audioAttachments, fileAttachments } = groupAttachments(message);
+        return buildMultiAttachmentSubtitle(mediaAttachments, audioAttachments, fileAttachments, message);
+      }
       const data = message.getData() as any;
       return data?.name || message.getType() || "";
     } else if (message.getType() === "groupMember") {
@@ -2257,3 +2497,10 @@ export class MessageDataSource implements DataSource {
 }
 //for internal use only
 export const internalMessageDataSource = new MessageDataSource();
+
+const styles = StyleSheet.create({
+  aiCopyIcon: {
+    marginLeft: 10,
+    marginBottom: -20,
+  },
+});

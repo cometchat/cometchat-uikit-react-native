@@ -330,6 +330,79 @@ export interface CometChatTheme {
     downloadIconStyle: ImageStyle;
     dateReceiptContainerStyle: ViewStyle;
   };
+  // ── Multiple-attachment (§7 fan-out) bubbles — theme override surfaces, same pattern as
+  //    avatarStyle/badgeStyle: a developer sets these on the theme and each bubble applies them
+  //    over its tokenized defaults via deepMerge(theme.x, compTheme.x, style). All optional. ──
+  audiosBubbleStyles?: {
+    containerStyle?: ViewStyle;
+    cardStyle?: ViewStyle;
+    playButtonStyle?: ViewStyle;
+    playIconStyle?: ImageStyle;
+    fileNameStyle?: TextStyle;
+    seekTrackStyle?: ViewStyle;
+    seekProgressStyle?: ViewStyle;
+    seekThumbStyle?: ViewStyle;
+    timeTextStyle?: TextStyle;
+    downloadIconStyle?: ImageStyle;
+    captionStyle?: TextStyle;
+    expandButtonTextStyle?: TextStyle; // "Show N more" / "Show less" toggle label — parity with fileBubbleStyles
+  };
+  mediaGridBubbleStyles?: {
+    containerStyle?: ViewStyle;
+    cellStyle?: ViewStyle;
+    playButtonStyle?: ViewStyle;
+    playIconStyle?: ImageStyle;
+    durationChipStyle?: ViewStyle;
+    durationTextStyle?: TextStyle;
+    overflowOverlayStyle?: ViewStyle;
+    overflowTextStyle?: TextStyle;
+  };
+  filesBubbleStyles?: {
+    containerStyle?: ViewStyle;
+    cardStyle?: ViewStyle;
+    fileNameStyle?: TextStyle;
+    fileSizeTextStyle?: TextStyle;
+    downloadIconStyle?: ImageStyle;
+    expandButtonTextStyle?: TextStyle;
+    captionStyle?: TextStyle;
+  };
+  voiceNoteBubbleStyles?: {
+    containerStyle?: ViewStyle;
+    captionStyle?: TextStyle;
+    playViewContainerStyle?: ViewStyle;
+    playIconStyle?: ImageStyle;
+    playIconContainerStyle?: ViewStyle;
+    waveStyle?: ViewStyle;
+    waveContainerStyle?: ViewStyle;
+    playProgressTextStyle?: TextStyle;
+  };
+  // ── Composer attachment tray/tiles (pre-send preview) — theme override surfaces, same pattern. ──
+  composerErrorBannerStyles?: {
+    containerStyle?: ViewStyle;
+    textStyle?: TextStyle;
+    closeIconStyle?: ImageStyle;
+  };
+  attachmentTrayStyles?: {
+    containerStyle?: ViewStyle;
+    progressTrackStyle?: ViewStyle;
+    progressFillStyle?: ViewStyle;
+  };
+  attachmentTileStyles?: {
+    containerStyle?: ViewStyle;
+    fileCardStyle?: ViewStyle;
+    mediaTileStyle?: ViewStyle;
+    audioCardStyle?: ViewStyle;
+    fileNameStyle?: TextStyle;
+    removeButtonStyle?: ViewStyle;
+    durationChipStyle?: ViewStyle;
+  };
+  attachmentPreviewStyles?: {
+    containerStyle?: ViewStyle;
+  };
+  attachmentPreviewItemStyles?: {
+    containerStyle?: ViewStyle;
+    removeButtonStyle?: ViewStyle;
+  };
   collaborativeBubbleStyles?: {
     containerStyle?: ViewStyle;
     threadedMessageStyle?: CometChatTheme["threadedMessageStyles"];

@@ -14,11 +14,10 @@ import {
 } from "react-native";
 import { Icon } from "../../icons/Icon";
 import { AnimatedAudioWaves } from "./AnimatedAudioWaves";
+import { audioPlaybackCoordinator } from "../../utils/audioPlaybackCoordinator";
 
 const { SoundPlayer } = NativeModules;
 const eventEmitter = new NativeEventEmitter(SoundPlayer);
-let listener: EmitterSubscription;
-let interval: ReturnType<typeof setTimeout>;;
 
 export interface CometChatAudioBubbleInterface {
   /**
@@ -61,6 +60,42 @@ export const CometChatAudioBubble = ({
   const [status, setStatus] = useState<"playing" | "paused" | "loading" | "">("");
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  // Per-instance (the module-level interval/listener were shared across every voice-note bubble).
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const subRef = useRef<ReturnType<typeof eventEmitter.addListener> | null>(null);
+  const statusRef = useRef(status); statusRef.current = status;
+  const currentTimeRef = useRef(currentTime); currentTimeRef.current = currentTime;
+  // True when this clip was paused because another audio started (native player moved away).
+  const wasInterruptedRef = useRef(false);
+
+  const clearPoll = () => {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+  };
+  const startPoll = () => {
+    clearPoll();
+    intervalRef.current = setInterval(() => {
+      SoundPlayer.getPosition((info: string) => {
+        try { if (info) setCurrentTime(JSON.parse(info).position); } catch (e) {}
+      });
+    }, 500);
+  };
+  // (Re)play from `fromSeconds`. Announces first so any other playing clip pauses in place.
+  const play = (fromSeconds = 0) => {
+    audioPlaybackCoordinator.announcePlay(audioUrl);
+    wasInterruptedRef.current = false;
+    setStatus("loading");
+    SoundPlayer.play(audioUrl, (s: string) => {
+      try {
+        if (JSON.parse(s)?.success) {
+          setStatus("playing");
+          if (fromSeconds > 0) SoundPlayer.playAt(Math.floor(fromSeconds), () => {});
+          startPoll();
+        } else {
+          setStatus("");
+        }
+      } catch (ex) { console.log(ex); }
+    });
+  };
 
   useEffect(() => {
     if (audioUrl) {
@@ -76,20 +111,33 @@ export const CometChatAudioBubble = ({
     };
   }, [audioUrl]);
 
+  // WhatsApp coordination: another audio (recorded or shared) starting pauses THIS one in place,
+  // keeping its position so it can resume from where it left off.
   useEffect(() => {
-    listener = eventEmitter.addListener("soundPlayStatus", (data) => {
-      if (audioUrl === data.url) {
-        setStatus("");
-        
-        clearInterval(interval);
-        
-        setCurrentTime(0);
+    const unsub = audioPlaybackCoordinator.subscribe((activeUrl) => {
+      if (activeUrl === audioUrl) return;
+      if (statusRef.current === "playing" || statusRef.current === "paused") {
+        wasInterruptedRef.current = true;
+        clearPoll();
+        setStatus("paused"); // keep currentTime — position preserved
       }
     });
+    return unsub;
+  }, [audioUrl]);
 
+  // Native fires soundPlayStatus on natural completion AND when a new play() replaces this clip.
+  // Interrupt echo (we were interrupted) → ignore; genuine finish → reset to idle.
+  useEffect(() => {
+    subRef.current = eventEmitter.addListener("soundPlayStatus", (data) => {
+      if (audioUrl !== data.url) return;
+      if (wasInterruptedRef.current) return;
+      setStatus("");
+      clearPoll();
+      setCurrentTime(0);
+    });
     return () => {
-      listener.remove();
-        clearInterval(interval);
+      subRef.current?.remove();
+      clearPoll();
     };
   }, [audioUrl]);
 
@@ -98,82 +146,31 @@ export const CometChatAudioBubble = ({
       onPress(audioUrl);
       return;
     }
-
     if (status === "playing") {
+      // User pause — native player is still ours; a plain resume works later.
+      wasInterruptedRef.current = false;
       SoundPlayer.pause((s: string) => {
         try {
-          const json = JSON.parse(s);
-          if (json["success"] === true) {
+          if (JSON.parse(s)?.success) {
             setStatus("paused");
-            clearInterval(interval);
+            clearPoll();
           }
-        } catch (ex) {
-          console.log(ex);
-        }
+        } catch (ex) { console.log(ex); }
       });
       return;
     }
     if (status === "paused") {
-      SoundPlayer.resume();
-      if (Platform.OS == "ios") {
+      if (wasInterruptedRef.current) {
+        play(currentTimeRef.current); // player moved away — re-play from where we paused
+      } else {
+        audioPlaybackCoordinator.announcePlay(audioUrl); // resuming still stops any other clip
+        SoundPlayer.resume();
         setStatus("playing");
+        startPoll();
       }
-      // Get total duration when audio starts playing
-      SoundPlayer.getPosition((info: string) => {
-        try {
-          if (info) {
-            if (Platform.OS == "android") {
-              setStatus("playing");
-            }
-            setCurrentTime(JSON.parse(info).position);
-          }
-        } catch (e) {}
-      });
-
-      // Start tracking the current time
-      interval = setInterval(() => {
-        SoundPlayer.getPosition((info: string) => {
-          try {
-            if (info) {
-              setCurrentTime(JSON.parse(info).position);
-            }
-          } catch (e) {}
-        });
-      }, 500);
       return;
     }
-    if (audioUrl) {
-      setStatus("loading");
-      SoundPlayer.play(audioUrl, (s: string) => {
-        try {
-          const json = JSON.parse(s);
-          if (json["success"] == true) {
-            setStatus("playing");
-            // Get total duration when audio starts playing
-            SoundPlayer.getPosition((info: string) => {
-              try {
-                if (info) {
-                  setCurrentTime(JSON.parse(info).position);
-                }
-              } catch (e) {}
-            });
-
-            // Start tracking the current time
-            interval = setInterval(() => {
-              SoundPlayer.getPosition((info: string) => {
-                try {
-                  if (info) {
-                    setCurrentTime(JSON.parse(info).position);
-                  }
-                } catch (e) {}
-              });
-            }, 500);
-          }
-        } catch (ex) {
-          console.log(ex);
-        }
-      });
-    }
+    if (audioUrl) play(currentTimeRef.current || 0);
   };
 
   const pressTime = useRef<number | null>(0);

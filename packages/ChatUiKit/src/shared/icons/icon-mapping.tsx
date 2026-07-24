@@ -307,6 +307,7 @@ import ZoomOutMapFill from "./components/zoom-out-map-fill";
 import AudioFileType from "./components/audio-file-type";
 import DocumentFileType from "./components/document-file-type";
 import ImageFileType from "./components/image-file-type";
+import LinkFileType from "./components/link-file-type";
 import ListItemCheck from "./components/ListItemCheck";
 import PdfFileType from "./components/pdf-file-type";
 import PresentationFileType from "./components/presentation-file-type";
@@ -637,6 +638,7 @@ export const ICONS = {
   /******File Bubble Type Preview Icons*****/
   "audio-file-type": AudioFileType,
   "image-file-type": ImageFileType,
+  "link-file-type": LinkFileType,
   "pdf-file-type": PdfFileType,
   "presentation-file-type": PresentationFileType,
   "spreadsheet-file-type": SpreadsheetFileType,

@@ -141,6 +141,12 @@ import {
 } from "./CometChatCompactMessageComposer";
 
 import { CometChatAIAssistantChatHistory } from "./CometChatAIAssistantChatHistory";
+import CometChatConversationStarter from "./shared/views/CometChatConversationStarter/CometChatConversationStarter";
+import CometChatSmartReplies from "./shared/views/CometChatSmartReplies/CometChatSmartReplies";
+import CometChatConversationSummary from "./shared/views/CometChatConversationSummary/CometChatConversationSummary";
+import type { CometChatConversationStarterProps } from "./shared/views/CometChatConversationStarter/CometChatConversationStarter";
+import type { CometChatSmartRepliesProps } from "./shared/views/CometChatSmartReplies/CometChatSmartReplies";
+import type { CometChatConversationSummaryProps } from "./shared/views/CometChatConversationSummary/CometChatConversationSummary";
 
 import { CometChatThreadHeader, CometChatThreadHeaderInterface } from "./CometChatThreadHeader";
 
@@ -229,6 +235,9 @@ export {
   CometChatGroupsEvents,
   CometChatGroupMembers,
   CometChatAIAssistantChatHistory,
+  CometChatConversationStarter,
+  CometChatSmartReplies,
+  CometChatConversationSummary,
   CometChatImageBubble,
   CometChatIncomingCall,
   CometChatInlineAudioRecorder,
@@ -292,6 +301,9 @@ export {
   getCometChatTranslation,
   getCurrentLanguage,
   CometChatAIAssistantTools,
+  type CometChatConversationStarterProps,
+  type CometChatSmartRepliesProps,
+  type CometChatConversationSummaryProps,
   StreamMessage,
   stopStreamingForRunId,
   startStreamingForRunId,
@@ -315,6 +327,33 @@ export {
   streamConnection$
 };
 export { CometChatThemeProvider, useTheme } from "./theme";
+
+// Multiple Attachment Support — public exports (PR review B1)
+export {
+  CometChatAttachmentTray,
+  CometChatAttachmentTile,
+  CometChatAttachmentPreview,
+  CometChatAttachmentPreviewItem,
+  getAttachmentPreviewStyle,
+  CometChatImagesBubble,
+  CometChatVideosBubble,
+  CometChatFilesBubble,
+  CometChatAudiosBubble,
+  CometChatVoiceNoteBubble,
+  CometChatMediaViewer,
+  CometChatAttachmentViewer,
+} from "./shared";
+export type {
+  CometChatAttachmentTrayProps,
+  CometChatAttachmentTileProps,
+  CometChatAttachmentPreviewProps,
+  CometChatAttachmentPreviewItemProps,
+  CometChatFilesBubbleProps,
+  CometChatAudiosBubbleProps,
+  CometChatVoiceNoteBubbleProps,
+  CometChatMediaViewerProps,
+  CometChatAttachmentViewerProps,
+} from "./shared";
 
 export {CometChatI18nProvider,useCometChatTranslation} from "./shared/resources/CometChatLocalizeNew"
 export {localizedDateHelperInstance,LocalizedDateHelper} from "./shared/helper/LocalizedDateHelper"

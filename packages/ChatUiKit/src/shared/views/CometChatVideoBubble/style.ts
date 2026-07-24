@@ -59,14 +59,14 @@ export const getVideoBubbleStylesLight = (
         padding: spacing.padding.p1,
         paddingBottom: spacing.padding.p0,
         borderRadius: spacing.radius.r3,
-        alignSelf: "flex-start",
-        justifyContent: 'center',
+        overflow: "hidden",
       },
       imageStyle: {
         borderRadius: spacing.radius.r2,
         backgroundColor: color.background3,
         height: 140,
-        width: 232,
+        width: '100%',
+        minWidth: 232,
         overflow: 'hidden'
       },
       playIconStyle: {

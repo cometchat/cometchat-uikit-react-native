@@ -47,6 +47,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableNativeMap;
 
 import java.io.File;
@@ -81,9 +82,11 @@ public class FileManager extends ReactContextBaseJavaModule {
     private static final int READ_REQUEST_CODE = 100;
     private static final int CAPTURE_STILL_IMAGE = 101;
     private static final int REQUEST_LAUNCH_CAMERA = 1;
+    private static final int READ_REQUEST_CODE_MULTI = 102;
     private static int IMAGE_QUALITY = 20;
 
     private Callback callback;
+    private Callback multiCallback;
 
     private static final String FIELD_URI = "uri";
     private static final String FIELD_FILE_COPY_URI = "fileCopyUri";
@@ -132,6 +135,10 @@ public class FileManager extends ReactContextBaseJavaModule {
     private final ActivityEventListener activityEventListener = new BaseActivityEventListener() {
         @Override
         public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+            if (requestCode == READ_REQUEST_CODE_MULTI) {
+                if (multiCallback != null) onShowActivityResultMulti(resultCode, data, multiCallback);
+                return;
+            }
             if (callback == null) {
                 Log.e(NAME, "callback was null in onActivityResult");
                 return;
@@ -317,6 +324,33 @@ public class FileManager extends ReactContextBaseJavaModule {
                 outputStream.write(buf, 0, len);
             }
             return Uri.fromFile(destFile);
+        }
+
+        private void onShowActivityResultMulti(int resultCode, Intent data, Callback storedCallback) {
+            if (resultCode != Activity.RESULT_OK) return;
+            List<Uri> uris = new ArrayList<>();
+            if (data != null) {
+                ClipData clipData = data.getClipData();
+                if (clipData != null && clipData.getItemCount() > 0) {
+                    for (int i = 0; i < clipData.getItemCount(); i++) {
+                        uris.add(clipData.getItemAt(i).getUri());
+                    }
+                } else if (data.getData() != null) {
+                    uris.add(data.getData());
+                }
+            }
+            if (uris.isEmpty()) return;
+            ExecutorService service = Executors.newSingleThreadExecutor();
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    WritableArray array = Arguments.createArray();
+                    for (Uri uri : uris) {
+                        array.pushMap(getMetadata(uri));
+                    }
+                    storedCallback.invoke(array);
+                }
+            });
         }
 
         private void onShowActivityResult(int resultCode, Intent data, Callback storedPromise) {
@@ -1670,20 +1704,73 @@ public class FileManager extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void checkAndDownload(String url, String name, Callback callback) {
-        Long downloadId = downloadFile(name, url);
+    public void openFileChooserMulti(String fileType, int maxSelection, Callback callback) {
         try {
-            if (downloadId == null) {
-                callback.invoke("Download failed: ID is null");
+            this.multiCallback = callback;
+            Activity currentActivity = getCurrentActivity();
+            if ("image".equals(fileType)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    // Android 13+: system photo picker — no READ_MEDIA_IMAGES permission required
+                    Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                    // Cap selection to the remaining allowance (server count limit − already staged),
+                    // clamped to the OS max. cap==1 is valid — the photo picker enters single-select and
+                    // returns getData() (handled by onShowActivityResultMulti's data.getData() branch).
+                    int cap = Math.min(Math.max(1, maxSelection), MediaStore.getPickImagesMaxLimit());
+                    intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, cap);
+                    currentActivity.startActivityForResult(intent, READ_REQUEST_CODE_MULTI, Bundle.EMPTY);
+                } else {
+                    // Android < 13: open gallery via ACTION_GET_CONTENT with multi-select
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("image/*");
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, maxSelection != 1); // single-select when the cap is 1
+                    currentActivity.startActivityForResult(intent, READ_REQUEST_CODE_MULTI, Bundle.EMPTY);
+                }
+            } else {
+                // Non-image: document picker without createChooser so EXTRA_ALLOW_MULTIPLE works.
+                // Use setType("*/*") + EXTRA_MIME_TYPES rather than setType("audio/*"): a SPECIFIC
+                // top-level type (audio/*, video/*) routes many devices to a single-select media/
+                // music picker that ignores EXTRA_ALLOW_MULTIPLE — which is why documents ("*/*")
+                // allowed multi-select but audio did not. "*/*" forces the multi-select DocumentsUI;
+                // EXTRA_MIME_TYPES keeps it filtered to the requested kind.
+                String mime = getType(fileType);
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("*/*");
+                if (mime != null && !mime.isEmpty() && !"*/*".equals(mime)) {
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{ mime });
+                }
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, maxSelection != 1); // single-select when the cap is 1
+                currentActivity.startActivityForResult(intent, READ_REQUEST_CODE_MULTI, Bundle.EMPTY);
+            }
+        } catch (ActivityNotFoundException e) {
+            Log.e(TAG, "openFileChooserMulti: " + e.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "openFileChooserMulti: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void checkAndDownload(String url, String name, Callback callback) {
+        try {
+            if (fileExists(name)) {
+                // Already downloaded — open it and report done
+                openFileWithOption(name, ignored -> {});
+                callback.invoke("{\"success\": true, \"alreadyExists\": true}");
                 return;
             }
-
-            obj = new JSONObject();
-            obj.put("downloadId", downloadId.longValue());
-        } catch (JSONException e) {
-            e.printStackTrace();
+            Long downloadId = downloadFile(name, url);
+            if (downloadId == null) {
+                callback.invoke("{\"success\": false, \"error\": \"Download could not be started\"}");
+                return;
+            }
+            JSONObject result = new JSONObject();
+            result.put("success", true);
+            result.put("downloadId", downloadId.longValue());
+            callback.invoke(result.toString());
+        } catch (Exception e) {
+            callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
         }
-        callback.invoke(obj.toString());
     }
 
     @ReactMethod

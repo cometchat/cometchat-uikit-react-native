@@ -254,8 +254,12 @@ export const getMessageListStylesLight = (
       },
       imageBubbleStyles: {
         containerStyle: {
-          padding: spacing.padding.p1,
+          // Figma: padding 4px top/right/left, 0 bottom — leaves a thin bubble-color
+          // frame around the media; the timestamp row sits flush under the grid.
+          paddingTop: spacing.padding.p1,
+          paddingRight: spacing.padding.p1,
           paddingBottom: spacing.padding.p0,
+          paddingLeft: spacing.padding.p1,
           borderRadius: spacing.radius.r3,
           alignSelf: "flex-start",
         },
@@ -266,7 +270,10 @@ export const getMessageListStylesLight = (
           width: 232,
         },
         dateReceiptContainerStyle: {
+          // Figma: 2px gap between the media grid and the timestamp row.
+          paddingTop: spacing.padding.p0_5,
           paddingRight: spacing.padding.p1,
+          paddingBottom: spacing.padding.p1,
         },
       },
       assistantBubbleStyles: {
@@ -486,8 +493,12 @@ export const getMessageListStylesLight = (
       },
       imageBubbleStyles: {
         containerStyle: {
-          padding: spacing.padding.p1,
+          // Figma: padding 4px top/right/left, 0 bottom — leaves a thin bubble-color
+          // frame around the media; the timestamp row sits flush under the grid.
+          paddingTop: spacing.padding.p1,
+          paddingRight: spacing.padding.p1,
           paddingBottom: spacing.padding.p0,
+          paddingLeft: spacing.padding.p1,
           borderRadius: spacing.radius.r3,
           overflow: "hidden",
         },
@@ -499,7 +510,10 @@ export const getMessageListStylesLight = (
           minWidth: 232,
         },
         dateReceiptContainerStyle: {
+          // Figma: 2px gap between the media grid and the timestamp row.
+          paddingTop: spacing.padding.p0_5,
           paddingRight: spacing.padding.p1,
+          paddingBottom: spacing.padding.p1,
         },
       },
       audioBubbleStyles: getAudioBubbleStyleLight(color, spacing, typography)
@@ -758,8 +772,12 @@ export const getMessageListStylesDark = (
       },
       imageBubbleStyles: {
         containerStyle: {
-          padding: spacing.padding.p1,
+          // Figma: padding 4px top/right/left, 0 bottom — leaves a thin bubble-color
+          // frame around the media; the timestamp row sits flush under the grid.
+          paddingTop: spacing.padding.p1,
+          paddingRight: spacing.padding.p1,
           paddingBottom: spacing.padding.p0,
+          paddingLeft: spacing.padding.p1,
           borderRadius: spacing.radius.r3,
           alignSelf: "flex-start",
         },
@@ -770,12 +788,15 @@ export const getMessageListStylesDark = (
           width: 232,
         },
         dateReceiptContainerStyle: {
+          // Figma: 2px gap between the media grid and the timestamp row.
+          paddingTop: spacing.padding.p0_5,
           paddingRight: spacing.padding.p1,
+          paddingBottom: spacing.padding.p1,
         },
       },
       assistantBubbleStyles: {
         containerStyle: {
-          backgroundColor: "transparent", 
+          backgroundColor: "transparent",
           borderRadius: spacing.radius.r3,
           minWidth: 90,
           alignSelf: "flex-start",
@@ -991,8 +1012,12 @@ export const getMessageListStylesDark = (
       },
       imageBubbleStyles: {
         containerStyle: {
-          padding: spacing.padding.p1,
+          // Figma: padding 4px top/right/left, 0 bottom — leaves a thin bubble-color
+          // frame around the media; the timestamp row sits flush under the grid.
+          paddingTop: spacing.padding.p1,
+          paddingRight: spacing.padding.p1,
           paddingBottom: spacing.padding.p0,
+          paddingLeft: spacing.padding.p1,
           borderRadius: spacing.radius.r3,
           overflow: "hidden",
         },
@@ -1004,7 +1029,10 @@ export const getMessageListStylesDark = (
           minWidth: 232,
         },
         dateReceiptContainerStyle: {
+          // Figma: 2px gap between the media grid and the timestamp row.
+          paddingTop: spacing.padding.p0_5,
           paddingRight: spacing.padding.p1,
+          paddingBottom: spacing.padding.p1,
         },
       },
       audioBubbleStyles: getAudioBubbleStyleDark(color, spacing, typography)

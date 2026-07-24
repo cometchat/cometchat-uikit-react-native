@@ -20,6 +20,11 @@ import { UIKitSettings } from "./UIKitSettings";
 export class CometChatUIKit {
   static uiKitSettings: UIKitSettings;
   static loggedInUser: null | CometChat.User = null;
+  /**
+   * Raw settings captured on the initFromSettings() (ai-agent) path; routes the
+   * Calls SDK through CometChatCalls.initFromSettings() too. Null on plain init().
+   */
+  static callsInitSettings: CometChat.CometChatSettings | null = null;
   static conversationUpdateSettings: CometChat.ConversationUpdateSettings =
     new CometChat.ConversationUpdateSettings();
   private static loginListenerID: string = ``;
@@ -29,6 +34,8 @@ export class CometChatUIKit {
     CometChatUIKit.uiKitSettings = {
       ...uiKitSettings,
     };
+    // Plain init(): clear any ai-agent settings so the Calls SDK uses plain init().
+    CometChatUIKit.callsInitSettings = null;
     var appSetting = new CometChat.AppSettingsBuilder()
       .autoEstablishSocketConnection(uiKitSettings.autoEstablishSocketConnection)
       .overrideAdminHost(uiKitSettings?.overrideAdminHost || "")
@@ -99,6 +106,9 @@ export class CometChatUIKit {
         ? CometChat.AppSettings.SUBSCRIPTION_TYPE_ALL_USERS as UIKitSettings["subscriptionType"]
         : undefined,
     };
+
+    // Capture raw settings so the Calls SDK routes through initFromSettings (ai-agent).
+    CometChatUIKit.callsInitSettings = settings;
 
     CometChatUIKit.attachListener();
 
@@ -217,7 +227,7 @@ export class CometChatUIKit {
   }
 
   static async getLoggedInUser(): Promise<CometChat.User> {
-    if (CometChatUIKit.checkAuthSettings(Promise.reject)) null;
+    CometChatUIKit.assertInitialized();
     let user = await CometChat.getLoggedinUser().catch((e) => Promise.reject(e));
     if (user == null) {
       throw new CometChat.CometChatException({
@@ -264,7 +274,7 @@ export class CometChatUIKit {
     uid?: string;
     authToken?: string;
   }): Promise<CometChat.User> {
-    if (CometChatUIKit.checkAuthSettings(Promise.reject)) null;
+    CometChatUIKit.assertInitialized();
     if (uid) {
       let user = await CometChat.login(uid, CometChatUIKit.uiKitSettings?.authKey).catch((e) =>
         Promise.reject(e)
@@ -290,13 +300,8 @@ export class CometChatUIKit {
   }
 
   static logout(): Promise<Object> {
-    if (this.checkAuthSettings(Promise.reject)) {
-      return Promise.reject(
-        new CometChat.CometChatException({
-          code: "ERR",
-          message: "UIKit not initialized. Call CometChatUIKit.init() first.",
-        })
-      );
+    if (!this.checkAuthSettings()) {
+      return Promise.reject(this.authError());
     }
 
     return CometChat.logout().then(() => {
@@ -306,47 +311,48 @@ export class CometChatUIKit {
   }
 
   static createUser(user: CometChat.User): Promise<CometChat.User> {
-    if (this.checkAuthSettings(Promise.reject)) {
+    if (!this.checkAuthSettings()) {
+      return Promise.reject(this.authError());
     }
 
     return CometChat.createUser(user, this.uiKitSettings.authKey as string);
   }
 
   static updateUser(user: CometChat.User): Promise<CometChat.User> {
-    if (this.checkAuthSettings(Promise.reject)) {
+    if (!this.checkAuthSettings()) {
+      return Promise.reject(this.authError());
     }
 
     return CometChat.updateUser(user, this.uiKitSettings.authKey as string);
   }
 
   //Error handling to give better logs
-  static checkAuthSettings(onError: (e: CometChat.CometChatException) => void): boolean {
-    if (this.uiKitSettings == null) {
-      if (onError != null) {
-        onError(
-          new CometChat.CometChatException({
-            code: "ERR",
-            name: "Authentication null",
-            message: "Populate authSettings before initializing",
-          })
-        );
-      }
-      return false;
-    }
+  /** Pure predicate: is the UIKit configured well enough to make authenticated calls? */
+  static checkAuthSettings(): boolean {
+    return this.uiKitSettings != null && !!this.uiKitSettings.appId;
+  }
 
-    if (!this.uiKitSettings?.appId) {
-      if (onError != null) {
-        onError(
-          new CometChat.CometChatException({
-            code: "appIdErr",
-            name: "APP ID null",
-            message: "Populate appId in authSettings before initializing",
-          })
-        );
-      }
-      return false;
+  /** Single source of truth for the "not initialized" exception (preserves the specific code). */
+  private static authError(): CometChat.CometChatException {
+    if (this.uiKitSettings == null) {
+      return new CometChat.CometChatException({
+        code: "ERR",
+        name: "Authentication null",
+        message: "Populate authSettings before initializing. Call CometChatUIKit.init() first.",
+      });
     }
-    return true;
+    return new CometChat.CometChatException({
+      code: "appIdErr",
+      name: "APP ID null",
+      message: "Populate appId in authSettings before initializing.",
+    });
+  }
+
+  /** Throws the right exception when unconfigured. Works in sync (caught) and async methods. */
+  private static assertInitialized(): void {
+    if (!this.checkAuthSettings()) {
+      throw this.authError();
+    }
   }
 
   //---------- Helper methods to send messages ----------

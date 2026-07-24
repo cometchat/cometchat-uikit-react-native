@@ -3,7 +3,6 @@ import React, {
   useEffect,
   useImperativeHandle,
   useRef,
-  useState,
 } from "react";
 import {
   Animated,
@@ -93,11 +92,6 @@ const CometChatBottomSheet = forwardRef(
 
     // All hooks called unconditionally at top level
     const overlayAnim = useRef(new Animated.Value(0)).current;
-    const [isModalOpen, setIsModalOpen] = useState(isOpen);
-
-    useEffect(() => {
-      setIsModalOpen(isOpen);
-    }, [isOpen]);
 
     // Fade in/out the overlay when isOpen changes
     useEffect(() => {
@@ -158,7 +152,11 @@ const CometChatBottomSheet = forwardRef(
         animationType="fade"
         transparent={true}
         hardwareAccelerated={true}
-        visible={isModalOpen}
+        // Bind directly to isOpen so the modal closes on the render commit. Mirroring
+        // isOpen into internal state via a passive effect made the close unreliable:
+        // launching a native picker backgrounds the activity and React defers the
+        // effect, so the sheet stayed open. Direct binding closes it synchronously.
+        visible={isOpen}
         onRequestClose={togglePanel}
         onDismiss={onDismiss}
         supportedOrientations={["portrait", "landscape"]}

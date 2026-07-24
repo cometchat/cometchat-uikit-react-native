@@ -8,6 +8,7 @@ import { Icon } from "../../icons/Icon";
 import { stripMarkdown, preparePreviewText } from "../MarkdownUtils";
 import { CometChatRichTextFormatter } from "../../formatters/CometChatRichTextFormatter";
 import { applyMentionsFormatting } from "../MessageUtils";
+import { attachmentCountLabel } from "../conversationUtils";
 
 const t = getCometChatTranslation();
 
@@ -32,7 +33,14 @@ interface CometChatMessagePreviewProps {
   
   // Icon support
   subtitleIcon?: JSX.Element;
-  
+
+  // Suppress the auto-generated media icon (e.g. editing a caption — show only the caption text)
+  hideSubtitleIcon?: boolean;
+
+  // Muted context line shown between the title and the subtitle (e.g. "8 attachments" when editing a
+  // media caption). The message's media-type icon (photo/video/file) is rendered before it.
+  overlineText?: string;
+
   // Title style override
   titleStyle?: any;
   
@@ -59,6 +67,8 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
     showCloseIcon = false,
     style,
     subtitleIcon,
+    hideSubtitleIcon = false,
+    overlineText,
     titleStyle,
     isDeletedMessage = false,
     mentionsStyle,
@@ -163,24 +173,25 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
             return subtitleContent;
           
           case CometChat.MESSAGE_TYPE.IMAGE:
-            const imageMessage = message as CometChat.MediaMessage;
-            const imageAttachment = typeof imageMessage.getAttachment === 'function' ? imageMessage.getAttachment() : (imageMessage as any).attachment;
-            return imageAttachment?.getName?.() || imageAttachment?.name || t("MESSAGE_IMAGE") || "Image";
-          
           case CometChat.MESSAGE_TYPE.VIDEO:
-            const videoMessage = message as CometChat.MediaMessage;
-            const videoAttachment = typeof videoMessage.getAttachment === 'function' ? videoMessage.getAttachment() : (videoMessage as any).attachment;
-            return videoAttachment?.getName?.() || videoAttachment?.name || t("MESSAGE_VIDEO") || "Video";
-          
           case CometChat.MESSAGE_TYPE.AUDIO:
-            const audioMessage = message as CometChat.MediaMessage;
-            const audioAttachment = typeof audioMessage.getAttachment === 'function' ? audioMessage.getAttachment() : (audioMessage as any).attachment;
-            return audioAttachment?.getName?.() || audioAttachment?.name || t("MESSAGE_AUDIO") || "Audio";
-          
-          case CometChat.MESSAGE_TYPE.FILE:
-            const fileMessage = message as CometChat.MediaMessage;
-            const fileAttachment = typeof fileMessage.getAttachment === 'function' ? fileMessage.getAttachment() : (fileMessage as any).attachment;
-            return fileAttachment?.getName?.() || fileAttachment?.name || t("MESSAGE_FILE") || "File";
+          case CometChat.MESSAGE_TYPE.FILE: {
+            const mediaMsg = message as CometChat.MediaMessage;
+            // §8.4 — multi-attachment: show count+kind summary instead of one filename
+            const atts = mediaMsg.getAttachments?.() ?? [];
+            if (atts.length > 1) {
+              // Label by the COARSE message type (single-kind), NOT per-attachment mime — a file whose
+              // mime is image/* (e.g. "image (1).png" sent as a document) must not turn a files-only
+              // message into a mixed "N attachments". Matches the conversation-list preview.
+              return attachmentCountLabel(messageType, atts.length);
+            }
+            const singleAtt = typeof mediaMsg.getAttachment === 'function' ? mediaMsg.getAttachment() : (mediaMsg as any).attachment;
+            const fallbackKey = messageType === CometChat.MESSAGE_TYPE.IMAGE ? "MESSAGE_IMAGE"
+              : messageType === CometChat.MESSAGE_TYPE.VIDEO ? "MESSAGE_VIDEO"
+              : messageType === CometChat.MESSAGE_TYPE.AUDIO ? "MESSAGE_AUDIO"
+              : "MESSAGE_FILE";
+            return singleAtt?.getName?.() || (singleAtt as any)?.name || t(fallbackKey) || fallbackKey;
+          }
           
           default:
             return messageType || t("MESSAGE") || "Message";
@@ -313,7 +324,7 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
 
   const shouldShowClose = showCloseIcon || onCloseClick;
   const containerStyle = style ? [Styles(finalTheme).editPreviewContainerStyle, style] : Styles(finalTheme).editPreviewContainerStyle;
-  const iconToShow = subtitleIcon || autoIcon;
+  const iconToShow = hideSubtitleIcon ? null : (subtitleIcon || autoIcon);
 
   // Determine if subtitle is rich (JSX) or plain string
   const isRichSubtitle = typeof messageText !== 'string';
@@ -336,6 +347,14 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
           </TouchableOpacity>
         )}
       </View>
+      {overlineText ? (
+        <View style={[previewBlockStyles.overlineRow, { gap: finalTheme?.spacing?.padding?.p1 }]}>
+          {autoIcon}
+          <Text numberOfLines={1} ellipsizeMode='tail' style={[Styles(finalTheme).previewSubTitleStyle, previewBlockStyles.flexOne]}>
+            {overlineText}
+          </Text>
+        </View>
+      ) : null}
       <View style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: finalTheme?.spacing?.padding?.p1 }]}>
         {iconToShow && <View>{iconToShow}</View>}
         {isCodeBlockPreview ? (
@@ -415,6 +434,11 @@ const previewBlockStyles = StyleSheet.create({
   },
   flexOne: {
     flex: 1,
+  },
+  overlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   viewRootContainer: {
     flex: 1,

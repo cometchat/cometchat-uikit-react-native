@@ -72,6 +72,7 @@ const CometChatSendButtonView = ({
 
   return (
     <TouchableOpacity
+      testID="CometChatComposer.send"
       onPress={handlePress}
       disabled={isButtonDisabled && shouldShowStop}
       style={buttonStyle}

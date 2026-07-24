@@ -1,4 +1,4 @@
-import React, { JSX, useCallback, useRef, useState } from "react";
+import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   DimensionValue,
@@ -70,6 +70,25 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
   });
 
   const [faviconError, setFaviconError] = useState(false);
+
+  // Sync imageSource when image prop changes (e.g., after message edit)
+  useEffect(() => {
+    setImageSource(
+      image
+        ? { uri: image.startsWith("https:") ? image : `https:${image.split("http:")[1]}` }
+        : undefined
+    );
+    setImageHeight(undefined);
+    setImageWidth(undefined);
+  }, [image]);
+
+  // Sync faviconSource when favicon prop changes (e.g., after message edit)
+  useEffect(() => {
+    setFaviconSource({
+      uri: favicon.startsWith("https:") ? favicon : `https:${favicon.split("http:")[1]}`,
+    });
+    setFaviconError(false);
+  }, [favicon]);
 
   const pressTime = useRef<number | null>(0);
 

@@ -2,7 +2,15 @@ package com.reactnativecometchatuikit
 
 import android.content.ClipboardManager
 import android.content.ClipData
+import android.content.ContentResolver
 import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.webkit.MimeTypeMap
+import androidx.core.view.ContentInfoCompat
+import androidx.core.view.OnReceiveContentListener
+import androidx.core.view.ViewCompat
+import java.io.File
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -377,10 +385,20 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                                             s.setSpan(ForegroundColorSpan(codeColor), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
                                         }
                                         "codeBlock" -> {
-                                            s.setSpan(TypefaceSpan("monospace"), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
-                                            // Apply dark-mode-aware text color for readability
-                                            val cbTextColor = if (isDarkMode()) Color.parseColor("#E0E0E0") else Color.parseColor("#333333")
-                                            s.setSpan(ForegroundColorSpan(cbTextColor), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
+                                            // Only apply TypefaceSpan/ForegroundColorSpan if not already covered
+                                            // by an existing auto-extended span. Redundant overlapping spans cause
+                                            // Android's DynamicLayout to re-measure text multiple times (perf kill).
+                                            val existingMono = s.getSpans(spanStart, spanEnd, TypefaceSpan::class.java)
+                                                .any { it.family == "monospace" && s.getSpanStart(it) <= spanStart && s.getSpanEnd(it) >= spanEnd }
+                                            if (!existingMono) {
+                                                s.setSpan(TypefaceSpan("monospace"), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
+                                            }
+                                            val existingColor = s.getSpans(spanStart, spanEnd, ForegroundColorSpan::class.java)
+                                                .any { s.getSpanStart(it) <= spanStart && s.getSpanEnd(it) >= spanEnd }
+                                            if (!existingColor) {
+                                                val cbTextColor = if (isDarkMode()) Color.parseColor("#E0E0E0") else Color.parseColor("#333333")
+                                                s.setSpan(ForegroundColorSpan(cbTextColor), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
+                                            }
                                             // Extend existing CodeBlockBorderSpan or create new one
                                             val existingBorderSpans = s.getSpans(0, s.length, CodeBlockBorderSpan::class.java)
                                             var extended = false
@@ -566,8 +584,10 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                         renumberNumberedLists()
                         isInternalChange = false
                     }
+
                     // Apply hanging indent for lines with list/blockquote prefixes (ENG-31433)
                     applyListIndentation()
+
                     // Issue 1: When text becomes empty, reset all pending/explicit style toggles
                     if (s != null && s.isEmpty()) {
                         pendingStyles.clear()
@@ -733,6 +753,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
                     sendContentChangeWithDelta()
                     saveToUndoStack()
+
                     pendingDelta = null
                 }
                 previousText = s?.toString() ?: ""
@@ -740,6 +761,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 post {
                     updateContentSize()
                     invalidate()
+
                     // If line count changed (soft-wrap), schedule another redraw
                     // after the framework's layout pass to ensure onDraw sees
                     // the updated Layout with correct line positions.
@@ -764,7 +786,192 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         // Install text selection context menu (conditionally adds Bold/Italic/Underline/Strikethrough)
         updateSelectionActionModeCallback()
 
+        // Install the OnReceiveContentListener so pasted rich content (images / files
+        // from Photos, file explorers, other apps) is intercepted, extracted to temp
+        // files, and surfaced to JS via the onPasteMedia event. Plain text pastes are
+        // returned unchanged so normal text-paste behavior is preserved.
+        installOnReceiveContentListener()
+
         isInitialized = true
+    }
+
+    /**
+     * Registers a [OnReceiveContentListener] on this EditText via [ViewCompat] so that
+     * pasted (and drag-and-dropped) rich content is intercepted before the platform
+     * inserts it as text. This is the modern, backwards-compatible API (androidx.core);
+     * on API 31+ it is backed by the platform ON_RECEIVE_CONTENT infrastructure, and on
+     * older API levels androidx routes clipboard pastes through the same callback.
+     *
+     * Media (image, video, audio and application MIME types) is copied to a temp file in
+     * cacheDir and emitted to JS; plain text (and anything else) is passed through
+     * unchanged so the default paste/insert behavior is untouched.
+     */
+    private fun installOnReceiveContentListener() {
+        // Register the concrete top-level MIME types we want a shot at. Android's
+        // setOnReceiveContentListener FORBIDS a "*/*" wildcard (the top-level type must be
+        // concrete — it throws IllegalArgumentException otherwise); the subtype "/*"
+        // wildcard is allowed. These cover images, video, audio, and every file kind
+        // (application/*, text/*). We still decide per-item below whether to consume
+        // (URI-backed media/files) or pass through (plain text has no URI).
+        val mimeTypes = arrayOf("image/*", "video/*", "audio/*", "application/*", "text/*")
+        val listener = OnReceiveContentListener { _, payload ->
+            handleReceivedContent(payload)
+        }
+        ViewCompat.setOnReceiveContentListener(this, mimeTypes, listener)
+    }
+
+    /**
+     * Splits the incoming [ContentInfoCompat] payload into a media part (content:// URIs
+     * we extract) and a remaining part (text / anything else) that we hand back to the
+     * platform so normal paste continues. Returns the remaining payload, or null if we
+     * consumed everything.
+     */
+    private fun handleReceivedContent(payload: ContentInfoCompat): ContentInfoCompat? {
+        // Partition the clip: URIs (potential media) vs. everything else (text, etc.).
+        val split = payload.partition { item -> item.uri != null }
+        val uriPayload: ContentInfoCompat? = split.first
+        val remaining: ContentInfoCompat? = split.second
+
+        if (uriPayload == null) {
+            // No URI content — this is a plain text (or other) paste. Pass through
+            // unchanged so normal text paste proceeds. Do NOT emit.
+            return payload
+        }
+
+        val emitted = try {
+            extractAndEmitMedia(uriPayload.clip)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+
+        // If we could not extract anything usable from the URIs (e.g. resolver returned
+        // no stream), fall back to letting the platform handle the whole payload so we
+        // never silently swallow a paste.
+        return if (emitted) remaining else payload
+    }
+
+    /**
+     * Iterates over each item in the pasted [ClipData], copies content:// (or file://)
+     * media to a temp file in cacheDir, and emits a single onPasteMedia event with an
+     * `items` array. Each item: { uri, mimeType, name, size }. Returns true if at least
+     * one item was successfully extracted and the event was emitted.
+     */
+    private fun extractAndEmitMedia(clip: ClipData): Boolean {
+        val resolver = context.contentResolver
+        val items: WritableArray = Arguments.createArray()
+
+        for (i in 0 until clip.itemCount) {
+            val uri = clip.getItemAt(i)?.uri ?: continue
+            try {
+                val itemMap = copyUriToTempFileMap(resolver, uri) ?: continue
+                items.pushMap(itemMap)
+            } catch (e: Exception) {
+                // Skip items that fail; never crash on a single bad clipboard entry.
+                e.printStackTrace()
+            }
+        }
+
+        if (items.size() == 0) return false
+
+        val payload = Arguments.createMap()
+        payload.putArray("items", items)
+        sendEvent("onPasteMedia", payload)
+        return true
+    }
+
+    /**
+     * Copies a single content:// / file:// [uri] to a temp file in cacheDir and returns
+     * a WritableMap of { uri (file://), mimeType (REAL type), name (with extension),
+     * size (bytes) }. Returns null if the URI could not be read.
+     */
+    private fun copyUriToTempFileMap(resolver: ContentResolver, uri: Uri): WritableMap? {
+        // Resolve the REAL mime type via the content resolver (do NOT hardcode).
+        val mimeType = resolver.getType(uri)
+            ?: MimeTypeMap.getSingleton()
+                .getMimeTypeFromExtension(
+                    MimeTypeMap.getFileExtensionFromUrl(uri.toString()).lowercase()
+                )
+            ?: "application/octet-stream"
+
+        // Resolve a display name + size from the resolver where possible.
+        val (resolvedName, resolvedSize) = queryNameAndSize(resolver, uri)
+
+        // Derive an extension: prefer the one on the resolved name, else map from mime.
+        val extFromMime = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
+        val hasExt = resolvedName?.substringAfterLast('.', "")?.isNotEmpty() == true
+        val baseName = when {
+            !resolvedName.isNullOrBlank() && hasExt -> resolvedName
+            !resolvedName.isNullOrBlank() -> {
+                if (!extFromMime.isNullOrBlank()) "$resolvedName.$extFromMime" else resolvedName
+            }
+            else -> {
+                val ext = if (!extFromMime.isNullOrBlank()) ".$extFromMime" else ""
+                "pasted_media_${System.currentTimeMillis()}$ext"
+            }
+        }
+        // Guard against illegal filename characters when building the temp file.
+        val safeName = baseName.replace(Regex("[^A-Za-z0-9._-]"), "_")
+
+        // Copy the stream to a uniquely-named temp file so multiple pastes don't collide.
+        val tempFile = File.createTempFile(
+            "paste_${System.currentTimeMillis()}_",
+            "_$safeName",
+            context.cacheDir
+        )
+
+        val copied = resolver.openInputStream(uri)?.use { input ->
+            tempFile.outputStream().use { output ->
+                input.copyTo(output)
+            }
+            true
+        } ?: false
+
+        if (!copied || !tempFile.exists() || tempFile.length() == 0L) {
+            tempFile.delete()
+            return null
+        }
+
+        val size = if (resolvedSize > 0L) resolvedSize else tempFile.length()
+
+        return Arguments.createMap().apply {
+            putString("uri", "file://${tempFile.absolutePath}")
+            putString("mimeType", mimeType)
+            putString("name", safeName)
+            // size is bytes; use double to avoid Int overflow for large files (>2GB safe).
+            putDouble("size", size.toDouble())
+        }
+    }
+
+    /**
+     * Queries the content resolver for a display name and size. Returns Pair(name?, size).
+     * Size is -1 when unknown. Falls back gracefully for file:// URIs.
+     */
+    private fun queryNameAndSize(resolver: ContentResolver, uri: Uri): Pair<String?, Long> {
+        var name: String? = null
+        var size = -1L
+        if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            try {
+                resolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIdx >= 0 && !cursor.isNull(nameIdx)) {
+                            name = cursor.getString(nameIdx)
+                        }
+                        val sizeIdx = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (sizeIdx >= 0 && !cursor.isNull(sizeIdx)) {
+                            size = cursor.getLong(sizeIdx)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            // file:// or other — derive name from the last path segment.
+            name = uri.lastPathSegment
+        }
+        return Pair(name, size)
     }
 
     private fun setupToolbar() {
@@ -789,12 +996,34 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             }
 
             override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                // Insertion action mode = long-press / cursor tap with NO selection (e.g. an
+                // empty composer). Rebuild the menu so the system "Paste" bubble is available
+                // — this is what lets the user paste an image/file into an empty composer.
+                // (Previously the menu was cleared and left empty, so no Paste ever appeared.)
+                // Paste is offered only when the clipboard has content; "Select all" is added
+                // when there is text to select.
                 menu?.clear()
+                val clipboard =
+                    context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                if (clipboard?.hasPrimaryClip() == true) {
+                    menu?.add(0, android.R.id.paste, 0, android.R.string.paste)
+                }
+                if ((text?.length ?: 0) > 0) {
+                    menu?.add(0, android.R.id.selectAll, 1, android.R.string.selectAll)
+                }
                 return true
             }
 
             override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?): Boolean {
-                return false
+                return when (item?.itemId) {
+                    android.R.id.paste -> {
+                        onTextContextMenuItem(android.R.id.paste); mode?.finish(); true
+                    }
+                    android.R.id.selectAll -> {
+                        onTextContextMenuItem(android.R.id.selectAll); true
+                    }
+                    else -> false
+                }
             }
 
             override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
@@ -999,7 +1228,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         val textBaseY = paddingTop + gravityOffsetY
 
         // ── Code block containers (unified rect per region, matching iOS) ──
-        val spannable = text as? Spanned
+        val spannable = text as? Spanned ?: run { super.onDraw(canvas); return }
         if (spannable != null && textLayout != null) {
             // 1. Find all code block regions by merging overlapping CodeBlockBorderSpan ranges.
             //    Only merge spans that truly overlap or are directly adjacent within the
@@ -2742,6 +2971,8 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 "onSizeChange" -> "topSizeChange"
                 "onActiveStylesChange" -> "topActiveStylesChange"
                 "onLinkTap" -> "topLinkTap"
+                "onSendRequest" -> "topSendRequest"
+                "onPasteMedia" -> "topPasteMedia"
                 else -> eventName
             }
 

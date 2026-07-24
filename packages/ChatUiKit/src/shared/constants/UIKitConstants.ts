@@ -241,6 +241,8 @@ export const MessageOptionConstants = {
   replyMessagePrivately: "replyMessagePrivately",
   reportMessage: "reportMessage",
   markAsUnread: "markAsUnread",
+  // §8.5 — multi-attachment download all
+  downloadAll: "downloadAll",
 };
 
 export const CometChatMessageTypes = Object.freeze({
@@ -390,7 +392,7 @@ export enum MentionsVisibility {
 const FILE_EXTENSION = {
   doc: "document-file-type",
   docx: "document-file-type",
-  md: "document-file-type",
+  md: "text-file-type", // markdown is plain text — not a Word doc (was wrongly showing the Word "W" logo)
   csv: "spreadsheet-file-type",
   xls: "spreadsheet-file-type",
   xlsx: "spreadsheet-file-type",
@@ -467,3 +469,15 @@ export enum EnterKeyBehavior {
   SendMessage = "sendMessage",
   NewLine = "newLine",
 }
+
+/**
+ * Opacity applied to composer buttons (attach/aux/voice) when they are disabled,
+ * e.g. while editing a media caption. Shared by both message composers.
+ */
+export const DISABLED_BUTTON_OPACITY = 0.4;
+
+/**
+ * Multi-attachment collections (files, audios) collapse to this many items and
+ * reveal the rest behind a "Show N more" toggle. Shared by the files/audios bubbles.
+ */
+export const ATTACHMENT_COLLAPSED_LIMIT = 3;

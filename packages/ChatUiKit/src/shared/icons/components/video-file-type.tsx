@@ -1,32 +1,19 @@
-import Svg, { Path, G, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 /* SVGR has dropped some elements not supported by react-native-svg: filter */
 import type { SvgProps } from "react-native-svg";
 const SvgComponent = ({ height, width, color }: SvgProps) => (
-  <Svg width={width} height={height} fill='none' viewBox='0 0 32 32'>
-    <Path fill='#fff' d='M0 4a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v24a4 4 0 0 1-4 4H4a4 4 0 0 1-4-4z' />
-    <G filter='url(#prefix__a)'>
-      <Path
-        fill='#7C8EEE'
-        fillRule='evenodd'
-        d='M7.333 2.667A2.133 2.133 0 0 0 5.199 4.8v22.4c0 1.178.955 2.134 2.134 2.134h17.333a2.133 2.133 0 0 0 2.133-2.134V9.333l-6.666-6.666z'
-        clipRule='evenodd'
-      />
-    </G>
-    <G filter='url(#prefix__b)'>
-      <Path
-        fill='#fff'
-        d='m21.09 17.753-7.775 4.635a.78.78 0 0 1-1.18-.674v-9.27c0-.595.66-.97 1.18-.673l7.775 4.635c.504.313.504 1.05 0 1.347'
-      />
-    </G>
-    <Path fill='url(#prefix__c)' d='M26.176 8.708H20.76L26.8 14.75V9.333z' />
-    <Path fill='#CAD1F8' d='M22.267 9.333h4.534l-6.667-6.667V7.2c0 1.178.955 2.133 2.133 2.133' />
+  <Svg width={width} height={height} fill='none' viewBox='0 0 22 27'>
+    <Path fill='#7C8EEE' d='M15.1328 0.000610352L21.7988 6.66663V24.5338C21.7988 25.712 20.8442 26.6675 19.666 26.6676H2.33301C1.1548 26.6676 0.199219 25.712 0.199219 24.5338V2.1344C0.199219 0.956192 1.1548 0.000610352 2.33301 0.000610352H15.1328Z' />
+    <Path fill='#fff' d='M16.0904 15.0868L8.31527 19.7218C7.79577 20.0348 7.13477 19.659 7.13477 19.0485V9.77849C7.13477 9.18349 7.79577 8.80782 8.31527 9.10516L16.0903 13.7402C16.5939 14.0535 16.5939 14.7893 16.0903 15.0868H16.0904Z' />
+    <Path fill='url(#prefix__video-file-type_b)' d='M21.176 6.04163L15.7598 6.04163L21.8014 12.0833L21.8014 6.66663L21.176 6.04163Z' />
+    <Path fill='#CAD1F8' d='M17.2674 6.66663L21.8008 6.66663L15.1341 -4.06371e-05L15.1341 4.53329C15.1341 5.7115 16.0892 6.66663 17.2674 6.66663Z' />
     <Defs>
       <LinearGradient
-        id='prefix__c'
-        x1={22.114}
-        x2={28.156}
-        y1={7.354}
-        y2={13.396}
+        id='prefix__video-file-type_b'
+        x1={17.1139}
+        x2={23.1556}
+        y1={4.68746}
+        y2={10.7291}
         gradientUnits='userSpaceOnUse'
       >
         <Stop stopOpacity={0.2} />

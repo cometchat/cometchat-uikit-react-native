@@ -17,6 +17,7 @@ RCT_EXPORT_VIEW_PROPERTY(onEditorBlur, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onSizeChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onActiveStylesChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onLinkTap, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onPasteMedia, RCTDirectEventBlock)
 
 // New properties for CometChat integration
 RCT_EXPORT_VIEW_PROPERTY(selection, NSDictionary)

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState, useMemo } from 'react';
-import { View, TextInput, TouchableOpacity, Text, Image, ImageBackground, FlatList, ImageSourcePropType } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, Image, ImageBackground, FlatList, ImageSourcePropType, StyleSheet } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
   CometChatAvatar,
@@ -9,6 +9,7 @@ import {
   useTheme
 } from '@cometchat/chat-uikit-react-native';
 import { Icon } from '../shared/icons/Icon';
+import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 import { GroupTypeConstants, ReceiverTypeConstants, MessageCategoryConstants, MessageTypeConstants } from '@cometchat/chat-uikit-react-native/src/shared/constants/UIKitConstants';
 import { CometChatSearchScope, CometChatSearchFilter, States } from './SearchConstants';
 import { Skeleton } from './Skeleton';
@@ -356,6 +357,45 @@ const LinkFallbackIcon = ({ mergedStyles, theme }: { mergedStyles: any; theme: a
   </View>
 );
 
+// Document/file leading icon used for the Documents filter results — a fanned three-sheet stack
+// with a primary front page labelled "FILE". Scoped to search (not the global document-file-type icon).
+const DocumentTypeIcon = ({ width = 48, height = 48 }: { width?: number; height?: number }) => (
+  <Svg width={width} height={height} viewBox='0 0 46 46' fill='none'>
+    {/* Sheet fanned left */}
+    <G transform='rotate(-11 23 38) translate(7 5) scale(0.40625 0.4125)'>
+      <Path
+        d='M4 8C4 3.58 7.58 0 12 0H52C56.42 0 60 3.58 60 8V72C60 76.42 56.42 80 52 80H12C7.58 80 4 76.42 4 72V8Z'
+        fill='#F1F1F1'
+        stroke='#E4E4E4'
+        strokeWidth={1}
+      />
+    </G>
+    {/* Sheet fanned right */}
+    <G transform='rotate(9 23 38) translate(13 5) scale(0.40625 0.4125)'>
+      <Path
+        d='M4 8C4 3.58 7.58 0 12 0H52C56.42 0 60 3.58 60 8V72C60 76.42 56.42 80 52 80H12C7.58 80 4 76.42 4 72V8Z'
+        fill='#F7F7F7'
+        stroke='#E4E4E4'
+        strokeWidth={1}
+      />
+    </G>
+    {/* Front document (primary) with folded corner + FILE label */}
+    <G transform='translate(3 3) scale(0.5)'>
+      <Path
+        d='M50.332 6.6665L66.999 23.3335V11.9595C66.9991 11.9728 67 11.9862 67 11.9995V67.9995C67 70.9449 64.6124 73.3333 61.667 73.3335H18.333C15.3876 73.3333 13 70.9449 13 67.9995V11.9995C13.0002 9.05425 15.3877 6.66668 18.333 6.6665H50.332Z'
+        fill='#6852D6'
+      />
+      <Path
+        d='M55.6667 23.332L67 23.332L50.3333 6.66536L50.3333 17.9987C50.3333 20.9442 52.7212 23.332 55.6667 23.332Z'
+        fill='#ACA0E8'
+      />
+      <SvgText x={40} y={59} textAnchor='middle' fontSize={15} fontWeight='700' fill='#FFFFFF'>
+        FILE
+      </SvgText>
+    </G>
+  </Svg>
+);
+
 const LinkPreviewImage: React.FC<LinkPreviewImageProps> = ({ uri, fallbackUri, mergedStyles, theme }) => {
   const [imageError, setImageError] = useState(false);
   const [fallbackError, setFallbackError] = useState(false);
@@ -376,47 +416,77 @@ const LinkPreviewImage: React.FC<LinkPreviewImageProps> = ({ uri, fallbackUri, m
   );
 };
 
+// Video-cell scrim (dark fill behind a thumbnail) now comes from theme.color.mediaScrim.
+
 // Helper function to check for extension-generated thumbnails
 const checkThumbnail = (message: CometChat.MediaMessage): { uri: string } => {
   let image: { uri: string } = { uri: "" };
   const thumbnailData = getExtensionData(message, ExtensionConstants.thumbnailGeneration);
 
-  if (thumbnailData == undefined) {
-    // Fallback to attachment thumbnail for videos
-    if (message.getType() === "video") {
-      const attachment = message.getAttachment();
-      const thumbnailUrl = attachment && ((attachment as any).thumbnail || (attachment as any).url);
-      image = thumbnailUrl ? { uri: thumbnailUrl } : image;
+  // Prefer a successfully server-generated thumbnail.
+  const attachmentData = thumbnailData?.["attachments"];
+  if (attachmentData && attachmentData.length) {
+    const dataObj = attachmentData[0];
+    if (!dataObj["error"]) {
+      const imageLink = dataObj?.["data"]?.["thumbnails"]?.["url_small"];
+      if (imageLink) image = { uri: imageLink };
     }
-  } else {
-    // Extension-generated thumbnail exists
-    const attachmentData = thumbnailData["attachments"];
-    if (attachmentData && attachmentData.length) {
-      const dataObj = attachmentData[0];
-      if (!dataObj["error"]) {
-        const imageLink = dataObj?.["data"]?.["thumbnails"]?.["url_small"];
-        if (imageLink) {
-          image = { uri: dataObj["data"]["thumbnails"]["url_small"] };
-        }
-      }
-    }
+  }
+
+  // No usable generated thumbnail — whether the extension data is missing, errored (e.g. the
+  // server's ERR_FILETYPE_NOT_SUPPORTED), or has null thumbnails — fall back to the video
+  // attachment's own poster if it has one. A video URL can't render as an image, so when there
+  // is no poster the uri stays "" and VideoThumbnail shows the dark scrim + play icon.
+  if (!image.uri && message.getType() === "video") {
+    const attachment = message.getAttachment();
+    const posterUrl = attachment && (attachment as any).thumbnail;
+    if (posterUrl) image = { uri: posterUrl };
   }
 
   return image;
 };
 
+// Dark "+N" badge shown over a media thumbnail when the result is a batch of several
+// attachments (N = total attachments; the thumbnail already shows 1, so we render +N-1).
+// Overlay is 60% black (matches the web spec), text is white.
+const BatchCountOverlay = ({ count }: { count: number }) => {
+  const theme = useTheme();
+  if (!count || count <= 1) return null;
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: theme.color.mediaOverlay,
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Text style={{ color: theme.color.staticWhite, fontSize: 18, fontWeight: "700" }}>{`+${count - 1}`}</Text>
+    </View>
+  );
+};
+
 interface VideoThumbnailProps {
   thumbnailUrl: ImageSourcePropType;
   mergedStyles: any;
+  attachmentCount?: number;
 }
 
-const VideoThumbnail = React.memo(({ thumbnailUrl, mergedStyles, }: VideoThumbnailProps) => {
-
+const VideoThumbnail = React.memo(({ thumbnailUrl, mergedStyles, attachmentCount }: VideoThumbnailProps) => {
+    const theme = useTheme();
     const [imageSource, setImageSource] = useState<ImageSourcePropType>(thumbnailUrl);
 
     useEffect(() => {
-      if (thumbnailUrl && typeof thumbnailUrl === "object" && "uri" in thumbnailUrl) {
-        CommonUtils.prefetchThumbnail((thumbnailUrl as any).uri).then((success) => {
+      const uri = thumbnailUrl && typeof thumbnailUrl === "object" && "uri" in thumbnailUrl
+        ? (thumbnailUrl as any).uri
+        : undefined;
+      if (uri) {
+        CommonUtils.prefetchThumbnail(uri).then((success) => {
           if (success) {
             // console.log("success", thumbnailUrl);
             setImageSource(thumbnailUrl);
@@ -436,12 +506,14 @@ const VideoThumbnail = React.memo(({ thumbnailUrl, mergedStyles, }: VideoThumbna
       >
         <ImageBackground
           source={imageSource}
-          style={mergedStyles.messageItemStyle?.previewVideoStyle}
+          // Dark scrim shows through when there is no thumbnail (empty/failed source) — matches
+          // the video message bubble so the cell reads as a video, never a blank box.
+          style={[mergedStyles.messageItemStyle?.previewVideoStyle, { backgroundColor: theme.color.mediaScrim }]}
           resizeMode="cover"
           progressiveRenderingEnabled={true}
           fadeDuration={0}
         >
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View style={styles.centerFill}>
             <View style={mergedStyles.messageItemStyle?.videoPlayIconStyle}>
               <Icon
                 name='play-arrow'
@@ -453,6 +525,7 @@ const VideoThumbnail = React.memo(({ thumbnailUrl, mergedStyles, }: VideoThumbna
             </View>
           </View>
         </ImageBackground>
+        <BatchCountOverlay count={attachmentCount ?? 0} />
       </View>
     );
   },
@@ -462,8 +535,33 @@ const VideoThumbnail = React.memo(({ thumbnailUrl, mergedStyles, }: VideoThumbna
     const prevUri = (prev.thumbnailUrl as any)?.uri;
     const nextUri = (next.thumbnailUrl as any)?.uri;
 
-    return prevUri === nextUri;
+    return prevUri === nextUri && prev.attachmentCount === next.attachmentCount;
   }
+);
+
+// Lightweight static placeholder for a video with no thumbnail — dark tile + play icon.
+// No ImageBackground / prefetch effect / rasterization, so it stays cheap while scrolling
+// (the same treatment the video message bubble uses for a video with no poster).
+const VideoPlaceholder = React.memo(
+  ({ mergedStyles, attachmentCount }: { mergedStyles: any; attachmentCount?: number }) => {
+    const theme = useTheme();
+    return (
+      <View style={mergedStyles.messageItemStyle?.previewContainerStyle}>
+        <View
+          style={[
+            mergedStyles.messageItemStyle?.previewVideoStyle,
+            { backgroundColor: theme.color.mediaScrim, justifyContent: "center", alignItems: "center" },
+          ]}
+        >
+          <View style={mergedStyles.messageItemStyle?.videoPlayIconStyle}>
+            <Icon name="play-arrow" size={16} height={16} width={16} color={theme.color.staticWhite as string} />
+          </View>
+        </View>
+        <BatchCountOverlay count={attachmentCount ?? 0} />
+      </View>
+    );
+  },
+  (prev, next) => prev.attachmentCount === next.attachmentCount
 );
 
 // Memoized Conversation Item Component
@@ -500,17 +598,13 @@ const ConversationItem = React.memo<ConversationItemProps>((
     const name = withObj.getName();
 
     return (
-      <View style={{ position: 'relative' }}>
-        <View style={{ height: 48, width: 48 }}>
+      <View style={styles.avatarWrap}>
+        <View style={styles.avatar}>
           <CometChatAvatar
             image={{ uri: avatarURL }}
             name={name}
           />
-          <View style={{
-            position: 'absolute',
-            bottom: 0,
-            right: 0,
-          }}>
+          <View style={styles.statusBadge}>
             <CometChatStatusIndicator
               type={getStatusIndicator()}
             />
@@ -1310,17 +1404,13 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     const name = withObj.getName();
 
     return (
-      <View style={{ position: 'relative' }}>
-        <View style={{ height: 48, width: 48 }}>
+      <View style={styles.avatarWrap}>
+        <View style={styles.avatar}>
           <CometChatAvatar
             image={{ uri: avatarURL }}
             name={name}
           />
-          <View style={{
-            position: 'absolute',
-            bottom: 0,
-            right: 0,
-          }}>
+          <View style={styles.statusBadge}>
             <CometChatStatusIndicator
               type={getStatusIndicator(conversation)}
             />
@@ -1426,6 +1516,128 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     return text;
   };
 
+  // Subtitle text for a media/file search result. Shows the message CAPTION when there is one,
+  // otherwise a count summary ("N Videos" / "12 Files"). Photos/videos put their +N on the
+  // thumbnail, so they show caption-or-count; files/audio have no thumbnail, so a caption is
+  // shown alongside the count ("the signed copy · 6 Files"). Falls back to the file name for a
+  // single, caption-less attachment.
+  const getMediaSearchSubtitle = (message: CometChat.MediaMessage): string => {
+    const type = message.getType();
+    const atts =
+      (typeof message.getAttachments === "function" ? message.getAttachments() : null) || [];
+    const count = atts.length || 1;
+    const caption =
+      (typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "") || "";
+    const firstName =
+      atts[0]?.getName?.() || (message.getAttachment?.() as any)?.getName?.() || "";
+
+    // Title-case labels (no localization keys exist for these — t() would echo the UPPERCASE
+    // key back, which is why the counts rendered as "1 IMAGE"/"7 IMAGES").
+    const plural =
+      type === "video" ? "Videos"
+        : type === "image" ? "Images"
+        : type === "audio" ? "Audios"
+        : "Files";
+    const singular =
+      type === "video" ? "Video"
+        : type === "image" ? "Image"
+        : type === "audio" ? "Audio"
+        : "File";
+    const countLabel = `${count} ${count === 1 ? singular : plural}`;
+
+    const hasThumbnail = type === "image" || type === "video"; // +N lives on the thumbnail
+    const result = hasThumbnail
+      ? caption || countLabel
+      : caption
+        ? (count > 1 ? `${caption} · ${countLabel}` : caption)
+        : (count > 1 ? countLabel : firstName || countLabel);
+
+    return result;
+  };
+
+  // Title of a message search result = the CHAT it belongs to (group name, or the other user
+  // for a 1:1), not the sender — the sender goes in the subtitle prefix ("You:" / "<name>:").
+  const getMessageChatTitle = (message: CometChat.BaseMessage): string => {
+    const receiver: any = message.getReceiver?.();
+    if (message.getReceiverType?.() === ReceiverTypeConstants.group) {
+      return receiver?.getName?.() || message.getSender()?.getName?.() || "";
+    }
+    const sentByMe = message.getSender?.()?.getUid?.() === loggedInUser?.getUid?.();
+    return (sentByMe ? receiver?.getName?.() : message.getSender()?.getName?.()) || "";
+  };
+
+  // Plain-string subtitle text for any message type (attachments delegate to the caption/count
+  // helper above; everything else keeps the existing text/card/custom handling).
+  const getMessageSubtitleText = (message: CometChat.BaseMessage): string => {
+    const messageType = message.getType();
+    if (["image", "video", "file", "audio"].includes(messageType)) {
+      return getMediaSearchSubtitle(message as CometChat.MediaMessage);
+    }
+    if (messageType === "text") {
+      const raw = (message as CometChat.TextMessage).getText?.();
+      return formatMentionsInText(raw, message) || messageType || "Message";
+    }
+    if (message.getCategory() === MessageCategoryConstants.card) {
+      const cardText =
+        (typeof (message as any).getText === "function" && (message as any).getText()) || "";
+      return cardText || t("CARD_MESSAGE") || "Card Message";
+    }
+    const customTypeKey = `CUSTOM_MESSAGE_${messageType.toUpperCase()}`;
+    const localizedType = t(customTypeKey);
+    if (localizedType && localizedType !== customTypeKey) return localizedType;
+    if (messageType === "extension_poll") return t("CUSTOM_MESSAGE_POLL") || "Poll";
+    if (messageType === "extension_sticker") return t("CUSTOM_MESSAGE_STICKER") || "Sticker";
+    if (messageType === "extension_whiteboard") return t("CUSTOM_MESSAGE_WHITEBOARD") || "Whiteboard";
+    if (messageType === "extension_document") return t("CUSTOM_MESSAGE_DOCUMENT") || "Document";
+    if (messageType === "meeting") return t("meeting") || "Meeting";
+    return messageType || "Message";
+  };
+
+  // Subtitle row: "<You|sender>: <type-icon> <caption|count>". The small inline icon appears
+  // for attachment messages (image/video/audio/file); text messages have none.
+  const attachmentSubtitleIcon: Record<string, string> = {
+    image: "photo-fill",
+    video: "videocam-fill",
+    audio: "mic-fill",
+    file: "description-fill",
+  };
+  const renderMessageSubtitle = (message: CometChat.BaseMessage) => {
+    const sentByMe = message.getSender?.()?.getUid?.() === loggedInUser?.getUid?.();
+    const senderLabel = sentByMe ? t("YOU") || "You" : message.getSender()?.getName?.() || "";
+    const iconName = attachmentSubtitleIcon[message.getType()];
+    return (
+      <View style={styles.row}>
+        {/* subtitleStyle carries width:'90%' (for the plain single-line subtitle). It MUST be
+            overridden here — otherwise the short sender name sits inside a 90%-wide box, leaving a
+            big gap before the icon and shoving the caption off-screen. Sender hugs its own text
+            (flexGrow:0) and only ellipsizes (flexShrink:2) when a name is genuinely long. */}
+        <Text
+          style={[mergedStyles.messageItemStyle?.subtitleStyle, { width: undefined, flexGrow: 0, flexShrink: 2 }]}
+          numberOfLines={1}
+        >{`${senderLabel}: `}</Text>
+        {iconName ? (
+          <Icon
+            name={iconName as any}
+            size={16}
+            height={16}
+            width={16}
+            color={theme.color.iconSecondary}
+          />
+        ) : null}
+        <Text
+          style={[
+            mergedStyles.messageItemStyle?.subtitleStyle,
+            { marginLeft: iconName ? 4 : 0, width: undefined, flex: 1 },
+          ]}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {getMessageSubtitleText(message)}
+        </Text>
+      </View>
+    );
+  };
+
   // Render message leading view (for audio/file icons)
   const renderMessageLeadingView = (message: CometChat.BaseMessage) => {
     const messageType = message.getType();
@@ -1455,20 +1667,10 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       }
 
       case 'file': {
-        const fileMessage = message as CometChat.MediaMessage;
-        const attachment = fileMessage.getAttachment();
-        const fileName = attachment?.getName?.() || '';
-        const fileTypeIcon = getFileTypeIcon(fileName);
-
+        // Documents filter results use the fanned "FILE" document icon (search-only).
         return (
           <View style={mergedStyles.messageItemStyle?.iconContainerStyle}>
-            <Icon
-              name={fileTypeIcon}
-              size={48}
-              height={48}
-              width={48}
-              color={theme.color.iconSecondary}
-            />
+            <DocumentTypeIcon width={48} height={48} />
           </View>
         );
       }
@@ -1525,6 +1727,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         const attachment = imageMessage.getAttachment();
         const imageUrl = attachment && (attachment as any).url;
         if (imageUrl) {
+          const count = imageMessage.getAttachments?.()?.length || 1;
           return (
             <View style={mergedStyles.messageItemStyle?.previewContainerStyle}>
               <Image
@@ -1534,6 +1737,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                 progressiveRenderingEnabled={true}
                 fadeDuration={0}
               />
+              <BatchCountOverlay count={count} />
             </View>
           );
         }
@@ -1543,16 +1747,18 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       case 'video': {
         const videoMessage = message as CometChat.MediaMessage;
         const thumbnailImage = checkThumbnail(videoMessage);
-        
-        if (thumbnailImage.uri) {
-          return (
-            <VideoThumbnail
-              thumbnailUrl={thumbnailImage}
-              mergedStyles={mergedStyles}
-            />
-          );
-        }
-        break;
+        const attachmentCount = videoMessage.getAttachments?.()?.length || 1;
+        // Real poster → the (heavier) image-backed thumbnail. No poster → a cheap static dark
+        // tile + play icon, so no-thumbnail rows don't add ImageBackground/prefetch cost to scroll.
+        return thumbnailImage.uri ? (
+          <VideoThumbnail
+            thumbnailUrl={thumbnailImage}
+            mergedStyles={mergedStyles}
+            attachmentCount={attachmentCount}
+          />
+        ) : (
+          <VideoPlaceholder mergedStyles={mergedStyles} attachmentCount={attachmentCount} />
+        );
       }
 
 
@@ -1813,53 +2019,9 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                     (message.getType() === 'image' || message.getType() === 'video') && mergedStyles.messageItemStyle?.textContainerStyle
                   ]}>
                     <Text style={mergedStyles.messageItemStyle?.titleStyle} numberOfLines={1}>
-                      {message.getSender()?.getName()}
+                      {getMessageChatTitle(message)}
                     </Text>
-                    <Text style={mergedStyles.messageItemStyle?.subtitleStyle} numberOfLines={2}>
-                      {(() => {
-                        const messageType = message.getType();
-
-                        // For media messages (image, video, file, audio), show file name
-                        if (['image', 'video', 'file', 'audio'].includes(messageType)) {
-                          const mediaMessage = message as CometChat.MediaMessage;
-                          const attachment = mediaMessage.getAttachment?.();
-                          return attachment?.getName?.() || messageType;
-                        }
-
-                        // For text messages, show the text content
-                        if (messageType === 'text') {
-                          const raw = (message as CometChat.TextMessage).getText?.();
-                          const formatted = formatMentionsInText(raw, message);
-                          return formatted || messageType || 'Message';
-                        }
-
-                        // For developer card messages, show the card's text content
-                        // (detected by category — the card `type` is arbitrary).
-                        if (message.getCategory() === MessageCategoryConstants.card) {
-                          const cardText =
-                            (typeof (message as any).getText === 'function' && (message as any).getText()) || '';
-                          return cardText || t('CARD_MESSAGE') || 'Card Message';
-                        }
-
-                        // For custom messages, try to localize the type
-                        const customTypeKey = `CUSTOM_MESSAGE_${messageType.toUpperCase()}`;
-                        const localizedType = t(customTypeKey);
-                        
-                        // If localization exists and is different from key, use it
-                        if (localizedType && localizedType !== customTypeKey) {
-                          return localizedType;
-                        }
-                        
-                        // Handle specific extension types mapping to existing keys
-                        if (messageType === 'extension_poll') return t("CUSTOM_MESSAGE_POLL") || "Poll";
-                        if (messageType === 'extension_sticker') return t("CUSTOM_MESSAGE_STICKER") || "Sticker";
-                        if (messageType === 'extension_whiteboard') return t("CUSTOM_MESSAGE_WHITEBOARD") || "Whiteboard";
-                        if (messageType === 'extension_document') return t("CUSTOM_MESSAGE_DOCUMENT") || "Document";
-                        if (messageType === 'meeting') return t("meeting") || "Meeting";
-
-                        return messageType || 'Message';
-                      })()}
-                    </Text>
+                    {renderMessageSubtitle(message)}
                   </View>
                   <MemoizedTrailingView message={message} />
                 </TouchableOpacity>
@@ -2093,53 +2255,9 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
                   (message.getType() === 'image' || message.getType() === 'video') && mergedStyles.messageItemStyle?.textContainerStyle
                 ]}>
                   <Text style={mergedStyles.messageItemStyle?.titleStyle} numberOfLines={1}>
-                    {message.getSender()?.getName()}
+                    {getMessageChatTitle(message)}
                   </Text>
-                  <Text style={mergedStyles.messageItemStyle?.subtitleStyle} numberOfLines={2}>
-                    {(() => {
-                      const msgType = message.getType();
-
-                      // For media messages (image, video, file, audio), show file name
-                      if (['image', 'video', 'file', 'audio'].includes(msgType)) {
-                        const mediaMessage = message as CometChat.MediaMessage;
-                        const attachment = mediaMessage.getAttachment?.();
-                        return attachment?.getName?.() || msgType;
-                      }
-
-                      // For text messages, show the text content
-                      if (msgType === 'text') {
-                        const raw = (message as CometChat.TextMessage).getText?.();
-                        const formatted = formatMentionsInText(raw, message);
-                        return formatted || msgType || 'Message';
-                      }
-
-                      // For developer card messages, show the card's text content
-                      // (detected by category — the card `type` is arbitrary).
-                      if (message.getCategory() === MessageCategoryConstants.card) {
-                        const cardText =
-                          (typeof (message as any).getText === 'function' && (message as any).getText()) || '';
-                        return cardText || t('CARD_MESSAGE') || 'Card Message';
-                      }
-
-                      // For custom messages, try to localize the type
-                      const customTypeKey = `CUSTOM_MESSAGE_${msgType.toUpperCase()}`;
-                      const localizedType = t(customTypeKey);
-                      
-                      // If localization exists and is different from key, use it
-                      if (localizedType && localizedType !== customTypeKey) {
-                        return localizedType;
-                      }
-                      
-                      // Handle specific extension types mapping to existing keys
-                      if (msgType === 'extension_poll') return t("CUSTOM_MESSAGE_POLL") || "Poll";
-                      if (msgType === 'extension_sticker') return t("CUSTOM_MESSAGE_STICKER") || "Sticker";
-                      if (msgType === 'extension_whiteboard') return t("CUSTOM_MESSAGE_WHITEBOARD") || "Whiteboard";
-                      if (msgType === 'extension_document') return t("CUSTOM_MESSAGE_DOCUMENT") || "Document";
-                      if (msgType === 'meeting') return t("meeting") || "Meeting";
-
-                      return msgType || 'Message';
-                    })()}
-                  </Text>
+                  {renderMessageSubtitle(message)}
                 </View>
                 <MemoizedTrailingView message={message} />
               </TouchableOpacity>
@@ -2184,5 +2302,29 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatar: {
+    height: 48,
+    width: 48,
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+  },
+  centerFill: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+});
 
 export default CometChatSearch;

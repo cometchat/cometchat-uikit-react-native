@@ -101,6 +101,17 @@ interface LinkTapEvent {
   nativeEvent: LinkTapEventData;
 }
 
+/** A single image/file pasted into the editor (extracted to a temp file by native). */
+export interface PasteMediaItem {
+  uri: string;
+  mimeType: string;
+  name: string;
+  size: number;
+}
+interface PasteMediaEvent {
+  nativeEvent: { items: PasteMediaItem[] };
+}
+
 export interface RichTextEditorPropsExtended extends RichTextEditorProps {
   /** Test ID for testing frameworks (e.g. Detox, React Native Testing Library) */
   testID?: string;
@@ -111,6 +122,8 @@ export interface RichTextEditorPropsExtended extends RichTextEditorProps {
   onLinkTap?: (data: LinkTapEventData) => void;
   /** Callback when Enter is pressed in "sendMessage" mode (Android only) */
   onSendRequest?: () => void;
+  /** Fired when the user pastes image(s)/file(s) into the editor (long-press Paste / ⌘V). */
+  onPasteMedia?: (items: PasteMediaItem[]) => void;
   /** Enter key behavior: "newLine" (default) or "sendMessage" (Android only) */
   enterKeyBehavior?: string;
   /** Show Bold/Italic/Underline/Strikethrough in text selection context menu */
@@ -323,6 +336,17 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorPropsExtended
     props.onSendRequest?.();
   }, [props.onSendRequest]);
 
+  const handlePasteMedia = useCallback(
+    // permissive event type — bridges the native direct event; shape is checked at runtime
+    (event: any) => {
+      const items = event?.nativeEvent?.items;
+      if (Array.isArray(items) && items.length > 0) {
+        props.onPasteMedia?.(items as PasteMediaItem[]);
+      }
+    },
+    [props.onPasteMedia],
+  );
+
   const combinedStyle = StyleSheet.flatten([props.style, height != null ? { height } : undefined]);
 
   return (
@@ -356,6 +380,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorPropsExtended
       onActiveStylesChange={handleActiveStylesChange}
       onLinkTap={handleLinkTap}
       onSendRequest={handleSendRequest}
+      onPasteMedia={handlePasteMedia}
       enterKeyBehavior={props.enterKeyBehavior}
       showTextSelectionMenuItems={props.showTextSelectionMenuItems ?? true}
     />

@@ -12,7 +12,7 @@ export const getFileBubbleStyleLight = (
     incomingFileBubbleStyle: {
       containerStyle: {
         paddingTop: spacing.padding.p3,
-        paddingHorizontal: spacing.padding.p2,
+        paddingHorizontal: spacing.padding.p3,
         paddingBottom: spacing.padding.p0,
         borderRadius: spacing.radius.r3,
         alignSelf: "flex-start",
@@ -36,8 +36,9 @@ export const getFileBubbleStyleLight = (
     },
     outgoingFileBubbleStyle: {
       containerStyle: {
+        backgroundColor: color.primary, 
         paddingTop: spacing.padding.p3,
-        paddingHorizontal: spacing.padding.p2,
+        paddingHorizontal: spacing.padding.p3,
         borderRadius: spacing.radius.r3,
         width: 240,
       },
@@ -72,7 +73,7 @@ export const getFileBubbleStyleDark = (
     incomingFileBubbleStyle: {
       containerStyle: {
         paddingTop: spacing.padding.p3,
-        paddingHorizontal: spacing.padding.p2,
+        paddingHorizontal: spacing.padding.p3,
         paddingBottom: spacing.padding.p0,
         borderRadius: spacing.radius.r3,
         alignSelf: "flex-start",
@@ -96,8 +97,9 @@ export const getFileBubbleStyleDark = (
     },
     outgoingFileBubbleStyle: {
       containerStyle: {
+        backgroundColor: color.primary,
         paddingTop: spacing.padding.p3,
-        paddingHorizontal: spacing.padding.p2,
+        paddingHorizontal: spacing.padding.p3,
         borderRadius: spacing.radius.r3,
         width: 240,
       },

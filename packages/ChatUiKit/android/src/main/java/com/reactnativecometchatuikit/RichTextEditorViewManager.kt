@@ -446,7 +446,8 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
             "topSizeChange" to mapOf("registrationName" to "onSizeChange"),
             "topActiveStylesChange" to mapOf("registrationName" to "onActiveStylesChange"),
             "topLinkTap" to mapOf("registrationName" to "onLinkTap"),
-            "topSendRequest" to mapOf("registrationName" to "onSendRequest")
+            "topSendRequest" to mapOf("registrationName" to "onSendRequest"),
+            "topPasteMedia" to mapOf("registrationName" to "onPasteMedia")
         )
     }
 }

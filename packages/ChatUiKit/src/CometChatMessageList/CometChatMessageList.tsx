@@ -71,6 +71,8 @@ import { Icon } from "../shared/icons/Icon";
 import { CometChatMessageTemplate } from "../shared/modals/CometChatMessageTemplate";
 import { getUnixTimestamp, messageStatus } from "../shared/utils/CometChatMessageHelper";
 import { CommonUtils } from "../shared/utils/CommonUtils";
+import { CometChatBatchMediaContext, BatchMediaResult } from "../shared/utils/batchMediaContext";
+import { CometChatUIKit } from "../shared/CometChatUiKit/CometChatUIKit";
 import { CometChatNewMessageIndicator, CometChatReceipt, NewMessageIndicatorStyle } from "../shared/views";
 import { CometChatAvatar } from "../shared/views/CometChatAvatar";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
@@ -105,9 +107,10 @@ import { MessageModals } from "./components/MessageModals";
 import { ReactionModals } from "./components/ReactionModals";
 import { MessageOptionsSheet } from "./components/MessageOptionsSheet";
 import { MessageListItem } from "./components/MessageListItem";
+import CometChatConversationStarter from "../shared/views/CometChatConversationStarter/CometChatConversationStarter";
+import CometChatSmartReplies from "../shared/views/CometChatSmartReplies/CometChatSmartReplies";
 
 let _defaultRequestBuilder: CometChat.MessagesRequestBuilder;
-const SEPARATOR_HEIGHT = 40;
 const AVERAGE_ITEM_LENGTH = 120;
 const SMALL_LIST_THRESHOLD = 30;
 
@@ -416,6 +419,12 @@ export interface CometChatMessageListProps {
    */
   hideReplyOption?: boolean;
   /**
+   * DD §9 — message-list attachment rendering. `true` (default): new per-type bubbles that render
+   * 1..N attachments (including a single one). `false`: the deprecated single-attachment bubbles
+   * (set this only to keep legacy single-bubble styling for messages that carry one attachment).
+   */
+  enableMultipleAttachments?: boolean;
+  /**
    * Flag to hide the reply in thread option
    */
   hideReplyInThreadOption?: boolean;
@@ -491,6 +500,14 @@ export interface CometChatMessageListProps {
    * Callback when suggested message is clicked (only applies to @agentic users)
    */
   onSuggestedMessageClick?: (suggestion: string) => void;
+  /**
+   * When true, shows AI-generated conversation starters when the message list is empty.
+   */
+  showConversationStarters?: boolean;
+  /**
+   * When true, shows AI-generated smart reply chips above the composer after a new message arrives.
+   */
+  showSmartReplies?: boolean;
   /**
    * Custom AI assistant tools with action functions (only applies to @agentic users)
    */
@@ -584,6 +601,81 @@ export interface CometChatMessageListActionsInterface {
   updateMessageReceipt: (message: CometChat.BaseMessage) => void;
 }
 
+// ---------------------------------------------------------------------------
+// §8.3a — Batch grouping helpers. After the §7 fan-out, one user "send" becomes
+// N single-kind messages sharing metadata.batchId. Consecutive messages from the
+// same sender that share a batchId render as ONE visual group: a single avatar on
+// the group's first (top/oldest) member and a single receipt+timestamp on the last
+// (bottom/newest) member. Pure functions (no closures) — safe to reuse anywhere.
+// ---------------------------------------------------------------------------
+function getMessageBatchId(m: any): string | number | null {
+  try {
+    const md = m?.getMetadata?.();
+    const id = md?.batchId;
+    return id === undefined || id === null || id === "" ? null : id;
+  } catch {
+    return null;
+  }
+}
+
+/** True when both messages belong to the SAME batch (same non-empty batchId) AND the same sender. */
+function isSameBatchGroup(a: any, b: any): boolean {
+  if (!a || !b) return false;
+  const ba = getMessageBatchId(a);
+  const bb = getMessageBatchId(b);
+  if (ba == null || bb == null || ba !== bb) return false;
+  const ua = a.getSender?.()?.getUid?.();
+  const ub = b.getSender?.()?.getUid?.();
+  return !!ua && ua === ub;
+}
+
+function getMessageBatchIndex(m: any): number {
+  try {
+    const bi = m?.getMetadata?.()?.batchIndex;
+    return typeof bi === "number" ? bi : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * §8.3a — enforce the sender's order within a batch on the RECEIVE side. Each kind fans out
+ * into an INDEPENDENT async upload, so a small file can arrive (and be stored by the server)
+ * before a large image — which would show Files above Images. We reorder each CONTIGUOUS run
+ * of same-batch messages by `batchIndex` from metadata. The list is inverted (index 0 = newest
+ * / bottom) and a higher batchIndex was sent later, so a run is ordered DESCENDING by batchIndex
+ * (last-sent at the bottom). Non-batch messages and the overall message order are untouched.
+ * Returns the SAME array reference when nothing needed reordering (keeps the memo stable).
+ */
+function orderBatchRuns(messages: any[]): any[] {
+  if (!Array.isArray(messages) || messages.length < 2) return messages;
+  const result = messages.slice();
+  let changed = false;
+  let i = 0;
+  while (i < result.length) {
+    if (getMessageBatchId(result[i]) == null) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j + 1 < result.length && isSameBatchGroup(result[j + 1], result[i])) j++;
+    if (j > i) {
+      const run = result.slice(i, j + 1);
+      const sorted = run.slice().sort((a, b) => getMessageBatchIndex(b) - getMessageBatchIndex(a));
+      let runChanged = false;
+      for (let k = 0; k < run.length; k++) {
+        if (run[k] !== sorted[k]) { runChanged = true; break; }
+      }
+      if (runChanged) {
+        result.splice(i, run.length, ...sorted);
+        changed = true;
+      }
+    }
+    i = j + 1;
+  }
+  return changed ? result : messages;
+}
+
 export const CometChatMessageList = memo(
   forwardRef<CometChatMessageListActionsInterface, CometChatMessageListProps>(
     (props: CometChatMessageListProps, ref) => {
@@ -622,6 +714,7 @@ export const CometChatMessageList = memo(
         addTemplates = [],
         onLoad,
         onEmpty,
+        enableMultipleAttachments = true,
         hideReplyOption: propHideReplyOption = false,
         hideReplyInThreadOption: propHideReplyInThreadOption = false,
         hideShareMessageOption: propHideShareMessageOption = false,
@@ -640,6 +733,8 @@ export const CometChatMessageList = memo(
         emptyChatIntroMessageView,
         emptyChatImageView,
         onSuggestedMessageClick,
+        showConversationStarters = false,
+        showSmartReplies = false,
         aiAssistantTools,
         streamingSpeed = 30,
         goToMessageId,
@@ -950,6 +1045,9 @@ export const CometChatMessageList = memo(
       // State for showing bottom loading indicator when fetching next messages
       const [bottomLoading, setBottomLoading] = useState(false);
       const [unreadCount, setUnreadCount] = useState<number>(0);
+      const [showSmartRepliesView, setShowSmartRepliesView] = useState(false);
+      const [smartRepliesKey, setSmartRepliesKey] = useState('');
+      const latestReceivedMessageRef = useRef<CometChat.BaseMessage | null>(null);
       const [showMessageOptions, setShowMessageOptions] = useState<any[]>([]);
       const [ExtensionsComponent, setExtensionsComponent] = useState<JSX.Element | null>(null);
       const [CustomListHeader, setCustomListHeader] = useState<any>(null);
@@ -1642,6 +1740,7 @@ export const CometChatMessageList = memo(
         const isAgenticUserCheck = isAgenticUser;
         const options = {
           textFormatters: textFormatters || [],
+          enableMultipleAttachments,
           hideReplyOption: isAgenticUserCheck || hideReplyOption,
           hideReplyInThreadOption: isAgenticUserCheck || hideReplyInThreadOption,
           hideShareMessageOption: isAgenticUserCheck || hideShareMessageOption,
@@ -1987,11 +2086,11 @@ export const CometChatMessageList = memo(
             return;
           }
         } else {
-          if (
+          const inSameConversation =
             checkSameConversation(baseMessage) ||
             checkMessageInSameConversation(baseMessage) ||
-            messageToSameConversation(baseMessage)
-          ) {
+            messageToSameConversation(baseMessage);
+          if (inSameConversation) {
             if (user) {
               CometChat.markConversationAsDelivered(user.getUid(), CometChat.RECEIVER_TYPE.USER);
             } else if (group) {
@@ -2278,10 +2377,14 @@ export const CometChatMessageList = memo(
               messagesContentListRef.current = [newMessage, ...messagesContentListRef.current];
             }
 
-            latestMessageRef.current = messagesContentListRef.current[0] ?? newMessage;
-            onLoad && onLoad([...messagesContentListRef.current].reverse());
+            // Capture the snapshot synchronously — see note on the own-message append
+            // below: the deferred (rAF) setMessagesList must not re-read the ref, which
+            // an intervening render can clobber back to the pre-append state.
+            const gapNextList = messagesContentListRef.current;
+            latestMessageRef.current = gapNextList[0] ?? newMessage;
+            onLoad && onLoad([...gapNextList].reverse());
             batchStateUpdates(() => {
-              setMessagesList([...messagesContentListRef.current]);
+              setMessagesList([...gapNextList]);
               if (hideScrollToBottomButton === false && unreadCount < 1 && !hasTargetMessageId) {
                 setHideScrollToBottomButton(true);
               }
@@ -2290,14 +2393,21 @@ export const CometChatMessageList = memo(
             return;
           }
         }
-        messagesContentListRef.current = [newMessage, ...messagesContentListRef.current];
-        onLoad && onLoad([...messagesContentListRef.current].reverse());
+        const nextList = [newMessage, ...messagesContentListRef.current];
+        messagesContentListRef.current = nextList;
+        onLoad && onLoad([...nextList].reverse());
         // Update latestMessageRef for gap detection
         latestMessageRef.current = newMessage;
 
-        // Batch state updates for better performance
+        // Batch state updates for better performance.
+        // NOTE: batchStateUpdates defers to the next animation frame. Capture the list
+        // in `nextList` and commit THAT — do not re-read messagesContentListRef.current
+        // inside the rAF. An intervening render (e.g. the composer clearing its reply
+        // preview after sending a quoted reply) re-syncs the ref from state via the
+        // `messagesContentListRef.current = orderedMessagesList` line below, which would
+        // drop this just-appended message before the deferred setMessagesList runs.
         batchStateUpdates(() => {
-          setMessagesList([...messagesContentListRef.current]);
+          setMessagesList([...nextList]);
           if (hideScrollToBottomButton === false && unreadCount < 1 && !hasTargetMessageId) {
             setHideScrollToBottomButton(true);
           }
@@ -2891,6 +3001,12 @@ export const CometChatMessageList = memo(
             } else {
               newMessage(textMessage);
             }
+            if (showSmartReplies && textMessage.getSender?.()?.getUid() !== loggedInUser.current?.getUid()) {
+              latestReceivedMessageRef.current = textMessage;
+              // keys CometChatSmartReplies below so back-to-back messages force a refetch
+              setSmartRepliesKey(String(textMessage.getId?.() ?? Date.now()));
+              setShowSmartRepliesView(true);
+            }
           },
           onMediaMessageReceived: (mediaMessage: any) => {
             if (isAgenticUser) {
@@ -2938,7 +3054,16 @@ export const CometChatMessageList = memo(
             messageEdited(editedMessage);
           },
           onMessageModerated: (moderatedMessage: any) => {
-            !isAgenticUser && messageEdited(moderatedMessage);
+            if (isAgenticUser) return;
+            // A moderation verdict can arrive BEFORE the optimistic message has reconciled to its
+            // server id — common when sending 3+ images at once, where the last sends are still
+            // keyed by muid in the list. messageEdited() matches by id XOR muid, so when the id
+            // isn't present in the list yet, fall back to muid matching (the event carries the
+            // muid and the optimistic bubble has it). Otherwise the block silently misses that
+            // bubble until a refetch (navigate away + back).
+            const mid = moderatedMessage?.getId?.() ?? (moderatedMessage as any)?.id;
+            const foundById = mid != null && messagesContentListRef.current.some((m: any) => m?.getId?.() == mid);
+            messageEdited(moderatedMessage, !foundById && !!(moderatedMessage as any)?.muid);
           },
           onFormMessageReceived: (formMessage: any) => {
             newMessage(formMessage);
@@ -3314,7 +3439,7 @@ export const CometChatMessageList = memo(
       );
 
       // functions returning view
-      const getLeadingView = useCallback((item: CometChat.BaseMessage): JSX.Element | undefined => {
+      const getLeadingView = useCallback((item: CometChat.BaseMessage, currentIndex?: number): JSX.Element | undefined => {
         let _style = getCurrentBubbleStyle(item);
 
         if (
@@ -3332,6 +3457,20 @@ export const CometChatMessageList = memo(
             (isAgenticUser && isIncomingMessage));
 
         if (shouldShowAvatar) {
+          // §8.3a — within a batch, show the avatar only on the FIRST (top/oldest) member.
+          // The list is inverted (index 0 = newest), so the older neighbour is at index+1.
+          // For the rest of the batch, render a same-width spacer so the stack stays aligned.
+          const list = messagesContentListRef.current || [];
+          const older = typeof currentIndex === "number" ? list[currentIndex + 1] : undefined;
+          const newer = typeof currentIndex === "number" ? list[currentIndex - 1] : undefined;
+          const isBatchMember =
+            getMessageBatchId(item) != null &&
+            (isSameBatchGroup(item, older) || isSameBatchGroup(item, newer));
+          const isBatchFirst = !isSameBatchGroup(item, older);
+          if (isBatchMember && !isBatchFirst) {
+            const avatarWidth = (_style?.avatarStyle?.containerStyle?.width as number) ?? 32;
+            return <View style={{ width: avatarWidth }} />;
+          }
           return (
             <CometChatAvatar
               image={
@@ -3352,8 +3491,19 @@ export const CometChatMessageList = memo(
       }, []);
 
       const getHeaderView = useCallback(
-        (item: CometChat.BaseMessage | any): JSX.Element | undefined => {
+        (item: CometChat.BaseMessage | any, currentIndex?: number): JSX.Element | undefined => {
           const _style = getCurrentBubbleStyle(item);
+          // §8.3a — within a batch, the sender name shows only on the first (top/oldest) member.
+          const _list = messagesContentListRef.current || [];
+          const _older = typeof currentIndex === "number" ? _list[currentIndex + 1] : undefined;
+          const _newer = typeof currentIndex === "number" ? _list[currentIndex - 1] : undefined;
+          const _isBatchMember =
+            getMessageBatchId(item) != null &&
+            (isSameBatchGroup(item, _older) || isSameBatchGroup(item, _newer));
+          if (_isBatchMember && isSameBatchGroup(item, _older)) {
+            // not the first of the batch → suppress the duplicate sender name
+            return undefined;
+          }
           if (
             (alignment === "leftAligned" ||
               (item.getSender()?.getUid() != loggedInUser.current?.getUid() && !user)) &&
@@ -3397,6 +3547,35 @@ export const CometChatMessageList = memo(
           if ((item as CometChat.BaseMessage).getCategory() === MessageCategoryConstants.action)
             return undefined;
 
+          // §8.3a — within a batch, the receipt+timestamp shows only on the LAST (bottom/newest)
+          // member. List is inverted (index 0 = newest) → the newer neighbour is at index-1.
+          // Hide the row on any batch member that still has a same-batch neighbour below it.
+          // EXCEPTION (§12.1): a FAILED member must always show its own status so its error
+          // (and any retry affordance) is never hidden by the group collapse.
+          const _batchList = messagesContentListRef.current || [];
+          const _newerNeighbour =
+            typeof currentIndex === "number" ? _batchList[currentIndex - 1] : undefined;
+          // A batch member with a same-batch neighbour BELOW it (newer) is not the last one — its
+          // receipt/timestamp is normally collapsed onto the last member of the group.
+          const _isCollapsibleBatchMember =
+            getMessageBatchId(item) != null && isSameBatchGroup(item, _newerNeighbour);
+          // EXCEPTION (§12.1): a FAILED or moderation-BLOCKED member must always show its own error
+          // icon, so a blocked/failed first/middle attachment isn't left with NO indication. A
+          // moderation block is NOT stamped as metadata.error, so check the moderation status here too.
+          const _hasError =
+            item?.getData?.()?.metaData?.error ||
+            item?.getMetadata?.()?.error ||
+            (item as any)?.error ||
+            getModerationStatus(item) === "disapproved";
+          if (!_hasError && _isCollapsibleBatchMember) {
+            // Non-last, non-failed batch member: the receipt/timestamp shows only on the LAST member,
+            // but that row is what gives the bubble its bottom footprint. Returning `undefined` leaves
+            // the content flush to the edge, so the rounded bottom corner doesn't render like the top.
+            // Keep a small spacer so the bottom matches the top. Scoped to this branch — the default
+            // (non-batch) bubble is untouched.
+            return <View style={{ height: theme.spacing.spacing.s2 }} />;
+          }
+
           let isOutgoingMessage = item.getSender()?.getUid() === loggedInUser.current?.getUid();
           let _style = getCurrentBubbleStyle(item);
 
@@ -3427,13 +3606,25 @@ export const CometChatMessageList = memo(
           if (moderationStatus === "disapproved") {
             messageState = MessageReceipt.ERROR;
           }
-          // Determine if message has been edited.
-          // This example assumes you have a method (or property) like getEditedAt() that returns a timestamp when edited.
+          // Determine if message has been edited. Text edits always qualify; media messages qualify
+          // only when they carry a caption (that's the only thing you can edit on media) — the caption
+          // guard also keeps async server edits like thumbnail generation from falsely tagging images.
+          const editedType = (item as CometChat.BaseMessage).getType();
+          const isEditedMedia =
+            (editedType === MessageTypeConstants.image ||
+              editedType === MessageTypeConstants.video ||
+              editedType === MessageTypeConstants.audio ||
+              editedType === MessageTypeConstants.file) &&
+            !!(item as CometChat.MediaMessage).getCaption?.()?.trim();
           const isEdited =
-            item.getEditedAt?.() &&
-            (item as CometChat.BaseMessage).getType() === MessageTypeConstants.text;
+            !!item.getEditedAt?.() &&
+            (editedType === MessageTypeConstants.text || isEditedMedia);
 
-          const shouldShowTimestamp = isAgenticUser ? isOutgoingMessage : !hideTimestamp;
+          // A first/middle failed/blocked batch member shows JUST the error icon (below) — hide its
+          // timestamp so only the last member of the group carries the timestamp.
+          const shouldShowTimestamp =
+            (isAgenticUser ? isOutgoingMessage : !hideTimestamp) &&
+            !(_isCollapsibleBatchMember && messageState === MessageReceipt.ERROR);
           return (
             <View>
               <View
@@ -3476,23 +3667,52 @@ export const CometChatMessageList = memo(
                   alignment !== "leftAligned" &&
                   isOutgoingMessage &&
                   !item.getDeletedAt?.() ? (
-                  <View style={staticStyles.receiptContainer}>
-                    <CometChatReceipt
-                      receipt={messageState}
-                      style={{
-                        deliveredIcon: _style.receiptStyles.deliveredIcon,
-                        readIcon: _style.receiptStyles.readIcon,
-                        sentIcon: _style.receiptStyles.sentIcon,
-                        waitIcon: _style.receiptStyles.waitIcon,
-                        errorIcon: _style.receiptStyles.errorIcon,
-                        sentIconStyle: _style.receiptStyles.sentIconStyle,
-                        readIconStyle: _style.receiptStyles.readIconStyle,
-                        waitIconStyle: _style.receiptStyles.waitIconStyle,
-                        errorIconStyle: _style.receiptStyles.errorIconStyle,
-                        deliveredIconStyle: _style.receiptStyles.deliveredIconStyle,
-                      }}
-                    />
-                  </View>
+                  (() => {
+                    const receiptEl = (
+                      <CometChatReceipt
+                        receipt={messageState}
+                        style={{
+                          deliveredIcon: _style.receiptStyles.deliveredIcon,
+                          readIcon: _style.receiptStyles.readIcon,
+                          sentIcon: _style.receiptStyles.sentIcon,
+                          waitIcon: _style.receiptStyles.waitIcon,
+                          errorIcon: _style.receiptStyles.errorIcon,
+                          sentIconStyle: _style.receiptStyles.sentIconStyle,
+                          readIconStyle: _style.receiptStyles.readIconStyle,
+                          waitIconStyle: _style.receiptStyles.waitIconStyle,
+                          errorIconStyle: _style.receiptStyles.errorIconStyle,
+                          deliveredIconStyle: _style.receiptStyles.deliveredIconStyle,
+                        }}
+                      />
+                    );
+                    // A first/middle failed/blocked batch member shows JUST the error icon (no
+                    // timestamp, no Retry label) so the group collapse never hides the failure.
+                    if (messageState === MessageReceipt.ERROR && _isCollapsibleBatchMember) {
+                      return <View testID="batch-error-icon" style={staticStyles.receiptContainer}>{receiptEl}</View>;
+                    }
+                    // §12.1 — a failed send becomes a tappable "Retry" (re-sends this message).
+                    return messageState === MessageReceipt.ERROR ? (
+                      <TouchableOpacity
+                        style={[staticStyles.receiptContainer, staticStyles.receiptRow]}
+                        onPress={() => resendMediaMessage(item)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("RETRY") ?? "Retry"}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        {receiptEl}
+                        <Text
+                          style={[
+                            _style.dateStyles.textStyle,
+                            { textTransform: "none", marginLeft: 4, color: mergedTheme.color.error },
+                          ]}
+                        >
+                          {t("RETRY") ?? "Retry"}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={staticStyles.receiptContainer}>{receiptEl}</View>
+                    );
+                  })()
                 ) : null}
               </View>
             </View>
@@ -3500,6 +3720,75 @@ export const CometChatMessageList = memo(
         },
         [mergedTheme, isAgenticUser, hideTimestamp]
       );
+
+      // §8.2 — batch-spanning viewer source: the union of image+video attachments
+      // across all messages of this message's batch (in batchIndex order), plus the
+      // offset where the queried message's own media begins. Null when not a real batch.
+      const getBatchImageVideoItems = useCallback(
+        (message: CometChat.MediaMessage): BatchMediaResult | null => {
+          const batchId = getMessageBatchId(message);
+          if (batchId == null) return null;
+          const list = messagesContentListRef.current || [];
+          const siblings = list.filter((m) => isSameBatchGroup(m, message));
+          if (siblings.length <= 1) return null;
+          const idxOf = (m: any) => {
+            const bi = m?.getMetadata?.()?.batchIndex;
+            return typeof bi === "number" ? bi : 0;
+          };
+          siblings.sort((a, b) => idxOf(a) - idxOf(b));
+          const isVisual = (a: any) => {
+            const mime = a?.getMimeType?.() ?? "";
+            return mime.startsWith("image/") || mime.startsWith("video/");
+          };
+          const sameMsg = (a: any, b: any) => {
+            const ai = a?.getId?.();
+            const bi = b?.getId?.();
+            if (ai && bi) return ai === bi;
+            const am = a?.getMuid?.();
+            const bm = b?.getMuid?.();
+            return !!am && am === bm;
+          };
+          let items: CometChat.Attachment[] = [];
+          let offsetForMessage = 0;
+          for (const sib of siblings) {
+            const media = ((sib as CometChat.MediaMessage).getAttachments?.() ?? []).filter(isVisual);
+            if (sameMsg(sib, message)) offsetForMessage = items.length;
+            items = items.concat(media);
+          }
+          if (items.length === 0) return null;
+          return { items, offsetForMessage };
+        },
+        []
+      );
+
+      const batchMediaContextValue = useMemo(
+        () => ({ getBatchImageVideoItems }),
+        [getBatchImageVideoItems]
+      );
+
+      // §12.1 — retry a FAILED outgoing media message (e.g. one member of a partial batch).
+      // Clears the error flag, then re-sends via the canonical CometChatUIKit path which
+      // re-emits ccMessageSent inprogress→success/error; this list reconciles by muid in place.
+      const resendMediaMessage = useCallback((message: CometChat.BaseMessage) => {
+        try {
+          if (!(message instanceof CometChat.MediaMessage)) return;
+          const data: any = (message as any).getData?.() || {};
+          if (data?.metaData?.error) {
+            delete data.metaData.error;
+            (message as any).setData?.(data);
+          }
+          const md: any = (message as any).getMetadata?.();
+          if (md?.error) {
+            delete md.error;
+            (message as any).setMetadata?.(md);
+          }
+          (message as any).error = undefined;
+          // On failure CometChatUIKit.sendMediaMessage re-applies the error flag + emits error.
+          CometChatUIKit.sendMediaMessage(message as CometChat.MediaMessage).catch(() => {});
+        } catch (e) {
+          // best-effort retry
+        }
+      }, []);
 
       const reactToMessage = (emoji: string, messageObj?: CometChat.BaseMessage) => {
         const originalMessage = messageObj || selectedMessage;
@@ -3946,9 +4235,9 @@ export const CometChatMessageList = memo(
             return hasTemplate?.HeaderView
               ? hasTemplate?.HeaderView(message, bubbleAlignment)
               : !isThreaded
-                ? getHeaderView(message)
+                ? getHeaderView(message, currentIndex)
                 : undefined;
-          }, [message, bubbleAlignment, hasTemplate, getHeaderView]);
+          }, [message, bubbleAlignment, hasTemplate, getHeaderView, currentIndex]);
 
           const FooterView = useMemo(() => {
             return hasTemplate?.FooterView
@@ -3971,8 +4260,8 @@ export const CometChatMessageList = memo(
             if (hasTemplate?.LeadingView) {
               return hasTemplate.LeadingView(message, bubbleAlignment);
             }
-            return !isThreaded ? getLeadingView(message) : undefined;
-          }, [isThreaded, message, getLeadingView, hasTemplate, bubbleAlignment]);
+            return !isThreaded ? getLeadingView(message, currentIndex) : undefined;
+          }, [isThreaded, message, getLeadingView, hasTemplate, bubbleAlignment, currentIndex]);
 
           const BottomView = useMemo(() => {
             const moderationStatus = getModerationStatus(message);
@@ -4334,7 +4623,14 @@ export const CometChatMessageList = memo(
         return `index_${index}`;
       }, []);
 
-      const itemSeparator = useCallback(() => <View style={staticStyles.itemSeparator} />, [staticStyles]);
+      // `tight` collapses the gap between two consecutive messages of the SAME batch so a
+      // fanned-out mixed batch (images + files + audio…) reads as one grouped message.
+      const itemSeparator = useCallback(
+        (tight?: boolean) => (
+          <View style={tight ? staticStyles.itemSeparatorTight : staticStyles.itemSeparator} />
+        ),
+        [staticStyles]
+      );
 
       const getAgentEmptyView = useCallback(() => {
         if (!user) return <></>;
@@ -4408,15 +4704,7 @@ export const CometChatMessageList = memo(
               )}
 
               {!hideSuggestedMessages && displaySuggestions?.length > 0 && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    justifyContent: "center",
-                    paddingHorizontal: 0,
-                    maxWidth: "100%",
-                  }}
-                >
+                <View style={staticStyles.suggestionsWrap}>
                   {displaySuggestions.map((suggestion, idx) => (
                     <TouchableOpacity
                       key={idx}
@@ -4474,11 +4762,51 @@ export const CometChatMessageList = memo(
         mergedTheme,
       ]);
 
+      const fetchConversationStarters = (): Promise<string[]> => {
+        const receiverId = user?.getUid() ?? group?.getGuid() ?? '';
+        const receiverType = user
+          ? CometChat.RECEIVER_TYPE.USER
+          : CometChat.RECEIVER_TYPE.GROUP;
+        return CometChat.getConversationStarter(receiverId, receiverType);
+      };
+
+      const fetchSmartReplies = (): Promise<string[]> => {
+        const msg = latestReceivedMessageRef.current;
+        if (!msg) return Promise.resolve([]);
+        const receiverId = user?.getUid() ?? group?.getGuid() ?? '';
+        const receiverType = user
+          ? CometChat.RECEIVER_TYPE.USER
+          : CometChat.RECEIVER_TYPE.GROUP;
+        return CometChat.getSmartReplies(receiverId, receiverType)
+          .then((res) => Object.values(res) as string[]);
+      };
+
+      // ponytail: group action messages (e.g. "X joined the group") aren't real
+      // conversation messages, so they shouldn't hide the conversation starter chips (ENG-36769).
+      const hasOnlyActionMessages = useMemo(
+        () =>
+          messagesList.length > 0 &&
+          messagesList.every(
+            (m) => m?.getCategory?.() === MessageCategoryConstants.action
+          ),
+        [messagesList]
+      );
+
       const getEmptyStateView = useCallback(() => {
         const isAgenticUserCheck = user?.getRole?.() === "@agentic";
 
         if (isAgenticUserCheck) {
           return getAgentEmptyView();
+        }
+        if (showConversationStarters) {
+          return (
+            <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+              <CometChatConversationStarter
+                getConversationStarters={fetchConversationStarters}
+                onSuggestionClicked={(text) => onSuggestedMessageClick?.(text)}
+              />
+            </View>
+          );
         }
         if (EmptyView)
           return (
@@ -4495,7 +4823,7 @@ export const CometChatMessageList = memo(
             titleStyle={mergedTheme.messageListStyles.emptyStateStyle?.textStyle as TextStyle}
           />
         );
-      }, [mergedTheme, EmptyView, getAgentEmptyView, user]);
+      }, [mergedTheme, EmptyView, getAgentEmptyView, user, group, showConversationStarters]);
 
       const getErrorStateView = useCallback(() => {
         if (hideError) return null;
@@ -4800,6 +5128,17 @@ export const CometChatMessageList = memo(
       const memoizedRenderItem = useCallback(
         ({ item, index }: any) => {
           const nextItem = messagesContentListRef.current[index + 1];
+          const prevItem = messagesContentListRef.current[index - 1];
+          // Collapse this row's vertical padding (and the separator) toward a neighbour that belongs
+          // to the SAME fan-out batch, so a mixed batch (images + files + audio…) reads as one grouped
+          // message. Gated on a shared batchId + sender on the NEIGHBOUR alone — that already proves a
+          // real multi-message batch, so we do NOT also require the `batchSize > 1` metadata field,
+          // which can be absent on reloaded messages and silently left the batch un-clubbed (the big
+          // gap). A lone batchId (single-attachment send) has no same-batch neighbour → never tightened.
+          // List is inverted: index+1 = older (above), index-1 = newer (below); tightTop shrinks toward
+          // the older member, tightBottom toward the newer.
+          const tightTop = isSameBatchGroup(item, nextItem);
+          const tightBottom = isSameBatchGroup(item, prevItem);
           const currentItemMs = sentAtToMs(item);
           const nextItemMs = sentAtToMs(nextItem);
           const showSeparator = shouldShowSeparator(index, currentItemMs, nextItemMs);
@@ -4829,6 +5168,8 @@ export const CometChatMessageList = memo(
                 dayHeaderString={dayHeaderString}
                 RenderMessageItem={RenderMessageItem}
                 itemSeparator={itemSeparator}
+                tightTop={tightTop}
+                tightBottom={tightBottom}
                 staticStyles={staticStyles}
                 onLayout={handleItemLayout}
                 showNewMessageIndicator={showNewMessageIndicator}
@@ -4862,7 +5203,15 @@ export const CometChatMessageList = memo(
       );
 
 
+      // §8.3a — reorder each batch's messages by batchIndex for display, so a batch always
+      // shows in the sender's order even if the kinds arrived out of order (independent uploads).
+      // Keep the neighbour-lookup ref pointing at the SAME ordered list the FlatList renders,
+      // so batch grouping (avatar-first / receipt-last) and the pager stay index-consistent.
+      const orderedMessagesList = useMemo(() => orderBatchRuns(messagesList), [messagesList]);
+      messagesContentListRef.current = orderedMessagesList;
+
       return (
+        <CometChatBatchMediaContext.Provider value={batchMediaContextValue}>
         <View style={mergedTheme.messageListStyles.containerStyle}>
           {listState == "loading" && messagesList.length == 0 ? (
             getLoadingStateView()
@@ -4895,6 +5244,7 @@ export const CometChatMessageList = memo(
                 {/* Navigation loading for far message fetching and scroll operations */}
                 {navigationLoading && (getLoadingStateView())}
                 <FlatList
+                  testID="message-list"
                   showsVerticalScrollIndicator={false}
                   ref={messageListRef}
                   onMomentumScrollEnd={handleScrollInternal}
@@ -4909,7 +5259,7 @@ export const CometChatMessageList = memo(
                   onStartReachedThreshold={0.5}
                   scrollEventThrottle={16}
                   keyboardShouldPersistTaps={(Platform.OS === "ios" ? "handled" : "always") as "handled" | "always"}
-                  data={messagesList}
+                  data={orderedMessagesList}
                   extraData={themeMode}
                   keyExtractor={keyExtractor}
                   renderItem={memoizedRenderItem}
@@ -4926,10 +5276,29 @@ export const CometChatMessageList = memo(
                 />
 
 
+                {/* ENG-36769: keep conversation starters visible when the group only
+                    has action messages (e.g. "X joined the group") and no real messages yet */}
+                {showConversationStarters && hasOnlyActionMessages && (
+                  <CometChatConversationStarter
+                    getConversationStarters={fetchConversationStarters}
+                    onSuggestionClicked={(text) => onSuggestedMessageClick?.(text)}
+                  />
+                )}
                 {CustomListHeader && <CustomListHeader />}
                 {ongoingCallView}
+                {showSmartReplies && showSmartRepliesView && (
+                  <CometChatSmartReplies
+                    key={smartRepliesKey}
+                    getSmartReplies={fetchSmartReplies}
+                    onSuggestionClicked={(text) => {
+                      setShowSmartRepliesView(false);
+                      onSuggestedMessageClick?.(text);
+                    }}
+                    closeCallback={() => setShowSmartRepliesView(false)}
+                  />
+                )}
                 {FooterView && (
-                  <View style={[{ bottom: 0 }]}>
+                  <View style={staticStyles.bottomZero}>
                     <FooterView
                       group={group}
                       user={user}
@@ -5045,6 +5414,7 @@ export const CometChatMessageList = memo(
             }}
           />
         </View>
+        </CometChatBatchMediaContext.Provider>
       );
 
     }
@@ -5067,12 +5437,37 @@ const staticStyles = StyleSheet.create({
     alignItems: 'center' as 'center',
     marginBottom: 8,
   },
+  // Collapse the padding on the side of a message row that faces a same-batch neighbour,
+  // so a fanned-out batch reads as one grouped message (vs the default paddingVertical: 8).
+  messageTightTop: {
+    paddingTop: 2,
+  },
+  messageTightBottom: {
+    paddingBottom: 2,
+  },
+  // Full-bleed highlight behind a message row; the background colour is animated at the call site.
+  highlightOverlay: {
+    position: 'absolute' as 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  // When a date separator sits above the row, drop the highlight below it (separator height).
+  highlightOverlayBelowSeparator: {
+    top: 40,
+  },
   footerContainer: {
     padding: 10,
     alignItems: 'center' as 'center',
   },
   itemSeparator: {
     height: 8,
+  },
+  // Collapsed gap between two members of the same fan-out batch (grouped-message look).
+  itemSeparatorTight: {
+    height: 2,
   },
   loadingContainer: {
     padding: 16,
@@ -5124,6 +5519,20 @@ const staticStyles = StyleSheet.create({
     marginLeft: 2,
     alignItems: "center",
     justifyContent: "center",
+  },
+  receiptRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  suggestionsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    paddingHorizontal: 0,
+    maxWidth: "100%",
+  },
+  bottomZero: {
+    bottom: 0,
   },
   positionRelative: {
     position: 'relative',

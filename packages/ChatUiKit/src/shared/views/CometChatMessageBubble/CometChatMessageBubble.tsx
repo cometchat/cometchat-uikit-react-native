@@ -1,5 +1,5 @@
 import React, { memo, useState, useCallback, useMemo, JSX } from "react";
-import { View, ViewProps } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { BubbleStyles } from "../../../theme/type";
 import { MessageBubbleAlignmentType } from "../../base/Types";
 
@@ -126,11 +126,11 @@ export const CometChatMessageBubble = memo(
           alignItems: alignItems,
         }}
       >
-        <View style={{ flexDirection: "row" } as ViewProps}>
+        <View style={styles.row}>
           {LeadingView && LeadingView}
-          <View style={{ marginStart: 4, maxWidth: "80%" } as ViewProps}>
+          <View style={styles.reactionWrap}>
             {HeaderView && HeaderView}
-            <View style={{ ...style?.containerStyle, padding: 0, paddingHorizontal: 0, paddingVertical: 0, paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 }} onLayout={handleLayout}>
+            <View style={{ ...style?.containerStyle, overflow: 'hidden', padding: 0, paddingHorizontal: 0, paddingVertical: 0, paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0 }} onLayout={handleLayout}>
               {ReplyView && ReplyView}
               <View style={{
                 padding: style?.containerStyle?.padding,
@@ -162,3 +162,13 @@ export const CometChatMessageBubble = memo(
     );
   }
 );
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+  },
+  reactionWrap: {
+    marginStart: 4,
+    maxWidth: "80%",
+  },
+});

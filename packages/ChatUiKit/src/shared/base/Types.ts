@@ -32,6 +32,9 @@ export type AdditionalParams = {
   hideMarkAsUnreadOption?: boolean,
   hideGroupActionMessages?: boolean,
   onReplyClick?: (messageId: string) => void;
+  /** DD §9 — message-list rendering. true (default) → new per-type bubbles (render 1..N tiles, incl. a
+   *  single attachment); false → deprecated single-attachment Image/Video/Audio/File bubbles. */
+  enableMultipleAttachments?: boolean;
 };
 
 export type AdditionalAttachmentOptionsParams = {

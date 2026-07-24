@@ -5,8 +5,6 @@ import { CometChatDateSeparator } from '../../shared/views/CometChatDateSeperato
 import { CometChatTheme } from '../../theme/type';
 import { CometChatNewMessageIndicator, NewMessageIndicatorStyle } from '../../shared/views';
 
-const SEPARATOR_HEIGHT = 40;
-
 interface MessageListItemProps {
   item: CometChat.BaseMessage;
   index: number;
@@ -18,7 +16,11 @@ interface MessageListItemProps {
   timestamp: number;
   dayHeaderString: string | undefined;
   RenderMessageItem: React.ComponentType<any>;
-  itemSeparator: () => React.ReactNode;
+  itemSeparator: (tight?: boolean) => React.ReactNode;
+  /** Collapse the TOP padding — the older (above) neighbour is in the same fan-out batch. */
+  tightTop?: boolean;
+  /** Collapse the BOTTOM padding — the newer (below) neighbour is in the same fan-out batch. */
+  tightBottom?: boolean;
   staticStyles: any;
   onLayout?: (event: any, messageId: string) => void;
   showNewMessageIndicator?: boolean;
@@ -39,6 +41,8 @@ const MessageListItemComponent: React.FC<MessageListItemProps> = ({
   dayHeaderString,
   RenderMessageItem,
   itemSeparator,
+  tightTop,
+  tightBottom,
   staticStyles,
   onLayout,
   showNewMessageIndicator,
@@ -55,21 +59,26 @@ const MessageListItemComponent: React.FC<MessageListItemProps> = ({
   };
 
   return (
-    <View style={staticStyles.container} onLayout={handleLayout}>
+    <View
+      style={[
+        staticStyles.container,
+        tightTop ? staticStyles.messageTightTop : null,
+        tightBottom ? staticStyles.messageTightBottom : null,
+      ]}
+      onLayout={handleLayout}
+    >
       {isHighlighted && (
         <Animated.View
-          style={{
-            backgroundColor: highlightAnimatedValue.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['transparent', String(theme.color.extendedPrimary200)],
-            }),
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: showSeparator ? SEPARATOR_HEIGHT : 0,
-            bottom: 0,
-            zIndex: 1,
-          }}
+          style={[
+            staticStyles.highlightOverlay,
+            showSeparator ? staticStyles.highlightOverlayBelowSeparator : null,
+            {
+              backgroundColor: highlightAnimatedValue.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['transparent', String(theme.color.extendedPrimary200)],
+              }),
+            },
+          ]}
         />
       )}
       <View style={staticStyles.contentWrapper}>
@@ -91,7 +100,9 @@ const MessageListItemComponent: React.FC<MessageListItemProps> = ({
           />
         )}
         <RenderMessageItem item={item} theme={theme} idx={index} />
-        {itemSeparator()}
+        {/* The separator sits BELOW the bubble → it faces the newer (below) neighbour, so it must
+            collapse with tightBottom (not tightTop) for same-batch rows to read as one group. */}
+        {itemSeparator(tightBottom)}
       </View>
     </View>
   );
@@ -110,6 +121,8 @@ export const MessageListItem = memo(MessageListItemComponent, (prevProps, nextPr
   const visualsUnchanged =
     prevProps.isHighlighted === nextProps.isHighlighted &&
     prevProps.showSeparator === nextProps.showSeparator &&
+    prevProps.tightTop === nextProps.tightTop &&
+    prevProps.tightBottom === nextProps.tightBottom &&
     prevProps.timestamp === nextProps.timestamp &&
     prevProps.dayHeaderString === nextProps.dayHeaderString &&
     prevProps.showNewMessageIndicator === nextProps.showNewMessageIndicator &&

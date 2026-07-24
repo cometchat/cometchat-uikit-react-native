@@ -276,6 +276,14 @@ export class CometChatThemeHelper {
     color.previewCodeBlockBorder =
       color.previewCodeBlockBorder === undefined ? defaultColor.previewCodeBlockBorder : color.previewCodeBlockBorder;
 
+    // Media overlays — so a custom (partial) theme still gets the dark scrims for media/attachments.
+    color.mediaScrim = color.mediaScrim === undefined ? defaultColor.mediaScrim : color.mediaScrim;
+    color.mediaOverlay = color.mediaOverlay === undefined ? defaultColor.mediaOverlay : color.mediaOverlay;
+    color.mediaDurationChip =
+      color.mediaDurationChip === undefined ? defaultColor.mediaDurationChip : color.mediaDurationChip;
+    color.mediaErrorOverlay =
+      color.mediaErrorOverlay === undefined ? defaultColor.mediaErrorOverlay : color.mediaErrorOverlay;
+
     return color;
   }
 

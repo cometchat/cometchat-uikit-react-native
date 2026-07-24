@@ -104,6 +104,34 @@ export type{
   WaveformStyle,
 } from "./views";
 
+// Multiple Attachment Support — forward the new multi-attachment views/types to the
+// public entry so external consumers can import them (PR review B1).
+export {
+  CometChatAttachmentTray,
+  CometChatAttachmentTile,
+  CometChatAttachmentPreview,
+  CometChatAttachmentPreviewItem,
+  getAttachmentPreviewStyle,
+  CometChatImagesBubble,
+  CometChatVideosBubble,
+  CometChatFilesBubble,
+  CometChatAudiosBubble,
+  CometChatVoiceNoteBubble,
+  CometChatMediaViewer,
+  CometChatAttachmentViewer,
+} from "./views";
+export type {
+  CometChatAttachmentTrayProps,
+  CometChatAttachmentTileProps,
+  CometChatAttachmentPreviewProps,
+  CometChatAttachmentPreviewItemProps,
+  CometChatFilesBubbleProps,
+  CometChatAudiosBubbleProps,
+  CometChatVoiceNoteBubbleProps,
+  CometChatMediaViewerProps,
+  CometChatAttachmentViewerProps,
+} from "./views";
+
 export {
   CometChatMentionsFormatter,
   CometChatTextFormatter,

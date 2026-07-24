@@ -26,6 +26,7 @@ public class CometchatUiKitPackage implements ReactPackage {
         modules.add(new WebViewManager(reactContext));
         modules.add(new TimeZoneCodeManager(reactContext));
         modules.add(new ProximityModule(reactContext));
+        modules.add(new CometChatClipboardModule(reactContext));
         return modules;
     }
 

@@ -125,6 +125,14 @@ export type CometChatMessageHeaderInterface = {
    * A function to **replace** the default menu items entirely.
    */
   options?: ({ user, group }: { user?: CometChat.User; group?: CometChat.Group }) => MenuItemInterface[];
+  /**
+   * When true, adds "Conversation Summary" as an item inside the ⋮ options menu.
+   */
+  showConversationSummaryButton?: boolean;
+  /**
+   * Called when the user taps "Conversation Summary" in the options menu.
+   */
+  onConversationSummaryPress?: () => void;
 };
 
 interface Translations {
@@ -162,6 +170,8 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
     onNewChatButtonClick,
     onChatHistoryButtonClick,
     options,
+    showConversationSummaryButton = false,
+    onConversationSummaryPress,
   } = props;
 
   const [groupObj, setGroupObj] = useState(group);
@@ -181,10 +191,19 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
 
   // Build menu items following CometChat pattern
   const buildMenuItems = useCallback((): MenuItemInterface[] => {
-    if (options) return options({ user: userObj, group: groupObj });
-    
-    return [];
-  }, [options, userObj, groupObj, isAgenticUser]);
+    const baseItems: MenuItemInterface[] = options ? options({ user: userObj, group: groupObj }) : [];
+    if (showConversationSummaryButton && onConversationSummaryPress) {
+      return [
+        ...baseItems,
+        {
+          text: t('ai_conversation_summary_title'),
+          onPress: onConversationSummaryPress,
+          icon: <Icon name="ai-conversation-summary" width={20} height={20} color={theme.color.iconSecondary} />,
+        },
+      ];
+    }
+    return baseItems;
+  }, [options, userObj, groupObj, isAgenticUser, showConversationSummaryButton, onConversationSummaryPress, theme, t]);
 
   // Handle option selection
   const handleOptionSelect = useCallback((item: MenuItemInterface) => {

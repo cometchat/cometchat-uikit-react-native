@@ -7,6 +7,7 @@ import {
   CometChatVideoBubble,
 } from "../../shared/views";
 import React, { JSX } from "react";
+import { Text, View } from "react-native";
 import { CometChatTheme } from "../../theme/type";
 import { CometChatUIKit } from "../../shared";
 
@@ -123,16 +124,26 @@ export class ThumbnailGenerationExtensionDecorator extends DataSourceDecorator {
   ): JSX.Element {
     const image = this.checkThumbnail(message);
     const loggedInUser = CometChatUIKit.loggedInUser;
-    const _style =
-      message.getSender()?.getUid() === loggedInUser?.getUid()
-        ? theme.messageListStyles.outgoingMessageBubbleStyles?.imageBubbleStyles
-        : theme.messageListStyles.incomingMessageBubbleStyles?.imageBubbleStyles;
+    const isSentByMe = message.getSender()?.getUid() === loggedInUser?.getUid();
+    const _style = isSentByMe
+      ? theme.messageListStyles.outgoingMessageBubbleStyles?.imageBubbleStyles
+      : theme.messageListStyles.incomingMessageBubbleStyles?.imageBubbleStyles;
     return (
-      <CometChatImageBubble
-        imageUrl={imageUrl ? { uri: imageUrl } : image}
-        thumbnailUrl={image}
-        style={_style?.imageStyle}
-      />
+      <View>
+        <CometChatImageBubble
+          imageUrl={imageUrl ? { uri: imageUrl } : image}
+          thumbnailUrl={image}
+          style={_style?.imageStyle}
+        />
+        {Boolean(caption) && (
+          <Text style={{
+            color: isSentByMe ? theme.color.staticWhite : theme.color.neutral900,
+            paddingHorizontal: 8,
+            paddingTop: 6,
+            paddingBottom: 4,
+          }}>{caption}</Text>
+        )}
+      </View>
     );
   }
 }

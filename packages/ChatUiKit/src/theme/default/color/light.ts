@@ -38,6 +38,7 @@ const alertColors = {
 const staticColors = {
   staticBlack: "#141414",
   staticWhite: "#FFFFFF",
+  staticWhite35: "rgba(255, 255, 255, 0.35)", // staticWhite @ 35% (color-mix(staticWhite 35%, transparent))
 };
 
 const overlayColors = {
@@ -95,6 +96,7 @@ export const defaultColorLight = {
   sendBubbleLink: staticColors.staticWhite,
   sendBubbleTimestamp: staticColors.staticWhite,
   sendBubbleIcon: staticColors.staticWhite,
+  sendBubbleTrack: staticColors.staticWhite35, // unfilled seek-bar track on the send bubble
 
   receiveBubbleBackground: neutralColors.neutral300,
   receiveBubbleText: neutralColors.neutral900,
@@ -109,6 +111,14 @@ export const defaultColorLight = {
   previewCodeBlockBackground: overlayColors.overlayCodeBlock,
   // Reply preview code block border
   previewCodeBlockBorder: overlayColors.overlayCodeBlockBorder,
+
+  // Media overlays — dark scrims that sit ON TOP of image/video content, so they stay dark in BOTH
+  // themes (a light scrim over media reads wrong). Tokenized here so every media/attachment surface
+  // pulls the same values instead of hardcoding them per component.
+  mediaScrim: "#0D0D0D",                    // opaque fill behind a video cell / poster
+  mediaOverlay: "rgba(0, 0, 0, 0.6)",       // play-button circle, "+N" overflow scrim, batch-count overlay
+  mediaDurationChip: "rgba(0, 0, 0, 0.72)", // duration pill (darker for text legibility)
+  mediaErrorOverlay: "rgba(0, 0, 0, 0.45)", // dim for an errored media tile
 };
 type EachColorValue<T extends typeof defaultColorLight> = {
   [P in keyof T]: ColorValue;

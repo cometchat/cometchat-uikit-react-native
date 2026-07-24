@@ -10,6 +10,28 @@ import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/Local
  
 const t = getCometChatTranslation();
 
+// "N Photos / Videos / Audios / Files" for a media message, keyed by its COARSE type (image/video/audio/
+// file) — never a generic "N attachments". File is the default. One source of truth for the conversation
+// list, the reply/edit preview and the composer overline, so they always read the same.
+export function attachmentCountLabel(type: string, count: number): string {
+  const n = String(count);
+  switch (type) {
+    case "image": return t("PREVIEW_PHOTOS_COUNT").replace("{count}", n);
+    case "video": return t("PREVIEW_VIDEOS_COUNT").replace("{count}", n);
+    case "audio": return t("PREVIEW_AUDIOS_COUNT").replace("{count}", n);
+    default: return t("PREVIEW_FILES_COUNT").replace("{count}", n);
+  }
+}
+
+// A single media message can carry a caption (you typed one when sending one photo/video/file). Show it
+// after the kind label — "Photo · <caption>" — mirroring the multi-attachment subtitle. Empty → nothing.
+// (Multi-attachment messages are summarized upstream in getLastConversationMessage.)
+function captionSuffix(message: CometChat.BaseMessage): string {
+  const raw = typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "";
+  const caption = typeof raw === "string" ? raw.trim() : "";
+  return caption ? ` · ${caption}` : "";
+}
+
 export class CometChatConversationUtils {
   static getLastMessage(conversation: CometChat.Conversation): CometChat.BaseMessage | undefined {
     let msg = conversation?.getLastMessage && conversation?.getLastMessage();
@@ -98,13 +120,13 @@ export class CometChatConversationUtils {
             msgText = (lastMessage as CometChat.TextMessage).getText();
             break;
           case "image":
-            return getMessagePreviewInternal("photo-fill", t('PHOTOS'), {theme});
+            return getMessagePreviewInternal("photo-fill", t('PHOTOS') + captionSuffix(lastMessage), {theme});
           case "audio":
-            return getMessagePreviewInternal("mic-fill", t('MESSAGE_AUDIO'), {theme});
+            return getMessagePreviewInternal("mic-fill", t('MESSAGE_AUDIO') + captionSuffix(lastMessage), {theme});
           case "video":
-            return getMessagePreviewInternal("videocam-fill", t("MESSAGE_VIDEO"), {theme});
+            return getMessagePreviewInternal("videocam-fill", t("MESSAGE_VIDEO") + captionSuffix(lastMessage), {theme});
           case "file":
-            return getMessagePreviewInternal("description-fill", t("MESSAGE_FILE"), {theme});
+            return getMessagePreviewInternal("description-fill", t("MESSAGE_FILE") + captionSuffix(lastMessage), {theme});
         }
       } else if (
         lastMessage.getCategory() == (CometChat.CATEGORY_CUSTOM as CometChat.MessageCategory)

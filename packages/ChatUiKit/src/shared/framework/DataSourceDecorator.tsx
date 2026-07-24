@@ -92,6 +92,11 @@ export class DataSourceDecorator implements DataSource {
     return this.dataSource.getCommonOptions(loggedInUser, messageObject, theme, group, additionalParams);
   }
 
+  getDownloadAllOption(theme: CometChatTheme): CometChatMessageOption | undefined {
+    // Optional on the DataSource interface (PR review B2) — proxy only if the wrapped source provides it.
+    return this.dataSource.getDownloadAllOption?.(theme);
+  }
+
   getBottomView(message: CometChat.BaseMessage, alignment: MessageBubbleAlignmentType) {
     return this.dataSource.getBottomView(message, alignment);
   }
@@ -177,33 +182,37 @@ export class DataSourceDecorator implements DataSource {
   getAudioMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ) {
-    return this.dataSource.getAudioMessageContentView(message, alignment, theme);
+    return this.dataSource.getAudioMessageContentView(message, alignment, theme, additionalParams);
   }
 
   getVideoMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ) {
-    return this.dataSource.getVideoMessageContentView(message, alignment, theme);
+    return this.dataSource.getVideoMessageContentView(message, alignment, theme, additionalParams);
   }
 
   getImageMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ) {
-    return this.dataSource.getImageMessageContentView(message, alignment, theme);
+    return this.dataSource.getImageMessageContentView(message, alignment, theme, additionalParams);
   }
 
   getFileMessageContentView(
     message: CometChat.BaseMessage,
     alignment: MessageBubbleAlignmentType,
-    theme: CometChatTheme
+    theme: CometChatTheme,
+    additionalParams?: AdditionalParams
   ) {
-    return this.dataSource.getFileMessageContentView(message, alignment, theme);
+    return this.dataSource.getFileMessageContentView(message, alignment, theme, additionalParams);
   }
 
   getTextMessageTemplate(

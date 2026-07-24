@@ -11,3 +11,11 @@ export {
   getMentionRangeAtCursor,
   stripMarkdown,
 };
+
+// Multiple Attachment Support — U3
+export { openMultiFileChooser } from './openMultiFileChooser';
+export type { PickedFile } from './openMultiFileChooser';
+
+// Multiple Attachment Support — U7
+export { groupAttachments } from './groupAttachments';
+export type { AttachmentGroups } from './groupAttachments';

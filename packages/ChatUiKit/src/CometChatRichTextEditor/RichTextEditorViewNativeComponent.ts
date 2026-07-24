@@ -67,6 +67,17 @@ type LinkTapEventData = Readonly<{
   length: Int32;
 }>;
 
+// One pasted media item (image or file) extracted to a temp file by the native editor.
+type PasteMediaItem = Readonly<{
+  uri: string;       // file:// path to the temp copy
+  mimeType: string;  // real mime type (image/*, application/pdf, …)
+  name: string;      // display filename with extension
+  size: Double;      // bytes
+}>;
+type PasteMediaEventData = Readonly<{
+  items: ReadonlyArray<PasteMediaItem>;
+}>;
+
 export interface NativeProps extends ViewProps {
   placeholder?: string;
   editable?: boolean;
@@ -98,6 +109,8 @@ export interface NativeProps extends ViewProps {
   onActiveStylesChange?: DirectEventHandler<ActiveStylesEventData>;
   onLinkTap?: DirectEventHandler<LinkTapEventData>;
   onSendRequest?: DirectEventHandler<Readonly<{}>>;
+  // Fired when the user pastes image(s)/file(s) into the editor (long-press Paste / ⌘V).
+  onPasteMedia?: DirectEventHandler<PasteMediaEventData>;
 }
 
 export default requireNativeComponent<NativeProps>(

@@ -31,10 +31,13 @@ RCT_EXPORT_MODULE(SoundPlayer)
 RCT_EXPORT_METHOD(prepareMediaPlayer:(NSString *) url
                   callback:(RCTResponseSenderBlock) resolve) {
    NSURL *nsurl;
-    if ([url hasPrefix:@"http"] || [url hasPrefix:@"https"]) {
+    if ([url hasPrefix:@"http"] || [url hasPrefix:@"file:"]) {
+        // http/https AND local file:// URLs must go through URLWithString. fileURLWithPath:
+        // expects a PLAIN path and mangles a file:// URL (nil data → nil AVAudioPlayer →
+        // duration 0), which is why staged audio showed 00:00 on iOS. Plain paths use the else.
         nsurl = [NSURL URLWithString:url];
     } else {
-        nsurl = [NSURL fileURLWithPath:url]; // Use fileURLWithPath for local files
+        nsurl = [NSURL fileURLWithPath:url]; // plain filesystem path (no scheme)
     }
    NSData *data = [NSData dataWithContentsOfURL:nsurl];
    if ([audioPlayer isPlaying]) {
@@ -65,10 +68,13 @@ RCT_EXPORT_METHOD(play:(NSString *) url
    [session setActive:YES error:nil];
 
    NSURL *nsurl;
-    if ([url hasPrefix:@"http"] || [url hasPrefix:@"https"]) {
+    if ([url hasPrefix:@"http"] || [url hasPrefix:@"file:"]) {
+        // http/https AND local file:// URLs must go through URLWithString. fileURLWithPath:
+        // expects a PLAIN path and mangles a file:// URL (nil data → nil AVAudioPlayer →
+        // duration 0), which is why staged audio showed 00:00 on iOS. Plain paths use the else.
         nsurl = [NSURL URLWithString:url];
     } else {
-        nsurl = [NSURL fileURLWithPath:url]; // Use fileURLWithPath for local files
+        nsurl = [NSURL fileURLWithPath:url]; // plain filesystem path (no scheme)
     }
    NSData *data = [NSData dataWithContentsOfURL:nsurl];
    if (!data) {
@@ -95,9 +101,15 @@ RCT_EXPORT_METHOD(play:(NSString *) url
    resolve(@[response]);
 }
 
+// Seek to `atTime` seconds. Setting `currentTime` seeks within the clip and preserves the
+// current play/pause state — unlike `playAtTime:`, which schedules future playback and does
+// NOT seek. Matches Android's playAt(seconds) → seekTo().
 RCT_EXPORT_METHOD(playAt:(NSInteger) atTime resolver:(RCTResponseSenderBlock)resolve) {
-    NSTimeInterval interval = (NSTimeInterval)atTime;
-    bool res = [audioPlayer playAtTime:interval];
+    bool res = NO;
+    if (audioPlayer != nil) {
+        audioPlayer.currentTime = (NSTimeInterval)atTime;
+        res = YES;
+    }
     NSString *response = [NSString stringWithFormat:@"{\"success\":%d}",res];
     resolve(@[response]);
 }

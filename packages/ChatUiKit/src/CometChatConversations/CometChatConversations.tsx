@@ -1047,7 +1047,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
       <>
         {groupText && (
           <Text
-            style={[mergedStyles.itemStyle.subtitleStyle, { flexShrink: 0, maxWidth: '40%' }]}
+            style={[mergedStyles.itemStyle.subtitleStyle, conversationPreviewStyles.subtitleClamp]}
             numberOfLines={1}
             ellipsizeMode='tail'
           >
@@ -1177,10 +1177,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
     }
 
     return (
-      <View style={[Style.row, { gap: 2, alignItems: "center" }]}>
+      <View style={[Style.row, conversationPreviewStyles.iconRowGap]}>
         {threadView}
-        <View style={[Style.row, { gap: 2, alignItems: "center" }]}>
-          {!["call", "action"].includes(params["conversations"].getLastMessage().getCategory())
+        <View style={[Style.row, conversationPreviewStyles.iconRowGap]}>
+          {lastMessage && !["call", "action"].includes(lastMessage.getCategory())
             ? readReceipt
             : null}
           {getMessagePreview(params["conversations"], theme)}
@@ -1202,7 +1202,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
       return (
         <View
           style={[
-            { marginHorizontal: 6, justifyContent: "center", alignItems: "flex-end" },
+            conversationPreviewStyles.trailingContainer,
             mergedStyles.itemStyle.trailingViewContainerStyle,
           ]}
         >
@@ -1796,7 +1796,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
       const withObj = conv.getConversationWith();
       const avatarURL = withObj instanceof CometChat.User ? withObj.getAvatar() : withObj.getIcon();
       const name = withObj.getName();
-      
+
       return (
         <>
           <CometChatAvatar
@@ -2007,5 +2007,18 @@ const conversationPreviewStyles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 5,
     lineHeight: 18,
+  },
+  trailingContainer: {
+    marginHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  iconRowGap: {
+    gap: 2,
+    alignItems: 'center',
+  },
+  subtitleClamp: {
+    flexShrink: 0,
+    maxWidth: '40%',
   },
 });
