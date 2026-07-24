@@ -34,6 +34,7 @@ import {
   CometChatAIAssistantTools,
   CometChatThemeProvider,
   stopStreamingForRunId,
+  CometChatConversationSummary,
 } from '@cometchat/chat-uikit-react-native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../navigation/types';
@@ -156,6 +157,13 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
   const [messageListKey, setMessageListKey] = useState(0);
   const [messageComposerKey, setMessageComposerKey] = useState(0);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
+
+  const fetchConversationSummary = useCallback((): Promise<string> => {
+    const receiverId = user?.getUid() ?? group?.getGuid() ?? '';
+    const receiverType = user ? CometChat.RECEIVER_TYPE.USER : CometChat.RECEIVER_TYPE.GROUP;
+    return CometChat.getConversationSummary(receiverId, receiverType, { lastNMessages: 1000 });
+  }, [user, group]);
 
   // Manage parentMessageId in parent component
   const [parentMessageId, setParentMessageId] = useState<string | undefined>(routeParentMessageId);
@@ -563,6 +571,8 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
         <CometChatMessageHeader
           user={localUser}
           group={group}
+          showConversationSummaryButton={true}
+          onConversationSummaryPress={() => setShowSummaryPanel(prev => !prev)}
           onBack={() => {
             if (fromMention || fromMessagePrivately) {
               navigation.goBack();
@@ -619,6 +629,11 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
             showMarkAsUnreadOption={true}
             startFromUnreadMessages={true}
             loadLastAgentConversation={true}
+            showConversationStarters={true}
+            showSmartReplies={true}
+            onSuggestedMessageClick={(text: string) => {
+              messageComposerRef.current?.setText?.(text);
+            }}
           />
         </View>
 
@@ -706,7 +721,14 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
         ) : (
-          compactMessageComposer ? (
+          <>
+          {showSummaryPanel && (
+            <CometChatConversationSummary
+              getConversationSummary={fetchConversationSummary}
+              closeCallback={() => setShowSummaryPanel(false)}
+            />
+          )}
+          {compactMessageComposer ? (
           <CometChatCompactMessageComposer
             key={messageComposerKey}
             ref={messageComposerRef}
@@ -760,7 +782,8 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
             hidePollsAttachmentOption={!polls}
             hideVoiceRecordingButton={!voiceNotes}
           />
-          )
+          )}
+          </>
         )}
       </View>
     </CometChatThemeProvider>

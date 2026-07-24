@@ -116,7 +116,7 @@ const Conversations: React.FC<{}> = ({}) => {
 
     // Step 1: Logout from CometChat
     try {
-      await CometChat.logout();
+      await CometChatUIKit.logout();
     } catch (error) {
       console.error('CometChat logout failed:', error);
       setIsLoggingOut(false);

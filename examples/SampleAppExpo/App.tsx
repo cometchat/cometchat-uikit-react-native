@@ -180,7 +180,15 @@ const App = (): React.ReactElement => {
     CometChat.addCallListener(
       listenerId,
       new CometChat.CallListener({
-        onIncomingCallReceived: (call: CometChat.Call) => {
+        onIncomingCallReceived: async (call: CometChat.Call) => {
+          // Ignore self-initiated calls: when the same UID is logged in on
+          // multiple devices, the caller's other device also receives this
+          // event. Don't ring if the call is from ourselves.
+          const callerUid = call.getSender()?.getUid();
+          const me = await CometChat.getLoggedinUser();
+          if (callerUid && callerUid === me?.getUid()) {
+            return;
+          }
           // Check if there's already an active call
           try {
             const activeCall = CometChat.getActiveCall();
