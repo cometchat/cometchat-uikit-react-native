@@ -16,6 +16,7 @@ import {
   CometChatUrlsFormatter,
 } from "../../formatters";
 import { useCometChatTranslation } from "../../resources/CometChatLocalizeNew";
+import { isTextElement, isViewElement } from "../../utils/elementType";
 
 // Pre-allocated style for view-based content wrapper (blockquotes, lists).
 const VIEW_BASED_WRAPPER_STYLE = { flexShrink: 1 as const };
@@ -56,12 +57,12 @@ function applyTextStyleDeep(
   el: React.ReactElement<any>,
   textStyle: StyleProp<TextStyle> | undefined
 ): React.ReactElement<any> {
-  if (el.type === Text) {
+  if (isTextElement(el)) {
     return React.cloneElement(el, {
       style: [textStyle, el.props?.style],
     });
   }
-  if (el.type === View && el.props.children) {
+  if (isViewElement(el) && el.props.children) {
     const newChildren = React.Children.map(el.props.children, (child) => {
       if (!React.isValidElement(child)) return child;
       return applyTextStyleDeep(child as React.ReactElement<any>, textStyle);
@@ -171,7 +172,7 @@ export const CometChatTextBubbleText = (
   // Check if formattedText is a View-based element (e.g. blockquote with View wrapper).
   // View elements cannot be nested inside Text, so render them directly.
   const isViewBased = React.isValidElement(formattedText) &&
-    (formattedText as React.ReactElement<any>).type === View;
+    isViewElement(formattedText);
 
   // For View-based content, count children to determine truncatability and slice when collapsed.
   // This avoids pixel-based clipping that cuts through the middle of list items.

@@ -1,6 +1,6 @@
 {
   "name": "@cometchat/chat-uikit-react-native",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "description": "Ready-to-use Chat UI Components for React Native",
   "main": "src/index",
   "module": "src/index",
@@ -79,6 +79,7 @@
     "react": "*",
     "react-native": "*",
     "react-native-gesture-handler": "*",
+    "react-native-safe-area-context": "*",
     "react-native-svg": "*",
     "react-native-video": "*",
     "react-native-localize": "*"

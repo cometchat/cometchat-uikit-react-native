@@ -9,6 +9,7 @@ import { stripMarkdown, preparePreviewText } from "../MarkdownUtils";
 import { CometChatRichTextFormatter } from "../../formatters/CometChatRichTextFormatter";
 import { applyMentionsFormatting } from "../MessageUtils";
 import { attachmentCountLabel } from "../conversationUtils";
+import { isViewElement } from "../elementType";
 
 const t = getCometChatTranslation();
 
@@ -331,7 +332,7 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
   // Detect if the formatter returned a View root (block-level content that
   // slipped through preparePreviewText). View can't nest inside Text, so we
   // render it in a height-constrained View wrapper instead.
-  const isViewRoot = isRichSubtitle && React.isValidElement(messageText) && (messageText as React.ReactElement<any>).type === View;
+  const isViewRoot = isRichSubtitle && React.isValidElement(messageText) && isViewElement(messageText);
 
   return (
     <View style={containerStyle}>

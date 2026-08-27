@@ -613,9 +613,6 @@ class RichTextView: UITextView {
     }
 
     private func disableAutofill() {
-        autocorrectionType = .no
-        autocapitalizationType = .none
-        spellCheckingType = .no
         smartQuotesType = .no
         smartDashesType = .no
         smartInsertDeleteType = .no
@@ -637,6 +634,15 @@ class RichTextView: UITextView {
 
         isSecureTextEntry = true
         isSecureTextEntry = false
+
+        // The secure round-trip above rebuilds the input traits and leaves autocorrect
+        // and spell check suppressed, so the typing traits have to be re-asserted AFTER
+        // it — assigning them earlier in this method does not survive. `.default` and
+        // `.sentences` are the "let the platform decide" values, the same ones a plain
+        // UITextView / RN TextInput starts from; nothing is pinned on or off here.
+        autocorrectionType = .default
+        autocapitalizationType = .sentences
+        spellCheckingType = .default
     }
 
     /// Custom drawing for blockquote vertical bars (matches Android onDraw implementation).
@@ -968,6 +974,48 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     }
 
     @objc var showToolbar: Bool = true
+
+    // MARK: - Typing traits
+    // Autocorrect / autocapitalization / spell check are never pinned to a fixed value.
+    // In prose the text view is left at the UIKit defaults — the same behaviour a plain
+    // RN `TextInput` gets for free, so the keyboard's own language and user settings
+    // decide — and the editor drops all three by itself while the caret sits in code
+    // (see `isCodeContext`), so autocorrect never rewrites a code sample.
+    private var isCodeContext = false
+
+
+    private func applyTypingTraits() {
+        let correction: UITextAutocorrectionType
+        let capitalization: UITextAutocapitalizationType
+        let spellChecking: UITextSpellCheckingType
+
+        if isCodeContext {
+            correction = .no
+            capitalization = .none
+            spellChecking = .no
+        } else {
+            correction = .default
+            capitalization = .sentences
+            spellChecking = .default
+        }
+
+        guard textView.autocorrectionType != correction
+                || textView.autocapitalizationType != capitalization
+                || textView.spellCheckingType != spellChecking else { return }
+
+        textView.autocorrectionType = correction
+        textView.autocapitalizationType = capitalization
+        textView.spellCheckingType = spellChecking
+        if textView.isFirstResponder {
+            textView.reloadInputViews()
+        }
+    }
+
+    private func setCodeContext(_ inCode: Bool) {
+        guard inCode != isCodeContext else { return }
+        isCodeContext = inCode
+        applyTypingTraits()
+    }
 
     /// When true, Bold/Italic/Underline/Strikethrough appear in the text selection context menu.
     @objc var showTextSelectionMenuItems: Bool = true {
@@ -1444,6 +1492,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         let checkRange = range.length > 0 ? range : NSRange(location: max(0, range.location - 1), length: 1)
 
         guard checkRange.location >= 0, checkRange.location < attributedText.length else {
+            setCodeContext(pendingStyles.contains("code") || pendingStyles.contains("codeBlock"))
             onActiveStylesChange?([
                 "bold": pendingStyles.contains("bold") && !explicitlyOffStyles.contains("bold"),
                 "italic": pendingStyles.contains("italic") && !explicitlyOffStyles.contains("italic"),
@@ -1574,13 +1623,15 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             }
         }
         let codeBlockActive = hasCodeBlock || pendingStyles.contains("codeBlock")
+        let codeActive = (hasCode || pendingStyles.contains("code") || pendingStyles.contains("codeBlock")) && !explicitlyOffStyles.contains("code")
+        setCodeContext(codeActive || codeBlockActive)
 
         onActiveStylesChange?([
             "bold": (hasBold || pendingStyles.contains("bold")) && !explicitlyOffStyles.contains("bold"),
             "italic": (hasItalic || pendingStyles.contains("italic")) && !explicitlyOffStyles.contains("italic"),
             "underline": (hasUnderline || pendingStyles.contains("underline")) && !explicitlyOffStyles.contains("underline"),
             "strikethrough": (hasStrikethrough || pendingStyles.contains("strikethrough")) && !explicitlyOffStyles.contains("strikethrough"),
-            "code": (hasCode || pendingStyles.contains("code") || pendingStyles.contains("codeBlock")) && !explicitlyOffStyles.contains("code"),
+            "code": codeActive,
             "codeBlock": codeBlockActive,
             "highlight": hasHighlight,
             "blockType": blockType,

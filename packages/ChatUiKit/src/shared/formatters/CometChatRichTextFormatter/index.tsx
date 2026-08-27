@@ -2,6 +2,7 @@ import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { JSX } from "react";
 import { Text, TextStyle, ViewStyle, Platform, Linking, View } from "react-native";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
+import { isTextElement, isViewElement } from "../../utils/elementType";
 
 /**
  * Style configuration for rich text formatting
@@ -510,7 +511,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
           // Skip groups that are only newline/whitespace Text nodes — these appear
           // between list blocks and would render as blank lines in the bubble.
           const isOnlyWhitespace = textGroup.every(el => {
-            if (el.type !== Text) return false;
+            if (!isTextElement(el)) return false;
             const child = el.props?.children;
             return typeof child === 'string' && child.trim() === '';
           });
@@ -524,7 +525,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
       };
 
       for (const el of elements) {
-        if (el.type === View) {
+        if (isViewElement(el)) {
           flushTextGroup();
           grouped.push(el);
         } else {

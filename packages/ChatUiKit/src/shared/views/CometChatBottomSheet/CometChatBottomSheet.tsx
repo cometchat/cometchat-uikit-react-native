@@ -1,5 +1,6 @@
 import React, {
   forwardRef,
+  useContext,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -16,6 +17,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { useTheme } from "../../../theme";
 
 /**
@@ -92,6 +94,10 @@ const CometChatBottomSheet = forwardRef(
 
     // All hooks called unconditionally at top level
     const overlayAnim = useRef(new Animated.Value(0)).current;
+
+    const safeAreaInsets = useContext(SafeAreaInsetsContext);
+    const bottomInset =
+      Platform.OS === "android" ? safeAreaInsets?.bottom ?? 0 : 0;
 
     // Fade in/out the overlay when isOpen changes
     useEffect(() => {
@@ -184,7 +190,7 @@ const CometChatBottomSheet = forwardRef(
             backgroundColor: theme.color.background1,
             paddingTop: 25,
             position: "absolute",
-            bottom: 0,
+            bottom: bottomInset,
             left: 0,
             right: 0,
             borderTopLeftRadius: 24,
@@ -199,19 +205,26 @@ const CometChatBottomSheet = forwardRef(
             ...(doNotOccupyEntireHeight ? {} : { height: "100%" }),
           }}
         >
-          {scrollEnabled ? (
-            <ScrollView
-              scrollEnabled={scrollEnabled}
-              keyboardShouldPersistTaps="always"
-              style={{ flex: 1 }}
-            >
-              {typeof children === "function" ? children() : children}
-            </ScrollView>
-          ) : typeof children === "function" ? (
-            children()
-          ) : (
-            children
-          )}
+          <View
+            style={{
+              ...(doNotOccupyEntireHeight ? {} : { flex: 1 }),
+              paddingBottom: style.paddingBottom ?? 0,
+            }}
+          >
+            {scrollEnabled ? (
+              <ScrollView
+                scrollEnabled={scrollEnabled}
+                keyboardShouldPersistTaps="always"
+                style={{ flex: 1 }}
+              >
+                {typeof children === "function" ? children() : children}
+              </ScrollView>
+            ) : typeof children === "function" ? (
+              children()
+            ) : (
+              children
+            )}
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     );

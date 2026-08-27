@@ -31,6 +31,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.PopupWindow
 import android.widget.FrameLayout
 import android.content.res.Configuration
@@ -236,6 +237,62 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         }
     })
 
+    // ── Typing traits (autocorrect / autocapitalize / spellcheck) ────────────────
+    //
+    // Autocorrect / sentence capitalization / suggestions are never pinned to a fixed
+    // value. In prose the editor asks for exactly the flags RN's own
+    // ReactTextInputManager emits for a plain TextInput, so the IME's language and the
+    // user's keyboard settings decide; on top of that the editor drops all of them by
+    // itself while the caret sits in code (see [isCodeContext]), so autocorrect never
+    // rewrites a code sample.
+
+    /** True while the caret/selection sits inside a code block or an inline code span. */
+    private var isCodeContext = false
+
+    /** Called on every selection/style update with the resolved code state. */
+    private fun setCodeContext(inCode: Boolean) {
+        if (inCode == isCodeContext) return
+        isCodeContext = inCode
+        applyTypingTraits()
+    }
+
+    /**
+     * Resolves inputType for the caret's current context and applies it, restarting the
+     * IME only when the resolved value actually changed — i.e. when the caret crosses a
+     * code boundary, never mid-word in prose.
+     */
+    private fun applyTypingTraits() {
+        var flags = EditorInfo.TYPE_CLASS_TEXT or EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE
+
+        flags = flags or if (isCodeContext) {
+            // Capitalizing `teh` to `Teh` inside a code block corrupts the snippet the
+            // user is typing, so code always opts out.
+            EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        } else {
+            // The RN TextInput defaults: autoCapitalize="sentences" + autoCorrect=true.
+            EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES or EditorInfo.TYPE_TEXT_FLAG_AUTO_CORRECT
+        }
+
+        if (inputType == flags) return
+
+        // setInputType() rebuilds the key listener; it only rewrites text/typeface for
+        // password variations (never our case), but the caret is restored defensively.
+        val selStart = selectionStart
+        val selEnd = selectionEnd
+        inputType = flags
+        if (selStart in 0..length() && selEnd in 0..length() &&
+            (selectionStart != selStart || selectionEnd != selEnd)
+        ) {
+            setSelection(selStart, selEnd)
+        }
+
+        // The IME reads the flags when input starts, so a keyboard already up needs a restart.
+        if (hasFocus()) {
+            (context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                ?.restartInput(this)
+        }
+    }
+
     init {
         density = context.resources.displayMetrics.density
         minHeightPx = 64 * density
@@ -253,7 +310,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         gravity = Gravity.TOP or Gravity.START
         isFocusable = true
         isFocusableInTouchMode = true
-        inputType = EditorInfo.TYPE_CLASS_TEXT or EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE
+        applyTypingTraits()
 
         // Disable vertical scrolling by default
         isVerticalScrollBarEnabled = false
@@ -1577,6 +1634,11 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             }
         }
         val codeBlockActive = hasCodeBlock || pendingStyles.contains("codeBlock")
+
+        // Autocorrect/autocapitalize/spellcheck follow the caret: off in code, platform
+        // default everywhere else.
+        setCodeContext(codeActive || codeBlockActive)
+
         map.putBoolean("code", codeActive)
         map.putBoolean("codeBlock", codeBlockActive)
         map.putBoolean("highlight", hasHighlight)
