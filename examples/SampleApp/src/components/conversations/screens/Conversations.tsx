@@ -2,6 +2,7 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 import React, { useCallback, useContext, useRef, useState } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 import {
+  Icon,
   CometChatAvatar,
   CometChatConversations,
   CometChatUIKit,
@@ -231,6 +232,23 @@ const Conversations: React.FC<{}> = ({}) => {
                   width={24}
                   color={theme.color.textPrimary}
                 ></AiIcon>
+              ),
+              textColor: theme.color.textPrimary,
+              iconColor: theme.color.textPrimary,
+            },
+            {
+              text: 'Saved Messages',
+              onPress: () => {
+                setTooltipVisible(false);
+                navigation.navigate(SCREEN_CONSTANTS.SAVED_MESSAGES);
+              },
+              icon: (
+                <Icon
+                  name='bookmark'
+                  height={24}
+                  width={24}
+                  color={theme.color.textPrimary}
+                />
               ),
               textColor: theme.color.textPrimary,
               iconColor: theme.color.textPrimary,

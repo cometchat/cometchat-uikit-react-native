@@ -268,6 +268,8 @@ import rightArrow from "./components/right-arrow";
 import Sunny from "./components/sunny";
 import SunnyFill from "./components/sunny-fill";
 import Symbols from "./components/symbols";
+import ThreadFollow from "./components/thread-follow";
+import ThreadUnfollow from "./components/thread-unfollow";
 import ThumbDown from "./components/thumb-down";
 import ThumbDownFill from "./components/thumb-down-fill";
 import ThumbUp from "./components/thumb-up";
@@ -322,6 +324,7 @@ import AIChatHistory from "./components/ai-chat-history";
 import AICopyOption from "./components/ai-copy-option";
 import EmptySearch from "./components/empty-search";
 import Unread from "./components/unread";
+import Unsave from "./components/unsave";
 import DocumentIcon from "./components/documents";
 
 import MessageBlocked from "./components/message-blocked";
@@ -588,6 +591,8 @@ export const ICONS = {
   "right-arrow": rightArrow,
   sunny: Sunny,
   "sunny-fill": SunnyFill,
+  "thread-follow": ThreadFollow,
+  "thread-unfollow": ThreadUnfollow,
   "thumb-down": ThumbDown,
   "thumb-down-fill": ThumbDownFill,
   "thumb-up": ThumbUp,
@@ -657,6 +662,7 @@ export const ICONS = {
 
   "empty-search": EmptySearch,
   "unread":Unread,
+  unsave: Unsave,
   "documents":DocumentIcon,
   "message-blocked": MessageBlocked,
 

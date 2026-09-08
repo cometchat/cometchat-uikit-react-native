@@ -4,6 +4,7 @@ import {TouchableOpacity, View, Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import notifee from '@notifee/react-native';
 import {
+  Icon,
   CometChatAvatar,
   CometChatConversations,
   CometChatUIKit,
@@ -250,6 +251,23 @@ const Conversations: React.FC<{}> = ({}) => {
                   height={24}
                   width={24}
                   color={theme.color.textPrimary}></AiIcon>
+              ),
+              textColor: theme.color.textPrimary,
+              iconColor: theme.color.textPrimary,
+            },
+            {
+              text: 'Saved Messages',
+              onPress: () => {
+                setTooltipVisible(false);
+                navigation.navigate(SCREEN_CONSTANTS.SAVED_MESSAGES);
+              },
+              icon: (
+                <Icon
+                  name='bookmark'
+                  height={24}
+                  width={24}
+                  color={theme.color.textPrimary}
+                />
               ),
               textColor: theme.color.textPrimary,
               iconColor: theme.color.textPrimary,

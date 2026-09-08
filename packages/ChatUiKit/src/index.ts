@@ -87,10 +87,36 @@ import {
   UseAudioRecorderReturn,
   WaveformStyle,
   messageStatus,
+  ThreadSubscriptionConfig,
+  applyIncomingReply,
+  applyEditedMessage,
+  applySentMessage,
+  applyOwnIncomingMessage,
+  isThreadSubscribed,
+  stampThreadSubscribed,
+  toggleThreadSubscription,
   Icon,
   MenuItemInterface,
   getCometChatTranslation,
   getCurrentLanguage,
+  // Pin & Save. PinSaveConfig is the opt-in gate — without it on the PUBLIC
+  // barrel the feature cannot be switched on by an integrator at all.
+  //
+  // The three SERVER-owned flags behind it are resolved by the kit itself, at login and on
+  // every reconnect (see PinSaveFeatureGates). These are exported so an integrator can read
+  // the resolved state or force a re-read after flipping a flag in the dashboard.
+  PinSaveConfig,
+  PinConversationConfig,
+  resolvePinSaveFeatures,
+  refreshPinSaveFeatures,
+  getPinSaveFeatures,
+  resetPinSaveFeatures,
+  isConversationPinned,
+  isSystemPinnedConversation,
+  isPinned,
+  isSaved,
+  isSystemPin,
+  SYSTEM_PINNER,
 } from "./shared";
 
 import { stopStreamingForRunId, startStreamingForRunId, streamingState$, getStreamSpeed, setAIAssistantTools, setQueueCompletionCallback, removeQueueCompletionCallback, IStreamData,QueueCompletionCallback,checkAndTriggerQueueCompletion, getAIAssistantTools, handleWebsocketMessage, messageStream, notifyStreamRenderComplete, onConnected, onConnectionError, onDisconnected, setStreamSpeed, storeAIAssistantMessage, streamConnection$ } from "./shared/services/stream-message.service";
@@ -122,6 +148,14 @@ import {
   CometChatMessageInformation,
   CometChatMessageInformationInterface,
 } from "./CometChatMessageInformation";
+import {
+  CometChatSavedMessages,
+  CometChatSavedMessagesInterface,
+} from "./CometChatSavedMessages";
+import {
+  CometChatPinnedMessages,
+  CometChatPinnedMessagesInterface,
+} from "./CometChatPinnedMessages";
 
 import {
   CometChatMessageList,
@@ -138,6 +172,7 @@ import {
   CometChatCompactMessageComposer,
   CometChatCompactMessageComposerInterface,
   SingleLineMessageComposerStyleInterface,
+  ComposerInputHandle,
 } from "./CometChatCompactMessageComposer";
 
 import { CometChatAIAssistantChatHistory } from "./CometChatAIAssistantChatHistory";
@@ -252,6 +287,8 @@ export {
   CometChatMessageComposer,
   CometChatCompactMessageComposer,
   CometChatMessageInformation,
+  CometChatSavedMessages,
+  CometChatPinnedMessages,
   CometChatMessageList,
   CometChatMessagePreview,
   CometChatMessageTemplate,
@@ -297,9 +334,28 @@ export {
   ThumbnailGenerationExtension,
   UIKitSettings,
   messageStatus,
+  ThreadSubscriptionConfig,
+  applyIncomingReply,
+  applySentMessage,
+  isThreadSubscribed,
+  stampThreadSubscribed,
+  toggleThreadSubscription,
   Icon,
   getCometChatTranslation,
   getCurrentLanguage,
+  // Pin & Save — the opt-in gate plus the read helpers for custom bubbles.
+  PinSaveConfig,
+  PinConversationConfig,
+  resolvePinSaveFeatures,
+  refreshPinSaveFeatures,
+  getPinSaveFeatures,
+  resetPinSaveFeatures,
+  isConversationPinned,
+  isSystemPinnedConversation,
+  isPinned,
+  isSaved,
+  isSystemPin,
+  SYSTEM_PINNER,
   CometChatAIAssistantTools,
   type CometChatConversationStarterProps,
   type CometChatSmartRepliesProps,
@@ -375,12 +431,15 @@ export type {
   CometChatListItemInterface,
   CometChatListStylesInterface,
   CometChatMessageInformationInterface,
+  CometChatSavedMessagesInterface,
+  CometChatPinnedMessagesInterface,
   CometChatMessageInputInterface,
   CometChatMessageListActionsInterface,
   CometChatMessageListInterface,
   CometChatMessageComposerInterface,
   CometChatCompactMessageComposerInterface,
   SingleLineMessageComposerStyleInterface,
+  ComposerInputHandle,
   CometChatMessageOption,
   ActionItemInterface,
   AdditionalParams,
@@ -440,5 +499,6 @@ export type {
   EditorVariant,
   ToolbarOption,
   SelectionChangeEvent,
+  InlineStyleKey,
   RichTextEditorRef as RichTextEditorRefType,
 } from './CometChatRichTextEditor/types';

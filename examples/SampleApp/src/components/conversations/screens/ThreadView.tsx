@@ -22,6 +22,7 @@ import {
 } from '@react-navigation/native';
 import {
   CometChatThreadHeader,
+  CometChatMessageHeader,
   CometChatMessageList,
   CometChatCompactMessageComposer,
   CometChatMessageComposer,
@@ -244,20 +245,21 @@ const handleBack = useCallback(() => {
 
   return (
     <View style={{ backgroundColor: theme.color.background1, flex: 1 }}>
-      {/* Custom Header */}
-      <View style={styles.headerStyle}>
-        <TouchableOpacity style={styles.iconStyle} onPress={handleBack}>
-          <Icon
-            icon={
-              <ArrowBack
-                color={theme.color.iconPrimary}
-                height={24}
-                width={24}
-              />
-            }
-          />
-        </TouchableOpacity>
-        <View style={styles.textStyle}>
+      {/* Thread top bar — the kit's header. parentMessage is what makes it a THREAD header:
+          it is what the follow control acts on, and without it no bell renders. The title
+          block is overridden because this bar names the screen ("Thread") rather than the
+          person, and the avatar / presence / call buttons belong to a conversation, not to
+          a thread. */}
+      <CometChatMessageHeader
+        user={user}
+        group={group}
+        parentMessage={message}
+        showBackButton={true}
+        onBack={handleBack}
+        hideVoiceCallButton={true}
+        hideVideoCallButton={true}
+        LeadingView={() => <></>}
+        TitleView={() => (
           <Text
             style={[
               theme.typography.heading1.bold,
@@ -266,21 +268,21 @@ const handleBack = useCallback(() => {
           >
             {t('THREAD')}
           </Text>
+        )}
+        SubtitleView={() => (
           <Text
             style={[
               theme.typography.caption1.regular,
-              {
-                color: theme.color.textSecondary,
-                maxWidth: '90%',
-              },
+              { color: theme.color.textSecondary, maxWidth: '90%' },
             ]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
             {user ? user?.getName() : group?.getName()}
           </Text>
-        </View>
-      </View>
+        )}
+      />
+
 
       {/* Thread Header */}
       <CometChatThreadHeader
@@ -294,7 +296,7 @@ const handleBack = useCallback(() => {
         <CometChatMessageList
           user={user}
           group={group}
-          parentMessageId={message.getId().toString()}
+          parentMessage={message}
           textFormatters={[getMentionsTap()]}
           receiptsVisibility={messageDeliveryAndReadReceipts}
           hideReactionOption={!hideReactionOption}

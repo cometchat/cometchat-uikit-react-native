@@ -37,6 +37,8 @@ type ErrorEmptyViewProps = {
    * A custom JSX element to render for a retry action.
    */
   RetryView?: JSX.Element;
+  /** Forwarded to the container so a caller can identify which state rendered. */
+  testID?: string;
 };
 
 
@@ -50,9 +52,10 @@ export const ErrorEmptyView = (props: ErrorEmptyViewProps) => {
     titleStyle = {},
     subTitleStyle = {},
     RetryView = null,
+    testID,
   } = props;
   return (
-    <View style={[containerStyle]}>
+    <View testID={testID} style={[containerStyle]}>
       {Icon}
       {title && <Text style={titleStyle}>{title}</Text>}
       {subTitle && <Text style={subTitleStyle}>{subTitle}</Text>}

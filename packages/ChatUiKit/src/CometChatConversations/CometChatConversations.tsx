@@ -44,6 +44,20 @@ import { stripMarkdown, preparePreviewText } from "../shared/utils/MarkdownUtils
 import { CometChatRichTextFormatter } from "../shared/formatters/CometChatRichTextFormatter";
 import { getMessagePreviewInternal, applyMentionsFormatting } from "../shared/utils/MessageUtils";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
+import { useToast } from "../shared/helper/useToast";
+import {
+  PinConversationConfig,
+  isConversationPinned,
+  isSystemPinnedConversation,
+  conversationInsertIndex,
+  targetOf,
+  pinConversation as sdkPinConversation,
+  unpinConversation as sdkUnpinConversation,
+  isConversationCapError,
+  isConversationNotPinnable,
+  isConversationFeatureOff,
+  resolveConversationCapLimit,
+} from "../shared/utils/PinConversationHelper";
 import { CometChatConfirmDialog } from "../shared/views/CometChatConfirmDialog";
 import { CometChatDate } from "../shared/views/CometChatDate";
 import { CometChatReceipt } from "../shared/views/CometChatReceipt";
@@ -229,6 +243,12 @@ export interface ConversationInterface {
    */
   deleteConversationOptionVisibility?: boolean;
   /**
+   * Show Pin/Unpin in the conversation long-press menu. Also requires
+   * PinConversationConfig.enable() — the module gate — and the app's
+   * `features.ux.conversations.pinned.enabled` server flag.
+   */
+  pinConversationOptionVisibility?: boolean;
+  /**
    * Toggle search bar visibility in the conversations header.
    */
   showSearchBar?: boolean;
@@ -291,6 +311,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     usersStatusVisibility = true,
     groupTypeVisibility = true,
     deleteConversationOptionVisibility = true,
+    pinConversationOptionVisibility = true,
     showSearchBar = false,
     onSearchBarClicked,
     onSearchTextChanged,
@@ -300,6 +321,140 @@ export const CometChatConversations = (props: ConversationInterface) => {
 
   // Reference for accessing CometChatList methods
   const conversationListRef = React.useRef<CometChatListActionsInterface>(null);
+  const { showToast, ToastElement } = useToast();
+
+  /**
+   * Re-seat a conversation at its correct index — the ONE ordering rule, used by
+   * pin, unpin and every incoming message.
+   *
+   * Replaces bare updateAndMoveToFirst, which sent everything to index 0 and so
+   * broke two ways once pins existed: a message in a pinned chat reshuffled the
+   * pinned block by recency instead of leaving it in its pinned slot, and a message
+   * in an unpinned chat jumped it ABOVE the pins.
+   *
+   * With no pins in the list this is behaviourally identical to
+   * updateAndMoveToFirst for a newly-messaged row, so it is a safe generalisation.
+   */
+  const placeConversation = (row: any) => {
+    const id = row?.getConversationId?.();
+    if (id === undefined || id === null) return;
+
+    const all = conversationListRef.current?.getAllListItems?.() ?? [];
+    const currentIndex = all.findIndex(
+      (o: any) => String(o?.getConversationId?.() ?? "") === String(id)
+    );
+    const targetIndex = conversationInsertIndex(row, all);
+
+    // Not moving? Update in place. This is the COMMON case — a message arriving in
+    // a pinned chat, which must keep its slot — and it matters for more than
+    // efficiency: removeItemFromList flips the list to NO_DATA_FOUND the moment it
+    // empties, so a remove-then-add on a single-row list would flash the empty
+    // state. Updating in place never empties it.
+    // Not in the list at all — a brand-new conversation, or one the user deleted
+    // that just received a message. Insert at the ORDERED index, never at 0: a
+    // message in a deleted chat must not surface above the user's pins.
+    if (currentIndex === -1) {
+      conversationListRef.current?.addItemToList(row, targetIndex);
+      return;
+    }
+
+    // Not moving? Update in place. This is the COMMON case — a message arriving in
+    // a pinned chat, which must keep its slot — and it matters for more than
+    // efficiency: removeItemFromList flips the list to NO_DATA_FOUND the moment it
+    // empties, so a remove-then-add on a single-row list would flash the empty
+    // state. Updating in place never empties it.
+    if (currentIndex === targetIndex) {
+      conversationListRef.current?.updateList(row);
+      return;
+    }
+
+    conversationListRef.current?.removeItemFromList(id);
+    conversationListRef.current?.addItemToList(row, targetIndex);
+  };
+
+  /**
+   * Pin or unpin a conversation, OPTIMISTICALLY (owner decision).
+   *
+   * Unlike the message pin/save flow — which applies the server's response because
+   * every message call returns the full updated entity — a conversation pin's whole
+   * point is the ROW MOVING. Waiting a round trip before it moves reads as a dead
+   * tap, so the row moves first and reverts if the server refuses.
+   *
+   * Placement goes through placeConversation, the same single ordering rule the
+   * incoming-message paths use, so pin, unpin and a new message can never disagree
+   * about where a row belongs.
+   */
+  const togglePinConversation = (conversation: CometChat.Conversation) => {
+    const target = targetOf(conversation);
+    if (!target) return;
+
+    const wasPinned = isConversationPinned(conversation);
+    const clone: any = CommonUtils.clone(conversation);
+
+
+    // Optimistic flip. The timestamp is a local placeholder — the next fetch
+    // replaces it with the server's, and only PRESENCE is ever read anyway.
+    if (wasPinned) {
+      clone.setPinnedAt?.(undefined);
+      clone.setPinnedBy?.(undefined);
+      placeConversation(clone);
+    } else {
+      clone.setPinnedAt?.(Math.floor(Date.now() / 1000));
+      placeConversation(clone);
+    }
+
+    const call = wasPinned ? sdkUnpinConversation : sdkPinConversation;
+    call(target.id, target.type)
+      .then((updated: CometChat.Conversation) => {
+        // Replace the optimistic guess with the server's own row. The local
+        // pinnedAt above was a placeholder; this is the authoritative value, so a
+        // later refetch cannot appear to "change" the pin time.
+        if (updated) {
+          const settled: any = CommonUtils.clone(updated);
+          placeConversation(settled);
+        }
+        showToast(
+          wasPinned
+            ? (t("CONVERSATION_UNPINNED") ?? "Conversation unpinned")
+            : (t("CONVERSATION_PINNED") ?? "Conversation pinned")
+        );
+      })
+      .catch(async (error: any) => {
+        // Revert to exactly the object we started from, so a failed pin cannot
+        // leave a half-flipped row behind.
+        //
+        // Through placeConversation, NOT updateList (ENG-38898). The optimistic flip
+        // above MOVED the row — that is the whole point of it — so restoring the object
+        // is only half the revert. updateList rewrites the row in place and leaves it
+        // wherever the optimistic placement put it, which on a refused pin means an
+        // unpinned conversation sitting at the top of the list wearing no pin icon.
+        // placeConversation re-runs the same ordering rule that moved it and puts it
+        // back among the unpinned rows, so a refused pin leaves nothing behind at all.
+        placeConversation(CommonUtils.clone(conversation));
+
+        let messageText: string;
+        if (isConversationFeatureOff(error)) {
+          messageText = t("PIN_SAVE_FEATURE_OFF") ?? "This feature isn't available for this app.";
+        } else if (isConversationNotPinnable(error)) {
+          messageText = t("CONVERSATION_NOT_PINNABLE") ?? "This conversation can't be pinned yet.";
+        } else if (isConversationCapError(error)) {
+          // Cap is 5 here, not the messages' 100 — and the server usually does not
+          // send the number, so the no-count copy is the expected path.
+          // errorParams first, then app settings (SDK getter, ENG-37790).
+          const limit = await resolveConversationCapLimit(error);
+          messageText =
+            limit !== null
+              ? (t("PIN_CONVERSATION_LIMIT_REACHED") ??
+                  "You can only pin {limit} chats. Unpin one to pin another.")
+                  .replace("{limit}", String(limit))
+              : (t("PIN_CONVERSATION_LIMIT_REACHED_NO_COUNT") ??
+                "You've reached your pinned chats limit. Unpin one to pin another.");
+        } else {
+          messageText = t("PIN_SAVE_GENERIC_ERROR") ?? "Something went wrong. Please try again.";
+        }
+        showToast(messageText);
+      });
+  };
   // Store the logged in user for comparison and event handling.
   const loggedInUser = React.useRef<CometChat.User>(undefined);
   // Buffer receipts by messageId to handle race conditions where receipts arrive
@@ -307,6 +462,14 @@ export const CometChatConversations = (props: ConversationInterface) => {
   const pendingReceiptsMap = React.useRef<Map<string, { readAt?: number; deliveredAt?: number }>>(new Map());
   // State to control the confirmation dialog for deleting a conversation.
   const [confirmDelete, setConfirmDelete] = React.useState<string | undefined>(undefined);
+  /**
+   * The conversation awaiting unpin confirmation, or undefined. Holds the whole
+   * conversation rather than an id because togglePinConversation needs the object,
+   * and `longPressedConversation` has already moved on by the time the user answers.
+   */
+  const [confirmUnpin, setConfirmUnpin] = React.useState<CometChat.Conversation | undefined>(
+    undefined
+  );
   // State to control selection mode for conversation items.
   const [selecting, setSelecting] = React.useState(selectionMode === "none" ? false : true);
   const [selectedConversation, setSelectedConversations] = React.useState<
@@ -620,7 +783,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
                 loggedInUser.current?.getUid()
               )
                 newConversation.setUnreadMessageCount(1);
-              conversationListRef.current?.addItemToList(newConversation, 0);
+              placeConversation(newConversation);
             })
             .catch((err) => onError && onError(err));
           return;
@@ -652,7 +815,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
         oldConversation.setLastMessage(newMessage);
         if (newMessage.getSender().getUid() != loggedInUser.current?.getUid())
           oldConversation.setUnreadMessageCount(oldConversation.getUnreadMessageCount() + 1);
-        conversationListRef.current?.updateAndMoveToFirst(CommonUtils.clone(oldConversation));
+        placeConversation(CommonUtils.clone(oldConversation));
       })
       .catch((err) => {
         console.log("Error", err);
@@ -851,7 +1014,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
         if (existingConv) {
           groupHandler(message, otherDetails, _depth + 1);
         } else {
-          conversationListRef.current?.addItemToList(newConversation, 0);
+          placeConversation(newConversation);
         }
       }).catch(() => {
         // Silently ignore — conversation won't appear until next refresh
@@ -1194,11 +1357,48 @@ export const CometChatConversations = (props: ConversationInterface) => {
    * @param conversation - The conversation object.
    * @returns A JSX.Element for the trailing view.
    */
+  /**
+   * The pin glyph on its own, for the rows that render no date and no badge.
+   *
+   * A pin is state the user set deliberately, so it has to be visible wherever a pinned row
+   * is — it is the only thing on screen telling them the row is pinned rather than merely
+   * near the top. Two rows used to lose it (ENG, agent rows): an AGENT conversation, whose
+   * trailing view is blanked on purpose so it shows no preview or timestamp, and any
+   * conversation with NO last message, where the date-driven trailing view bailed out early.
+   * Both kept the pin working everywhere except on screen.
+   *
+   * Deliberately NOT the full trailing view: the date and unread badge stay hidden on those
+   * rows, because hiding them was a design decision and only the pin was collateral.
+   */
+  const getPinOnlyTrailingView = useCallback(
+    (conversation: CometChat.Conversation) => {
+      if (!isConversationPinned(conversation)) return <></>;
+      return (
+        <View
+          style={[
+            conversationPreviewStyles.trailingContainer,
+            mergedStyles.itemStyle.trailingViewContainerStyle,
+          ]}
+        >
+          <View
+            accessible={true}
+            accessibilityLabel={t("PINNED") ?? "Pinned"}
+            style={{ marginRight: theme.spacing.margin.m1 }}
+          >
+            <Icon name='keep-fill' color={theme.color.iconSecondary} height={14} width={14} />
+          </View>
+        </View>
+      );
+    },
+    [mergedStyles, theme, t]
+  );
+
   const getTrailingView = useCallback(
     (conversation: CometChat.Conversation) => {
       const customPattern = () => datePattern?.(conversation);
       const timestamp = conversation.getLastMessage()?.getSentAt();
-      if (!timestamp) return <></>;
+      // No last message — nothing to date-stamp, but a pin still has to show.
+      if (!timestamp) return getPinOnlyTrailingView(conversation);
       return (
         <View
           style={[
@@ -1212,14 +1412,27 @@ export const CometChatConversations = (props: ConversationInterface) => {
             pattern={"conversationDate"}
             style={mergedStyles?.itemStyle?.dateStyle}
           />
-          <CometChatBadge
-            count={conversation.getUnreadMessageCount()}
-            style={mergedStyles?.itemStyle?.badgeStyle}
-          />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {/* Pin indicator. Sits with the badge rather than in the title so it
+                cannot push a long conversation name into truncation. */}
+            {isConversationPinned(conversation) ? (
+              <View
+                accessible={true}
+                accessibilityLabel={t("PINNED") ?? "Pinned"}
+                style={{ marginRight: theme.spacing.margin.m1 }}
+              >
+                <Icon name='keep-fill' color={theme.color.iconSecondary} height={14} width={14} />
+              </View>
+            ) : null}
+            <CometChatBadge
+              count={conversation.getUnreadMessageCount()}
+              style={mergedStyles?.itemStyle?.badgeStyle}
+            />
+          </View>
         </View>
       );
     },
-    [mergedStyles, datePattern]
+    [mergedStyles, datePattern, theme, t, getPinOnlyTrailingView]
   );
 
   /**
@@ -1239,7 +1452,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
         conversation = CommonUtils.clone(conversation);
         conversation.setLastMessage(message);
         conversation.setConversationWith(group);
-        conversationListRef.current?.updateAndMoveToFirst(conversation);
+        placeConversation(conversation);
       } else {
         CometChat.CometChatHelper.getConversationFromMessage(message)
           .then((newConversation) => {
@@ -1248,7 +1461,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
               loggedInUser.current?.getUid()
             )
               newConversation.setUnreadMessageCount(1);
-            conversationListRef.current?.addItemToList(newConversation, 0);
+            placeConversation(newConversation);
           })
           .catch((err) => onError && onError(err));
       }
@@ -1578,7 +1791,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
           group.getGuid(),
           CometChatUiKitConstants.ConversationTypeConstants.group
         ).then((conversation) => {
-          conversationListRef.current?.addItemToList(conversation, 0);
+          placeConversation(conversation);
         });
       },
       ccGroupDeleted: ({ group }: { group: CometChat.Group }) => {
@@ -1849,10 +2062,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
   const TrailingViewRaw = useCallback((conv: CometChat.Conversation) => {
     const conversationWith = conv.getConversationWith();
     if (conversationWith instanceof CometChat.User && conversationWith.getRole() === "@agentic") {
-      return <></>;
+      // An agent row shows no preview, date or unread count — but it can be pinned like any
+      // other conversation, and a pinned row with no pin is indistinguishable from an
+      // unpinned one that happens to be sorted high.
+      return getPinOnlyTrailingView(conv);
     }
     return getTrailingView(conv);
-  }, [getTrailingView]);
+  }, [getTrailingView, getPinOnlyTrailingView]);
 
   return (
     <View style={mergedStyles.containerStyle}>
@@ -1927,6 +2143,47 @@ export const CometChatConversations = (props: ConversationInterface) => {
             ? options(longPressedConversation.current!)
             : [
                 ...[
+                  // Pin sits ABOVE Delete: non-destructive actions should not be
+                  // below the one the user must not hit by accident.
+                  ...(PinConversationConfig.isEnabled() &&
+                  pinConversationOptionVisibility &&
+                  longPressedConversation.current &&
+                  // A user cannot unpin an admin/global pin, so offer nothing rather
+                  // than an option the server will refuse.
+                  !isSystemPinnedConversation(longPressedConversation.current)
+                    ? [
+                        {
+                          text: isConversationPinned(longPressedConversation.current)
+                            ? (t("UNPIN_CONVERSATION") ?? "Unpin")
+                            : (t("PIN_CONVERSATION") ?? "Pin"),
+                          onPress: () => {
+                            const target = longPressedConversation.current!;
+                            setTooltipVisible(false);
+                            // Unpin asks, pin does not — the same asymmetry the message
+                            // list applies (Jitvar, 2026-08-04): pinning is additive and
+                            // undoable in one tap, unpinning discards a deliberate act
+                            // with nothing on screen offering it back.
+                            if (isConversationPinned(target)) {
+                              setConfirmUnpin(target);
+                              return;
+                            }
+                            togglePinConversation(target);
+                          },
+                          icon: (
+                            <Icon
+                              name={
+                                isConversationPinned(longPressedConversation.current)
+                                  ? "keep-off"
+                                  : "keep"
+                              }
+                              color={theme.color.iconSecondary}
+                              height={theme.spacing.spacing.s6}
+                              width={theme.spacing.spacing.s6}
+                            />
+                          ),
+                        },
+                      ]
+                    : []),
                   ...(deleteConversationOptionVisibility
                     ? [
                         {
@@ -1965,6 +2222,26 @@ export const CometChatConversations = (props: ConversationInterface) => {
         }}
         {...mergedStyles.confirmDialogStyle}
       />
+      <CometChatConfirmDialog
+        titleText={t("UNPIN_CONVERSATION_TITLE") ?? "Unpin Conversation"}
+        icon={<Icon name='keep-off' size={theme.spacing.spacing.s12} color={theme.color.error} />}
+        cancelButtonText={t("CANCEL")}
+        confirmButtonText={t("UNPIN_CONVERSATION") ?? "Unpin"}
+        messageText={
+          t("UNPIN_CONVERSATION_CONFIRM") ??
+          "Do you want to unpin this conversation from the top of your list?"
+        }
+        isOpen={confirmUnpin != undefined}
+        onCancel={() => setConfirmUnpin(undefined)}
+        onConfirm={() => {
+          togglePinConversation(confirmUnpin!);
+          setConfirmUnpin(undefined);
+        }}
+        {...mergedStyles.confirmDialogStyle}
+      />
+      {/* Without this the useToast hook runs but nothing ever appears — the
+          conversation pin/unpin toasts and every error message are invisible. */}
+      {ToastElement}
     </View>
   );
 };

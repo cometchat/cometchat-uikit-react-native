@@ -81,15 +81,29 @@ export async function displayLocalNotification(
         parentId = parsedMessage.parentId;
         messageId = parsedMessage.id;
       }
-      // Fallback to tag if message parsing fails
+      // Fallbacks to the TOP-LEVEL data fields.
+      //
+      // Verified against a real staging push (2026-08-10): the payload carries `parentId` and
+      // `tag` at the top level of `data` and has NO `data.message` blob at all, so the branch
+      // above never runs. messageId survived on the `tag` fallback; parentId had none, so it
+      // stayed undefined and a tapped thread notification deep-linked to the conversation
+      // instead of the thread.
+      //
+      //   {"type":"chat","sender":"cometchat-uid-2","tag":"4104","parentId":"4103", …}
       if (!messageId && remoteMessage.data?.tag) {
         messageId = remoteMessage.data.tag;
       }
+      if (!parentId && remoteMessage.data?.parentId) {
+        parentId = remoteMessage.data.parentId;
+      }
     } catch (error) {
       console.log('Error parsing message data:', error);
-      // Use tag as fallback
+      // Same top-level fallbacks — a malformed data.message must not cost us the deep link.
       if (remoteMessage.data?.tag) {
         messageId = remoteMessage.data.tag;
+      }
+      if (remoteMessage.data?.parentId) {
+        parentId = remoteMessage.data.parentId;
       }
     }
 
@@ -184,6 +198,30 @@ export async function requestAndroidPermissions() {
  * Retrieve the initial iOS push notification (if the user tapped on one
  * to open the app) and navigate to the correct screen. (iOS only)
  */
+/**
+ * iOS twin of pushThreadIfReply(). `navigate()` here is the app's imperative helper rather
+ * than a StackActions dispatch, so the two cannot share an implementation — but the rule is
+ * identical: a reply notification must end up in the thread, not just its conversation.
+ */
+async function openThreadFromNotification(
+  parentId: string | undefined,
+  entity: {user?: any; group?: any},
+  data: any,
+): Promise<void> {
+  if (!parentId) return;
+  try {
+    const parentMessage = await CometChat.getMessageDetails(parentId as any);
+    if (!parentMessage) return;
+    navigate(SCREEN_CONSTANTS.THREAD_VIEW, {
+      message: parentMessage,
+      ...entity,
+      highlightMessageId: data?.tag ? String(data.tag) : undefined,
+    });
+  } catch (error) {
+    console.log('Could not open thread for parentId', parentId, error);
+  }
+}
+
 export async function checkInitialNotificationIOS() {
   if (Platform.OS !== 'ios') return;
 
@@ -192,7 +230,10 @@ export async function checkInitialNotificationIOS() {
     if (notification) {
       const data = notification.getData();
       if (data && data.type === 'chat') {
-        // Extract parent ID for agentic messages
+        // Extract the parent id. The real staging payload carries `parentId` at the TOP
+        // level of data and has no `data.message` blob, so the parse below never fires —
+        // it stays only for payload shapes that do send one. Without the fallback this was
+        // always undefined and iOS could not deep-link into a thread at all.
         let parentId: string | undefined;
         try {
           if (data.message) {
@@ -201,6 +242,9 @@ export async function checkInitialNotificationIOS() {
           }
         } catch (error) {
           console.log('Error parsing iOS message data:', error);
+        }
+        if (!parentId && data.parentId) {
+          parentId = String(data.parentId);
         }
 
         if (data.receiverType === 'group') {
@@ -229,6 +273,7 @@ export async function checkInitialNotificationIOS() {
               params.parentMessageId = parentId;
             }
             navigate(SCREEN_CONSTANTS.MESSAGES, params);
+            await openThreadFromNotification(parentId, {group}, data);
           } catch (error) {
             console.log('Error fetching group details:', error);
           }
@@ -258,6 +303,7 @@ export async function checkInitialNotificationIOS() {
               params.parentMessageId = parentId;
             }
             navigate(SCREEN_CONSTANTS.MESSAGES, params);
+            await openThreadFromNotification(parentId, {user}, data);
           } catch (error) {
             console.log('Error fetching user details:', error);
           }
@@ -299,6 +345,11 @@ export async function onRemoteNotificationIOS(notification: any) {
       } catch (error) {
         console.log('Error parsing iOS message data:', error);
       }
+      // Top-level fallback. The real staging payload has no `data.message` blob — parentId
+      // rides at the top level of data. Without this the tap path could never deep-link.
+      if (!parentId && data.parentId) {
+        parentId = String(data.parentId);
+      }
 
       if (data.receiverType === 'group') {
         try {
@@ -326,6 +377,7 @@ export async function onRemoteNotificationIOS(notification: any) {
             params.parentMessageId = parentId;
           }
           navigate(SCREEN_CONSTANTS.MESSAGES, params);
+          await openThreadFromNotification(parentId, {group}, data);
         } catch (error) {
           console.log('Error fetching group details:', error);
         }
@@ -355,6 +407,7 @@ export async function onRemoteNotificationIOS(notification: any) {
             params.parentMessageId = parentId;
           }
           navigate(SCREEN_CONSTANTS.MESSAGES, params);
+          await openThreadFromNotification(parentId, {user}, data);
         } catch (error) {
           console.log('Error fetching user details:', error);
         }
@@ -598,6 +651,45 @@ export const sampleData = {
   ],
 };
 
+
+/**
+ * A thread notification must land INSIDE the thread, not merely in the conversation.
+ *
+ * `parentId` arrives at the top level of the push payload (verified on staging 2026-08-10:
+ * `{"tag":"4121","parentId":"4120",…}`). Before this, a thread reply pushed the Messages screen
+ * with `parentMessageId` set, which filtered the list but never opened ThreadView — so tapping a
+ * reply notification dropped the user in the parent conversation and left them to find it.
+ *
+ * Pushes Messages FIRST so Back returns to the conversation rather than the conversation list —
+ * the same stack shape the Saved and Pinned panels build when a row turns out to be a reply.
+ */
+async function pushThreadIfReply(
+  navigationRef: NavigationContainerRefWithCurrent<RootStackParamList>,
+  data: NotifeeData,
+  entity: {user?: any; group?: any},
+): Promise<boolean> {
+  const parentId = data.parentId;
+  if (!parentId) return false;
+  try {
+    const parentMessage = await CometChat.getMessageDetails(parentId as any);
+    if (!parentMessage) return false;
+    navigationRef.current?.dispatch(
+      StackActions.push(SCREEN_CONSTANTS.THREAD_VIEW, {
+        message: parentMessage,
+        ...entity,
+        // `tag` is the REPLY's own id — highlight the message the notification was about.
+        highlightMessageId: data.tag ? String(data.tag) : undefined,
+      }),
+    );
+    return true;
+  } catch (error) {
+    // A deleted or inaccessible parent must not strand the user on a blank screen; the
+    // conversation we already pushed is a correct, if less precise, destination.
+    console.log('Could not open thread for parentId', parentId, error);
+    return false;
+  }
+}
+
 /**
  * Navigate to conversation based on notification data.
  */
@@ -646,6 +738,7 @@ export async function navigateToConversation(
       }
 
       navigationRef.current?.dispatch(StackActions.push(SCREEN_CONSTANTS.MESSAGES, params));
+      await pushThreadIfReply(navigationRef, data, {group});
     }
 
     // Handle user
@@ -682,6 +775,7 @@ export async function navigateToConversation(
       navigationRef.current?.dispatch(
         StackActions.push(SCREEN_CONSTANTS.MESSAGES, params),
       );
+      await pushThreadIfReply(navigationRef, data, {user: ccUser});
     }
   } catch (error) {
     console.log('Error in navigateToConversation:', error);

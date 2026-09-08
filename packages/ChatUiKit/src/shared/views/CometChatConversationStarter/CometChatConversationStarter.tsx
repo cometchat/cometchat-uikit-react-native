@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Component, ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   ScrollView,
@@ -8,21 +8,39 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../../theme';
-import { useCometChatTranslation } from '../../resources/CometChatLocalizeNew';
 
 export interface CometChatConversationStarterProps {
   getConversationStarters: () => Promise<string[]>;
   onSuggestionClicked?: (reply: string) => void;
 }
 
-type State = 'loading' | 'loaded' | 'empty' | 'error';
+// No 'error' member: a failure is indistinguishable from 'nothing to suggest', and both
+// render null. See the catch below for why an error must never reach the screen.
+type State = 'loading' | 'loaded' | 'empty';
+
+/**
+ * Is this rejection "your plan does not include AI", rather than something a retry could fix?
+ *
+ * Matched on the code first; the message is a fallback because the same refusal reaches
+ * different SDK surfaces with the code sometimes nested on the response rather than the
+ * exception.
+ */
+export const isFeatureUnavailable = (error: any): boolean => {
+  try {
+    const code = error?.code ?? error?.error?.code ?? '';
+    if (code === 'ERR_FEATURE_NOT_ACCESSIBLE') return true;
+    const message = String(error?.message ?? error?.error?.message ?? '');
+    return /feature is not available|upgrade your plan/i.test(message);
+  } catch {
+    return false;
+  }
+};
 
 const CometChatConversationStarter: React.FC<CometChatConversationStarterProps> = ({
   getConversationStarters,
   onSuggestionClicked,
 }) => {
   const theme = useTheme();
-  const { t } = useCometChatTranslation();
   const [state, setState] = useState<State>('loading');
   const [starters, setStarters] = useState<string[]>([]);
   const shimmer = useRef(new Animated.Value(0.4)).current;
@@ -45,7 +63,30 @@ const CometChatConversationStarter: React.FC<CometChatConversationStarterProps> 
           setState('empty');
         }
       })
-      .catch(() => setState('error'))
+      .catch((error: any) => {
+        // Starters are SUGGESTIONS. They are not the conversation, and nothing about the
+        // conversation depends on them, so a failure here must never put anything on screen —
+        // it renders nothing and the chat is left exactly as it would have been.
+        //
+        // It used to render "Could not load conversation starters. Please try again.", which was
+        // wrong twice over: on an app without the AI add-on the call returns the same 403 for
+        // ever, so the retry is a instruction that can never be satisfied; and because this view
+        // stood in for the whole empty state, that one line was the only thing on an empty
+        // conversation — it read as "the chat failed to load".
+        //
+        // Logged rather than swallowed, so a genuine outage is still diagnosable from the
+        // console. The two cases are logged differently on purpose: a missing add-on is expected
+        // and should not look like a defect to an integrator reading their logs.
+        if (isFeatureUnavailable(error)) {
+          console.warn(
+            '[CometChatConversationStarter] AI conversation starters are not enabled for this app; ' +
+              'no starters will be shown. This is a plan setting, not an error.'
+          );
+        } else {
+          console.error('[CometChatConversationStarter] Failed to load conversation starters', error);
+        }
+        setState('empty');
+      })
       .finally(() => loop.stop());
 
     return () => loop.stop();
@@ -59,14 +100,6 @@ const CometChatConversationStarter: React.FC<CometChatConversationStarterProps> 
         {[120, 90, 150].map((w, i) => (
           <Animated.View key={i} style={[s.shimmerChip, { width: w, opacity: shimmer }]} />
         ))}
-      </View>
-    );
-  }
-
-  if (state === 'error') {
-    return (
-      <View style={s.container}>
-        <Text style={s.stateText}>{t('ai_conversation_starter_error')}</Text>
       </View>
     );
   }
@@ -130,12 +163,50 @@ const styles = (theme: ReturnType<typeof useTheme>) =>
       fontSize: theme.typography.body.regular.fontSize,
       fontFamily: theme.typography.body.regular.fontFamily,
     },
-    stateText: {
-      color: theme.color.textSecondary,
-      fontSize: theme.typography.caption1.regular.fontSize,
-      fontFamily: theme.typography.caption1.regular.fontFamily,
-      paddingHorizontal: 4,
-    },
   });
 
-export default CometChatConversationStarter;
+/**
+ * A crash in the suggestions must never take the conversation with it.
+ *
+ * The promise path is already handled — a rejected fetch logs and renders nothing. This covers
+ * the other half: an exception thrown while RENDERING. React unmounts the nearest tree when a
+ * render throws, and this component is mounted INSIDE the message list, so without a boundary a
+ * fault in an optional AI add-on would blank the whole conversation. That is the wrong failure
+ * for a feature whose entire job is to suggest an opening line.
+ *
+ * Renders null on failure, exactly like having no suggestions, so the chat is left as if the
+ * feature were not enabled at all.
+ */
+class ConversationStarterBoundary extends Component<
+  { children: ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error(
+      '[CometChatConversationStarter] Suggestions crashed and were dropped; the conversation is unaffected',
+      error
+    );
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+/**
+ * Exported already wrapped, so every call site is protected by construction rather than by each
+ * one remembering to add a boundary.
+ */
+const SafeCometChatConversationStarter: React.FC<CometChatConversationStarterProps> = (props) => (
+  <ConversationStarterBoundary>
+    <CometChatConversationStarter {...props} />
+  </ConversationStarterBoundary>
+);
+
+export default SafeCometChatConversationStarter;

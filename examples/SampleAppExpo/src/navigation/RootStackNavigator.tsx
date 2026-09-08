@@ -15,6 +15,8 @@ import Conversations from '../components/conversations/screens/Conversations';
 import CreateConversation from '../components/conversations/screens/CreateConversation';
 import Messages from '../components/conversations/screens/Messages';
 import ThreadView from '../components/conversations/screens/ThreadView';
+import SavedMessages from '../components/conversations/screens/SavedMessages';
+import PinnedMessages from '../components/conversations/screens/PinnedMessages';
 import UserInfo from '../components/conversations/screens/UserInfo';
 import AddMember from '../components/conversations/screens/AddMember';
 import BannedMember from '../components/conversations/screens/BannedMember';
@@ -93,6 +95,14 @@ const RootStackNavigator = ({isLoggedIn, hasValidAppCredentials: _hasValidAppCre
           <Stack.Screen name={SCREEN_CONSTANTS.USERS} component={Users} />
           <Stack.Screen name={SCREEN_CONSTANTS.GROUPS} component={Groups} />
           <Stack.Screen name={SCREEN_CONSTANTS.AI_AGENTS} component={AIAgents} />
+          <Stack.Screen
+            name={SCREEN_CONSTANTS.SAVED_MESSAGES}
+            component={SavedMessages}
+          />
+          <Stack.Screen
+            name={SCREEN_CONSTANTS.PINNED_MESSAGES}
+            component={PinnedMessages}
+          />
 
           {/* Chat Screens */}
           <Stack.Screen

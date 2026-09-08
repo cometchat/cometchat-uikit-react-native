@@ -1,6 +1,7 @@
 /**
  * Utility functions for markdown text processing.
  */
+import { stripColorTags } from "../formatters/richTextWireFormat";
 
 /**
  * Strips markdown syntax characters from text, returning clean readable content.
@@ -17,12 +18,17 @@
  *  - Numbered lists: 1. text → text
  *
  * @param text - The markdown text to strip
+ * @param keepColorTags - Keep the `<color=#rrggbb>…</color>` wire tokens instead of removing
+ *   them, for sinks that render colour themselves (search previews) rather than plain text.
  * @returns Clean text without markdown syntax characters
  */
-export function stripMarkdown(text: string): string {
+export function stripMarkdown(text: string, keepColorTags = false): string {
   if (!text) return text;
 
-  let result = text;
+  // 0. Remove the rich-text wire format's colour tokens. Not markdown and not HTML, so no
+  //    rule below matches them — without this they reach every plain-text sink verbatim
+  //    (share sheet, search subtitles, previews).
+  let result = keepColorTags ? text : stripColorTags(text);
 
   // 1. Remove code block fences (``` on their own lines or inline ```)
   result = result.replace(/```[\s\S]*?```/g, (match) => {
@@ -63,7 +69,19 @@ export function stripMarkdown(text: string): string {
   // 10. Strip HTML tags (e.g., <u>, <b>, <i>, <s>, <em>, <strong>, <del>, <br>, etc.)
   // Preserve CometChat mention tokens <@uid:xxx> and <@all:xxx> which look like HTML tags
   result = result.replace(/<br\s*\/?>/gi, '\n');
-  result = result.replace(/<(?!@(?:uid|all):)[^>]+>/g, '');
+  // Require something that actually looks like a tag name after the `<`. The old `<[^>]+>` ate any
+  // `<`…`>` pair, so ordinary prose lost text: "a < b and c > d" became "a  d". Captions and message
+  // previews are user text and legitimately contain comparisons and "<3". A tag must now start with
+  // a letter (optionally after `/`), which still strips <u>/<b>/<br>/<div class="x">/</strong> and
+  // still leaves CometChat's <@uid:…> / <@all:…> mention tokens alone — those start with `@`.
+  // `</color>` looks exactly like a closing HTML tag, so it is exempted when the caller asked
+  // to keep the colour tokens (`<color=…>` never matches — `=` follows the tag name).
+  result = result.replace(
+    keepColorTags
+      ? /<(?!\/color>)\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^>]*)?\/?>/g
+      : /<\/?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^>]*)?\/?>/g,
+    ''
+  );
 
   // 11. Remove any remaining backslash escapes (e.g., \* \_ \` \~)
   result = result.replace(/\\([*_`~>\\])/g, '$1');
@@ -112,7 +130,10 @@ export function preparePreviewText(text: string): PreviewTextResult {
       const afterOpen = trimmed.substring(3);
       const closeIdx = afterOpen.indexOf('```');
       let firstLine: string;
-      if (closeIdx > 0) {
+      // `>= 0`, not `> 0`: an empty code block (six backticks) closes at offset 0. Treating it as
+      // unterminated made the preview scan ON to the next line and show text that is not in the
+      // code block at all (ENG-38253).
+      if (closeIdx >= 0) {
         firstLine = afterOpen.substring(0, closeIdx).trim();
       } else {
         firstLine = '';

@@ -90,6 +90,10 @@ export const CometChatActionSheet = (props: CometChatActionSheetInterface) => {
     return (
       <FlatList
         key={"list"}
+        // The option list scrolls when there are more options than fit — Delete in particular
+        // sits below the fold on a long sheet. Without an id there is nothing for a test (or an
+        // integrator's own automation) to scroll, so the option exists but can never be tapped.
+        testID='ActionSheet.list'
         keyExtractor={(item) => item.id}
         data={actionList}
         numColumns={1}

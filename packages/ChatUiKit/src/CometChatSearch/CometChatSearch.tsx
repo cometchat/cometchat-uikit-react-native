@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState, useMemo, JSX } from 'react';
 import { View, TextInput, TouchableOpacity, Text, Image, ImageBackground, FlatList, ImageSourcePropType, StyleSheet } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
@@ -19,9 +19,43 @@ import { DeepPartial } from '../shared/helper/types';
 import { getCometChatTranslation } from '../shared/resources/CometChatLocalizeNew/LocalizationManager';
 import { CommonUtils } from '../shared/utils/CommonUtils';
 import { stripMarkdown } from '../shared/utils/MarkdownUtils';
+import { CometChatRichTextFormatter } from '../shared/formatters/CometChatRichTextFormatter';
 import { ExtensionConstants } from '../extensions/ExtensionConstants';
 import { getExtensionData } from '../extensions/ExtensionModerator';
 
+
+/** Module-level formatter for search previews — reused across renders (no GC churn). */
+const searchRichTextFormatter = new CometChatRichTextFormatter();
+
+/**
+ * Preview text for a search row: mention tokens resolved to @Name and markdown flattened, but the
+ * rich-text colour tokens are KEPT and painted, so a coloured message reads coloured in search
+ * exactly as it does in the conversation list row. Markdown is stripped before the formatter runs,
+ * so only colour runs remain — the result is always inline `<Text>`, never a block-level `View`.
+ * Returns a JSX element when the text carries colour, a plain string otherwise.
+ */
+const formatPreviewText = (rawText: any, message?: CometChat.BaseMessage): string | JSX.Element => {
+  if (typeof rawText !== 'string') return rawText;
+
+  let text = stripMarkdown(rawText, true).replace(/<@all:(.*?)>/g, '@$1');
+
+  try {
+    const mentionedUsers: CometChat.User[] = (message && (message).getMentionedUsers && (message).getMentionedUsers()) || [];
+    if (mentionedUsers && mentionedUsers.length > 0) {
+      mentionedUsers.forEach((u: CometChat.User) => {
+        const uid = u.getUid();
+        const name = u.getName();
+        if (uid && name) {
+          text = text.replace(new RegExp(`<@uid:${uid}>`, 'g'), `@${name}`);
+        }
+      });
+    }
+  } catch (e) {
+    console.log(e)
+  }
+
+  return searchRichTextFormatter.getFormattedText(text) ?? text;
+};
 
 // ERROR HANDLER 
 function useCometChatErrorHandler(onError?: (error: CometChat.CometChatException) => void) {
@@ -631,32 +665,6 @@ const ConversationItem = React.memo<ConversationItemProps>((
     );
   };
 
-  const formatMentionsInText = (rawText: any, message?: CometChat.BaseMessage) => {
-    if (typeof rawText !== 'string') return rawText;
-
-    // Strip markdown syntax for clean search result preview while
-    // preserving mention tokens for processing below.
-    let text = stripMarkdown(rawText).replace(/<@all:(.*?)>/g, '@$1');
-
-    try {
-      const mentionedUsers: CometChat.User[] = (message && (message).getMentionedUsers && (message).getMentionedUsers()) || [];
-      if (mentionedUsers && mentionedUsers.length > 0) {
-        mentionedUsers.forEach((u: CometChat.User) => {
-          const uid = u.getUid();
-          const name = u.getName();
-          if (uid && name) {
-            const uidRegex = new RegExp(`<@uid:${uid}>`, 'g');
-            text = text.replace(uidRegex, `@${name}`);
-          }
-        });
-      }
-    } catch (e) {
-      console.log(e)
-    }
-
-    return text;
-  };
-
   if (conversationItemView) {
     return (
       <TouchableOpacity onPress={() => onPress(conversation, searchText)}>
@@ -676,7 +684,7 @@ const ConversationItem = React.memo<ConversationItemProps>((
           {conversation.getConversationWith().getName()}
         </Text>
         <Text style={mergedStyles.conversationItemStyle?.subtitleStyle} numberOfLines={2}>
-          {formatMentionsInText((conversation.getLastMessage())?.getText?.(), conversation.getLastMessage())}
+          {formatPreviewText((conversation.getLastMessage())?.getText?.(), conversation.getLastMessage())}
         </Text>
       </View>
       {renderTrailingView()}
@@ -1397,47 +1405,6 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     return undefined;
   };
 
-  // Render conversation avatar
-  const renderConversationLeadingView = (conversation: CometChat.Conversation) => {
-    const withObj = conversation.getConversationWith();
-    const avatarURL = withObj instanceof CometChat.User ? withObj.getAvatar() : withObj.getIcon();
-    const name = withObj.getName();
-
-    return (
-      <View style={styles.avatarWrap}>
-        <View style={styles.avatar}>
-          <CometChatAvatar
-            image={{ uri: avatarURL }}
-            name={name}
-          />
-          <View style={styles.statusBadge}>
-            <CometChatStatusIndicator
-              type={getStatusIndicator(conversation)}
-            />
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  // Render conversation trailing view (date and badge)
-  const renderConversationTrailingView = (conversation: CometChat.Conversation) => {
-    const timestamp = conversation.getLastMessage()?.getSentAt();
-    if (!timestamp) return null;
-
-    return (
-      <View style={mergedStyles.conversationItemStyle?.trailingContainerStyle}>
-        <CometChatDate
-          timeStamp={timestamp * 1000}
-          pattern={"conversationDate"}
-        />
-        <CometChatBadge
-          count={conversation.getUnreadMessageCount()}
-        />
-      </View>
-    );
-  };
-
   // Get file type icon based on file extension
   const getFileTypeIcon = (fileName: string): 'audio-file-type' | 'image-file-type' | 'video-file-type' | 'pdf-file-type' | 'presentation-file-type' | 'spreadsheet-file-type' | 'text-file-type' | 'zip-file-type' | 'document-file-type' | 'unknown-file-type' => {
     if (!fileName) return 'unknown-file-type';
@@ -1488,34 +1455,6 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     return 'document-file-type';
   };
 
-  // Format mentions in raw message text: convert <@all:alias> to @alias
-  // and <@uid:UID> to @Name when message provides mentioned users.
-  // Also strips markdown syntax for clean search result previews.
-  const formatMentionsInText = (rawText: any, message?: CometChat.BaseMessage) => {
-    if (typeof rawText !== 'string') return rawText;
-
-    // Strip markdown syntax while preserving mention tokens for processing below.
-    let text = stripMarkdown(rawText).replace(/<@all:(.*?)>/g, '@$1');
-
-    try {
-      const mentionedUsers: CometChat.User[] = (message && (message).getMentionedUsers && (message).getMentionedUsers()) || [];
-      if (mentionedUsers && mentionedUsers.length > 0) {
-        mentionedUsers.forEach((u: CometChat.User) => {
-          const uid = u.getUid();
-          const name = u.getName();
-          if (uid && name) {
-            const uidRegex = new RegExp(`<@uid:${uid}>`, 'g');
-            text = text.replace(uidRegex, `@${name}`);
-          }
-        });
-      }
-    } catch (e) {
-      console.log(e)
-    }
-
-    return text;
-  };
-
   // Subtitle text for a media/file search result. Shows the message CAPTION when there is one,
   // otherwise a count summary ("N Videos" / "12 Files"). Photos/videos put their +N on the
   // thumbnail, so they show caption-or-count; files/audio have no thumbnail, so a caption is
@@ -1526,8 +1465,11 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     const atts =
       (typeof message.getAttachments === "function" ? message.getAttachments() : null) || [];
     const count = atts.length || 1;
-    const caption =
-      (typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "") || "";
+    // The caption carries wire markup since ENG-38258, and it is concatenated with the count
+    // label below — so it is flattened here, exactly as the conversation row flattens it.
+    const caption = stripMarkdown(
+      (typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "") || ""
+    );
     const firstName =
       atts[0]?.getName?.() || (message.getAttachment?.() as any)?.getName?.() || "";
 
@@ -1566,16 +1508,17 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     return (sentByMe ? receiver?.getName?.() : message.getSender()?.getName?.()) || "";
   };
 
-  // Plain-string subtitle text for any message type (attachments delegate to the caption/count
-  // helper above; everything else keeps the existing text/card/custom handling).
-  const getMessageSubtitleText = (message: CometChat.BaseMessage): string => {
+  // Subtitle text for any message type (attachments delegate to the caption/count helper above;
+  // everything else keeps the existing text/card/custom handling). Text messages come back as JSX
+  // when they carry colour, so the row renders it instead of flattening it away.
+  const getMessageSubtitleText = (message: CometChat.BaseMessage): string | JSX.Element => {
     const messageType = message.getType();
     if (["image", "video", "file", "audio"].includes(messageType)) {
       return getMediaSearchSubtitle(message as CometChat.MediaMessage);
     }
     if (messageType === "text") {
-      const raw = (message as CometChat.TextMessage).getText?.();
-      return formatMentionsInText(raw, message) || messageType || "Message";
+      return formatPreviewText((message as CometChat.TextMessage).getText?.() ?? "", message)
+        || messageType || "Message";
     }
     if (message.getCategory() === MessageCategoryConstants.card) {
       const cardText =
@@ -1792,246 +1735,10 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     (prev, next) => prev.message.getId() === next.message.getId()
   );
 
-  // Render conversations section
-  const renderConversationsSection = () => {
-    const { conversationList, fetchState } = conversationState;
-
-    if (fetchState === States.loading && conversationList.length === 0) {
-      return loadingView ? loadingView() : <Skeleton />;
-    }
-
-    if (fetchState === States.empty || conversationList.length === 0) {
-      return null; // Don't show empty conversations section
-    }
-
-    if (fetchState === States.error) {
-      if (errorView) {
-        return errorView();
-      }
-
-      return (
-        <View style={[mergedStyles.errorStateStyle?.containerStyle]}>
-          <Icon
-            name="empty-search"
-            size={120}
-            height={120}
-            width={120}
-            imageStyle={mergedStyles.errorStateStyle?.iconStyle}
-            containerStyle={mergedStyles.errorStateStyle?.iconContainerStyle}
-          />
-          <Text style={[mergedStyles.errorStateStyle?.titleStyle]}>
-            {t("SEARCH_ERROR_LOADING_CONVERSATIONS") || "Error Loading Conversations"}
-          </Text>
-          <Text style={[mergedStyles.errorStateStyle?.subtitleStyle]}>
-            {t("SEARCH_TRY_AGAIN") || "Please try again later"}
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View>
-        <Text style={mergedStyles.sectionTitleStyle}>{t("CHATS") || "Chats"}</Text>
-        <FlatList
-          data={conversationList}
-          keyExtractor={(item) => item.getConversationId()}
-          scrollEnabled={false}
-          initialNumToRender={10}
-          maxToRenderPerBatch={5}
-          windowSize={5}
-          removeClippedSubviews={true}
-          updateCellsBatchingPeriod={50}
-          renderItem={({ item: conversation }) => {
-            // Use custom conversation item view if provided
-            if (conversationItemView) {
-              return (
-                <TouchableOpacity
-                  onPress={() => onConversationClicked?.(conversation, searchState.searchText)}
-                >
-                  {conversationItemView(conversation, searchState.searchText)}
-                </TouchableOpacity>
-              );
-            }
-
-            // Default conversation item rendering
-            return (
-              <TouchableOpacity
-                style={mergedStyles.conversationItemStyle?.containerStyle}
-                onPress={() => onConversationClicked?.(conversation, searchState.searchText)}
-              >
-                {renderConversationLeadingView(conversation)}
-                <View style={mergedStyles.conversationItemStyle?.contentStyle}>
-                  <Text style={mergedStyles.conversationItemStyle?.titleStyle} numberOfLines={1}>
-                    {conversation.getConversationWith().getName()}
-                  </Text>
-                  <Text style={mergedStyles.conversationItemStyle?.subtitleStyle} numberOfLines={2}>
-                      {formatMentionsInText((conversation.getLastMessage())?.getText?.(), conversation.getLastMessage())}
-                  </Text>
-                </View>
-                {renderConversationTrailingView(conversation)}
-              </TouchableOpacity>
-            );
-          }}
-          ListFooterComponent={
-            conversationState.hasMoreResults ? (
-              <TouchableOpacity
-                style={mergedStyles.seeMoreButtonStyle}
-                onPress={loadMoreConversations}
-                disabled={isConversationMoreResultsLoading.current}
-              >
-                <Text style={mergedStyles.seeMoreTextStyle}>
-                  {isConversationMoreResultsLoading.current ? t("SEARCH_LOADING") || 'Loading...' : t("SEARCH_SEE_MORE") || 'See More'}
-                </Text>
-              </TouchableOpacity>
-            ) : null
-          }
-        />
-      </View>
-    );
-  };
-
   // Helper to format date for headers
   const getDateHeaderDate = useCallback((timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }, []);
-
-  // Render messages section
-  const renderMessagesSection = () => {
-    const { messageList, fetchState } = messageState;
-
-    if (fetchState === States.loading && messageList.length === 0) {
-      return loadingView ? loadingView() : <Skeleton />;
-    }
-
-    if (fetchState === States.empty || messageList.length === 0) {
-      return null; // Don't show empty messages section
-    }
-
-    if (fetchState === States.error) {
-      if (errorView) {
-        return errorView();
-      }
-
-      return (
-        <View style={[mergedStyles.errorStateStyle?.containerStyle]}>
-          <Icon
-            name="empty-search"
-            size={120}
-            height={120}
-            width={120}
-            imageStyle={mergedStyles.errorStateStyle?.iconStyle}
-            containerStyle={mergedStyles.errorStateStyle?.iconContainerStyle}
-          />
-          <Text style={[mergedStyles.errorStateStyle?.titleStyle]}>
-            {t("SEARCH_ERROR_LOADING_MESSAGES") || "Error Loading M essages"}
-          </Text>
-          <Text style={[mergedStyles.errorStateStyle?.subtitleStyle]}>
-            {t("SEARCH_TRY_AGAIN") || "Please try again later"}
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View>
-        <Text style={mergedStyles.sectionTitleStyle}>{t("MESSAGES") || "Messages"}</Text>
-        <FlatList
-          data={messageList}
-          keyExtractor={(item, index) => `${item.getId()}-${index}`}
-          initialNumToRender={10}
-          maxToRenderPerBatch={5}
-          windowSize={5}
-          removeClippedSubviews={true}
-          updateCellsBatchingPeriod={50}
-          renderItem={({ item: message, index }) => {
-            const messageType = message.getType();
-
-            // Date header logic for media items
-            let dateHeader: React.ReactNode = null;
-            if (['image', 'video'].includes(messageType)) {
-              const sentAt = message.getSentAt();
-              const currentDateStr = getDateHeaderDate(sentAt);
-              const prevMessage = index > 0 ? messageList[index - 1] : null;
-              const prevDateStr = prevMessage ? getDateHeaderDate(prevMessage.getSentAt()) : null;
-
-              if (currentDateStr !== prevDateStr) {
-                dateHeader = (
-                  <CometChatDate
-                    timeStamp={sentAt * 1000}
-                    customDateString={currentDateStr}
-                    style={{
-                      textStyle: mergedStyles.sectionTitleStyle
-                    }}
-                  />
-                );
-              }
-            }
-
-            // Check if message is a text message with link preview
-            const isLinkMessage = messageType === 'text' && (() => {
-              const textMessage = message as CometChat.TextMessage;
-              const metadata = textMessage.getMetadata();
-              return metadata && (metadata as any)['@injected'] && (metadata as any)['@injected']['extensions'] && (metadata as any)['@injected']['extensions']['link-preview'];
-            })();
-
-            // Determine which custom view to use based on message type
-            let customView: (() => React.ReactElement) | undefined;
-
-            if (isLinkMessage && linkMessageItemView) {
-              customView = () => linkMessageItemView(message, searchState.searchText);
-            } else if (messageType === 'text' && textMessageItemView) {
-              customView = () => textMessageItemView(message, searchState.searchText);
-            } else if (messageType === 'image' && imageMessageItemView) {
-              customView = () => imageMessageItemView(message, searchState.searchText);
-            } else if (messageType === 'video' && videoMessageItemView) {
-              customView = () => videoMessageItemView(message, searchState.searchText);
-            } else if (messageType === 'audio' && audioMessageItemView) {
-              customView = () => audioMessageItemView(message, searchState.searchText);
-            } else if (messageType === 'file' && documentMessageItemView) {
-              customView = () => documentMessageItemView(message, searchState.searchText);
-            }
-
-            // Use custom view if available
-            if (customView) {
-              return (
-                <View>
-                  {dateHeader}
-                  <TouchableOpacity
-                    onPress={() => onMessageClicked?.(message, searchState.searchText)}
-                  >
-                    {customView()}
-                  </TouchableOpacity>
-                </View>
-              );
-            }
-
-            // Default message item rendering
-            return (
-              <View>
-                {dateHeader}
-                <TouchableOpacity
-                  style={mergedStyles.messageItemStyle?.containerStyle}
-                  onPress={() => onMessageClicked?.(message, searchState.searchText)}
-                >
-                  {renderMessageLeadingView(message)}
-                  <View style={[
-                    mergedStyles.messageItemStyle?.contentStyle,
-                    (message.getType() === 'image' || message.getType() === 'video') && mergedStyles.messageItemStyle?.textContainerStyle
-                  ]}>
-                    <Text style={mergedStyles.messageItemStyle?.titleStyle} numberOfLines={1}>
-                      {getMessageChatTitle(message)}
-                    </Text>
-                    {renderMessageSubtitle(message)}
-                  </View>
-                  <MemoizedTrailingView message={message} />
-                </TouchableOpacity>
-              </View>
-            );
-          }}
-        />
-      </View>
-    );
-  };
 
   const renderResults = () => {
     const conversationsRendered = shouldRenderConversations();

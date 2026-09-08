@@ -2,6 +2,7 @@ import {
   CometChatCompactMessageComposer,
   CometChatCompactMessageComposerInterface,
   SingleLineMessageComposerStyleInterface,
+  ComposerInputHandle,
 } from './CometChatCompactMessageComposer';
 import {
   SingleLineMessageComposerConfiguration,
@@ -34,6 +35,7 @@ export {
   SingleLineMessageComposerConfigurationInterface,
   CometChatCompactMessageComposerInterface,
   SingleLineMessageComposerStyleInterface,
+  ComposerInputHandle,
   // Default values exports
   SingleLineMessageComposerDefaults,
   SingleLineMessageComposerStyleDefaults,

@@ -5,6 +5,7 @@ import { CometChatBottomSheet } from '../../shared/views';
 import { CometChatMessageInformation } from '../../CometChatMessageInformation/CometChatMessageInformation';
 import { CometChatQuickReactions } from '../../shared/views/CometChatQuickReactions';
 import { CometChatActionSheet } from '../../shared';
+import { MessageQuickActions, partitionQuickActions } from './MessageQuickActions';
 import { CometChatTheme } from '../../theme/type';
 import { CometChatMessageTemplate } from '../../shared/modals/CometChatMessageTemplate';
 import { getModerationStatus } from '../../shared/utils/MessageUtils';
@@ -65,6 +66,8 @@ export const MessageOptionsSheet: React.FC<MessageOptionsSheetProps> = ({
   setMessageInfo,
   setShowEmojiKeyboard,
 }) => {
+  const quickActions = partitionQuickActions(showMessageOptions);
+
   return (
     <CometChatBottomSheet
       ref={bottomSheetRef}
@@ -128,9 +131,19 @@ export const MessageOptionsSheet: React.FC<MessageOptionsSheetProps> = ({
             />
           )}
 
+          {/* One split, two halves: promoted actions are REMOVED from the list, so nothing
+              appears twice. With Pin and Save both unavailable the row is empty and every
+              option — Reply included — stays in the list, leaving the sheet exactly as it was
+              before this feature existed. */}
+          <MessageQuickActions
+            actions={quickActions.tiles}
+            message={selectedMessage}
+            theme={mergedTheme}
+          />
+
           <View style={{ maxHeight: ACTION_SHEET_MAX_HEIGHT }}>
             <CometChatActionSheet
-              actions={showMessageOptions}
+              actions={quickActions.list}
               style={mergedTheme.messageListStyles.messageOptionsStyles}
             />
           </View>

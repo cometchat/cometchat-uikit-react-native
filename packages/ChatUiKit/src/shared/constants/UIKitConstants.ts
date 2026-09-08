@@ -100,6 +100,10 @@ export const GroupMemberOptionConstants = {
 
 export const ConversationOptionConstants = {
   delete: "delete",
+  // Pin Conversation — pins the whole chat to the top of the list. Two ids rather
+  // than one toggle so an integrator can hide one direction independently.
+  pin: "pin",
+  unpin: "unpin",
   edit: "edit",
   reply: "reply",
 };
@@ -231,6 +235,8 @@ export const MessageOptionConstants = {
   deleteMessage: "deleteMessage",
   replyMessage: "replyMessage",
   replyInThread: "replyInThread",
+  /** One id for both titles — the sheet reads Follow/Unfollow off the current state. */
+  threadSubscription: "threadSubscription",
   translateMessage: "translateMessage",
   reactToMessage: "reactToMessage",
   messageInformation: "messageInfo",
@@ -243,6 +249,13 @@ export const MessageOptionConstants = {
   markAsUnread: "markAsUnread",
   // §8.5 — multi-attachment download all
   downloadAll: "downloadAll",
+  // Pin & Save. Four ids rather than two toggles: the action sheet shows one of
+  // each pair at a time, and a consumer hiding "unpin" without hiding "pin" is a
+  // real configuration (read-only pinned list, pin once and leave it).
+  pinMessage: "pinMessage",
+  unpinMessage: "unpinMessage",
+  saveMessage: "saveMessage",
+  unsaveMessage: "unsaveMessage",
 };
 
 export const CometChatMessageTypes = Object.freeze({

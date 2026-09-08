@@ -169,6 +169,7 @@ const CometChatBottomSheet = forwardRef(
       >
         {/* Animated overlay that fades in from transparent to a semi-transparent black */}
         <Animated.View
+          testID='BottomSheet.overlay'
           style={{
             flex: 1,
             backgroundColor: overlayAnim.interpolate({

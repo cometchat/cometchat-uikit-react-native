@@ -154,6 +154,7 @@ export const CometChatConfirmDialog = (props: CometChatConfirmDialogInterface) =
           )}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
+              testID='ConfirmDialog.cancel'
               style={[theme.confirmDialogStyles.cancelButtonStyle, cancelButtonStyle]}
               onPress={(e) => {
                 e.stopPropagation();
@@ -165,6 +166,7 @@ export const CometChatConfirmDialog = (props: CometChatConfirmDialogInterface) =
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              testID='ConfirmDialog.confirm'
               style={[theme.confirmDialogStyles.confirmButtonStyle, confirmButtonStyle]}
               onPress={(e) => {
                 e.stopPropagation();

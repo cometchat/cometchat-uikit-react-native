@@ -68,6 +68,10 @@ export const CometChatSuggestionList = (props: CometChatSuggestionListInterface)
     return (
       <CometChatListItem
         key={index}
+        // Derived from the suggestion's own id so a test can pick ONE row out of a list that
+        // is virtualized and reorders as you type. A plain shared id would force atIndex(),
+        // which picks an unpredictable row.
+        testID={`SuggestionList.item-${item.id}`}
         id={item.id}
         title={isAllAlias ? undefined : item.name}
         TitleView={TitleView}

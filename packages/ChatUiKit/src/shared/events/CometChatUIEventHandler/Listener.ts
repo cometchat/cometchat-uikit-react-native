@@ -39,6 +39,15 @@ type MessageUIEvents = {
   onMessageModerated?: Function;
   onAIAssistantMessageReceived?: Function;
   onMessageReply?: Function;
+  onMessagePinned?: Function;
+  onMessageUnpinned?: Function;
+  onMessageSaved?: Function;
+  onMessageUnsaved?: Function;
+  ccMessagePinned?: Function;
+  ccMessageUnpinned?: Function;
+  ccMessageSaved?: Function;
+  ccMessageUnsaved?: Function;
+  ccThreadSubscriptionChanged?: Function;
 };
 export class MessageUIEventListener {
   ccMessageSent?: Function = undefined;
@@ -70,7 +79,17 @@ export class MessageUIEventListener {
   onMessageModerated?: Function = undefined;
   onAIAssistantMessageReceived?: Function = undefined;
   onMessageReply?: Function = undefined;
+  onMessagePinned?: Function = undefined;
+  onMessageUnpinned?: Function = undefined;
+  onMessageSaved?: Function = undefined;
+  onMessageUnsaved?: Function = undefined;
+  ccMessagePinned?: Function = undefined;
+  ccMessageUnpinned?: Function = undefined;
+  ccMessageSaved?: Function = undefined;
+  ccMessageUnsaved?: Function = undefined;
+  ccThreadSubscriptionChanged?: Function = undefined;
   constructor({
+    ccThreadSubscriptionChanged,
     ccMessageSent,
     ccMessageEdited,
     ccMessageDeleted,
@@ -100,6 +119,14 @@ export class MessageUIEventListener {
     onMessageModerated,
     onAIAssistantMessageReceived,
     onMessageReply,
+    onMessagePinned,
+    onMessageUnpinned,
+    onMessageSaved,
+    onMessageUnsaved,
+    ccMessagePinned,
+    ccMessageUnpinned,
+    ccMessageSaved,
+    ccMessageUnsaved,
   }: MessageUIEvents) {
     if (!isFalsy(ccMessageError)) this.ccMessageError = ccMessageError;
     if (!isFalsy(ccMessageDelivered)) this.ccMessageDelivered = ccMessageDelivered;
@@ -137,6 +164,16 @@ export class MessageUIEventListener {
     if (!isFalsy(onAIAssistantMessageReceived)) this.onAIAssistantMessageReceived = onAIAssistantMessageReceived;
     if (!isFalsy(onMessageReply)) this.onMessageReply = onMessageReply;
     if (!isFalsy(onMessageModerated)) this.onMessageModerated = onMessageModerated;
+    if (!isFalsy(onMessagePinned)) this.onMessagePinned = onMessagePinned;
+    if (!isFalsy(onMessageUnpinned)) this.onMessageUnpinned = onMessageUnpinned;
+    if (!isFalsy(onMessageSaved)) this.onMessageSaved = onMessageSaved;
+    if (!isFalsy(onMessageUnsaved)) this.onMessageUnsaved = onMessageUnsaved;
+    if (!isFalsy(ccMessagePinned)) this.ccMessagePinned = ccMessagePinned;
+    if (!isFalsy(ccMessageUnpinned)) this.ccMessageUnpinned = ccMessageUnpinned;
+    if (!isFalsy(ccMessageSaved)) this.ccMessageSaved = ccMessageSaved;
+    if (!isFalsy(ccMessageUnsaved)) this.ccMessageUnsaved = ccMessageUnsaved;
+    if (!isFalsy(ccThreadSubscriptionChanged))
+      this.ccThreadSubscriptionChanged = ccThreadSubscriptionChanged;
   }
 }
 

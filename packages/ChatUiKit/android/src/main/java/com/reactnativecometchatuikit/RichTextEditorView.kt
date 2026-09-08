@@ -107,6 +107,38 @@ class MentionSpan(val uid: String, val displayName: String) : CharacterStyle() {
 }
 
 /**
+ * Foreground colour applied by a consumer formatter via applyInlineStyle().
+ *
+ * Deliberately NOT a `ForegroundColorSpan` subclass. Two reasons:
+ *  1. 17 sites in this file sweep `ForegroundColorSpan` indiscriminately (they own the
+ *     inline-code purple, link blue, code-block grey, transparent quote prefix and mention
+ *     purple). A subclass would be silently clobbered by every one of them; a sibling type
+ *     is invisible to all of them by construction.
+ *  2. `ForegroundColorSpan` is a `ParcelableSpan`; a subclass reports the *parent's* span
+ *     type id, so clipboard / saved-instance-state round-trips would downgrade this marker
+ *     into a plain colour span, indistinguishable from the editor's own colour plumbing.
+ *
+ * It actually paints, so it implements `UpdateAppearance` to make repaints correct.
+ */
+class ExternalForegroundColorSpan(val color: Int) : CharacterStyle(), UpdateAppearance {
+    override fun updateDrawState(tp: android.text.TextPaint?) {
+        tp?.color = color
+    }
+}
+
+/**
+ * Background colour applied by a consumer formatter. A sibling type for the same reasons as
+ * [ExternalForegroundColorSpan] — 12 sites sweep `BackgroundColorSpan` indiscriminately (mention
+ * background, highlight, inline code, code block). Setting `TextPaint.bgColor` is exactly how
+ * `BackgroundColorSpan` itself renders, so this paints identically without being caught by them.
+ */
+class ExternalBackgroundColorSpan(val color: Int) : CharacterStyle(), UpdateAppearance {
+    override fun updateDrawState(tp: android.text.TextPaint?) {
+        tp?.bgColor = color
+    }
+}
+
+/**
  * Custom URLSpan that suppresses the default underline drawn by ClickableSpan.
  * Links are visually distinguished by ForegroundColorSpan (blue) only, matching iOS parity.
  */
@@ -166,6 +198,10 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
     /// Produces a stable map key for an IntRange.
     private fun rangeKey(range: IntRange): String = "${range.first}_${range.last}"
 
+    /// Formats a colour int as the lowercase `#rrggbb` string the JS wire format expects.
+    /// Alpha is intentionally dropped — the wire contract is `#rrggbb` only.
+    private fun hexOf(color: Int): String = String.format("#%06x", color and 0xFFFFFF)
+
     // Theme-derived colors for inline code container drawing (set via React props)
     var inlineCodeBackgroundColor: Int? = null
     var inlineCodeBorderColor: Int? = null
@@ -188,6 +224,11 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
     private val pendingStyles = mutableSetOf<String>()
     private val explicitlyOffStyles = mutableSetOf<String>()  // Styles user explicitly turned off at cursor
     private var pendingStylesInsertPos = -1
+    // Colour values for the "externalColor"/"externalBackgroundColor" pending styles. Kept beside
+    // pendingStyles (rather than as independent fields) so they inherit its existing
+    // caret-moved/cleared invalidation instead of needing a parallel copy of it.
+    private var pendingExternalColor: Int? = null
+    private var pendingExternalBackgroundColor: Int? = null
 
     // Store selection for toolbar actions (selection might be lost when clicking toolbar)
     private var savedSelectionStart: Int = 0
@@ -434,6 +475,19 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                                         "italic" -> s.setSpan(StyleSpan(Typeface.ITALIC), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
                                         "underline" -> s.setSpan(UnderlineSpan(), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
                                         "strikethrough" -> s.setSpan(StrikethroughSpan(), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
+                                        // These spans are EXCLUSIVE_INCLUSIVE so a colour keeps
+                                        // applying as the user types. That also means an OLDER
+                                        // colour span grows over text typed after a new colour was
+                                        // armed, leaving two colours on the same characters. Cut
+                                        // the previous colour back to where this one starts.
+                                        "externalColor" -> pendingExternalColor?.let {
+                                            clearInlineStyleSpans(s, "color", spanStart, spanEnd, keepColor = it)
+                                            s.setSpan(ExternalForegroundColorSpan(it), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
+                                        }
+                                        "externalBackgroundColor" -> pendingExternalBackgroundColor?.let {
+                                            clearInlineStyleSpans(s, "backgroundColor", spanStart, spanEnd, keepColor = it)
+                                            s.setSpan(ExternalBackgroundColorSpan(it), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
+                                        }
                                         "code" -> {
                                             val fontSize = inlineCodeFontSize ?: 12f
                                             s.setSpan(AbsoluteSizeSpan(fontSize.toInt(), true), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_INCLUSIVE)
@@ -558,7 +612,14 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                     if (addedCount > 1 && removedCount == 0 && s != null) {
                         val insertedStart = changeStart
                         val insertedEnd = (changeStart + addedCount).coerceAtMost(s.length)
-                        val insertedText = s.subSequence(insertedStart, insertedEnd).toString()
+                        // A copy from CometChat puts the PLAIN text on the clipboard (so `<color=…>`
+                        // can never leak into another app) and the wire form in a private clip
+                        // extra. Nothing read that extra back, so a copy/paste inside CometChat
+                        // always arrived stripped of its colour — `markdownToSpannable` below
+                        // handles `<color=…>` fine, it was simply never given it (ENG-38253).
+                        val insertedText = richTextForPaste(
+                            s.subSequence(insertedStart, insertedEnd).toString()
+                        )
                         if (looksLikeMarkdown(insertedText)) {
                             // Check that the inserted text doesn't already have styled spans
                             // (would mean it came through onTextContextMenuItem or blocksToSpannable)
@@ -680,6 +741,13 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                             }
                         }
                         s.getSpans(cursorPos, cursorPos, StrikethroughSpan::class.java).forEach { span ->
+                            if (s.getSpanStart(span) == s.getSpanEnd(span)) {
+                                s.removeSpan(span)
+                            }
+                        }
+                        // Consumer colours are applied SPAN_EXCLUSIVE_INCLUSIVE while typing, so a
+                        // zero-length ghost would resurrect the colour after the text is deleted.
+                        s.getSpans(cursorPos, cursorPos, ExternalForegroundColorSpan::class.java).forEach { span ->
                             if (s.getSpanStart(span) == s.getSpanEnd(span)) {
                                 s.removeSpan(span)
                             }
@@ -2303,6 +2371,29 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             val clip = clipboard?.primaryClip
 
+            // 0. Our own rich-text wire format, carried in the clip's extras. Checked before
+            //    HTML because a CometChat copy sets plain text only — the colour lives here,
+            //    and the plain-text type is deliberately clean so other apps never see markup.
+            val wireText = clip?.description?.extras
+                ?.getString(CometChatClipboardModule.EXTRA_RICH_TEXT)
+            if (!wireText.isNullOrEmpty()) {
+                val s = text as? Editable
+                if (s != null) {
+                    val start = selectionStart
+                    val end = selectionEnd
+                    isInternalChange = true
+                    s.replace(
+                        start.coerceAtMost(end),
+                        start.coerceAtLeast(end),
+                        markdownToSpannable(wireText)
+                    )
+                    isInternalChange = false
+                    sendContentChangeWithDelta()
+                    saveToUndoStack()
+                    return true
+                }
+            }
+
             // 1. Check for HTML rich content first (Req 18.2)
             if (clip != null && clip.description.hasMimeType("text/html")) {
                 val htmlText = clip.getItemAt(0)?.htmlText
@@ -2595,6 +2686,8 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
     /** Returns true if the string contains markdown syntax that should be parsed into rich text. */
     private fun looksLikeMarkdown(str: String): Boolean {
+        // Rich-text wire format — only ever reaches here from our own clipboard extra.
+        if (str.contains("<color=", ignoreCase = true)) return true
         if (str.contains("[") && str.contains("](")) return true
         if (str.contains("**")) return true
         if (str.contains("~~")) return true
@@ -2603,6 +2696,28 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         // Italic: _text_ — avoid false positives on plain underscores
         if (Regex("(?<![_\\w])_(?!_)(.+?)(?<!_)_(?![_\\w])").containsMatchIn(str)) return true
         return false
+    }
+
+    /**
+     * The rich-text WIRE form of [inserted] when this paste came from a CometChat copy, else
+     * [inserted] unchanged.
+     *
+     * The match is on the clipboard's own plain text: only a paste of exactly what we copied may be
+     * swapped for the wire form. A partial paste, or a clipboard that has moved on since, falls
+     * through untouched rather than pasting the wrong message's markup.
+     */
+    private fun richTextForPaste(inserted: String): String {
+        return try {
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                ?: return inserted
+            val clip = cm.primaryClip ?: return inserted
+            val wire = clip.description?.extras
+                ?.getString(CometChatClipboardModule.EXTRA_RICH_TEXT) ?: return inserted
+            val plain = clip.getItemAt(0)?.text?.toString() ?: return inserted
+            if (inserted == plain) wire else inserted
+        } catch (e: Exception) {
+            inserted
+        }
     }
 
     /** Normalizes a URL by prepending https:// if no recognized scheme is present. */
@@ -2629,6 +2744,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
         // Active style state
         var isBold = false
+        var activePasteColor: Int? = null
         var isItalic = false
         var isUnderline = false
         var isStrikethrough = false
@@ -2658,10 +2774,41 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 val codeColor = if (isDarkMode()) Color.parseColor("#E0E0E0") else Color.parseColor("#333333")
                 result.setSpan(ForegroundColorSpan(codeColor), segStart, segEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
+            // A pasted colour behaves like any other consumer-applied colour once inserted — and it
+            // wins over inline code's own foreground, so this goes in AFTER the code span. Two
+            // foreground spans over one range are applied in the order they were added, so while the
+            // colour was set first the code colour painted straight over it and a copied coloured
+            // message pasted back uniformly grey (ENG-38253). iOS had the same defect in mirror image.
+            activePasteColor?.let {
+                result.setSpan(ExternalForegroundColorSpan(it), segStart, segEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
             currentText.clear()
         }
 
         while (i < len) {
+            // <color=#rrggbb> … </color> — same grammar the formatter renders.
+            if (chars[i] == '<') {
+                val rest = markdown.substring(i)
+                if (rest.startsWith("</color>", ignoreCase = true)) {
+                    flush()
+                    activePasteColor = null
+                    i += 8
+                    continue
+                }
+                if (rest.startsWith("<color=", ignoreCase = true)) {
+                    val close = rest.indexOf('>')
+                    if (close > 0) {
+                        val hex = rest.substring(7, close).trim()
+                        val parsed = try { Color.parseColor(hex) } catch (e: Exception) { null }
+                        if (parsed != null) {
+                            flush()
+                            activePasteColor = parsed
+                            i += close + 1
+                            continue
+                        }
+                    }
+                }
+            }
             // Markdown link: [text](url)
             if (chars[i] == '[') {
                 val linkResult = parseLinkAt(chars, i)
@@ -3094,6 +3241,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             map.putString("text", (text?.toString() ?: "").replace("\u200B", ""))
             // Serialize blocks to JSON string (codegen doesn't support nested arrays)
             map.putString("blocksJson", getBlocksJsonString())
+            map.putString("mentionRangesJson", currentMentionRangesJson())
 
             // Include delta information if available
             if (delta != null) {
@@ -3303,6 +3451,15 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                         spannable.setSpan(ForegroundColorSpan(codeColor), absoluteStart, absoluteEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
                     "highlight" -> spannable.setSpan(BackgroundColorSpan(Color.parseColor("#80FFFF00")), absoluteStart, absoluteEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    "textColor" -> {
+                        // Edit round-trip: restore a consumer colour from the wire format so the
+                        // composer shows the colour rather than raw <color=…> text.
+                        val hex = styleInfo["color"] as? String
+                        val parsed = try { hex?.let { Color.parseColor(it) } } catch (e: Exception) { null }
+                        if (parsed != null) {
+                            spannable.setSpan(ExternalForegroundColorSpan(parsed), absoluteStart, absoluteEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                    }
                     "link" -> {
                         val url = styleInfo["url"] as? String ?: ""
                         if (url.isNotEmpty()) {
@@ -3352,6 +3509,52 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 val codeBlockSpans = spannable.getSpans(checkPos, checkPos + 1, CodeBlockBorderSpan::class.java)
                 if (codeBlockSpans.isNotEmpty()) {
                     pendingStyles.add("codeBlock")
+                    pendingStylesInsertPos = endPos
+                }
+
+                // Arm the INLINE styles the caret lands in, so typing CONTINUES the run the message
+                // ended with. iOS gets this for free — UITextView derives its typingAttributes from
+                // the character before the insertion point — but here every span above is
+                // SPAN_EXCLUSIVE_EXCLUSIVE, so text appended at the end extends none of them and
+                // only `codeBlock` was ever armed. Opening a message that ended in inline code and
+                // typing therefore dropped straight out of the code (and its colour) mid-word, while
+                // the same edit on iOS carried both (ENG-38253).
+                //
+                // `pendingStyles` is the established mechanism: the TextWatcher applies each armed
+                // style over the inserted range as SPAN_EXCLUSIVE_INCLUSIVE, which is exactly the
+                // "keep applying as the user types" behaviour wanted here.
+                var armedInline = false
+                if (spannable.getSpans(checkPos, checkPos + 1, InlineCodeSpan::class.java).isNotEmpty()) {
+                    pendingStyles.add("code")
+                    armedInline = true
+                }
+                spannable.getSpans(checkPos, checkPos + 1, StyleSpan::class.java).forEach { span ->
+                    // BOLD_ITALIC is a bitmask, not a third case — test the bits, don't match values.
+                    if (span.style and Typeface.BOLD != 0) {
+                        pendingStyles.add("bold")
+                        armedInline = true
+                    }
+                    if (span.style and Typeface.ITALIC != 0) {
+                        pendingStyles.add("italic")
+                        armedInline = true
+                    }
+                }
+                if (spannable.getSpans(checkPos, checkPos + 1, UnderlineSpan::class.java).isNotEmpty()) {
+                    pendingStyles.add("underline")
+                    armedInline = true
+                }
+                if (spannable.getSpans(checkPos, checkPos + 1, StrikethroughSpan::class.java).isNotEmpty()) {
+                    pendingStyles.add("strikethrough")
+                    armedInline = true
+                }
+                spannable.getSpans(checkPos, checkPos + 1, ExternalForegroundColorSpan::class.java)
+                    .firstOrNull()?.let { span ->
+                        // The consumer colour rides its own pending slot, not `pendingStyles` alone.
+                        pendingExternalColor = span.color
+                        pendingStyles.add("externalColor")
+                        armedInline = true
+                    }
+                if (armedInline) {
                     pendingStylesInsertPos = endPos
                 }
             }
@@ -3429,6 +3632,24 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             val start = (spannable.getSpanStart(span) - lineStart).coerceAtLeast(0)
             val end = (spannable.getSpanEnd(span) - lineStart).coerceAtMost(lineEnd - lineStart)
             styles.add(mapOf("style" to "code", "start" to start, "end" to end))
+        }
+
+        // Consumer inline colour. Offsets are already relative to the block prefix
+        // (`• `/`▎ `/`1. ` and ZWS are stripped by the callers before extraction), so a colour
+        // range can never cover a list/quote glyph.
+        spannable.getSpans(lineStart, lineEnd, ExternalForegroundColorSpan::class.java).forEach { span ->
+            val start = (spannable.getSpanStart(span) - lineStart).coerceAtLeast(0)
+            val end = (spannable.getSpanEnd(span) - lineStart).coerceAtMost(lineEnd - lineStart)
+            if (end > start) {
+                styles.add(
+                    mapOf(
+                        "style" to "textColor",
+                        "start" to start,
+                        "end" to end,
+                        "color" to hexOf(span.color)
+                    )
+                )
+            }
         }
 
         spannable.getSpans(lineStart, lineEnd, BackgroundColorSpan::class.java).filter {
@@ -3521,6 +3742,8 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 styleMap.putInt("end", style["end"] as Int)
                 val url = style["url"] as? String
                 if (url != null) styleMap.putString("url", url)
+                val color = style["color"] as? String
+                if (color != null) styleMap.putString("color", color)
                 stylesArray.pushMap(styleMap)
             }
             block.putArray("styles", stylesArray)
@@ -3585,6 +3808,10 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 styleObj.put("end", style["end"])
                 val url = style["url"] as? String
                 if (url != null) styleObj.put("url", url)
+                // textColor is value-carrying: without the hex the JS side sees a colour range it
+                // cannot render, and drops it — colour shows in the composer but not in the bubble.
+                val color = style["color"] as? String
+                if (color != null) styleObj.put("color", color)
                 stylesJson.put(styleObj)
             }
             block.put("styles", stylesJson)
@@ -3765,6 +3992,211 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         invalidate()
         sendContentChange()
         updateToolbarButtonStates()
+    }
+
+    /**
+     * Selection to style: the live selection, falling back to the saved one because tapping a
+     * toolbar button can clear it. Returns null when there is nothing to style.
+     */
+    private fun styleTargetRange(): Pair<Int, Int>? {
+        var start = selectionStart
+        var end = selectionEnd
+        if (start >= end && savedSelectionStart < savedSelectionEnd) {
+            start = savedSelectionStart
+            end = savedSelectionEnd
+        }
+        val textLength = text?.length ?: 0
+        start = start.coerceIn(0, textLength)
+        end = end.coerceIn(start, textLength)
+        return if (start < end) Pair(start, end) else null
+    }
+
+    /**
+     * Drops consumer-applied [key] spans inside [start]..[end], preserving the parts that fall
+     * outside it. getSpans() also returns spans that merely OVERLAP the range, so removing them
+     * outright would clear colour beyond it; the outside parts are re-applied instead. This is
+     * what iOS gets implicitly, since an attributed-string attribute is per-character.
+     */
+    private fun clearInlineStyleSpans(
+        spannable: Editable,
+        key: String,
+        start: Int,
+        end: Int,
+        keepColor: Int? = null,
+    ) {
+        val spans: Array<out Any> = when (key) {
+            "color" -> spannable.getSpans(start, end, ExternalForegroundColorSpan::class.java)
+            "backgroundColor" -> spannable.getSpans(start, end, ExternalBackgroundColorSpan::class.java)
+            else -> return
+        }
+        spans.forEach { span ->
+            val spanStart = spannable.getSpanStart(span)
+            val spanEnd = spannable.getSpanEnd(span)
+            val color = when (span) {
+                is ExternalForegroundColorSpan -> span.color
+                is ExternalBackgroundColorSpan -> span.color
+                else -> return@forEach
+            }
+            // Leave a span that already carries the colour being applied. Trimming and re-setting
+            // it per keystroke would shatter one run into a chain of one-character spans, each
+            // emitting its own <color=…> tag.
+            if (keepColor != null && color == keepColor) return@forEach
+            spannable.removeSpan(span)
+            if (spanStart < start) {
+                spannable.setSpan(
+                    if (key == "color") ExternalForegroundColorSpan(color) else ExternalBackgroundColorSpan(color),
+                    spanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            if (spanEnd > end) {
+                spannable.setSpan(
+                    if (key == "color") ExternalForegroundColorSpan(color) else ExternalBackgroundColorSpan(color),
+                    end, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+        }
+    }
+
+    /**
+     * Applies an arbitrary inline style to the current selection, skipping mentions so a
+     * consumer's formatter cannot recolour a mention (§8.2 S4). [color] is an ARGB int from
+     * RN's processColor(). Styles of *different* kinds compose (S3), but a second colour
+     * replaces the first — a character has exactly one foreground colour.
+     *
+     * ponytail: colours are the only inline style a trailing-button formatter needs today —
+     * widen the `when` if fonts/spacing ever follow.
+     */
+    fun applyInlineStyle(key: String, color: Int) {
+        if (key != "color" && key != "backgroundColor") return
+
+        // No selection: style what gets typed next, matching the built-in bold/italic/code
+        // type-ahead rather than silently doing nothing.
+        val target = styleTargetRange()
+        if (target == null) {
+            if (key == "color") {
+                pendingExternalColor = color
+                pendingStyles.add("externalColor")
+            } else {
+                pendingExternalBackgroundColor = color
+                pendingStyles.add("externalBackgroundColor")
+            }
+            pendingStylesInsertPos = selectionStart
+            return
+        }
+
+        val (start, end) = target
+        val spannable = text as? Editable ?: return
+
+        isInternalChange = true
+        nonMentionRanges(start, end, spannable).forEach { range ->
+            val rangeStart = range.first
+            val rangeEnd = range.last + 1
+            // Recolouring must REPLACE, not stack. Leaving the old span underneath makes
+            // extraction report two overlapping textColor ranges for the same characters, and the
+            // JS side keeps whichever it sees first — so the earlier colour wins in the sent
+            // message even though the newer one is what the composer paints.
+            clearInlineStyleSpans(spannable, key, rangeStart, rangeEnd)
+            val span: Any =
+                if (key == "color") ExternalForegroundColorSpan(color)
+                else ExternalBackgroundColorSpan(color)
+            spannable.setSpan(span, rangeStart, rangeEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        setSelection(start, end)
+        isInternalChange = false
+        invalidate()
+        sendContentChange()
+    }
+
+    /**
+     * Removes a previously applied inline style from the current selection. Only consumer-applied
+     * spans are removed — mention/link/code colouring is left intact.
+     */
+    fun removeInlineStyle(key: String) {
+        // No selection: cancel the pending type-ahead style instead of no-oping.
+        val target = styleTargetRange()
+        if (target == null) {
+            if (key == "color") {
+                pendingExternalColor = null
+                pendingStyles.remove("externalColor")
+            } else {
+                pendingExternalBackgroundColor = null
+                pendingStyles.remove("externalBackgroundColor")
+            }
+            // Clearing the pending colour is not enough. A colour span applied by type-ahead is
+            // SPAN_EXCLUSIVE_INCLUSIVE so it grows with typing — a span ending exactly at the cursor
+            // would keep swallowing everything typed after the user asked for NO colour. Pin it shut
+            // by re-applying it as EXCLUSIVE_EXCLUSIVE.
+            (text as? Editable)?.let { s ->
+                val cursor = selectionStart.coerceIn(0, s.length)
+                val spans: Array<out Any> =
+                    if (key == "color") s.getSpans(cursor, cursor, ExternalForegroundColorSpan::class.java)
+                    else s.getSpans(cursor, cursor, ExternalBackgroundColorSpan::class.java)
+                spans.forEach { span ->
+                    val spanStart = s.getSpanStart(span)
+                    val spanEnd = s.getSpanEnd(span)
+                    if (spanEnd != cursor || spanStart >= spanEnd) return@forEach
+                    val colour = when (span) {
+                        is ExternalForegroundColorSpan -> span.color
+                        is ExternalBackgroundColorSpan -> span.color
+                        else -> return@forEach
+                    }
+                    isInternalChange = true
+                    s.removeSpan(span)
+                    s.setSpan(
+                        if (key == "color") ExternalForegroundColorSpan(colour)
+                        else ExternalBackgroundColorSpan(colour),
+                        spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    isInternalChange = false
+                }
+            }
+            return
+        }
+
+        val (start, end) = target
+        val spannable = text as? Editable ?: return
+
+        val spans: Array<out Any> = when (key) {
+            "color" -> spannable.getSpans(start, end, ExternalForegroundColorSpan::class.java)
+            "backgroundColor" -> spannable.getSpans(start, end, ExternalBackgroundColorSpan::class.java)
+            else -> return
+        }
+        if (spans.isEmpty()) return
+
+        isInternalChange = true
+        clearInlineStyleSpans(spannable, key, start, end)
+        setSelection(start, end)
+        isInternalChange = false
+        invalidate()
+        sendContentChange()
+    }
+
+    /**
+     * Current mention ranges in "clean" (ZWS-stripped) coordinates — the same space
+     * setMentionRanges() accepts and JS works in. Emitted on every content change so a consumer
+     * formatter can read back where mentions ended up after edits (§8.2 S4).
+     */
+    private fun currentMentionRangesJson(): String {
+        val spannable = text as? Spanned ?: return "[]"
+        val spans = spannable.getSpans(0, spannable.length, MentionSpan::class.java)
+        if (spans.isEmpty()) return "[]"
+
+        val raw = spannable.toString()
+        val rawToClean = IntArray(raw.length + 1)
+        var clean = 0
+        for (i in raw.indices) {
+            rawToClean[i] = clean
+            if (raw[i] != '\u200B') clean++
+        }
+        rawToClean[raw.length] = clean
+
+        return spans
+            .map { Pair(spannable.getSpanStart(it), spannable.getSpanEnd(it)) }
+            .filter { it.first >= 0 && it.second in (it.first + 1)..raw.length }
+            .sortedBy { it.first }
+            .joinToString(",", "[", "]") {
+                """{"start":${rawToClean[it.first]},"end":${rawToClean[it.second]}}"""
+            }
     }
 
     fun onHighlightClick() {
@@ -4172,6 +4604,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
         // Snapshot mention spans before text modification (Req 5.1, 5.2, 5.7)
         val mentionSnapshots = snapshotMentionSpans(lineStart, lineEnd)
+        val colorSnapshots = snapshotInlineColorSpans(lineStart, lineEnd)
 
         isInternalChange = true
         val editable = text ?: return
@@ -4182,6 +4615,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             val offsetDelta = newText.length - (lineEnd - lineStart)
             restoreMentionSpans(editable, mentionSnapshots, offsetDelta)
         }
+        restoreInlineColorSpans(editable, colorSnapshots, lineStart, selectedText, newText)
 
         setSelection(lineStart + newText.length)
         renumberNumberedLists()
@@ -4273,6 +4707,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
         // Snapshot mention spans before text modification (Req 5.1, 5.2, 5.7)
         val mentionSnapshots = snapshotMentionSpans(lineStart, lineEnd)
+        val colorSnapshots = snapshotInlineColorSpans(lineStart, lineEnd)
 
         isInternalChange = true
         val editable = text ?: return
@@ -4283,6 +4718,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             val offsetDelta = newText.length - (lineEnd - lineStart)
             restoreMentionSpans(editable, mentionSnapshots, offsetDelta)
         }
+        restoreInlineColorSpans(editable, colorSnapshots, lineStart, selectedText, newText)
 
         setSelection(lineStart + newText.length)
         renumberNumberedLists()
@@ -4631,6 +5067,79 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         }
     }
 
+    /** A consumer colour span captured before a block-prefix rewrite. */
+    private class ColorSnapshot(val start: Int, val end: Int, val color: Int, val isBackground: Boolean)
+
+    private fun snapshotInlineColorSpans(start: Int, end: Int): List<ColorSnapshot> {
+        val s = text as? Spanned ?: return emptyList()
+        val out = ArrayList<ColorSnapshot>()
+        s.getSpans(start, end, ExternalForegroundColorSpan::class.java).forEach {
+            out.add(ColorSnapshot(s.getSpanStart(it), s.getSpanEnd(it), it.color, false))
+        }
+        s.getSpans(start, end, ExternalBackgroundColorSpan::class.java).forEach {
+            out.add(ColorSnapshot(s.getSpanStart(it), s.getSpanEnd(it), it.color, true))
+        }
+        return out
+    }
+
+    /**
+     * Re-applies snapshotted consumer colours after a block-prefix rewrite. replace() drops every
+     * span in the replaced range, so without this the user's colour disappears the moment the line
+     * becomes a list item / quote / checklist.
+     *
+     * Positions cannot shift by one uniform delta the way restoreMentionSpans() assumes: each line's
+     * prefix can grow or shrink by a different amount (`• ` → `1. `, quote kept, empty lines
+     * untouched). The prefix rewrite never touches the line's *content*, so the common suffix of the
+     * old and new line is that content — which gives each line's prefix length on both sides, and
+     * with it an exact content-character mapping.
+     */
+    private fun restoreInlineColorSpans(
+        editable: Editable,
+        snapshots: List<ColorSnapshot>,
+        lineStart: Int,
+        oldRangeText: String,
+        newRangeText: String,
+    ) {
+        if (snapshots.isEmpty()) return
+        val oldLines = oldRangeText.split("\n")
+        val newLines = newRangeText.split("\n")
+
+        // old absolute offset -> new absolute offset, for content characters only
+        val map = HashMap<Int, Int>()
+        var oldPos = lineStart
+        var newPos = lineStart
+        for (i in oldLines.indices) {
+            val oldLine = oldLines[i]
+            val newLine = newLines.getOrElse(i) { oldLine }
+            var contentLen = 0
+            while (contentLen < oldLine.length && contentLen < newLine.length &&
+                oldLine[oldLine.length - 1 - contentLen] == newLine[newLine.length - 1 - contentLen]
+            ) {
+                contentLen++
+            }
+            val oldPrefix = oldLine.length - contentLen
+            val newPrefix = newLine.length - contentLen
+            for (c in 0..contentLen) map[oldPos + oldPrefix + c] = newPos + newPrefix + c
+            oldPos += oldLine.length + 1
+            newPos += newLine.length + 1
+        }
+
+        val oldRangeEnd = lineStart + oldRangeText.length
+        for (snap in snapshots) {
+            // getSpans() also returns spans overhanging the rewritten range; only the part inside
+            // it was destroyed, so clamp and restore just that.
+            val newStart = map[snap.start.coerceIn(lineStart, oldRangeEnd)] ?: continue
+            val newEnd = map[snap.end.coerceIn(lineStart, oldRangeEnd)] ?: continue
+            if (newEnd > newStart && newStart >= 0 && newEnd <= editable.length) {
+                editable.setSpan(
+                    if (snap.isBackground) ExternalBackgroundColorSpan(snap.color)
+                    else ExternalForegroundColorSpan(snap.color),
+                    newStart, newEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+        }
+    }
+
     private fun toggleQuote() {
         val (lineStart, lineEnd) = getLineRange()
         val currentText = text?.toString() ?: return
@@ -4686,6 +5195,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
 
         // Snapshot mention spans before text modification (Req 5.1, 5.3, 5.7)
         val mentionSnapshots = snapshotMentionSpans(lineStart, lineEnd)
+        val colorSnapshots = snapshotInlineColorSpans(lineStart, lineEnd)
 
         isInternalChange = true
         val editable = text ?: return
@@ -4698,15 +5208,18 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             if (mentionSnapshots.isNotEmpty()) {
                 restoreMentionSpans(editable, mentionSnapshots, -quotePrefix.length)
             }
+            restoreInlineColorSpans(editable, colorSnapshots, lineStart, lineText, unquoted)
         } else {
             // Add quote prefix — preserve existing list prefix
-            editable.replace(lineStart, lineEnd, "$quotePrefix$lineText")
+            val quoted = "$quotePrefix$lineText"
+            editable.replace(lineStart, lineEnd, quoted)
             // Make ▎ invisible — bar is custom-drawn in onDraw()
             editable.setSpan(ForegroundColorSpan(Color.TRANSPARENT), lineStart, lineStart + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             // Restore mention spans shifted forward by prefix length
             if (mentionSnapshots.isNotEmpty()) {
                 restoreMentionSpans(editable, mentionSnapshots, quotePrefix.length)
             }
+            restoreInlineColorSpans(editable, colorSnapshots, lineStart, lineText, quoted)
         }
         isInternalChange = false
         applyListIndentation()
@@ -4775,9 +5288,13 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 editable.delete(lineStart, lineStart + 2)
             }
             else -> {
-                // Add checklist
+                // Add checklist. Only this branch needs colour re-applied — delete() above shifts
+                // spans rather than dropping them.
                 val cleanLine = removeExistingPrefix(lineText)
-                editable.replace(lineStart, lineEnd, "☐ $cleanLine")
+                val checked = "☐ $cleanLine"
+                val colorSnapshots = snapshotInlineColorSpans(lineStart, lineEnd)
+                editable.replace(lineStart, lineEnd, checked)
+                restoreInlineColorSpans(editable, colorSnapshots, lineStart, lineText, checked)
             }
         }
         isInternalChange = false
@@ -5279,6 +5796,12 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 pendingStyles.remove("code")
                 explicitlyOffStyles.remove("code")
                 explicitlyOffStyles.remove(key)
+                // Drop an armed consumer colour, or the first character typed into the empty block
+                // comes out coloured instead of the code block default (matches iOS).
+                pendingExternalColor = null
+                pendingExternalBackgroundColor = null
+                pendingStyles.remove("externalColor")
+                pendingStyles.remove("externalBackgroundColor")
                 // Insert ZWS with code block spans for immediate container
                 val zws = "\u200B"
                 val insertPos = selectionStart.coerceIn(0, s.length)
@@ -5394,6 +5917,18 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 .forEach { s.removeSpan(it) }
             s.getSpans(lineStart, lineEnd, ForegroundColorSpan::class.java)
                 .forEach { s.removeSpan(it) }
+            // Consumer colour is a bare CharacterStyle, so the ForegroundColorSpan sweep above does
+            // NOT catch it. Without this the span merely sits under the code block's own colour and
+            // paints again the moment the block is toggled off — iOS drops it for good, and a code
+            // block is destructive to every other inline style here too.
+            s.getSpans(lineStart, lineEnd, ExternalForegroundColorSpan::class.java)
+                .forEach { s.removeSpan(it) }
+            s.getSpans(lineStart, lineEnd, ExternalBackgroundColorSpan::class.java)
+                .forEach { s.removeSpan(it) }
+            pendingExternalColor = null
+            pendingExternalBackgroundColor = null
+            pendingStyles.remove("externalColor")
+            pendingStyles.remove("externalBackgroundColor")
             s.getSpans(lineStart, lineEnd, AbsoluteSizeSpan::class.java)
                 .filter { s.getSpanStart(it) >= lineStart && s.getSpanEnd(it) <= lineEnd }
                 .forEach { s.removeSpan(it) }
@@ -5622,7 +6157,9 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             spannable.getSpans(msStart, msEnd, android.text.style.StyleSpan::class.java)
                 .filter { it.style == android.graphics.Typeface.BOLD }
                 .forEach { spannable.removeSpan(it) }
-            // Remove ForegroundColorSpan and BackgroundColorSpan on this mention range
+            // Remove ForegroundColorSpan and BackgroundColorSpan on this mention range.
+            // Consumer-applied colours are sibling types, not subclasses, so they are invisible
+            // to these sweeps by construction — no filter needed.
             spannable.getSpans(msStart, msEnd, android.text.style.ForegroundColorSpan::class.java)
                 .forEach { spannable.removeSpan(it) }
             spannable.getSpans(msStart, msEnd, android.text.style.BackgroundColorSpan::class.java)

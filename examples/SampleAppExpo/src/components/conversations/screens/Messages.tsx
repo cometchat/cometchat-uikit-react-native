@@ -570,6 +570,10 @@ const Messages: React.FC<Props> = ({ route, navigation }) => {
           group={group}
           showConversationSummaryButton={true}
           onConversationSummaryPress={() => setShowSummaryPanel(prev => !prev)}
+          showPinnedMessagesButton={true}
+          onPinnedMessagesPress={() =>
+            navigation.navigate('PinnedMessages', { user: localUser, group })
+          }
           onBack={() => {
             if (fromMention || fromMessagePrivately) {
               navigation.goBack();

@@ -7,6 +7,7 @@ import { CometChatUIKit } from "../CometChatUiKit";
 import { CometChatTheme } from "../../theme/type";
 import { JSX } from "react";
 import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/LocalizationManager";
+import { stripMarkdown } from "./MarkdownUtils";
  
 const t = getCometChatTranslation();
 
@@ -28,7 +29,13 @@ export function attachmentCountLabel(type: string, count: number): string {
 // (Multi-attachment messages are summarized upstream in getLastConversationMessage.)
 function captionSuffix(message: CometChat.BaseMessage): string {
   const raw = typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "";
-  const caption = typeof raw === "string" ? raw.trim() : "";
+  // Strip the wire markup. A caption is serialized exactly like a text message, so it can carry
+  // `<color=#rrggbb>`, `**bold**`, backticks — and every branch that calls this returns a JSX
+  // element, so the conversation list's own stripMarkdown pass (string subtitles only) never runs
+  // on it. Without this a single photo captioned in red reads "Photo · <color=#e11d48>hi</color>"
+  // in the list. Same defect ENG-38258 reported for a multi-attachment batch; that fix landed in
+  // MessageDataSource.getLastConversationMessage and did not cover the single-attachment path.
+  const caption = typeof raw === "string" ? stripMarkdown(raw.trim()).trim() : "";
   return caption ? ` · ${caption}` : "";
 }
 

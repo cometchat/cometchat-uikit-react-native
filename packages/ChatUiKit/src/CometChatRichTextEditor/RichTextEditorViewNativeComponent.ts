@@ -23,6 +23,8 @@ export type StyleRange = Readonly<{
   end: Int32;
   url?: string;
   highlightColor?: string;
+  /** `#rrggbb` for a `textColor` range. */
+  color?: string;
 }>;
 
 export type Block = Readonly<{
@@ -37,6 +39,9 @@ export type Block = Readonly<{
 type ContentChangeEventData = Readonly<{
   text: string;
   blocksJson: string;
+  // Mention ranges in clean (ZWS-stripped) coordinates, JSON-encoded. Read back by
+  // getMentionRanges() so a consumer formatter can skip mentions.
+  mentionRangesJson?: string;
 }>;
 
 type SelectionChangeEventData = Readonly<{

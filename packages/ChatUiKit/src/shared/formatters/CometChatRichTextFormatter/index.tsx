@@ -2,6 +2,7 @@ import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { JSX } from "react";
 import { Text, TextStyle, ViewStyle, Platform, Linking, View } from "react-native";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
+import { COLOR_OPEN_TAG, HEX_COLOR_REGEX, findColorTag, stripColorTags } from "../richTextWireFormat";
 import { isTextElement, isViewElement } from "../../utils/elementType";
 
 /**
@@ -14,6 +15,8 @@ export interface RichTextStyle {
   strikethroughStyle?: TextStyle;
   inlineCodeStyle?: TextStyle;
   inlineCodeContainerStyle?: TextStyle;
+  /** Base style for a `<color=#rrggbb>` run. The token's own hex always overrides `color`. */
+  textColorStyle?: TextStyle;
   codeBlockStyle?: TextStyle;
   codeBlockContainerStyle?: ViewStyle;
   blockquoteContainerStyle?: ViewStyle;
@@ -226,6 +229,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
     if (cleaned.indexOf("`") >= 0) return true;
     if (cleaned.indexOf("_") >= 0) return true;
     if (cleaned.indexOf("[") >= 0) return true;
+    if (cleaned.indexOf(COLOR_OPEN_TAG) >= 0) return true;
     if (cleaned.indexOf("- ") >= 0) return true;
     if (cleaned.indexOf("> ") >= 0) return true;
     if (cleaned.indexOf("▎ ") >= 0) return true;
@@ -253,7 +257,10 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
         // Check for single-line ```content``` (opening and closing on same line)
         const afterOpen = trimmedLine.substring(3);
         const firstClose = afterOpen.indexOf("```");
-        if (firstClose > 0) {
+        // `>= 0`, not `> 0`: an EMPTY code block is six backticks, so its close sits at offset 0.
+        // Reading that as "no close on this line" fell through to the fenced branch below, which
+        // swallowed every following line into the code block (ENG-38253).
+        if (firstClose >= 0) {
           const afterClose = afterOpen.substring(firstClose + 3).trim();
           if (afterClose.length === 0) {
             // Standalone ```content``` — render as block-level code block (same as fenced)
@@ -271,7 +278,11 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
                   this.style.codeBlockContainerStyle,
                 ]}
               >
-                <Text style={[this.style.codeBlockStyle]}>{content}</Text>
+                {/* A code block owns its styling, so a `<color=…>` token inside one is not a
+                    style here — but it must never reach the reader as literal markup either.
+                    Messages sent before the serializer fix still carry the token inside the
+                    fence, so strip rather than render (ENG-38253). */}
+                <Text style={[this.style.codeBlockStyle]}>{stripColorTags(content)}</Text>
               </View>
             );
             lineIndex++;
@@ -320,7 +331,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
                 this.style.codeBlockStyle,
               ]}
             >
-              {codeLines.join("\n")}
+              {stripColorTags(codeLines.join("\n"))}
             </Text>
           </View>
         );
@@ -548,7 +559,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
     const textWithoutMentions = text.replace(MENTION_PATTERN_REGEX, '');
     if (textWithoutMentions.indexOf("**") < 0 && textWithoutMentions.indexOf("__") < 0 && textWithoutMentions.indexOf("<u>") < 0 &&
         textWithoutMentions.indexOf("~~") < 0 && textWithoutMentions.indexOf("`") < 0 && textWithoutMentions.indexOf("_") < 0 &&
-        textWithoutMentions.indexOf("[") < 0) {
+        textWithoutMentions.indexOf("[") < 0 && textWithoutMentions.indexOf(COLOR_OPEN_TAG) < 0) {
       return text;
     }
 
@@ -634,6 +645,24 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
               style={[this.style.inlineCodeContainerStyle, this.style.inlineCodeStyle]}
             >{restoredContent}</Text>
           );
+        } else if (match.type === "textColor" && match.color) {
+          // Re-validate at render time: the hex reaching here came off the wire, and an
+          // unparseable value must fall back to the base style rather than reach RN.
+          const safeColor = HEX_COLOR_REGEX.test(match.color) ? match.color : undefined;
+          // React Native resolves a nested Text's `color` over its parent's, so a run like
+          // `<color=#e11d48>\`code\`</color>` rendered in the inline-code foreground and the
+          // consumer's colour vanished — visible in the bubble even though the wire carried it
+          // (ENG-38248). Push the colour onto the descendants that set their own so it wins,
+          // matching the native composer, which also lets a consumer colour override the
+          // inline-code default while leaving the code background alone.
+          const inner = this.parseInlineFormats(restoredContent);
+          const innerContent = safeColor ? this.enforceTextColor(inner, safeColor) : inner;
+          elements.push(
+            <Text
+              key={`fmt-${keyCounter++}`}
+              style={safeColor ? [this.style.textColorStyle, { color: safeColor }] : this.style.textColorStyle}
+            >{innerContent}</Text>
+          );
         } else {
           const style = this.getStyleForFormat(match.type);
           const innerContent = this.parseInlineFormats(restoredContent);
@@ -656,8 +685,11 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
     return <Text key={`inline-${keyCounter}`}>{elements}</Text>;
   }
 
-  private findNextFormat(text: string): { type: string; content: string; startIndex: number; endIndex: number; url?: string } | null {
-    const matches: Array<{ type: string; content: string; startIndex: number; endIndex: number; url?: string }> = [];
+  private findNextFormat(text: string): { type: string; content: string; startIndex: number; endIndex: number; url?: string; color?: string } | null {
+    const matches: Array<{ type: string; content: string; startIndex: number; endIndex: number; url?: string; color?: string }> = [];
+
+    const textColorMatch = this.findTextColor(text);
+    if (textColorMatch) matches.push({ ...textColorMatch, type: "textColor" });
 
     const codeBlockMatch = this.findPair(text, "```", "```");
     if (codeBlockMatch) matches.push({ ...codeBlockMatch, type: "codeBlock" });
@@ -748,6 +780,21 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
     return null;
   }
 
+  /**
+   * Locates the first `<color=#rrggbb>…</color>` run. The grammar lives in richTextWireFormat
+   * so this stays in lock-step with the composer that produces it.
+   */
+  private findTextColor(text: string): { content: string; startIndex: number; endIndex: number; color: string } | null {
+    const match = findColorTag(text);
+    if (!match) return null;
+    return {
+      content: text.substring(match.contentStart, match.contentEnd),
+      startIndex: match.startIndex,
+      endIndex: match.endIndex,
+      color: match.hex,
+    };
+  }
+
   private findLink(text: string): { type: string; content: string; startIndex: number; endIndex: number; url?: string } | null {
     const match = LINK_REGEX.exec(text);
     if (!match) return null;
@@ -816,6 +863,45 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
 
     if (!children) return inner;
     return React.cloneElement(el, {}, ...children);
+  }
+
+  /**
+   * Forces `color` onto every descendant that declares its own.
+   *
+   * Needed because React Native gives a nested `<Text>`'s `color` precedence over its parent's —
+   * so wrapping inline code (or bold, or anything else carrying a foreground) in a colour run left
+   * the inner style winning and the colour invisible (ENG-38248). Only descendants that actually
+   * set a colour are touched; everything else already inherits correctly.
+   *
+   * Links are deliberately exempt: their colour is an affordance that tells a user the text is
+   * tappable, not decoration, so a consumer colour must not repaint it. They are identified by the
+   * `onPress` the link branch attaches.
+   */
+  private enforceTextColor(
+    inner: JSX.Element | string,
+    color: string
+  ): JSX.Element | string {
+    if (typeof inner === "string" || !React.isValidElement(inner)) return inner;
+
+    const el = inner as React.ReactElement<any>;
+    if (el.props?.onPress) return inner; // a link — leave its colour alone
+
+    const children = React.Children.map(el.props.children, (child) =>
+      this.enforceTextColor(child as JSX.Element | string, color)
+    );
+
+    const style = el.props.style;
+    const flat = Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : style;
+    const declaresColor = flat && flat.color !== undefined;
+
+    if (!declaresColor) {
+      return children ? React.cloneElement(el, {}, ...children) : inner;
+    }
+    return React.cloneElement(
+      el,
+      { style: Array.isArray(style) ? [...style, { color }] : { ...flat, color } },
+      ...(children ?? [])
+    );
   }
 
   private getStyleForFormat(type: string): TextStyle {

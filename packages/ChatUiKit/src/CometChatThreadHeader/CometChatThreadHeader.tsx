@@ -1,6 +1,6 @@
 let __listenerIdCounter = 0;
 import React, { useEffect, useState, useMemo, JSX } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   ChatConfigurator,
   CometChatMentionsFormatter,
@@ -96,6 +96,15 @@ export interface CometChatThreadHeaderInterface {
   textFormatters?: Array<
     CometChatMentionsFormatter | CometChatUrlsFormatter | CometChatTextFormatter
   >;
+  /**
+   * Replaces the trailing area of the reply-count bar entirely — the escape
+   * hatch for integrators who want their own control there.
+   *
+   * The follow/unfollow control is NOT here: on this platform the landed design
+   * places it in the message header's top bar, so it lives on
+   * CometChatMessageHeader (`parentMessage` + `threadSubscriptionVisibility`).
+   */
+  TrailingView?: (props: { parentMessage: CometChat.BaseMessage }) => JSX.Element;
 }
 
 /**
@@ -116,6 +125,7 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
     alignment,
     receiptsVisibility = true,
     avatarVisibility = true,
+    TrailingView,
   } = props;
   const [message, setMessage] = useState<CometChat.BaseMessage>(parentMessage);
   const [replyCount, setReplyCount] = useState<number>(parentMessage.getReplyCount() || 0);
@@ -283,7 +293,7 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
         </View>
       </ScrollView>
       {replyCountBarVisibility && (
-        <View style={style?.replyCountBarStyle}>
+        <View style={[style?.replyCountBarStyle, staticStyles.replyCountBarRow]}>
           <Text style={style?.replyCountTextStyle}>
             {replyCountVisibility
               ? replyCount.toString() +
@@ -291,8 +301,18 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
                 (replyCount == 1 ? t("REPLY") : t("REPLIES"))
               : ""}
           </Text>
+          {TrailingView && <TrailingView parentMessage={message} />}
         </View>
       )}
     </View>
   );
 };
+
+const staticStyles = StyleSheet.create({
+  // Text on the leading edge, whatever TrailingView supplies on the trailing one.
+  replyCountBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+});

@@ -54,11 +54,23 @@ export const CometChatAvatar = (props: CometChatAvatarProps) => {
     const initials = [...(name || "")].slice(0, 2).join("").toUpperCase();
     
     return (
-      <Text 
-        style={[avatarStyle.textStyle]}
-        adjustsFontSizeToFit={true}
-        numberOfLines={1}
-      >
+      // NO adjustsFontSizeToFit (ENG-38886).
+      //
+      // On iOS that prop shrinks the text to fit the Text's frame — and on the FIRST row a list
+      // renders, the frame is not known yet. iOS shrinks to its minimum against that unknown,
+      // never recomputes, and the initials end up a few pixels tall in the corner of the circle
+      // while every later row in the same list is perfect. Measured 2026-09-04: identical
+      // resolved style (20px font, 48px circle) on every row, only the first one broken.
+      //
+      // It was never earning its keep. Initials are at most two characters and the theme sizes
+      // them for its own circle, so there is nothing to shrink in the normal case; it only ever
+      // fired when a consumer shrank the container WITHOUT bringing the font down with it. That
+      // is a styling mistake and it should look like one, rather than being silently papered
+      // over on Android and mangled on iOS — see CometChatPinnedMessages/style.ts, which sizes
+      // its own text for its 32px avatar.
+      //
+      // numberOfLines stays: it keeps a stray long value on one line instead of wrapping.
+      <Text style={[avatarStyle.textStyle]} numberOfLines={1}>
         {initials}
       </Text>
     );

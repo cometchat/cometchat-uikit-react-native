@@ -13,11 +13,13 @@ export interface TextStyle {
 }
 
 export interface StyleRange {
-  style: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'link' | 'code' | 'highlight';
+  style: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'link' | 'code' | 'highlight' | 'textColor';
   start: number;
   end: number;
   url?: string;
   highlightColor?: string;
+  /** `#rrggbb` for a `textColor` range — the wire format's only value-carrying style. */
+  color?: string;
 }
 
 export type BlockType = 'paragraph' | 'bullet' | 'numbered' | 'heading' | 'quote' | 'checklist';
@@ -126,6 +128,9 @@ export interface RichTextEditorProps {
   onBlur?: () => void;
 }
 
+/** Inline style a consumer formatter can apply to the composer selection. */
+export type InlineStyleKey = 'color' | 'backgroundColor';
+
 export interface RichTextEditorRef {
   setContent: (blocks: Block[]) => void;
   getText: () => Promise<string>;
@@ -159,4 +164,17 @@ export interface RichTextEditorRef {
   setMentionRanges: (ranges: Array<{ start: number; end: number }>) => void;
   removeLink: (location: number, length: number) => void;
   updateLink: (location: number, length: number, newUrl: string, newText: string) => void;
+  /**
+   * Applies an arbitrary inline style to the current selection, skipping mentions.
+   * `value` is any React Native colour string (`'#FF0000'`, `'red'`, `'rgba(…)'`).
+   * Styles compose — an existing bold/italic on the range is left alone.
+   */
+  applyInlineStyle: (key: InlineStyleKey, value: string) => void;
+  /** Removes a style previously applied with `applyInlineStyle` from the current selection. */
+  removeInlineStyle: (key: InlineStyleKey) => void;
+  /**
+   * Mention ranges in the composer's plain-text coordinates, as of the last content change.
+   * Use it to leave mentions untouched when computing ranges to format.
+   */
+  getMentionRanges: () => Array<{ start: number; end: number }>;
 }

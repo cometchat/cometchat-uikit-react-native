@@ -273,6 +273,22 @@ class RichTextEditorViewManager: RCTViewManager {
         }
     }
 
+    @objc func applyInlineStyle(_ node: NSNumber, key: NSString, value: NSNumber) {
+        DispatchQueue.main.async {
+            if let view = self.bridge?.uiManager.view(forReactTag: node) as? RichTextEditorView {
+                view.applyInlineStyle(key: key as String, value: value.intValue)
+            }
+        }
+    }
+
+    @objc func removeInlineStyle(_ node: NSNumber, key: NSString) {
+        DispatchQueue.main.async {
+            if let view = self.bridge?.uiManager.view(forReactTag: node) as? RichTextEditorView {
+                view.removeInlineStyle(key: key as String)
+            }
+        }
+    }
+
     @objc func removeLink(_ node: NSNumber, location: Int, length: Int) {
         DispatchQueue.main.async {
             if let view = self.bridge?.uiManager.view(forReactTag: node) as? RichTextEditorView {

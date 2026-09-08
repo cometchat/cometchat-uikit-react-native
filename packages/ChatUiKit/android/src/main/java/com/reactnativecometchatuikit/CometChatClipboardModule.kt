@@ -1,7 +1,9 @@
 package com.reactnativecometchatuikit
 
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.PersistableBundle
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -13,6 +15,38 @@ class CometChatClipboardModule(reactContext: ReactApplicationContext)
   : ReactContextBaseJavaModule(reactContext) {
 
   override fun getName() = "CometChatClipboardModule"
+
+  companion object {
+    /**
+     * ClipDescription extras key carrying the rich-text wire format alongside the plain text.
+     * Other apps read `ClipData.Item.text` and only ever see the plain string, so `<color=…>`
+     * markup can never leak out of CometChat — only our own editor reads this extra back.
+     */
+    const val EXTRA_RICH_TEXT = "com.cometchat.uikit.richtext"
+  }
+
+  /**
+   * Copies [plain] to the system clipboard for everyone, and [wire] into the clip's extras so
+   * our composer can restore inline colour when the paste lands back in CometChat.
+   */
+  @ReactMethod
+  fun setRichText(plain: String, wire: String, promise: Promise) {
+    try {
+      val cm = reactApplicationContext
+        .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+      val clip = ClipData.newPlainText("CometChat", plain)
+      // Only carry the extra when it actually differs — nothing to restore otherwise.
+      if (wire != plain) {
+        clip.description.extras = PersistableBundle().apply {
+          putString(EXTRA_RICH_TEXT, wire)
+        }
+      }
+      cm.setPrimaryClip(clip)
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
 
   @ReactMethod
   fun hasImageInClipboard(promise: Promise) {

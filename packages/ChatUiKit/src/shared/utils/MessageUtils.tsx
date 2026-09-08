@@ -21,7 +21,12 @@ import { deepMerge } from "../helper/helperFunctions";
 import { CometChatDate } from "../views/CometChatDate";
 import { CometChatAvatar, CometChatReceipt } from "../views";
 import { useCometChatTranslation } from "../resources/CometChatLocalizeNew";
+import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/LocalizationManager";
 import { useTheme } from "../../theme";
+import { isPinned, isSaved } from "./PinSaveHelper";
+
+/** Module-scope translator — getStatusInfoView is a plain function, not a component. */
+const translate = getCometChatTranslation();
 
 type MessageViewParamsType = {
   message: CometChat.BaseMessage;
@@ -32,6 +37,13 @@ type MessageViewParamsType = {
   datePattern?: (message: CometChat.BaseMessage) => string;
   receiptsVisibility?: boolean;
   avatarVisibility?: boolean;
+  /**
+   * Sender-name header inside the bubble. Symmetric with `avatarVisibility`, and
+   * exists for the same reason: a surface that already names the sender above the
+   * bubble (the pinned/saved panels) would otherwise print it twice on group
+   * messages, since both views are group-only.
+   */
+  headerVisibility?: boolean;
 };
 
 const getOverridenBubbleStyles = (theme: CometChatTheme) => {
@@ -49,14 +61,43 @@ const getOverridenBubbleStyles = (theme: CometChatTheme) => {
     outgoing: deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.imageBubbleStyles ?? {}),
   });
 
+  /**
+   * File and audio bubbles carry a FIXED containerStyle.height sized to the player
+   * alone. CometChatMessageBubble renders the content wrapper with `overflow:
+   * hidden`, and the StatusInfoView sits after ContentView inside it — so the fixed
+   * height clips the whole meta row away: no pin indicator, no saved indicator, no
+   * timestamp, on every audio and file bubble.
+   *
+   * CometChatMessageList already drops the height for exactly these two types
+   * (its own overridenBubbleStyles), which is why the main chat looks right and
+   * every surface going through MessageUtils — both pin/save panels and
+   * CometChatMessageInformation — did not. Kept in sync deliberately; the two
+   * copies of this map are a standing hazard.
+   */
+  const fileIncoming = deepMerge(incomingBubbleStyles, incomingBubbleStyles.fileBubbleStyles ?? {});
+  if (fileIncoming.containerStyle) fileIncoming.containerStyle.height = undefined;
+  const fileOutgoing = deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.fileBubbleStyles ?? {});
+  if (fileOutgoing.containerStyle) fileOutgoing.containerStyle.height = undefined;
+
   styleCache.set(MessageTypeConstants.file, {
-    incoming: deepMerge(incomingBubbleStyles, incomingBubbleStyles.fileBubbleStyles ?? {}),
-    outgoing: deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.fileBubbleStyles ?? {}),
+    incoming: fileIncoming,
+    outgoing: fileOutgoing,
   });
 
+  const audioIncoming = deepMerge(
+    incomingBubbleStyles,
+    incomingBubbleStyles.audioBubbleStyles ?? {}
+  );
+  if (audioIncoming.containerStyle) audioIncoming.containerStyle.height = undefined;
+  const audioOutgoing = deepMerge(
+    outgoingBubbleStyles,
+    outgoingBubbleStyles.audioBubbleStyles ?? {}
+  );
+  if (audioOutgoing.containerStyle) audioOutgoing.containerStyle.height = undefined;
+
   styleCache.set(MessageTypeConstants.audio, {
-    incoming: deepMerge(incomingBubbleStyles, incomingBubbleStyles.audioBubbleStyles ?? {}),
-    outgoing: deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.audioBubbleStyles ?? {}),
+    incoming: audioIncoming,
+    outgoing: audioOutgoing,
   });
 
   styleCache.set(MessageTypeConstants.messageDeleted, {
@@ -246,10 +287,41 @@ const getStatusInfoView = (
           flexDirection: "row",
           justifyContent: "flex-end",
           alignSelf: "flex-end",
+          // Media bubbles size their content to the attachment, which left this row
+          // baseline-misaligned against the glyphs below on an audio/file bubble.
+          alignItems: "center",
         },
         _style.dateReceiptContainerStyle,
       ]}
     >
+      {/* Pin & Save indicators (§6.2), before the timestamp in the same meta-row
+          slot the message list uses. CometChatMessageList has its OWN copy of this
+          view and the indicators were added only there, so every surface rendering
+          through MessageUtils — both panels and CometChatMessageInformation —
+          silently showed media and text bubbles with no pin/save state at all.
+          Icon-only, matching the design, so each needs an accessibilityLabel or a
+          screen reader announces nothing (§6.8). Colour comes from the date token so
+          the group reads as one piece of metadata rather than as an action. */}
+      {isPinned(item) && (
+        <View accessible={true} accessibilityLabel={translate("PINNED") ?? "Pinned"}>
+          <Icon
+            name='keep-fill'
+            color={_style.dateStyles?.textStyle?.color}
+            height={14}
+            width={14}
+          />
+        </View>
+      )}
+      {isSaved(item) && (
+        <View accessible={true} accessibilityLabel={translate("SAVED") ?? "Saved"}>
+          <Icon
+            name='bookmark-fill'
+            color={_style.dateStyles?.textStyle?.color}
+            height={14}
+            width={14}
+          />
+        </View>
+      )}
       <CometChatDate
         timeStamp={(item.getDeletedAt() || item.getSentAt()) * 1000 || getSentAtTimestamp(item)}
         pattern={"timeFormat"}
@@ -285,6 +357,7 @@ export const MessageUtils = {
       datePattern,
       receiptsVisibility,
       avatarVisibility,
+      headerVisibility = true,
     } = params;
     const templatesMap = getTemplatesMap(templates ?? []);
     const baseStyle = getBubbleStyle(message, theme);
@@ -331,7 +404,9 @@ export const MessageUtils = {
             : undefined
         }
         HeaderView={
-          message.getReceiverType() === "group" ? getHeaderView(message, theme) : undefined
+          headerVisibility && message.getReceiverType() === "group"
+            ? getHeaderView(message, theme)
+            : undefined
         }
         BottomView={
           DefaultModerationBottomView ||

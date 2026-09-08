@@ -29,6 +29,7 @@ export const CometChatRetryButton = (props: CometChatRetryButtonProps) => {
 
   return (
     <TouchableOpacity
+      testID='RetryButton'
       onPress={onPress}
       accessibilityRole='button'
       accessibilityLabel={retryText}

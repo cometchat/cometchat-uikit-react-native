@@ -1,6 +1,6 @@
 let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import Clipboard from "@react-native-clipboard/clipboard";
+import { ClipboardPasteHandler } from "../shared/views/ClipboardPasteHandler/ClipboardPasteHandler";
 import React, {
   forwardRef,
   JSX,
@@ -67,7 +67,7 @@ import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandle
 import { MessageEvents } from "../shared/events/messages";
 import { ChatConfigurator } from "../shared/framework/ChatConfigurator";
 import { deepClone, deepMerge } from "../shared/helper/helperFunctions";
-import { Icon } from "../shared/icons/Icon";
+import { Icon, IconName } from "../shared/icons/Icon";
 import { CometChatMessageTemplate } from "../shared/modals/CometChatMessageTemplate";
 import { getUnixTimestamp, messageStatus } from "../shared/utils/CometChatMessageHelper";
 import { CommonUtils } from "../shared/utils/CommonUtils";
@@ -103,12 +103,38 @@ import { CometChatAIAssistantTools } from "../shared/modals/CometChatAIAssistant
 import { StreamMessage } from "../shared/modals";
 import { internalMessageDataSource } from "../shared/framework/MessageDataSource";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
+import { useToast } from "../shared/helper/useToast";
+import {
+  applyEditedMessage,
+  applyIncomingReply,
+  applyOwnIncomingMessage,
+  applySentMessage,
+  getThreadIdFor,
+  stampThreadSubscribed,
+  toggleThreadSubscription,
+} from "../shared/utils/ThreadSubscriptionHelper";
 import { MessageModals } from "./components/MessageModals";
 import { ReactionModals } from "./components/ReactionModals";
 import { MessageOptionsSheet } from "./components/MessageOptionsSheet";
 import { MessageListItem } from "./components/MessageListItem";
 import CometChatConversationStarter from "../shared/views/CometChatConversationStarter/CometChatConversationStarter";
 import CometChatSmartReplies from "../shared/views/CometChatSmartReplies/CometChatSmartReplies";
+import {
+  applyPinSaveAnswer,
+  isPinned,
+  isSaved,
+  isPermissionError,
+  isModerationPending,
+  isCapError,
+  isFeatureOffError,
+  resolveCapLimit,
+  pinMessage as sdkPinMessage,
+  unpinMessage as sdkUnpinMessage,
+  saveMessage as sdkSaveMessage,
+  unsaveMessage as sdkUnsaveMessage,
+  pinSaveNeedsConfirm,
+  carryPinSaveAttrs,
+} from "../shared/utils/PinSaveHelper";
 
 let _defaultRequestBuilder: CometChat.MessagesRequestBuilder;
 const AVERAGE_ITEM_LENGTH = 120;
@@ -194,8 +220,23 @@ function batchStateUpdates(callback: () => void): void {
 export interface CometChatMessageListProps {
   /**
    * ID of the parent message when rendering threaded messages.
+   *
+   * @deprecated Pass {@link CometChatMessageListProps.parentMessage} instead. An id cannot
+   * answer "is this thread followed right now", so a reply arriving over the socket — which
+   * carries no `threadSubscribed` flag — cannot be corrected from it. This prop is still
+   * honoured when `parentMessage` is absent, and all existing scoping behaviour is
+   * unchanged; it is a deprecation to document, not to remove.
    */
   parentMessageId?: string;
+  /**
+   * The parent message when rendering threaded messages. Supersedes
+   * {@link CometChatMessageListProps.parentMessageId} — it scopes the list identically and
+   * additionally acts as the thread's subscription authority, so each realtime reply can be
+   * stamped from it (mention → subscribed; otherwise inherit the parent's state).
+   *
+   * Re-pass it when the parent updates, so the list reads a current flag.
+   */
+  parentMessage?: CometChat.BaseMessage;
   /**
    * The user object associated with the message list.
    */
@@ -428,6 +469,29 @@ export interface CometChatMessageListProps {
    * Flag to hide the reply in thread option
    */
   hideReplyInThreadOption?: boolean;
+  /**
+   * Flag to hide the follow/unfollow thread option. Independent of the thread
+   * header's own control — an integrator may legitimately want one surface and
+   * not the other. Both are additionally subject to the feature gate
+   * (`ThreadSubscriptionConfig.setEnabled`), which is off by default.
+   */
+  hideThreadSubscriptionOption?: boolean;
+  /**
+   * Flags to hide the Pin / Unpin / Save / Unsave options (design doc §6.7).
+   *
+   * One flag per option rather than one per pair, because hiding half of a pair is a real
+   * configuration: a read-only pinned list is "pin, never unpin from here", and an
+   * integrator curating pins centrally wants Unpin gone while Pin stays.
+   *
+   * These are ANDed with the server's own answer — CometChatUIKit resolves
+   * `isPinMessageEnabled()` / `isSaveMessageEnabled()` on login, and an app whose plan has
+   * the feature off hides the options whatever these say. Turning a flag off here is an
+   * integrator's choice on top of that, never a way to switch the feature on.
+   */
+  hidePinMessageOption?: boolean;
+  hideUnpinMessageOption?: boolean;
+  hideSaveMessageOption?: boolean;
+  hideUnsaveMessageOption?: boolean;
   /**
    * Flag to hide the share message option
    */
@@ -680,7 +744,8 @@ export const CometChatMessageList = memo(
   forwardRef<CometChatMessageListActionsInterface, CometChatMessageListProps>(
     (props: CometChatMessageListProps, ref) => {
       const {
-        parentMessageId,
+        parentMessageId: parentMessageIdProp,
+        parentMessage,
         user,
         group,
         EmptyView,
@@ -717,6 +782,11 @@ export const CometChatMessageList = memo(
         enableMultipleAttachments = true,
         hideReplyOption: propHideReplyOption = false,
         hideReplyInThreadOption: propHideReplyInThreadOption = false,
+        hideThreadSubscriptionOption = false,
+        hidePinMessageOption = false,
+        hideUnpinMessageOption = false,
+        hideSaveMessageOption = false,
+        hideUnsaveMessageOption = false,
         hideShareMessageOption: propHideShareMessageOption = false,
         hideEditMessageOption: propHideEditMessageOption = false,
         hideTranslateMessageOption: propHideTranslateMessageOption = false,
@@ -749,6 +819,17 @@ export const CometChatMessageList = memo(
         newMessageIndicatorText,
         loadLastAgentConversation = false,
       } = props;
+
+      // §5.6 — `parentMessage` supersedes `parentMessageId`, and the id is derived from it so
+      // every existing scoping path below is untouched. The deprecated prop is still honoured
+      // when the object is absent, so old callers keep working exactly as before.
+      const parentMessageId = useMemo(
+        () =>
+          parentMessage?.getId?.() != null
+            ? String(parentMessage.getId())
+            : parentMessageIdProp,
+        [parentMessage, parentMessageIdProp]
+      );
 
       // Helper to check if user is agentic - memoized as boolean for performance
       const isAgenticUser = useMemo(() => {
@@ -783,6 +864,7 @@ export const CometChatMessageList = memo(
       const streamListenerId = "agent_" + Date.now() + "_" + (++__listenerIdCounter);
       const deleteItem = useRef<CometChat.BaseMessage>(undefined);
       const shouldSuppressHighlightRef = useRef(false);
+      const { showToast, ToastElement } = useToast();
 
       useLayoutEffect(() => {
         // For agent chats (non-thread), don't set up message request builder
@@ -1064,6 +1146,15 @@ export const CometChatMessageList = memo(
       const [selectedEmoji, setSelectedEmoji] = useState<string | undefined>(undefined);
       const [hideScrollToBottomButton, setHideScrollToBottomButton] = useState<boolean>(true);
       const [showDeleteModal, setShowDeleteModal] = useState(false);
+      /**
+       * The pending unpin/unsave awaiting confirmation, or null. Carries the message
+       * with it rather than leaning on `selectedMessage`, which the options sheet
+       * clears on dismiss — the dialog outlives the sheet that launched it.
+       */
+      const [pinSaveConfirm, setPinSaveConfirm] = useState<{
+        message: CometChat.BaseMessage;
+        action: "unpin" | "unsave";
+      } | null>(null);
 
       const infoObject = useRef<CometChat.BaseMessage | null>(undefined);
       const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -1330,6 +1421,10 @@ export const CometChatMessageList = memo(
                 });
               }
               if (previousMessagesFetched.length > 0) {
+                // These came from a FETCH, so each already carries the server's
+                // threadSubscribed answer on itself — parent and replies alike (§5.7).
+                // Nothing to seed: the fetched object IS the state, and replacing the held
+                // object is what makes a fetched flag beat a local mirror.
                 messagesContentListRef.current = [
                   ...messagesContentListRef.current,
                   ...previousMessagesFetched,
@@ -1743,6 +1838,14 @@ export const CometChatMessageList = memo(
           enableMultipleAttachments,
           hideReplyOption: isAgenticUserCheck || hideReplyOption,
           hideReplyInThreadOption: isAgenticUserCheck || hideReplyInThreadOption,
+          hideThreadSubscriptionOption: isAgenticUserCheck || hideThreadSubscriptionOption,
+          // Without these three lines the four props above are inert: validateOption reads
+          // them off `additionalParams`, which is THIS object, so a flag that never gets
+          // forwarded is always undefined and the option always renders.
+          hidePinMessageOption: isAgenticUserCheck || hidePinMessageOption,
+          hideUnpinMessageOption: isAgenticUserCheck || hideUnpinMessageOption,
+          hideSaveMessageOption: isAgenticUserCheck || hideSaveMessageOption,
+          hideUnsaveMessageOption: isAgenticUserCheck || hideUnsaveMessageOption,
           hideShareMessageOption: isAgenticUserCheck || hideShareMessageOption,
           hideEditMessageOption: isAgenticUserCheck || hideEditMessageOption,
           hideTranslateMessageOption: isAgenticUserCheck || hideTranslateMessageOption,
@@ -1752,6 +1855,12 @@ export const CometChatMessageList = memo(
           hideCopyMessageOption: isAgenticUserCheck || hideCopyMessageOption,
           hideMessageInfoOption: isAgenticUserCheck || hideMessageInfoOption || !receiptsVisibility,
           hideFlagMessageOption: isAgenticUserCheck || hideFlagMessageOption,
+          // The gate calls this one `hideReportMessageOption` while the public prop is
+          // `hideFlagMessageOption` — same option, two names. Report was hidden anyway, but by
+          // a post-filter further down rather than by the gate, leaving the gate's branch dead.
+          // Forwarded under both names so the two agree and the option is never built in the
+          // first place; the post-filter stays as the belt to this braces.
+          hideReportMessageOption: isAgenticUserCheck || hideFlagMessageOption,
           hideMarkAsUnreadOption: isAgenticUserCheck || hideMarkAsUnreadOption,
           hideGroupActionMessages,
           onReplyClick: (messageId: string) => {
@@ -1791,6 +1900,11 @@ export const CometChatMessageList = memo(
         addTemplates,
         isAgenticUser,
         hideReplyInThreadOption,
+        hideThreadSubscriptionOption,
+        hidePinMessageOption,
+        hideUnpinMessageOption,
+        hideSaveMessageOption,
+        hideUnsaveMessageOption,
         hideShareMessageOption,
         hideEditMessageOption,
         hideTranslateMessageOption,
@@ -2057,6 +2171,32 @@ export const CometChatMessageList = memo(
 
       const newMessage = (newMessage: any, isReceived = true) => {
         let baseMessage = newMessage as CometChat.BaseMessage;
+
+        // Cases 2b/4b — a message I sent from ANOTHER of my devices. Sending subscribes me
+        // wherever I sent it from, but this copy came over the socket and carries no flag, so
+        // without this my own message reads "Subscribe" here until a refetch. Checked BEFORE
+        // the reply rules and short-circuits them: "I sent this" already settles the question,
+        // and a root message has no parentMessageId for the block below to notice at all.
+        const ownIncoming =
+          isReceived &&
+          applyOwnIncomingMessage(baseMessage, loggedInUser.current?.getUid() ?? null);
+
+        // Case 3 plus the socket-`false` correction (§3.4). A reply off the socket carries no
+        // threadSubscribed flag, so it must be stamped from the thread's authority: mentioned
+        // → subscribed and publish; otherwise inherit whatever the parent currently says.
+        // Prefer the `parentMessage` prop — in a thread view it IS the authority; fall back to
+        // finding it in the list, which is the main-list case where it may be absent entirely.
+        if (!ownIncoming && isReceived && baseMessage?.getParentMessageId?.()) {
+          const parentId = Number(baseMessage.getParentMessageId());
+          const parent =
+            (Number(parentMessage?.getId?.()) === parentId ? parentMessage : null) ??
+            messagesContentListRef.current.find(
+              (msg: any) => Number(msg?.getId?.()) === parentId
+            ) ??
+            null;
+          applyIncomingReply(baseMessage, parent, loggedInUser.current?.getUid() ?? null);
+        }
+
         if (baseMessage.getCategory() === MessageCategoryConstants.interactive) {
           //todo show unsupported bubble
         }
@@ -2431,7 +2571,16 @@ export const CometChatMessageList = memo(
         }
       };
 
-      const messageEdited = (editedMessage: CometChat.BaseMessage, withMuid: boolean = false) => {
+      /**
+       * @param pinSaveAuthoritative the incoming message IS the answer about pin/save state,
+       *        including the absence that means "no longer pinned". True for the pin/save
+       *        paths; false for an ordinary edit, whose response omits those fields entirely.
+       */
+      const messageEdited = (
+        editedMessage: CometChat.BaseMessage,
+        withMuid: boolean = false,
+        pinSaveAuthoritative: boolean = false
+      ) => {
         let condition: (value: any, index: number, obj: any[]) => unknown;
         if (withMuid) {
           condition = (msg) => msg["muid"] == editedMessage["muid"];
@@ -2443,7 +2592,70 @@ export const CometChatMessageList = memo(
           if (editedMessage.getCategory() === MessageCategoryConstants.interactive) {
             //todo show unsupported bubble
           }
-          tmpList[msgIndex] = CommonUtils.clone(editedMessage);
+          // Two opposite readings of the same silence, so the two paths cannot share a rule.
+          //
+          // An EDIT response is a MINIMAL message carrying no pinnedAt / savedAt / pinnedBy:
+          // its silence means "not mentioned", so those must be carried across or both
+          // indicators vanish until the next fetch (ENG-38183).
+          //
+          // A PIN/UNPIN/SAVE/UNSAVE answer is the reverse: silence on pinnedAt means "no
+          // longer pinned", so carrying the old value leaves the glyph on screen forever.
+          // That path also must not swap the response INTO the list — it is partial and has
+          // no muid, which changed the row key and remounted the whole bubble, reloading its
+          // images on every pin. Instead keep the complete copy we hold and take only the
+          // pin/save answer off the response; the quote rides along for free (ENG-38176).
+          const replacement = pinSaveAuthoritative
+            ? applyPinSaveAnswer(messagesContentListRef.current[msgIndex], editedMessage)
+            : carryPinSaveAttrs(
+                CommonUtils.clone(editedMessage),
+                messagesContentListRef.current[msgIndex]
+              );
+
+          // The author default, applied at the one chokepoint every NON-FETCH replace goes
+          // through — a send reconciling, an edit, a pin/save.
+          //
+          // None of those payloads ever carries threadSubscribed (the API populates it on
+          // FETCHED messages only), so an absent flag HERE cannot mean "unsubscribed" — it
+          // only means the response was silent. And if I sent the message, the server has me
+          // subscribed to its thread. So filling the gap is reading the server's rule, not
+          // guessing.
+          //
+          // Ordering is what makes it safe: the carry above runs FIRST, so an explicit false
+          // — which is what a deliberate unsubscribe leaves on the held copy — is preserved
+          // and never overwritten here. Only a genuinely absent value is filled.
+          //
+          // Doing it here rather than in the send handler is deliberate: stamping the send
+          // RESPONSE only helps if that object survives into the list, and it does not — this
+          // function replaces the list entry with a clone. The entry is what every surface
+          // reads, so the entry is what has to carry the flag.
+          // `!== true` rather than `=== undefined`: the SDK normalises the wire value, so an
+          // unmentioned flag arrives as an explicit `false`, never as undefined. Checking for
+          // undefined meant this never fired — verified from device logs, which showed the
+          // replacement carrying `flag= false` on every composer send.
+          //
+          // That normalisation is also why the replacement alone cannot be trusted: on it,
+          // "the response said nothing" and "the user deliberately unsubscribed" are the SAME
+          // `false`. The comment above claimed the carry preserved an explicit false, but
+          // preserveThreadSubscribed only ever raises false -> true; it never marks a false as
+          // deliberate. So read the HELD copy, the one place the distinction survives —
+          // ccThreadSubscriptionChanged stamps it there on an explicit unfollow. Without this,
+          // unfollowing your own thread and then pinning, saving or editing that message put
+          // you silently back to Following.
+          const heldThreadSubscribed = (
+            messagesContentListRef.current[msgIndex] as any
+          )?.isThreadSubscribed?.();
+          if (
+            heldThreadSubscribed !== false &&
+            (replacement as any)?.threadSubscribed !== true
+          ) {
+            const senderUid = (replacement as any)?.getSender?.()?.getUid?.();
+            const me = loggedInUser.current?.getUid();
+            if (me && senderUid === me) {
+              (replacement as any).threadSubscribed = true;
+            }
+          }
+
+          tmpList[msgIndex] = replacement;
           messagesContentListRef.current = tmpList;
           onLoad && onLoad([...messagesContentListRef.current].reverse());
           setMessagesList(tmpList);
@@ -2476,6 +2688,133 @@ export const CometChatMessageList = memo(
             setShowDeleteModal(false);
             onError && onError(rej);
           });
+      };
+
+      /**
+       * Runs one pin/save write and folds the server's answer back into the list.
+       *
+       * ponytail: NOT optimistic. §7.4 asks for an optimistic flip with a revert
+       * path, but every one of these calls resolves with the FULL updated message,
+       * so applying that is both simpler and strictly more correct than guessing
+       * the new state and reconciling later. It costs one round trip of latency
+       * behind a modal the user just tapped through, and it deletes an entire
+       * class of bug (stale optimistic state after a failed revert). Revisit if
+       * the wait ever reads as lag on a slow network.
+       */
+      const runPinSaveAction = (
+        message: CometChat.BaseMessage,
+        action: "pin" | "unpin" | "save" | "unsave"
+      ) => {
+        const call =
+          action === "pin"
+            ? sdkPinMessage
+            : action === "unpin"
+              ? sdkUnpinMessage
+              : action === "save"
+                ? sdkSaveMessage
+                : sdkUnsaveMessage;
+
+        const successKey =
+          action === "pin"
+            ? "MESSAGE_PINNED"
+            : action === "unpin"
+              ? "MESSAGE_UNPINNED"
+              : action === "save"
+                ? "MESSAGE_SAVED"
+                : "MESSAGE_UNSAVED";
+
+        const ccEvent =
+          action === "pin"
+            ? MessageEvents.ccMessagePinned
+            : action === "unpin"
+              ? MessageEvents.ccMessageUnpinned
+              : action === "save"
+                ? MessageEvents.ccMessageSaved
+                : MessageEvents.ccMessageUnsaved;
+
+        call(message.getId())
+          .then((updated: CometChat.BaseMessage) => {
+            // The response body IS the answer about pin/save state on THIS device — including
+            // the absence that means "no longer pinned". Marking it authoritative is what makes
+            // unpin/unsave update the UI: otherwise carryPinSaveAttrs copies the old pinnedAt /
+            // savedAt back onto the response and the glyph never clears. (Pin/save hid this —
+            // they only ADD a field, so there is nothing for the carry to wrongly restore.)
+            // The authoritative branch still carries `quotedMessage` across, which the pin
+            // response drops and a pinned REPLY needs (ENG-38176).
+            messageEdited(updated, false, true);
+            CometChatUIEventHandler.emitMessageEvent(ccEvent, { message: updated });
+            showToast(t(successKey) ?? successKey);
+          })
+          .catch(async (error: any) => {
+            // Branch on the REAL backend codes (see PinSaveHelper.PinSaveErrors —
+            // the design doc's names do not exist). Order matters: moderation
+            // rejections must not be reported as permission problems.
+            let messageText: string;
+            if (isPermissionError(error) && isModerationPending(message)) {
+              // Same 403 as a real permission refusal, different cause (ENG-38901). The
+              // options are offered on a pending message deliberately — the check clears in
+              // about two seconds and by then the action works — so the rare early tap must
+              // say what actually happened rather than accuse the user of lacking rights.
+              messageText =
+                t("PIN_SAVE_MODERATION_PENDING") ??
+                "This message is still being checked. Try again in a moment.";
+            } else if (isPermissionError(error)) {
+              messageText = t("PIN_NOT_ALLOWED") ?? "You don't have permission to pin messages here.";
+            } else if (isFeatureOffError(error)) {
+              messageText = t("PIN_SAVE_FEATURE_OFF") ?? "This feature isn't available for this app.";
+            } else if (isCapError(error)) {
+              // The cap is server-owned. Interpolate it ONLY when the payload
+              // actually carries it — the backend documents the caps as tenant
+              // settings and never promises them on the error, so the no-count
+              // copy is the expected path, not an edge case. Printing a guessed
+              // "100" would be worse than printing no number at all.
+              const isPin = action === "pin";
+              // errorParams first, then app settings (SDK getters, ENG-37790). Never the
+              // error prose — that regex is gone.
+              const limit = await resolveCapLimit(error, isPin ? "pin" : "save");
+              if (limit !== null) {
+                const template = isPin
+                  ? t("PIN_LIMIT_REACHED") ??
+                    "You can only pin {limit} messages. Unpin one to pin another."
+                  : t("SAVE_LIMIT_REACHED") ?? "You can save up to {limit} messages.";
+                messageText = template.replace("{limit}", String(limit));
+              } else {
+                messageText = isPin
+                  ? t("PIN_LIMIT_REACHED_NO_COUNT") ??
+                  "You've reached your pinned messages limit. Unpin one to pin another."
+                  : t("SAVE_LIMIT_REACHED_NO_COUNT") ??
+                  "You've reached your limit for saved messages.";
+              }
+            } else {
+              messageText = t("PIN_SAVE_GENERIC_ERROR") ?? "Something went wrong. Please try again.";
+            }
+            showToast(messageText);
+            onError && onError(error);
+          });
+      };
+
+      /**
+       * Confirm the REMOVING half of each pair, run the adding half straight away.
+       *
+       * Cross-platform decision (Jitvar, 2026-08-04): unpin and unsave ask; pin and
+       * save do not. The asymmetry is the point — pinning or saving is additive and
+       * its own undo is one tap away, whereas unpinning discards something the user
+       * (or a colleague, in the case of a conversation-wide pin) deliberately put
+       * there, and nothing on screen offers it back.
+       *
+       * All four kits follow this, so do not make it a local preference.
+       */
+      const requestPinSaveAction = (
+        message: CometChat.BaseMessage,
+        action: "pin" | "unpin" | "save" | "unsave"
+      ) => {
+        setShowMessageOptions([]);
+        bottomSheetRef.current?.togglePanel();
+        if (pinSaveNeedsConfirm(action)) {
+          setPinSaveConfirm({ message, action: action as "unpin" | "unsave" });
+          return;
+        }
+        runPinSaveAction(message, action);
       };
 
       const createActionMessage = () => { };
@@ -2950,13 +3289,65 @@ export const CometChatMessageList = memo(
         );
 
         CometChatUIEventHandler.addMessageListener(messageEventListener, {
+          // §3.2 — the bus is the only sync channel between surfaces, and subscribing to it
+          // means writing the flag back onto the objects THIS list holds, not just
+          // re-rendering. Without it a follow taken in the thread header leaves every bubble
+          // in the list holding a stale object, and the next action sheet offers "Subscribe"
+          // on a thread the user already follows.
+          //
+          // Keep this an INLINE arrow on this exact property: emitMessageEvent dispatches by
+          // comparing the emitted name against the handler's inferred Function.name.
+          ccThreadSubscriptionChanged: ({ parentMessageId: threadId, subscribed }: any) => {
+            const target = Number(threadId);
+            if (!target) return;
+            messagesContentListRef.current.forEach((msg: any) => {
+              if (getThreadIdFor(msg) === target) stampThreadSubscribed(msg, !!subscribed);
+            });
+          },
+          // A pin or save made from the PINNED or SAVED panel reaches this list only through
+          // the bus (ENG-38884). Those panels write to the server and update their own rows,
+          // but the bubble behind them holds its own copy of the message — so unpinning from
+          // the panel left the glyph sitting on a message that was no longer pinned, until
+          // navigating away rebuilt the list from a fetch.
+          //
+          // messageEdited(..., pinSaveAuthoritative = true) is the same call this list makes
+          // for its OWN pin/save writes: the response IS the answer, including the ABSENCE of
+          // pinnedAt that means "no longer pinned". Re-applying an answer this list emitted
+          // itself is harmless — it resolves to the identical object state.
+          //
+          // Inline arrows on these exact property names: emitMessageEvent dispatches by
+          // comparing the emitted name against each handler's inferred Function.name.
+          ccMessagePinned: ({ message }: any) => {
+            if (message) messageEdited(message, false, true);
+          },
+          ccMessageUnpinned: ({ message }: any) => {
+            if (message) messageEdited(message, false, true);
+          },
+          ccMessageSaved: ({ message }: any) => {
+            if (message) messageEdited(message, false, true);
+          },
+          ccMessageUnsaved: ({ message }: any) => {
+            if (message) messageEdited(message, false, true);
+          },
           ccMessageSent: ({ message, status }: any) => {
             if (status == MessageStatusConstants.inprogress) {
               newMessage(message, false);
             }
 
             if (status == MessageStatusConstants.success) {
+              // Cases 2 and 4 — any message you send subscribes you to its thread server-side,
+              // and your OWN sends never arrive on a listener. The send response omits the
+              // flag, so this stamp is what makes the sender's own screen agree with the
+              // server.
+              //
+              // ORDER MATTERS, and getting it wrong is silent. messageEdited() is what swaps
+              // the optimistic bubble (keyed by muid, no server id yet) for the real message.
+              // Until that has run, the list entry's id is not the thread id, so the
+              // ccThreadSubscriptionChanged write-back has nothing to match on and the stamp
+              // lands only on the response object — which the list then discards. Stamp AFTER
+              // the swap, when the entry the surfaces actually read carries its server id.
               messageEdited(message, true);
+              applySentMessage(message);
               if (
                 isAgenticUser &&
                 agenticParentMessageIdRef.current === undefined &&
@@ -2977,6 +3368,10 @@ export const CometChatMessageList = memo(
           },
           ccMessageEdited: ({ message, status }: any) => {
             if (status == messageStatus.success) {
+              // Case 5 — an edit that leaves me @mentioned subscribes me to that message's
+              // thread. Hooked HERE and not inside messageEdited(): deletes and reaction
+              // updates travel through that same helper and must not subscribe anybody.
+              applyEditedMessage(message, loggedInUser.current?.getUid() ?? null);
               messageEdited(message, false);
             }
           },
@@ -3042,7 +3437,7 @@ export const CometChatMessageList = memo(
           onMessagesRead: (messageReceipt: any) => {
             updateMessageReceipt(messageReceipt);
           },
-          //suraj
+          
           onMessageDeleted: (deletedMessage: any) => {
             // If the deleted message was unread, decrement the unread count
             if (!deletedMessage.getReadAt?.() && deletedMessage.getSender()?.getUid() !== loggedInUser.current?.getUid()) {
@@ -3051,7 +3446,47 @@ export const CometChatMessageList = memo(
             messageEdited(deletedMessage);
           },
           onMessageEdited: (editedMessage: any) => {
+            // Case 5b — somebody else edited their message and I am now mentioned in it.
+            applyEditedMessage(editedMessage, loggedInUser.current?.getUid() ?? null);
             messageEdited(editedMessage);
+          },
+          // Pin & Save realtime (§6.6). Each event carries the full updated message,
+          // so the same list-replace the edit path uses is all that is needed —
+          // the meta-row indicator re-renders off the new object.
+          //
+          // LIVE for GROUPS as of 2026-08-10. A note from the backend team
+          // (ENG-37690, 2026-07-29) said realtime was not wired up; that went stale
+          // and these handlers sat marked "inert" while three separate bugs kept the
+          // event from arriving — the SDK routed the frame to the wrong parser,
+          // matched the wrong action names, and emitMessageEvent had no case for
+          // these four names so the emit fell through to nothing.
+          //
+          // NOTE (1 Sep): 1-1 conversations DO emit these frames. This comment used to say they
+          // did not, and that the DM's other participant only learned of a pin on their next
+          // fetch. Confirmed at the handler, not inferred from the UI: with a real iOS pinner
+          // and a real Android observer sitting in the DM, logcat caught
+          //   onMessagePinned   … receiverType='user'
+          //   onMessageUnpinned … receiverType='user'
+          // so these four handlers are live for 1-1s, not just groups. The DM half of
+          // e2e/cross/pin.e2e.js (E2E_CONV=dm) asserts it and goes red if it ever reverts.
+          // runPinSaveAction keeps
+          // applying the response body directly, which is what makes the ACTING
+          // device correct either way.
+          //
+          // These are read-only with respect to unread state (§7.7): no markAsRead,
+          // no receipts, no unread-count change, which is why they deliberately do
+          // NOT go through the onMessageDeleted-style branch that decrements counts.
+          onMessagePinned: (message: any) => {
+            messageEdited(message, false, true);
+          },
+          onMessageUnpinned: (message: any) => {
+            messageEdited(message, false, true);
+          },
+          onMessageSaved: (message: any) => {
+            messageEdited(message, false, true);
+          },
+          onMessageUnsaved: (message: any) => {
+            messageEdited(message, false, true);
           },
           onMessageModerated: (moderatedMessage: any) => {
             if (isAgenticUser) return;
@@ -3567,7 +4002,13 @@ export const CometChatMessageList = memo(
             item?.getMetadata?.()?.error ||
             (item as any)?.error ||
             getModerationStatus(item) === "disapproved";
-          if (!_hasError && _isCollapsibleBatchMember) {
+          // EXCEPTION: a PINNED or SAVED member must also render its own meta row. The §7 fan-out
+          // splits one send into a message PER MEDIA KIND (3 images + a video => an images message
+          // and a videos message), so pin/save apply to one of those messages — and a non-last one
+          // collapsed to a spacer, leaving its indicator nowhere to draw (ENG-38184). Only the
+          // indicator shows here: the timestamp and receipt still belong to the last member alone.
+          const _hasPinSaveIndicator = isPinned(item) || isSaved(item);
+          if (!_hasError && !_hasPinSaveIndicator && _isCollapsibleBatchMember) {
             // Non-last, non-failed batch member: the receipt/timestamp shows only on the LAST member,
             // but that row is what gives the bubble its bottom footprint. Returning `undefined` leaves
             // the content flush to the edge, so the rounded bottom corner doesn't render like the top.
@@ -3620,11 +4061,11 @@ export const CometChatMessageList = memo(
             !!item.getEditedAt?.() &&
             (editedType === MessageTypeConstants.text || isEditedMedia);
 
-          // A first/middle failed/blocked batch member shows JUST the error icon (below) — hide its
-          // timestamp so only the last member of the group carries the timestamp.
+          // A first/middle batch member that renders at all does so ONLY to show its own state
+          // (an error icon, or a pin/save indicator) — the timestamp still belongs to the last
+          // member of the group alone, so it is suppressed for every collapsed member.
           const shouldShowTimestamp =
-            (isAgenticUser ? isOutgoingMessage : !hideTimestamp) &&
-            !(_isCollapsibleBatchMember && messageState === MessageReceipt.ERROR);
+            (isAgenticUser ? isOutgoingMessage : !hideTimestamp) && !_isCollapsibleBatchMember;
           return (
             <View>
               <View
@@ -3650,6 +4091,70 @@ export const CometChatMessageList = memo(
                     {t("EDITED")}
                   </Text>
                 )}
+                {/* Pin & Save indicators (§6.2). Same meta-row slot as "Edited",
+                    before the timestamp. Icon-only — the design carries no
+                    "pinned by X" text today — so each gets an accessibilityLabel
+                    or a screen reader announces nothing at all (§6.8). Colour
+                    comes from the date/timestamp token so the pair reads as one
+                    piece of metadata rather than as an action. */}
+                {(() => {
+                  // Saved first, then pinned — the order in the design. Built as a list so the
+                  // dots are DERIVED rather than hand-placed: one between every pair of glyphs
+                  // and one before the time, which is what makes "🔖 • 📌 • 07:53 pm" fall out
+                  // of the same code that produces "📌 • 4:56 pm".
+                  const indicators: { key: string; icon: IconName; label: string }[] = [];
+                  if (isSaved(item)) {
+                    indicators.push({
+                      key: "saved",
+                      icon: "bookmark-fill",
+                      label: t("SAVED") ?? "Saved",
+                    });
+                  }
+                  if (isPinned(item)) {
+                    indicators.push({
+                      key: "pinned",
+                      icon: "keep-fill",
+                      label: t("PINNED") ?? "Pinned",
+                    });
+                  }
+                  if (!indicators.length) return null;
+
+                  // Decorative: the glyphs already announce "Saved" / "Pinned", so a screen
+                  // reader must not also read "bullet" between them.
+                  const dot = (key: string) => (
+                    <Text
+                      key={key}
+                      accessibilityElementsHidden={true}
+                      importantForAccessibility='no-hide-descendants'
+                      style={[_style.dateStyles?.textStyle]}
+                    >
+                      {"•"}
+                    </Text>
+                  );
+
+                  const nodes: JSX.Element[] = [];
+                  indicators.forEach((indicator, index) => {
+                    if (index > 0) nodes.push(dot(`sep-${indicator.key}`));
+                    nodes.push(
+                      <View
+                        key={indicator.key}
+                        accessible={true}
+                        accessibilityLabel={indicator.label}
+                      >
+                        <Icon
+                          name={indicator.icon}
+                          color={_style.dateStyles?.textStyle?.color}
+                          height={14}
+                          width={14}
+                        />
+                      </View>
+                    );
+                  });
+                  // Trailing dot only when a time actually follows it.
+                  if (shouldShowTimestamp) nodes.push(dot("sep-time"));
+
+                  return <>{nodes}</>;
+                })()}
                 {shouldShowTimestamp && (
                   <CometChatDate
                     timeStamp={
@@ -3666,7 +4171,11 @@ export const CometChatMessageList = memo(
                 {receiptsVisibility &&
                   alignment !== "leftAligned" &&
                   isOutgoingMessage &&
-                  !item.getDeletedAt?.() ? (
+                  !item.getDeletedAt?.() &&
+                  // A collapsed member now renders when it is pinned/saved, but must not bring back
+                  // the receipt the collapse exists to hide. Scoped to the non-error case so the
+                  // failed-member branch below is untouched.
+                  !(_isCollapsibleBatchMember && !_hasError) ? (
                   (() => {
                     const receiptEl = (
                       <CometChatReceipt
@@ -3980,8 +4489,10 @@ export const CometChatMessageList = memo(
       };
 
       const copyMessage = (item: any) => {
-        let copyMessage = getPlainString(item["text"], item);
-        Clipboard.setString(copyMessage);
+        // getPlainString resolves mention tokens but leaves the rich-text wire format alone.
+        // copyMessageText puts clean plain text on the clipboard for every other app and keeps
+        // the colour in a private representation our own composer restores on paste.
+        ClipboardPasteHandler.copyMessageText(getPlainString(item["text"], item));
         // Defer modal dismiss to next frame to avoid Fabric race condition
         // where unmounting the Modal while Clipboard is still accessing views
         // causes EXC_BAD_ACCESS (SIGSEGV) at null pointer in mount phase.
@@ -4108,6 +4619,30 @@ export const CometChatMessageList = memo(
                 case MessageOptionConstants.replyInThread:
                   option.onPress = openThreadView.bind(this, item);
                   break;
+                case MessageOptionConstants.threadSubscription:
+                  option.onPress = () => {
+                    // The helper owns the debounce, the in-flight guard, the
+                    // optimistic emit and the revert; we only report the failure.
+                    // It resolves the thread id itself, so on a reply this acts on the
+                    // parent thread rather than writing an unopenable /threads row.
+                    toggleThreadSubscription(item).then(
+                      (subscribed: boolean) => {
+                        // Both transitions are confirmed. Unsubscribing is not sticky —
+                        // say so rather than letting the user discover it when a reply
+                        // drags them back in.
+                        showToast(
+                          t(
+                            subscribed
+                              ? "THREAD_SUBSCRIPTION_SUBSCRIBED_TOAST"
+                              : "THREAD_SUBSCRIPTION_UNSUBSCRIBED_TOAST"
+                          )
+                        );
+                      },
+                      () => showToast(t("THREAD_SUBSCRIPTION_FAILED"))
+                    );
+                    setShowMessageOptions([]);
+                  };
+                  break;
                 case MessageOptionConstants.deleteMessage:
                   option.onPress = () => {
                     deleteItem.current = item;
@@ -4133,6 +4668,18 @@ export const CometChatMessageList = memo(
                   break;
                 case MessageOptionConstants.markAsUnread:
                   option.onPress = markMessageAsUnread.bind(this, item);
+                  break;
+                case MessageOptionConstants.pinMessage:
+                  option.onPress = () => requestPinSaveAction(item, "pin");
+                  break;
+                case MessageOptionConstants.unpinMessage:
+                  option.onPress = () => requestPinSaveAction(item, "unpin");
+                  break;
+                case MessageOptionConstants.saveMessage:
+                  option.onPress = () => requestPinSaveAction(item, "save");
+                  break;
+                case MessageOptionConstants.unsaveMessage:
+                  option.onPress = () => requestPinSaveAction(item, "unsave");
                   break;
               }
             else {
@@ -5345,6 +5892,7 @@ export const CometChatMessageList = memo(
           <MessageModals
             showDeleteModal={showDeleteModal}
             showReportDialog={showReportDialog}
+            pinSaveConfirm={pinSaveConfirm}
             deleteItem={deleteItem}
             reportedMessageRef={reportedMessageRef}
             theme={theme}
@@ -5363,8 +5911,12 @@ export const CometChatMessageList = memo(
               setShowReportDialog(false);
               reportedMessageRef.current = null;
             }}
+            onPinSaveCancel={() => setPinSaveConfirm(null)}
+            onPinSaveConfirm={() => {
+              if (pinSaveConfirm) runPinSaveAction(pinSaveConfirm.message, pinSaveConfirm.action);
+              setPinSaveConfirm(null);
+            }}
           />
-
           <MessageOptionsSheet
             bottomSheetRef={bottomSheetRef}
             isOpen={showMessageOptions.length > 0 || Boolean(ExtensionsComponent) || messageInfo}
@@ -5413,6 +5965,7 @@ export const CometChatMessageList = memo(
               setSelectedEmoji(undefined);
             }}
           />
+          {ToastElement}
         </View>
         </CometChatBatchMediaContext.Provider>
       );

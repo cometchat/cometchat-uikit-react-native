@@ -28,6 +28,11 @@ import { CometChatUiKitConstants } from "../index";
 import { CometChatMessageComposerAction } from "../helper/types";
 import { Icon, IconName } from "../icons/Icon";
 import { getMessagePreviewInternal } from "../utils/MessageUtils";
+import { canPin, isPinned, isPinSaveEligible, isSaved, PinSaveConfig } from "../utils/PinSaveHelper";
+import {
+  isThreadSubscribed,
+  ThreadSubscriptionConfig,
+} from "../utils/ThreadSubscriptionHelper";
 import { CometChatMessageOption } from "../modals/CometChatMessageOption";
 import { CometChatMessageTemplate } from "../modals/CometChatMessageTemplate";
 import { CometChatConversationUtils, attachmentCountLabel } from "../utils/conversationUtils";
@@ -53,7 +58,8 @@ import { CometChatVideosBubble } from "../views/CometChatVideosBubble";
 import { CometChatFilesBubble } from "../views/CometChatFilesBubble";
 import { CometChatAudiosBubble } from "../views/CometChatAudiosBubble";
 import { CometChatVoiceNoteBubble } from "../views/CometChatVoiceNoteBubble";
-import Clipboard from "@react-native-clipboard/clipboard";
+import { ClipboardPasteHandler } from "../views/ClipboardPasteHandler/ClipboardPasteHandler";
+import { stripMarkdown } from "../utils/MarkdownUtils";
 import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/LocalizationManager";
 
 const t = getCometChatTranslation();
@@ -197,8 +203,10 @@ export class MessageDataSource implements DataSource {
           messageData.content || "";
       }
 
+      // Clean plain text for every other app; colour preserved in a private representation
+      // that only our own composer reads back on paste.
       if (textToCopy?.trim()) {
-        Clipboard.setString(textToCopy);
+        ClipboardPasteHandler.copyMessageText(textToCopy);
       }
     } catch (err) {
       console.error(err);
@@ -285,6 +293,137 @@ export class MessageDataSource implements DataSource {
       },
     };
   }
+  /**
+   * Pin / Unpin (§6.1). Two option ids rather than one that flips its title,
+   * because a consumer can legitimately hide one and not the other, and because
+   * the press handler needs to know which direction it is going without
+   * re-deriving state that may have changed since the sheet opened.
+   */
+  getPinOption(theme: CometChatTheme): CometChatMessageOption {
+    return {
+      id: MessageOptionConstants.pinMessage,
+      title: t("PIN_MESSAGE"),
+      icon: (
+        <Icon
+          name='keep'
+          color={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
+          }
+          height={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.height}
+          width={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.width}
+          containerStyle={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconContainerStyle
+          }
+        ></Icon>
+      ),
+    };
+  }
+
+  getUnpinOption(theme: CometChatTheme): CometChatMessageOption {
+    return {
+      id: MessageOptionConstants.unpinMessage,
+      title: t("UNPIN_MESSAGE"),
+      icon: (
+        <Icon
+          name='keep-off'
+          color={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
+          }
+          height={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.height}
+          width={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.width}
+          containerStyle={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconContainerStyle
+          }
+        ></Icon>
+      ),
+    };
+  }
+
+  /** Save / Unsave (§6.1). No role gate — a save is private to the acting user. */
+  getSaveOption(theme: CometChatTheme): CometChatMessageOption {
+    return {
+      id: MessageOptionConstants.saveMessage,
+      title: t("SAVE_MESSAGE"),
+      icon: (
+        <Icon
+          name='bookmark'
+          color={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
+          }
+          height={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.height}
+          width={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.width}
+          containerStyle={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconContainerStyle
+          }
+        ></Icon>
+      ),
+    };
+  }
+
+  getUnsaveOption(theme: CometChatTheme): CometChatMessageOption {
+    return {
+      id: MessageOptionConstants.unsaveMessage,
+      title: t("UNSAVE_MESSAGE"),
+      icon: (
+        // Bookmark-with-a-cross, the design's own glyph for the unsave ACTION. Distinct from
+        // 'bookmark-fill', which stays the saved-STATE indicator beside the timestamp.
+        <Icon
+          name='unsave'
+          color={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
+          }
+          height={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.height}
+          width={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.width}
+          containerStyle={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconContainerStyle
+          }
+        ></Icon>
+      ),
+    };
+  }
+
+  /**
+   * Pushes whichever of the pin/save pair applies to the message's CURRENT state.
+   * Shared by getTextMessageOptions and getCommonOptions so every eligible
+   * category gets the same four options in the same position — right after the
+   * message's own actions and before the destructive ones.
+   */
+  pushPinSaveOptions(
+    optionsList: CometChatMessageOption[],
+    loggedInUser: CometChat.User,
+    messageObject: CometChat.BaseMessage,
+    theme: CometChatTheme,
+    group?: CometChat.Group,
+    additionalParams?: AdditionalParams
+  ): void {
+    const pinned = isPinned(messageObject);
+    const saved = isSaved(messageObject);
+
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        pinned ? MessageOptionConstants.unpinMessage : MessageOptionConstants.pinMessage,
+        group,
+        additionalParams
+      )
+    ) {
+      optionsList.push(pinned ? this.getUnpinOption(theme) : this.getPinOption(theme));
+    }
+
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        saved ? MessageOptionConstants.unsaveMessage : MessageOptionConstants.saveMessage,
+        group,
+        additionalParams
+      )
+    ) {
+      optionsList.push(saved ? this.getUnsaveOption(theme) : this.getSaveOption(theme));
+    }
+  }
+
   getReplyOption(theme: CometChatTheme): CometChatMessageOption {
     return {
       id: MessageOptionConstants.replyMessage,
@@ -311,6 +450,41 @@ export class MessageDataSource implements DataSource {
       icon: (
         <Icon
           name='subdirectory-arrow-right'
+          color={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
+          }
+          height={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.height}
+          width={theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.width}
+          containerStyle={
+            theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconContainerStyle
+          }
+        ></Icon>
+      ),
+    };
+  }
+
+  /**
+   * Follow / unfollow the thread rooted at this message — "tell me when replies
+   * arrive here in future". One option id; the title flips on the current state.
+   *
+   * Deliberately NOT gated on replyCount: following a message before anyone has
+   * answered it is the whole point. Offered on a reply too — inside a thread the
+   * user reaches for the same control — and there it targets the PARENT thread,
+   * via getThreadIdFor, so no subscription is ever rooted at a reply id.
+   */
+  getThreadSubscriptionOption(
+    theme: CometChatTheme,
+    messageObject?: CometChat.BaseMessage
+  ): CometChatMessageOption {
+    const subscribed = messageObject ? isThreadSubscribed(messageObject) : false;
+    return {
+      id: MessageOptionConstants.threadSubscription,
+      title: subscribed
+        ? t("THREAD_SUBSCRIPTION_UNSUBSCRIBE")
+        : t("THREAD_SUBSCRIPTION_SUBSCRIBE"),
+      icon: (
+        <Icon
+          name={subscribed ? "notifications-off" : "notifications"}
           color={
             theme.messageListStyles.messageOptionsStyles?.optionsItemStyle?.iconStyle?.tintColor
           }
@@ -474,6 +648,20 @@ export class MessageDataSource implements DataSource {
       messageOptionList.push(this.getReplyInThreadOption(theme));
     }
 
+    // follow / unfollow thread — placed straight after "Reply in thread" so the
+    // two thread actions sit together (§6.3, locked so five kits don't diverge)
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.threadSubscription,
+        group,
+        additionalParams
+      )
+    ) {
+      messageOptionList.push(this.getThreadSubscriptionOption(theme, messageObject));
+    }
+
     // reply
     if (
       this.validateOption(
@@ -575,6 +763,17 @@ export class MessageDataSource implements DataSource {
     ) {
       messageOptionList.push(this.getInformationOption(theme));
     }
+
+    // Before delete: pin/save are non-destructive, so they should not sit below
+    // the one option the user must not hit by accident.
+    this.pushPinSaveOptions(
+      messageOptionList,
+      loggedInUser,
+      messageObject,
+      theme,
+      group,
+      additionalParams
+    );
 
     if (
       this.validateOption(
@@ -861,6 +1060,21 @@ export class MessageDataSource implements DataSource {
       return true;
     }
 
+    // Shown on a root message AND on a reply — inside a thread the user reaches for the
+    // same control, so hiding it there is a dead end. On a reply it acts on the PARENT
+    // thread (getThreadIdFor), which is what kept the old gate necessary: the server will
+    // accept a subscription rooted at a reply id and write a /threads row nobody can open,
+    // so the fix is to never send that id, not to hide the option.
+    // NOT gated on replyCount either: following a message before anyone answers is the
+    // entire point. Only the feature gate applies, and it is off until the integrator opts in.
+    if (
+      MessageOptionConstants.threadSubscription === optionId &&
+      ThreadSubscriptionConfig.isEnabled() &&
+      !additionalParams?.hideThreadSubscriptionOption
+    ) {
+      return true;
+    }
+
     if (
       MessageOptionConstants.shareMessage === optionId &&
       (messageObject instanceof CometChat.TextMessage ||
@@ -936,6 +1150,58 @@ export class MessageDataSource implements DataSource {
       return true;
     }
 
+    // Pin / Unpin (§6.1, §6.5). Role-gated via canPin, which is NOT the delete
+    // gate: delete also allows isSentByMe, but a participant may not pin their
+    // own message — pinning is a conversation-wide act on shared state.
+    //
+    // Offered on a thread REPLY too (Q9). Unlike thread subscription there is no
+    // parent-redirect here: a reply is pinned as itself, and the pinned list
+    // returns the parent for context.
+    // isPinSaveEligible gates all four: no server id yet, deleted, or any
+    // moderation verdict. The backend refuses those outright, so offering the
+    // option means walking the user through a confirm modal to earn an error
+    // toast. Applies to save as well as pin — an unsent message has no id to
+    // save against either.
+    if (
+      MessageOptionConstants.pinMessage === optionId &&
+      PinSaveConfig.isPinEnabled() &&
+      isPinSaveEligible(messageObject) &&
+      canPin(loggedInUser, group) &&
+      !additionalParams?.hidePinMessageOption
+    ) {
+      return true;
+    }
+
+    if (
+      MessageOptionConstants.unpinMessage === optionId &&
+      PinSaveConfig.isPinEnabled() &&
+      isPinSaveEligible(messageObject) &&
+      canPin(loggedInUser, group) &&
+      !additionalParams?.hideUnpinMessageOption
+    ) {
+      return true;
+    }
+
+    // Save / Unsave (§6.1). No role gate at all — the save is private to this
+    // user, so there is no shared state for a scope to protect.
+    if (
+      MessageOptionConstants.saveMessage === optionId &&
+      PinSaveConfig.isSaveEnabled() &&
+      isPinSaveEligible(messageObject) &&
+      !additionalParams?.hideSaveMessageOption
+    ) {
+      return true;
+    }
+
+    if (
+      MessageOptionConstants.unsaveMessage === optionId &&
+      PinSaveConfig.isSaveEnabled() &&
+      isPinSaveEligible(messageObject) &&
+      !additionalParams?.hideUnsaveMessageOption
+    ) {
+      return true;
+    }
+
     return false;
   }
 
@@ -973,6 +1239,19 @@ export class MessageDataSource implements DataSource {
       messageOptionList.push(this.getReplyInThreadOption(theme));
     }
 
+    // follow / unfollow thread — same placement as the other assembler (§6.3)
+    if (
+      this.validateOption(
+        loggedInUser,
+        messageObject,
+        MessageOptionConstants.threadSubscription,
+        group,
+        additionalParams
+      )
+    ) {
+      messageOptionList.push(this.getThreadSubscriptionOption(theme, messageObject));
+    }
+
     if (
       this.validateOption(
         loggedInUser,
@@ -996,6 +1275,16 @@ export class MessageDataSource implements DataSource {
     ) {
       messageOptionList.push(this.getInformationOption(theme));
     }
+
+    // Same position as in getTextMessageOptions — above the destructive actions.
+    this.pushPinSaveOptions(
+      messageOptionList,
+      loggedInUser,
+      messageObject,
+      theme,
+      group,
+      additionalParams
+    );
 
     if (
       this.validateOption(
@@ -2451,7 +2740,11 @@ export class MessageDataSource implements DataSource {
       const count = isBatch ? batchTotalCount : (lastMessage.getAttachments?.() ?? []).length;
       if (count > 1) {
         const { icon, label } = kindPreview(lastMessage.getType(), count);
-        const caption = (lastMessage.getCaption?.() ?? '').trim();
+        // Captions carry the same wire markup a text message does, and this branch returns a
+        // JSX element — so the conversation list's own stripMarkdown pass, which only runs for
+        // string subtitles, never sees it. Strip here or `<color=…>`/`**bold**` render verbatim
+        // in the row (ENG-38258).
+        const caption = stripMarkdown((lastMessage.getCaption?.() ?? '').trim()).trim();
         return getMessagePreviewInternal(icon, caption ? `${label} · ${caption}` : label, { theme });
       }
     }

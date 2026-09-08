@@ -57,6 +57,8 @@ export type RootStackParamList = {
   };
   Users: undefined;
   Groups: undefined;
+  SavedMessages: undefined;
+  PinnedMessages: { user?: any; group?: any } | undefined;
   QRScreen: undefined;
 };
 

@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef, useCallback, useState } from 'react';
-import { StyleSheet, UIManager, findNodeHandle } from 'react-native';
+import { StyleSheet, UIManager, findNodeHandle, processColor } from 'react-native';
 import type {
   Block,
   TextAlignment,
@@ -7,6 +7,7 @@ import type {
   SelectionChangeEvent,
   RichTextEditorProps,
   RichTextEditorRef,
+  InlineStyleKey,
 } from './types';
 import RichTextEditorViewNative from './RichTextEditorViewNativeComponent';
 
@@ -44,6 +45,8 @@ const COMMANDS = {
   setMentionRanges: 'setMentionRanges',
   removeLink: 'removeLink',
   updateLink: 'updateLink',
+  applyInlineStyle: 'applyInlineStyle',
+  removeInlineStyle: 'removeInlineStyle',
 } as const;
 
 // Helper to dispatch commands to native view
@@ -141,6 +144,9 @@ export interface RichTextEditorPropsExtended extends RichTextEditorProps {
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorPropsExtended>((props, ref) => {
   const nativeRef = useRef<React.ElementRef<typeof RichTextEditorViewNative>>(null);
   const [height, setHeight] = useState<number | undefined>(undefined);
+  // Latest mention ranges reported by native, in plain-text coordinates. Native owns them
+  // because editing shifts them; it re-reports on every content change.
+  const mentionRangesRef = useRef<Array<{ start: number; end: number }>>([]);
 
   const handleSizeChange = useCallback((event: SizeChangeEvent) => {
     const newHeight = event.nativeEvent?.height;
@@ -253,6 +259,17 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorPropsExtended
     updateLink: (location: number, length: number, newUrl: string, newText: string) => {
       dispatchCommand(nativeRef, COMMANDS.updateLink, [location, length, newUrl, newText]);
     },
+    applyInlineStyle: (key: InlineStyleKey, value: string) => {
+      // Let RN normalise the colour string (hex / named / rgba) into the packed int
+      // both platforms already speak, instead of parsing colours natively.
+      const color = processColor(value);
+      if (typeof color !== 'number') return;
+      dispatchCommand(nativeRef, COMMANDS.applyInlineStyle, [key, color]);
+    },
+    removeInlineStyle: (key: InlineStyleKey) => {
+      dispatchCommand(nativeRef, COMMANDS.removeInlineStyle, [key]);
+    },
+    getMentionRanges: () => mentionRangesRef.current,
   }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -269,6 +286,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorPropsExtended
         }
       } catch {
         blocks = [];
+      }
+
+      try {
+        mentionRangesRef.current = event.nativeEvent.mentionRangesJson
+          ? JSON.parse(event.nativeEvent.mentionRangesJson)
+          : [];
+      } catch {
+        mentionRangesRef.current = [];
       }
 
       // Convert native event to our API format
@@ -406,5 +431,6 @@ export type {
   DeltaType,
   Selection,
   TextStyle,
+  InlineStyleKey,
 } from './types';
 export { dispatchCommand };

@@ -1,4 +1,9 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
+import {
+  refreshPinSaveFeatures,
+  resetPinSaveFeatures,
+  resolvePinSaveFeatures,
+} from "../utils/PinSaveFeatureGates";
 import { Platform } from "react-native";
 import { CallingExtension } from "../../calls/CallingExtension";
 import { CallingPackage } from "../../calls/CallingPackage";
@@ -172,9 +177,17 @@ export class CometChatUIKit {
               CometChatUIKit.setConversationUpdateSettings(conversationUpdateSettings);
             }
           );
+          // Pin / Save / Pin-conversation are app settings, not integrator preferences, so the
+          // KIT asks for them rather than leaving every integrator to remember. Login is the
+          // first point the settings cache is populated. Fire-and-forget: the flags default to
+          // off and both read sites are long-press paths, so nothing renders against a
+          // half-resolved answer.
+          void resolvePinSaveFeatures();
         },
         onLoggedOut: () => {
           CometChatUIKit.removeLoggedInUser();
+          // Flags are per-app and the next login may be a different app entirely.
+          resetPinSaveFeatures();
         },
       })
     );
@@ -192,6 +205,9 @@ export class CometChatUIKit {
           ).catch(() => {
             // Silently ignore — will retry on next reconnection
           });
+          // Same reason the line above re-fetches: a flag flipped in the dashboard should reach
+          // a running app on the next reconnection rather than waiting for a restart.
+          void refreshPinSaveFeatures();
         },
         inConnecting: () => {},
         onDisconnected: () => {},

@@ -423,7 +423,12 @@ export const CometChatList = React.forwardRef<CometChatListActionsInterface, Com
         if (position !== undefined) {
           if (position === 0) return [item, ...prev];
           if (position >= prev.length) return [...prev, item];
-          else return [...prev.slice(0, position - 1), item, ...prev.slice(position)];
+          // slice(0, position), NOT position - 1. The old form dropped the element
+          // immediately before the insert point: inserting at 2 in a 5-item list
+          // produced [0, item, 2, 3, 4] — index 1 silently deleted. Every other
+          // caller passes 0, which takes the branch above, so this went unnoticed
+          // until the conversation-pin reordering became the first middle insert.
+          return [...prev.slice(0, position), item, ...prev.slice(position)];
         }
         return [...prev, item];
       });

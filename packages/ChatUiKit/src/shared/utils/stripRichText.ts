@@ -6,9 +6,16 @@
  * Only a whitelist of known formatting tags is removed, so legitimate text such
  * as "make a <product>" or "5 < 10" is preserved.
  */
+import { stripColorTags } from "../formatters/richTextWireFormat";
+
 export const stripRichText = (input?: string | null): string => {
   if (!input) return "";
   let text = input;
+
+  // 0. Remove the rich-text wire format's colour tokens. These are NOT HTML, so the
+  //    whitelist in step 1 does not (and must not) match them — `<color=#ff0000>` would
+  //    otherwise reach users verbatim in plain-text previews.
+  text = stripColorTags(text);
 
   // 1. Remove the HTML formatting tags the compact composer can emit — bold, italic,
   //    underline, strikethrough, link, ordered/unordered lists, blockquote, inline code

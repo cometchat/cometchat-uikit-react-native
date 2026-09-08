@@ -31,7 +31,22 @@ import RichTextEditor, {
   type ContentChangeEvent,
   type ActiveStylesState,
   type PasteMediaItem,
+  type InlineStyleKey,
 } from '../CometChatRichTextEditor';
+import {
+  COLOR_CLOSE_TAG,
+  HEX_COLOR_REGEX,
+  openColorTag,
+  matchColorTagAt,
+  stripColorTags,
+} from '../shared/formatters/richTextWireFormat';
+
+/**
+ * Stack-key prefix for the value-carrying text-colour style during send serialization.
+ * The `<color=#rrggbb>…</color>` wire grammar itself lives in richTextWireFormat, so the
+ * composer that produces it and the formatter that renders it can never drift.
+ */
+const TEXT_COLOR_STYLE_PREFIX = 'textColor:';
 
 /**
  * Link tap event data emitted by the native editor when a user taps an existing link.
@@ -520,6 +535,59 @@ export type SingleLineMessageComposerStyleInterface = DeepPartial<CometChatTheme
  * 
  * This interface matches CometChatMessageComposerInterface for full API compatibility.
  */
+/**
+ * Read/mutate surface for the composer input, handed to `ToolbarTrailingButtonsView`.
+ *
+ * Every method delegates to the same native `RichTextEditorRef` the built-in toolbar buttons use,
+ * so a consumer's trailing button behaves identically to a built-in one.
+ */
+export interface ComposerInputHandle {
+  /** Current plain-text content of the composer. */
+  getText: () => string;
+  /** Current selection. Collapsed (start === end) when there is only a caret. */
+  getSelection: () => { start: number; end: number };
+  /** Replaces the composer content. */
+  setText: (text: string) => void;
+  /** Moves the selection/caret. Omit `end` for a collapsed caret. */
+  setSelection: (start: number, end?: number) => void;
+  /** Inserts a hyperlink, wrapping the current selection when there is one. */
+  insertLink: (url: string, text: string) => void;
+  toggleBold: () => void;
+  toggleItalic: () => void;
+  toggleUnderline: () => void;
+  toggleStrikethrough: () => void;
+  toggleCode: () => void;
+  /** Removes all inline formatting from the current selection. */
+  clearFormatting: () => void;
+  /**
+   * Applies an arbitrary inline style to the current selection — the escape hatch for formats
+   * the built-in toolbar has no button for, e.g. a colour picker. `value` is any React Native
+   * colour string. Mentions inside the selection are skipped, and existing formatting on the
+   * range is preserved, so styles compose.
+   */
+  applyInlineStyle: (key: InlineStyleKey, value: string) => void;
+  /** Removes a style previously applied with `applyInlineStyle` from the current selection. */
+  removeInlineStyle: (key: InlineStyleKey) => void;
+  /**
+   * Mention ranges in the composer's plain-text coordinates. Native reports them on every
+   * content change, so they stay correct as edits shift the text around them.
+   */
+  getMentionRanges: () => Array<{ start: number; end: number }>;
+  /**
+   * Formatting state at the caret/selection — which inline styles are on, and the current
+   * block (`paragraph`, `codeBlock`, `bullet`, …).
+   *
+   * A trailing button needs this to decide whether it should be enabled or shown active.
+   * In particular `codeBlock` is true inside a fenced block, where send serializes raw text
+   * and drops every inline style — a colour applied there is visible in the composer and then
+   * silently lost on send, so a colour button must disable itself when this is true.
+   *
+   * Read from a ref, not render state, so it is correct immediately after a caret move rather
+   * than one render behind.
+   */
+  getActiveStyles: () => ActiveStylesState;
+}
+
 export interface CometChatCompactMessageComposerInterface {
   /**
    * Message composer identifier.
@@ -633,6 +701,31 @@ export interface CometChatCompactMessageComposerInterface {
     user?: CometChat.User;
     group?: CometChat.Group;
     composerId: string | number;
+  }) => JSX.Element;
+
+  /**
+   * Renders consumer-supplied button(s) at the TRAILING end of the rich-text formatting toolbar,
+   * after a UIKit-inserted divider matching the toolbar's existing group separators.
+   *
+   * Only rendered while the toolbar itself is visible (`enableRichTextEditor` and not
+   * `hideRichTextFormattingOptions`) — the slot lives inside the toolbar. The native floating
+   * selection toolbar is out of scope; it cannot host injected JS views.
+   *
+   * Signature intentionally mirrors `AuxiliaryButtonView` / `SendButtonView`: every inline view slot
+   * on this composer is a `({ user, group, composerId }) => JSX.Element` render-prop, so consumers
+   * already expect this shape here rather than a bare `ReactNode`.
+   */
+  ToolbarTrailingButtonsView?: ({
+    user,
+    group,
+    composerId,
+    composer,
+  }: {
+    user?: CometChat.User;
+    group?: CometChat.Group;
+    composerId: string | number;
+    /** Read/mutate handle for the composer input — without it a trailing button is a dead button. */
+    composer: ComposerInputHandle;
   }) => JSX.Element;
 
   /**
@@ -1067,6 +1160,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       SendButtonView,
       onSendButtonPress,
       AuxiliaryButtonView,
+      ToolbarTrailingButtonsView,
       SecondaryButtonView,
       auxiliaryButtonsAlignment,
       auxiliaryButtonAlignment, // deprecated alias
@@ -2361,7 +2455,15 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       // §8.4 — total attachments across the whole batch, so the conversation-list preview can
       // aggregate ("N attachments") from just the last fanned-out message it receives.
       const batchTotalCount = groups.reduce((sum, g) => sum + g.attachments.length, 0);
-      const caption = plainTextInputRef.current.trim();
+      // Serialize the caption exactly like a plain text send does. Reading the plain-text ref
+      // instead dropped every inline style — a coloured caption arrived as unstyled text
+      // (ENG-38258) — because the wire markup is produced by blocksToMarkdown, never by the
+      // plain-text mirror.
+      const caption = (
+        enableRichTextEditor && blocksRef.current.length > 0
+          ? blocksToMarkdown(blocksRef.current)
+          : plainTextInputRef.current
+      ).trim();
       const currentReplyMessage = replyMessageRef.current;
       const replyMessageId = currentReplyMessage?.message?.getId?.() ?? null;
 
@@ -3506,6 +3608,45 @@ export const CometChatCompactMessageComposer = React.forwardRef(
      * - Clear the input field
      * - Reset streaming state
      */
+    /**
+     * Composer-input handle handed to `ToolbarTrailingButtonsView`.
+     *
+     * A trailing toolbar button is only useful if its action can read and mutate what is being
+     * composed — otherwise it renders but can do nothing to the message. This exposes the minimal
+     * surface for that: read text + selection, replace text, move the selection, insert a link, and
+     * toggle the built-in inline formats.
+     *
+     * Deliberately a separate object from the `useImperativeHandle` ref below rather than a
+     * refactor of it: both delegate to the same `inputRef`, so behaviour is identical, and the
+     * public ref contract stays untouched.
+     *
+     * Note `selection` is a snapshot taken at render. Native owns the live selection and reports it
+     * via onSelectionChange, so a consumer acting on a stale value should re-read rather than cache.
+     */
+    const composerInputHandle = useMemo(
+      () => ({
+        getText: () => plainTextInputRef.current,
+        getSelection: () => selectionPosition,
+        setText: (text: string) => setInputTextProgrammatic(text),
+        setSelection: (start: number, end?: number) => inputRef.current?.setSelection(start, end),
+        insertLink: (url: string, text: string) => inputRef.current?.insertLink(url, text),
+        toggleBold: () => inputRef.current?.toggleBold(),
+        toggleItalic: () => inputRef.current?.toggleItalic(),
+        toggleUnderline: () => inputRef.current?.toggleUnderline(),
+        toggleStrikethrough: () => inputRef.current?.toggleStrikethrough(),
+        toggleCode: () => inputRef.current?.toggleCode(),
+        clearFormatting: () => inputRef.current?.clearFormatting(),
+        applyInlineStyle: (key: InlineStyleKey, value: string) =>
+          inputRef.current?.applyInlineStyle(key, value),
+        removeInlineStyle: (key: InlineStyleKey) => inputRef.current?.removeInlineStyle(key),
+        getMentionRanges: () => inputRef.current?.getMentionRanges() ?? [],
+        // Ref, not the state value: the memo would otherwise close over a stale snapshot and
+        // report the previous caret's styles. Same reason shouldOpenList reads the ref.
+        getActiveStyles: () => activeStylesRef.current,
+      }),
+      [selectionPosition, setInputTextProgrammatic]
+    );
+
     useImperativeHandle(ref, () => ({
       previewMessageForEdit: previewMessage,
       sendTextMessage,
@@ -3643,13 +3784,30 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         const parseNested = (content: string, offset: number): string => {
           const inner = parseInlineStyles(content);
           for (const s of inner.styles) {
-            styles.push({ style: s.style, start: s.start + offset, end: s.end + offset });
+            // Spread, don't hand-pick: picking only style/start/end drops the value-carrying
+            // fields, so a link nested in bold loses its `url` and a colour run its `color`.
+            styles.push({ ...s, start: s.start + offset, end: s.end + offset });
           }
           return inner.text;
         };
 
         let i = 0;
         while (i < line.length) {
+          // Text colour: <color=#rrggbb>text</color> — depth-aware match; the grammar lives in
+          // richTextWireFormat so this stays in lock-step with the renderer.
+          if (line[i] === '<') {
+            const colorTag = matchColorTagAt(line, i);
+            if (colorTag) {
+              const start = plain.length;
+              const content = line.substring(colorTag.contentStart, colorTag.contentEnd);
+              // parseNested returns the inner text — it does not append to `plain` itself.
+              plain += parseNested(content, start);
+              styles.push({ style: 'textColor', start, end: plain.length, color: colorTag.hex });
+              i = colorTag.endIndex;
+              continue;
+            }
+          }
+
           // Markdown link: [text](url)
           if (line[i] === '[') {
             const closeBracket = line.indexOf('](', i + 1);
@@ -3672,7 +3830,11 @@ export const CometChatCompactMessageComposer = React.forwardRef(
             const closeIdx = line.indexOf('```', i + 3);
             if (closeIdx !== -1) {
               const start = plain.length;
-              const content = line.substring(i + 3, closeIdx);
+              // Code carries no nested markup, so a `<color=…>` token inside one is not a style
+              // here — but it must never be shown to the user as literal text either. Messages
+              // already sent with the tag inside the span (see the serializer fix above) still
+              // exist on the server, so strip rather than render (ENG-38253).
+              const content = stripColorTags(line.substring(i + 3, closeIdx));
               plain += content;
               styles.push({ style: 'code', start, end: plain.length });
               i = closeIdx + 3;
@@ -3685,7 +3847,8 @@ export const CometChatCompactMessageComposer = React.forwardRef(
             const closeIdx = line.indexOf('`', i + 1);
             if (closeIdx !== -1) {
               const start = plain.length;
-              const content = line.substring(i + 1, closeIdx);
+              // Same as the triple-backtick case: strip, never surface raw markup.
+              const content = stripColorTags(line.substring(i + 1, closeIdx));
               plain += content;
               styles.push({ style: 'code', start, end: plain.length });
               i = closeIdx + 1;
@@ -3769,12 +3932,17 @@ export const CometChatCompactMessageComposer = React.forwardRef(
           const afterOpen = line.substring(3);
           const firstClose = afterOpen.indexOf('```');
 
-          if (firstClose > 0) {
+          // `>= 0`, not `> 0`: an EMPTY code block serialises as six backticks (```` `````` ````),
+          // where the close sits at offset 0. Treating that as "no close on this line" made the
+          // parser read it as an OPEN fence and swallow every following line into the code block —
+          // so editing a message that contained one showed the rest of the message as raw code
+          // instead of its own blocks (ENG-38253).
+          if (firstClose >= 0) {
             // Has closing ``` on the same line
             const afterFirstBlock = afterOpen.substring(firstClose + 3).trim();
             if (afterFirstBlock.length === 0) {
               // Single ```content``` on this line — treat as one code block
-              const content = afterOpen.substring(0, firstClose);
+              const content = stripColorTags(afterOpen.substring(0, firstClose));
               blocks.push({ type: 'codeBlock', text: content, styles: [] });
               i++;
               continue;
@@ -3799,7 +3967,9 @@ export const CometChatCompactMessageComposer = React.forwardRef(
             blocks.push({ type: 'codeBlock', text: '', styles: [] });
           } else {
             for (const cl of codeLines) {
-              blocks.push({ type: 'codeBlock', text: cl, styles: [] });
+              // Strip, never surface: a code block owns its styling, but legacy messages can
+              // still carry a colour token inside the fence (ENG-38253).
+              blocks.push({ type: 'codeBlock', text: stripColorTags(cl), styles: [] });
             }
           }
           // Skip closing fence
@@ -3890,6 +4060,16 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       // Order matters: outer markers wrap inner ones
       const styleOrder = ['bold', 'underline', 'strikethrough', 'italic', 'code'];
 
+      // Text colour carries a value, so it cannot be a constant entry in markerMap — its
+      // stack key is `textColor:#rrggbb` and its markers are derived from the hex.
+      const markersFor = (styleKey: string): { open: string; close: string } | undefined => {
+        if (styleKey.startsWith(TEXT_COLOR_STYLE_PREFIX)) {
+          const hex = styleKey.slice(TEXT_COLOR_STYLE_PREFIX.length);
+          return { open: openColorTag(hex), close: COLOR_CLOSE_TAG };
+        }
+        return markerMap[styleKey];
+      };
+
       const applyInlineStyles = (text: string, styles: any[]): string => {
         if (!styles || styles.length === 0 || !text) return text;
 
@@ -3966,6 +4146,14 @@ export const CometChatCompactMessageComposer = React.forwardRef(
             if (sStart <= segStart && sEnd >= segEnd) {
               if (s.style === 'link' && s.url) {
                 linkUrl = s.url;
+              } else if (s.style === 'textColor' && s.color && HEX_COLOR_REGEX.test(s.color)) {
+                const colorKey = `${TEXT_COLOR_STYLE_PREFIX}${String(s.color).toLowerCase()}`;
+                // A character has exactly one colour. If ranges overlap, the later one is the
+                // newer intent — replace rather than keep the first, which would silently render
+                // the stale colour across the whole overlap.
+                const prev = active.findIndex(a => a.startsWith(TEXT_COLOR_STYLE_PREFIX));
+                if (prev !== -1) active.splice(prev, 1);
+                active.push(colorKey);
               } else if (markerMap[s.style] !== undefined && !active.includes(s.style)) {
                 active.push(s.style);
               }
@@ -3989,54 +4177,35 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         for (let i = 0; i < segTexts.length; i++) {
           const curr = segActiveStyles[i];
           // Determine which styles in styleOrder should be active
-          const desired = styleOrder.filter(s => curr.includes(s));
+          const orderedStyles = styleOrder.filter(s => curr.includes(s));
+          // Colour goes outermost so <color=…> always wraps **bold**, which keeps the token
+          // contiguous and parseable by the render-side formatter.
+          const colorKey = curr.find(s => s.startsWith(TEXT_COLOR_STYLE_PREFIX));
+          const desired = colorKey ? [colorKey, ...orderedStyles] : orderedStyles;
 
-          // Close styles that are open but not desired (pop from top of stack)
-          // We must close in reverse stack order (innermost first)
-          const toClose: string[] = [];
-          const toReopen: string[] = [];
-          // Find styles to close: anything in openStack not in desired
-          // But we may need to close styles above them too (and reopen)
-          const newStack: string[] = [];
-          for (const s of openStack) {
-            if (desired.includes(s)) {
-              newStack.push(s);
-            }
+          // Unwind to the longest common prefix of what is OPEN and what is DESIRED, then open the
+          // rest in `desired` order. The previous logic only closed markers that were not desired,
+          // so a style that WAS desired but sat in the wrong ORDER stayed put — and a colour run
+          // starting inside an already-open code span therefore opened its tag between the
+          // backticks: `` `aaa<color=#e11d48>bbb</color>ccc` ``. A code span carries no nested
+          // markup by definition, so the parser on the way back read those tags as literal text and
+          // the edit composer showed raw `<color=…>` in code styling (ENG-38253). Matching the
+          // prefix keeps `desired` order — colour outermost — wherever a run happens to start.
+          let common = 0;
+          while (
+            common < openStack.length &&
+            common < desired.length &&
+            openStack[common] === desired[common]
+          ) common++;
+          // Close from the top down to the divergence point (innermost first).
+          for (let j = openStack.length - 1; j >= common; j--) {
+            result += markersFor(openStack[j])!.close;
           }
-          // Close everything from top of stack down to what we need
-          // Then reopen what should stay
-          if (openStack.length > 0) {
-            // Find the deepest style that needs to close
-            let closeFrom = -1;
-            for (let j = openStack.length - 1; j >= 0; j--) {
-              if (!desired.includes(openStack[j])) {
-                closeFrom = j;
-                break;
-              }
-            }
-            if (closeFrom >= 0) {
-              // Close everything from top down to closeFrom
-              for (let j = openStack.length - 1; j >= closeFrom; j--) {
-                result += markerMap[openStack[j]].close;
-                if (desired.includes(openStack[j])) {
-                  toReopen.push(openStack[j]);
-                }
-              }
-              openStack = openStack.slice(0, closeFrom);
-              // Reopen styles that should stay (in their original order)
-              for (const s of toReopen.reverse()) {
-                result += markerMap[s].open;
-                openStack.push(s);
-              }
-            }
-          }
-
-          // Open new styles that are desired but not yet open
-          for (const s of desired) {
-            if (!openStack.includes(s)) {
-              result += markerMap[s].open;
-              openStack.push(s);
-            }
+          openStack = openStack.slice(0, common);
+          // Open what is missing, outermost first.
+          for (let j = common; j < desired.length; j++) {
+            result += markersFor(desired[j])!.open;
+            openStack.push(desired[j]);
           }
 
           // Add segment text (with link wrapping if needed)
@@ -4049,7 +4218,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
 
         // Close all remaining open styles (innermost first)
         for (let j = openStack.length - 1; j >= 0; j--) {
-          result += markerMap[openStack[j]].close;
+          result += markersFor(openStack[j])!.close;
         }
 
         return result;
@@ -5135,6 +5304,27 @@ export const CometChatCompactMessageComposer = React.forwardRef(
                           </TouchableOpacity>
                         );
                       })}
+                      {/* Consumer-supplied trailing button(s), after a UIKit-inserted divider that
+                          reuses the toolbar's own group-separator primitive (same style + theme
+                          token as the built-in separators above). Guarded so an unset prop leaves
+                          the toolbar byte-identical to today — no divider, no extra node. */}
+                      {ToolbarTrailingButtonsView && (
+                        <>
+                          <View
+                            key='sep-trailing'
+                            style={[
+                              richTextToolbarStyles.separator,
+                              { backgroundColor: theme.color.borderLight as string },
+                            ]}
+                          />
+                          <ToolbarTrailingButtonsView
+                            user={user}
+                            group={group}
+                            composerId={id || 'single-line-composer'}
+                            composer={composerInputHandle}
+                          />
+                        </>
+                      )}
                     </ScrollView>
                   </View>
                 )}

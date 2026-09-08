@@ -146,6 +146,43 @@ export { CometChatUIKit, CometChatUIKitHelper, UIKitSettings } from "./CometChat
 export type { CometChatMessageComposerAction } from "./helper/types";
 
 export { messageStatus } from "./utils/CometChatMessageHelper/index";
+export {
+  ThreadSubscriptionConfig,
+  applyIncomingReply,
+  applyEditedMessage,
+  applySentMessage,
+  applyOwnIncomingMessage,
+  isThreadSubscribed,
+  stampThreadSubscribed,
+  toggleThreadSubscription,
+} from "./utils/ThreadSubscriptionHelper";
+
+/**
+ * Pin & Save. PinSaveConfig is the opt-in gate and MUST be exported — without it
+ * the feature is unreachable and therefore permanently off for every integrator.
+ * The read helpers come too, so a custom bubble can render its own indicator
+ * without re-deriving "presence is the boolean" and getting it wrong.
+ */
+export {
+  PinConversationConfig,
+  isConversationPinned,
+  isSystemPinnedConversation,
+} from "./utils/PinConversationHelper";
+export {
+  resolvePinSaveFeatures,
+  refreshPinSaveFeatures,
+  getPinSaveFeatures,
+  resetPinSaveFeatures,
+  PIN_SAVE_FEATURES_DISABLED,
+} from "./utils/PinSaveFeatureGates";
+
+export {
+  PinSaveConfig,
+  isPinned,
+  isSaved,
+  isSystemPin,
+  SYSTEM_PINNER,
+} from "./utils/PinSaveHelper";
 
 export { getCometChatTranslation, getCurrentLanguage} from "./resources/CometChatLocalizeNew/LocalizationManager";
 export { useLocalizedDate } from "./helper/useLocalizedDateHook";

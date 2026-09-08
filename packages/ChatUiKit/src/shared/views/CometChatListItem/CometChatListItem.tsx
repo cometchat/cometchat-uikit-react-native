@@ -21,6 +21,8 @@ import { Style } from "./style";
 import { DeepPartial } from "../../helper/types";
 
 export interface CometChatListItemInterface {
+  /** Forwarded to the row's root node so a caller can address a specific row. */
+  testID?: string;
   /**
    * Unique identifier for the list item.
    */
@@ -116,6 +118,7 @@ export const CometChatListItem = React.memo((props: CometChatListItemInterface) 
   const theme = useTheme();
 
   const {
+    testID,
     id,
     avatarURL,
     avatarName,
@@ -269,6 +272,7 @@ export const CometChatListItem = React.memo((props: CometChatListItemInterface) 
   return (
     <ListComponent
       {...listComponentProps}
+      testID={testID}
       style={[containerStyle, selected && { backgroundColor: theme.color.background4 }]}
     >
       {getLeadingView()}

@@ -592,7 +592,13 @@ class RichTextView: UITextView {
             return
         }
 
-        guard let pastedString = UIPasteboard.general.string else {
+        // Prefer our private rich-text representation when the copy came from CometChat —
+        // it carries the <color=…> wire format that the plain-text type deliberately omits.
+        let richPaste = UIPasteboard.general.data(
+            forPasteboardType: CometChatRichTextPasteboardType
+        ).flatMap { String(data: $0, encoding: .utf8) }
+
+        guard let pastedString = richPaste ?? UIPasteboard.general.string else {
             super.paste(sender)
             return
         }
@@ -754,7 +760,7 @@ class RichTextView: UITextView {
         var quoteRegions: [(Int, Int)] = []
         var offset = 0
         for line in lines {
-            let lineEnd = offset + line.count
+            let lineEnd = offset + (line as NSString).length
             if line.hasPrefix("▎") {
                 if !quoteRegions.isEmpty && offset <= quoteRegions.last!.1 + 1 {
                     quoteRegions[quoteRegions.count - 1] = (quoteRegions.last!.0, lineEnd)
@@ -872,6 +878,56 @@ private let CodeBlockAttributeKey = NSAttributedString.Key("cometchat.codeBlock"
 // Used to selectively clear old mention styling (bold, foreground, background) without
 // affecting inline code or link styling.
 private let MentionMarkerKey = NSAttributedString.Key("cometchat.mention")
+
+// Mention foreground color (#6852D6). Same value as `inlineCodeTextColor`, kept separate
+// so the two call sites read for what they mean.
+private let mentionForegroundColor = UIColor(red: 104.0/255.0, green: 82.0/255.0, blue: 214.0/255.0, alpha: 1.0)
+
+extension UIColor {
+    /// Parses `#rgb`, `#rrggbb` or `#aarrggbb` (leading `#` optional). nil for malformed input.
+    static func fromHexString(_ hex: String) -> UIColor? {
+        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if s.hasPrefix("#") { s = String(s.dropFirst()) }
+        if s.count == 3 { s = s.map { "\($0)\($0)" }.joined() }
+        guard s.count == 6 || s.count == 8, let val = UInt64(s, radix: 16) else { return nil }
+        let r, g, b, a: CGFloat
+        if s.count == 8 {
+            a = CGFloat((val >> 24) & 0xFF) / 255.0
+            r = CGFloat((val >> 16) & 0xFF) / 255.0
+            g = CGFloat((val >> 8) & 0xFF) / 255.0
+            b = CGFloat(val & 0xFF) / 255.0
+        } else {
+            a = 1.0
+            r = CGFloat((val >> 16) & 0xFF) / 255.0
+            g = CGFloat((val >> 8) & 0xFF) / 255.0
+            b = CGFloat(val & 0xFF) / 255.0
+        }
+        return UIColor(red: r, green: g, blue: b, alpha: a)
+    }
+
+    /// Serialises to lowercase `#rrggbb` for the JS wire format. Alpha is dropped — the wire
+    /// contract is `#rrggbb` only. Returns "" for colors with no RGB components (pattern colors).
+    func toHexString() -> String {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        guard getRed(&r, green: &g, blue: &b, alpha: &a) else { return "" }
+        let ri = Int((max(0, min(1, r)) * 255.0).rounded())
+        let gi = Int((max(0, min(1, g)) * 255.0).rounded())
+        let bi = Int((max(0, min(1, b)) * 255.0).rounded())
+        return String(format: "#%02x%02x%02x", ri, gi, bi)
+    }
+}
+
+// Markers for colors applied by a consumer formatter via applyInlineStyle(). They mirror
+// .foregroundColor / .backgroundColor so those colors can be told apart from the ones the
+// editor itself owns (mention purple, link blue, inline code) and survive mention re-styling.
+private let ExternalForegroundKey = NSAttributedString.Key("cometchat.externalForeground")
+
+// Sentinel placed in `pendingStyles` while a caret-armed consumer colour is active. The colour
+// itself lives in `pendingExternalForeground`; the sentinel exists because three lifecycle sites
+// are Set-gated and would never fire for a value stored outside the Set — which leaks the colour
+// onto text typed elsewhere after a cursor jump.
+private let ExternalColorPendingKey = "externalColor"
+private let ExternalBackgroundKey = NSAttributedString.Key("cometchat.externalBackground")
 
 // Code block visual constants (matching Android CodeBlockBorderSpan companion)
 private let codeBlockCornerRadius: CGFloat = 6.0
@@ -1100,6 +1156,12 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                         b = CGFloat(val & 0xFF) / 255.0
                     }
                     textView.textColor = UIColor(red: r, green: g, blue: b, alpha: a)
+                    // `textView.textColor` re-applies `.foregroundColor` across the ENTIRE
+                    // attributed string, wiping link blue, inline-code purple, mention purple,
+                    // the invisible blockquote bar and any consumer-applied inline colour. This
+                    // setter re-fires on every prop identity change, so rebuild them from their
+                    // marker attributes.
+                    reapplyMarkerForegroundColors()
                 }
             }
             updateContentSize()
@@ -1119,6 +1181,22 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     private var pendingStyles: Set<String> = []
     private var explicitlyOffStyles: Set<String> = []
     private var pendingStylesInsertPos: Int = -1
+
+    /// Text length as of the last selection change, so `textViewDidChangeSelection` can tell a
+    /// caret move caused by TYPING from a deliberate reposition. Typing can advance the caret by
+    /// more than one character — autocorrect replacing a word, predictive text, a multi-scalar
+    /// emoji, a paste, an IME commit — and without this the anchor below treats every one of those
+    /// as "the user moved the caret" and disarms the pending colour mid-sentence (ENG-38257).
+    private var lastKnownTextLength: Int = 0
+
+    /// Caret-armed consumer inline colour (no selection). A UIColor cannot live in a
+    /// `Set<String>` cleanly, so the value lives here while `ExternalColorPendingKey` goes into
+    /// `pendingStyles` to drive the Set-gated lifecycle (cursor-jump invalidation, post-keystroke
+    /// restore, empty-text reset). nil = nothing armed.
+    private var pendingExternalForeground: UIColor? = nil
+    /// True when the colour was cleared with the caret parked, so the next typed character is
+    /// `UIColor.label` rather than inheriting a neighbouring colour.
+    private var pendingExternalForegroundCleared: Bool = false
 
     /// Typing attributes to forcefully restore after all processing (including async
     /// JS bridge callbacks like syncMentionRanges) completes. Set by autoContinueListOnEnter
@@ -1141,7 +1219,34 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         if let strike = attrs[.strikethroughStyle] as? Int, strike != 0 {
             pendingStyles.insert("strikethrough")
         }
+        captureExternalColorToPending()
         pendingStylesInsertPos = textView.selectedRange.location
+    }
+
+    /// Re-anchors `pendingStylesInsertPos` to the current caret.
+    ///
+    /// List operations capture pending styles BEFORE inserting the "1. "/"• "/quote prefix, then
+    /// move the caret past it. That leaves the anchor stale by the prefix length, so the next
+    /// keystroke falls outside the insertPos/insertPos+1 window and textViewDidChangeSelection
+    /// invalidates every pending style — silently dropping an armed colour mid-line.
+    private func syncPendingStyleAnchor() {
+        guard !pendingStyles.isEmpty || !explicitlyOffStyles.isEmpty else { return }
+        pendingStylesInsertPos = textView.selectedRange.location
+    }
+
+    /// Arms the consumer inline colour currently in `typingAttributes` as a pending style.
+    ///
+    /// A consumer colour is persistent like bold/italic, so it must survive the `attributedText`
+    /// resets that list operations perform — those wipe `typingAttributes` and rebuild them from
+    /// `pendingStyles` alone. Needed on both paths: Enter-continuation (via
+    /// `captureInlineStylesToPending`) and the list buttons, which don't call that.
+    private func captureExternalColorToPending() {
+        guard let color = textView.typingAttributes[ExternalForegroundKey] as? UIColor else {
+            return
+        }
+        pendingExternalForeground = color
+        pendingExternalForegroundCleared = false
+        pendingStyles.insert(ExternalColorPendingKey)
     }
 
     override init(frame: CGRect) {
@@ -1376,25 +1481,48 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             savedSelectionRange = range
         }
 
+        // Text length is tracked BEFORE the isInternalChange guard, and unconditionally.
+        //
+        // Every programmatic mutation — clearing the composer on send, setText, list/quote prefix
+        // insertion, the attributedText rebuilds applyInlineStyle performs — runs with
+        // isInternalChange set. Capturing the length after the guard meant those never updated it,
+        // so the counter kept the length of the PREVIOUS message. The next keystroke then computed
+        // a negative `insertedCount` (1 - 6 = -5 after sending a six-character message), read as a
+        // deliberate caret move, and disarmed the colour — which is why the colour survived on the
+        // first character of the second message in a session and nothing after it (ENG-38248).
+        let currentTextLength = (textView.text as NSString).length
+        let insertedCount = currentTextLength - lastKnownTextLength
+        lastKnownTextLength = currentTextLength
+
         // Skip toolbar/style updates during internal changes (e.g. autoContinueListOnEnter)
         // to avoid emitting stale style state before typingAttributes are restored.
         guard !isInternalChange else { return }
 
         // Invalidate pending styles if cursor moved away from insert position
         if pendingStylesInsertPos >= 0 && (!pendingStyles.isEmpty || !explicitlyOffStyles.isEmpty) {
-            if range.location != pendingStylesInsertPos && range.location != pendingStylesInsertPos + 1 {
+            // Typing advances the caret by however many characters actually landed: one for a plain
+            // keystroke, but several for autocorrect replacing a word, predictive text, a multi-scalar
+            // emoji, a paste, or an IME commit. Comparing against a hardcoded +1 classified all of
+            // those as a deliberate caret move and disarmed the colour, so text typed from the first
+            // autocorrection onwards sent as plain (ENG-38257).
+            let isTypingAdvance = insertedCount > 0 && range.location == pendingStylesInsertPos + insertedCount
+            if range.location != pendingStylesInsertPos && !isTypingAdvance {
                 // Preserve "codeBlock" across cursor movements — it's a persistent
                 // block-level style that should survive until explicitly toggled off
                 let hadCodeBlock = pendingStyles.contains("codeBlock")
                 pendingStyles.removeAll()
                 explicitlyOffStyles.removeAll()
                 pendingStylesInsertPos = -1
+                // Drop the caret-armed colour too — otherwise it leaks onto text typed at the
+                // new cursor position (the removeAll() above only drops the sentinel).
+                pendingExternalForeground = nil
+                pendingExternalForegroundCleared = false
                 if hadCodeBlock {
                     pendingStyles.insert("codeBlock")
                     pendingStylesInsertPos = range.location
                 }
-            } else if range.location == pendingStylesInsertPos + 1 {
-                // User typed one char — advance insert pos
+            } else if isTypingAdvance {
+                // Text was typed at the anchor — follow it, however many characters landed.
                 pendingStylesInsertPos = range.location
             }
         }
@@ -1427,7 +1555,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 var cleanAttrs = textView.typingAttributes
                 cleanAttrs.removeValue(forKey: .backgroundColor)
                 cleanAttrs.removeValue(forKey: MentionMarkerKey)
-                if let fg = cleanAttrs[.foregroundColor] as? UIColor {
+                // Skip the RGB sniff entirely when a consumer inline colour is armed — a palette
+                // swatch within ±0.05 of mention purple (#6852D6) would otherwise be silently
+                // reverted to UIColor.label mid-typing.
+                if cleanAttrs[ExternalForegroundKey] == nil,
+                   let fg = cleanAttrs[.foregroundColor] as? UIColor {
                     var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
                     fg.getRed(&r, green: &g, blue: &b, alpha: &a)
                     if abs(r - 104.0/255.0) < 0.05 && abs(g - 82.0/255.0) < 0.05 && abs(b - 214.0/255.0) < 0.05 && a > 0.9 {
@@ -1671,7 +1803,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 cleanAttrs.removeValue(forKey: .backgroundColor)
                 cleanAttrs.removeValue(forKey: MentionMarkerKey)
                 // Restore foreground if it's mention purple (#6852D6)
-                if let fg = cleanAttrs[.foregroundColor] as? UIColor {
+                // Skip the RGB sniff entirely when a consumer inline colour is armed — a palette
+                // swatch within ±0.05 of mention purple (#6852D6) would otherwise be silently
+                // reverted to UIColor.label mid-typing.
+                if cleanAttrs[ExternalForegroundKey] == nil,
+                   let fg = cleanAttrs[.foregroundColor] as? UIColor {
                     var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
                     fg.getRed(&r, green: &g, blue: &b, alpha: &a)
                     if abs(r - 104.0/255.0) < 0.05 && abs(g - 82.0/255.0) < 0.05 && abs(b - 214.0/255.0) < 0.05 && a > 0.9 {
@@ -1896,6 +2032,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             textView.selectedRange = NSRange(location: insertPos + prefix.count + 1, length: 0)
             applyPendingStylesToTypingAttributes()
             deferredTypingAttrs = textView.typingAttributes
+            syncPendingStyleAnchor()
             isInternalChange = false
             renumberNumberedLists()
             DispatchQueue.main.async { [weak self] in
@@ -1957,6 +2094,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             textView.selectedRange = NSRange(location: insertPos + 5, length: 0) // \n + ▎ + " • " = 5
             applyPendingStylesToTypingAttributes()
             deferredTypingAttrs = textView.typingAttributes
+            syncPendingStyleAnchor()
             isInternalChange = false
             DispatchQueue.main.async { [weak self] in
                 self?.textView.setNeedsDisplay()
@@ -1993,6 +2131,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // Restore inline styles via pendingStyles mechanism
             applyPendingStylesToTypingAttributes()
             deferredTypingAttrs = textView.typingAttributes
+            syncPendingStyleAnchor()
             isInternalChange = false
             saveToUndoStack()
             sendContentChange()
@@ -2035,6 +2174,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             renumberNumberedLists()
             applyPendingStylesToTypingAttributes()
             deferredTypingAttrs = textView.typingAttributes
+            syncPendingStyleAnchor()
             isInternalChange = false
             saveToUndoStack()
             sendContentChange()
@@ -2068,6 +2208,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             textView.insertText("\n☐ ")
             applyPendingStylesToTypingAttributes()
             deferredTypingAttrs = textView.typingAttributes
+            syncPendingStyleAnchor()
             isInternalChange = false
             saveToUndoStack()
             sendContentChange()
@@ -2128,6 +2269,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             textView.selectedRange = NSRange(location: insertPos + 3, length: 0)
             applyPendingStylesToTypingAttributes()
             deferredTypingAttrs = textView.typingAttributes
+            syncPendingStyleAnchor()
             isInternalChange = false
             // Trigger redraw for blockquote bar asynchronously to avoid layout issues
             DispatchQueue.main.async { [weak self] in
@@ -2300,6 +2442,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 let hadItalic = pendingStyles.contains("italic")
                 let hadUnderline = pendingStyles.contains("underline")
                 let hadStrikethrough = pendingStyles.contains("strikethrough")
+                // A consumer colour is persistent like bold/italic — it survives until the
+                // cursor moves away (handled in textViewDidChangeSelection).
+                let hadExternalColor = pendingStyles.contains(ExternalColorPendingKey)
                 let hadOffBold = explicitlyOffStyles.contains("bold")
                 let hadOffItalic = explicitlyOffStyles.contains("italic")
                 let hadOffUnderline = explicitlyOffStyles.contains("underline")
@@ -2316,6 +2461,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 if hadItalic { pendingStyles.insert("italic") }
                 if hadUnderline { pendingStyles.insert("underline") }
                 if hadStrikethrough { pendingStyles.insert("strikethrough") }
+                if hadExternalColor { pendingStyles.insert(ExternalColorPendingKey) }
                 if hadOffBold { explicitlyOffStyles.insert("bold") }
                 if hadOffItalic { explicitlyOffStyles.insert("italic") }
                 if hadOffUnderline { explicitlyOffStyles.insert("underline") }
@@ -2340,6 +2486,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             pendingStyles.removeAll()
             explicitlyOffStyles.removeAll()
             pendingStylesInsertPos = -1
+            lastKnownTextLength = 0
+            pendingExternalForeground = nil
+            pendingExternalForegroundCleared = false
             deferredTypingAttrs = nil
             // Reset typingAttributes to plain so next typed text has no ghost formatting
             let paragraphStyle = NSMutableParagraphStyle()
@@ -2404,7 +2553,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 var cleanAttrs = textView.typingAttributes
                 cleanAttrs.removeValue(forKey: .backgroundColor)
                 cleanAttrs.removeValue(forKey: MentionMarkerKey)
-                if let fg = cleanAttrs[.foregroundColor] as? UIColor {
+                // Skip the RGB sniff entirely when a consumer inline colour is armed — a palette
+                // swatch within ±0.05 of mention purple (#6852D6) would otherwise be silently
+                // reverted to UIColor.label mid-typing.
+                if cleanAttrs[ExternalForegroundKey] == nil,
+                   let fg = cleanAttrs[.foregroundColor] as? UIColor {
                     var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
                     fg.getRed(&r, green: &g, blue: &b, alpha: &a)
                     if abs(r - 104.0/255.0) < 0.05 && abs(g - 82.0/255.0) < 0.05 && abs(b - 214.0/255.0) < 0.05 && a > 0.9 {
@@ -2659,27 +2812,27 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
         for line in lines {
             // Check for blockquote + numbered: "▎ N. "
-            if let quoteMatch = quoteNumberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
+            if let quoteMatch = quoteNumberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: (line as NSString).length)) {
                 counter += 1
                 let oldPrefix = (line as NSString).substring(with: quoteMatch.range)
                 let newPrefix = "▎ \(counter). "
                 if oldPrefix != newPrefix {
                     replacements.append((NSRange(location: offset, length: oldPrefix.count), newPrefix))
                 }
-            } else if let match = numberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
+            } else if let match = numberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: (line as NSString).length)) {
                 counter += 1
                 let oldPrefix = (line as NSString).substring(with: match.range)
                 let newPrefix = "\(counter). "
                 if oldPrefix != newPrefix {
                     replacements.append((NSRange(location: offset, length: oldPrefix.count), newPrefix))
                 }
-            } else if bulletRegex?.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) != nil {
+            } else if bulletRegex?.firstMatch(in: line, range: NSRange(location: 0, length: (line as NSString).length)) != nil {
                 // Bullet lines don't reset the counter — ordered numbering
                 // continues across bullet interruptions (Slack behavior).
             } else {
                 counter = 0
             }
-            offset += line.count + 1
+            offset += (line as NSString).length + 1
         }
 
         if !replacements.isEmpty {
@@ -2939,7 +3092,8 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         let cleanText = (textView.text ?? "").replacingOccurrences(of: "\u{200B}", with: "")
         onContentChange?([
             "text": cleanText,
-            "blocksJson": blocksJson
+            "blocksJson": blocksJson,
+            "mentionRangesJson": currentMentionRangesJson()
         ])
     }
 
@@ -3466,7 +3620,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         }
 
         if !hasMonospace {
-            mutableAttrString.addAttribute(.foregroundColor, value: inlineCodeTextColor, range: range)
+            paintInlineCodeForeground(on: mutableAttrString, range: range)
             mutableAttrString.addAttribute(.backgroundColor, value: inlineCodeBgColor, range: range)
         } else {
             mutableAttrString.removeAttribute(.backgroundColor, range: range)
@@ -3481,6 +3635,237 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         sendContentChange()
         emitActiveStyles()
         updateToolbarButtonStates()
+    }
+
+    // MARK: - Arbitrary inline styles (consumer formatters)
+
+    /// Maps a public style key to (the attribute it drives, its external marker).
+    /// ponytail: colors are the only inline style a trailing-button formatter needs today —
+    /// widen the switch if fonts/spacing ever follow.
+    private static func inlineStyleAttributes(for key: String) -> (NSAttributedString.Key, NSAttributedString.Key)? {
+        switch key {
+        case "color": return (.foregroundColor, ExternalForegroundKey)
+        case "backgroundColor": return (.backgroundColor, ExternalBackgroundKey)
+        default: return nil
+        }
+    }
+
+    /// Unpacks an RN `processColor()` ARGB int.
+    private static func color(fromARGB argb: Int) -> UIColor {
+        UIColor(
+            red: CGFloat((argb >> 16) & 0xFF) / 255.0,
+            green: CGFloat((argb >> 8) & 0xFF) / 255.0,
+            blue: CGFloat(argb & 0xFF) / 255.0,
+            alpha: CGFloat((argb >> 24) & 0xFF) / 255.0
+        )
+    }
+
+    /// Sub-ranges of `range` a consumer style may touch: mentions AND links are protected.
+    /// The general-purpose `nonMentionRanges` above only guards mentions, but Android's
+    /// equivalent also guards `URLSpan` — and colour is exactly what a link uses to signal
+    /// itself, so recolouring one would diverge visibly between platforms.
+    private func inlineStyleTargetRanges(in range: NSRange, attributedText: NSAttributedString) -> [NSRange] {
+        var protectedRanges: [NSRange] = []
+        for key in [MentionMarkerKey, LinkURLAttributeKey] {
+            attributedText.enumerateAttribute(key, in: range, options: []) { value, attrRange, _ in
+                if value != nil { protectedRanges.append(attrRange) }
+            }
+        }
+        if protectedRanges.isEmpty { return [range] }
+        protectedRanges.sort { $0.location < $1.location }
+
+        var result: [NSRange] = []
+        var cursor = range.location
+        for pr in protectedRanges {
+            if cursor < pr.location {
+                result.append(NSRange(location: cursor, length: pr.location - cursor))
+            }
+            cursor = max(cursor, pr.location + pr.length)
+        }
+        let rangeEnd = range.location + range.length
+        if cursor < rangeEnd {
+            result.append(NSRange(location: cursor, length: rangeEnd - cursor))
+        }
+        return result
+    }
+
+    /// Rebuilds every marker-derived `.foregroundColor` on the given string.
+    ///
+    /// Call after any blanket foreground write (`textView.textColor = …`,
+    /// `removeAttribute(.foregroundColor, range: fullRange)`), which UIKit applies across the
+    /// whole attributed string. The order below IS the paint-order policy: the consumer's inline
+    /// colour is laid down first, then the blockquote bar, links, inline code and mentions —
+    /// which own their colour and always win.
+    private func reapplyMarkerForegroundColors(on mutableAttr: NSMutableAttributedString) {
+        let fullRange = NSRange(location: 0, length: mutableAttr.length)
+        guard fullRange.length > 0 else { return }
+
+        // 1. Consumer-applied colour (marker is the source of truth, `.foregroundColor` is paint)
+        mutableAttr.enumerateAttribute(ExternalForegroundKey, in: fullRange, options: []) { value, range, _ in
+            if let color = value as? UIColor {
+                mutableAttr.addAttribute(.foregroundColor, value: color, range: range)
+            }
+        }
+        // 2. Blockquote ▎ (U+258E) stays invisible — the grey bar is custom-drawn in draw(_:)
+        let str = mutableAttr.string as NSString
+        for i in 0..<str.length where str.character(at: i) == 0x258E {
+            mutableAttr.addAttribute(.foregroundColor, value: UIColor.clear, range: NSRange(location: i, length: 1))
+        }
+        // 3. Links
+        mutableAttr.enumerateAttribute(LinkURLAttributeKey, in: fullRange, options: []) { value, range, _ in
+            if value != nil {
+                mutableAttr.addAttribute(.foregroundColor, value: UIColor.systemBlue, range: range)
+            }
+        }
+        // 4. Inline code (identified by its background, matching setMentionRanges).
+        //    Skips any sub-range carrying a consumer colour: this step runs after step 1 and
+        //    would otherwise repaint it, hiding an applied colour in the composer while the
+        //    wire format — which serializes from the style ranges, not from `.foregroundColor` —
+        //    still carried it, so the colour reappeared only once sent (ENG-38248).
+        //    Colour wins over the inline-code default; the code background is untouched.
+        mutableAttr.enumerateAttribute(.backgroundColor, in: fullRange, options: []) { value, range, _ in
+            guard let bgColor = value as? UIColor, bgColor == inlineCodeBgColor else { return }
+            mutableAttr.enumerateAttribute(ExternalForegroundKey, in: range, options: []) { external, subRange, _ in
+                if external == nil {
+                    mutableAttr.addAttribute(.foregroundColor, value: inlineCodeTextColor, range: subRange)
+                }
+            }
+        }
+        // 5. Mentions
+        mutableAttr.enumerateAttribute(MentionMarkerKey, in: fullRange, options: []) { value, range, _ in
+            if value != nil {
+                mutableAttr.addAttribute(.foregroundColor, value: mentionForegroundColor, range: range)
+            }
+        }
+    }
+
+    /// `reapplyMarkerForegroundColors(on:)` against the live text view, preserving the selection
+    /// and typing attributes that `attributedText =` would otherwise reset.
+    private func reapplyMarkerForegroundColors() {
+        guard let attributed = textView.attributedText, attributed.length > 0 else { return }
+        let mutableAttr = NSMutableAttributedString(attributedString: attributed)
+        reapplyMarkerForegroundColors(on: mutableAttr)
+        let savedRange = textView.selectedRange
+        let savedTypingAttrs = textView.typingAttributes
+        isInternalChange = true
+        textView.attributedText = mutableAttr
+        textView.selectedRange = savedRange
+        textView.typingAttributes = savedTypingAttrs
+        isInternalChange = false
+        textView.setNeedsDisplay()
+    }
+
+    private func commitInlineStyle(_ mutableAttrString: NSMutableAttributedString, range: NSRange) {
+        isInternalChange = true
+        textView.attributedText = mutableAttrString
+        textView.selectedRange = range
+        isInternalChange = false
+        saveToUndoStack()
+        sendContentChange()
+    }
+
+    /// Applies an arbitrary inline style to the current selection, skipping mentions so the
+    /// consumer's formatter cannot recolour a mention (§8.2 S4). `value` is an ARGB int from
+    /// RN's `processColor()`. Existing styles are left alone, so styles compose (S3).
+    func applyInlineStyle(key: String, value: Int) {
+        guard let (attribute, marker) = Self.inlineStyleAttributes(for: key) else { return }
+        // An explicit colour choice overrides any deferred restore left by list continuation,
+        // which would otherwise stomp the new colour a keystroke later.
+        deferredTypingAttrs = nil
+        let range = textView.selectedRange
+        let color = Self.color(fromARGB: value)
+
+        // No selection: arm the colour for type-ahead, matching toggleCode/toggleBold rather
+        // than silently doing nothing. Routed through pendingStyles so the Set-gated lifecycle
+        // sites invalidate it on a cursor jump instead of leaking it onto text typed elsewhere.
+        if range.length == 0 {
+            guard attribute == .foregroundColor else {
+                // ponytail: background type-ahead has no pendingStyles hook; it needs a selection.
+                return
+            }
+            pendingExternalForeground = color
+            pendingExternalForegroundCleared = false
+            pendingStyles.insert(ExternalColorPendingKey)
+            pendingStylesInsertPos = range.location
+            applyPendingStylesToTypingAttributes()
+            emitActiveStyles()
+            return
+        }
+
+        let mutableAttrString = NSMutableAttributedString(attributedString: textView.attributedText)
+        for subRange in inlineStyleTargetRanges(in: range, attributedText: mutableAttrString) {
+            mutableAttrString.addAttribute(attribute, value: color, range: subRange)
+            mutableAttrString.addAttribute(marker, value: color, range: subRange)
+        }
+        commitInlineStyle(mutableAttrString, range: range)
+    }
+
+    /// Removes a previously applied inline style from the current selection. Only ranges the
+    /// consumer coloured are touched — mention/link/code colouring is left intact.
+    func removeInlineStyle(key: String) {
+        guard let (attribute, marker) = Self.inlineStyleAttributes(for: key) else { return }
+        // Same as applyInlineStyle: an explicit clear outranks a deferred restore.
+        deferredTypingAttrs = nil
+        let range = textView.selectedRange
+
+        // No selection: cancel the pending type-ahead style instead of no-oping. The sentinel
+        // goes in for the clear too, so the lifecycle sites see and invalidate the decision.
+        if range.length == 0 {
+            guard attribute == .foregroundColor else {
+                textView.typingAttributes.removeValue(forKey: marker)
+                textView.typingAttributes.removeValue(forKey: attribute)
+                return
+            }
+            pendingExternalForeground = nil
+            pendingExternalForegroundCleared = true
+            pendingStyles.insert(ExternalColorPendingKey)
+            pendingStylesInsertPos = range.location
+            applyPendingStylesToTypingAttributes()
+            emitActiveStyles()
+            return
+        }
+
+        let mutableAttrString = NSMutableAttributedString(attributedString: textView.attributedText)
+        // Collect first, then mutate — removing the attribute being enumerated mid-walk is unsafe.
+        var markedRanges: [NSRange] = []
+        mutableAttrString.enumerateAttribute(marker, in: range, options: []) { value, subRange, _ in
+            if value != nil { markedRanges.append(subRange) }
+        }
+        for subRange in markedRanges {
+            mutableAttrString.removeAttribute(marker, range: subRange)
+            mutableAttrString.removeAttribute(attribute, range: subRange)
+            if attribute == .foregroundColor {
+                mutableAttrString.addAttribute(.foregroundColor, value: UIColor.label, range: subRange)
+            }
+        }
+        commitInlineStyle(mutableAttrString, range: range)
+    }
+
+    /// Current mention ranges in "clean" (ZWS-stripped) coordinates — the same space
+    /// `setMentionRanges` accepts and JS works in. Emitted on every content change so a
+    /// consumer formatter can read back where mentions ended up after edits (§8.2 S4).
+    private func currentMentionRangesJson() -> String {
+        let attributed = NSAttributedString(attributedString: textView.attributedText)
+        guard attributed.length > 0 else { return "[]" }
+
+        let raw = attributed.string as NSString
+        var rawToClean = [Int](repeating: 0, count: raw.length + 1)
+        var clean = 0
+        for i in 0..<raw.length {
+            rawToClean[i] = clean
+            if raw.character(at: i) != 0x200B { clean += 1 }
+        }
+        rawToClean[raw.length] = clean
+
+        var ranges: [[String: Int]] = []
+        attributed.enumerateAttribute(MentionMarkerKey, in: NSRange(location: 0, length: attributed.length), options: []) { value, range, _ in
+            guard value != nil else { return }
+            ranges.append(["start": rawToClean[range.location], "end": rawToClean[range.location + range.length]])
+        }
+        guard !ranges.isEmpty,
+              let data = try? JSONSerialization.data(withJSONObject: ranges, options: []),
+              let json = String(data: data, encoding: .utf8) else { return "[]" }
+        return json
     }
 
     func toggleHighlight(color: String?) {
@@ -4111,6 +4496,24 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
     /// Applies pending style toggles to typingAttributes so newly typed text inherits them.
     /// Matches Android's pendingStyles mechanism via iOS's native typingAttributes API.
+    /// Paints the inline-code foreground over `range`, but never over a sub-range carrying a
+    /// consumer colour.
+    ///
+    /// Inline code owns a foreground of its own, and several passes re-assert it — `toggleCode`,
+    /// `setMentionRanges` (which the JS bridge calls on every content change), and the typed
+    /// ``code`` markdown shortcut. Each one used to repaint the whole range, so a consumer colour
+    /// applied to inline code was overwritten within a frame and the composer showed #6852D6
+    /// instead of the chosen colour — while the wire, serialized from the style ranges rather than
+    /// from `.foregroundColor`, still carried it. The colour therefore only "appeared" after
+    /// sending (ENG-38248). Colour wins; the code background is untouched either way.
+    private func paintInlineCodeForeground(on attr: NSMutableAttributedString, range: NSRange) {
+        attr.enumerateAttribute(ExternalForegroundKey, in: range, options: []) { external, subRange, _ in
+            if external == nil {
+                attr.addAttribute(.foregroundColor, value: inlineCodeTextColor, range: subRange)
+            }
+        }
+    }
+
     private func applyPendingStylesToTypingAttributes() {
         var attrs = textView.typingAttributes
         var baseFont = attrs[.font] as? UIFont ?? UIFont.systemFont(ofSize: 16)
@@ -4178,6 +4581,19 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             attrs.removeValue(forKey: .strikethroughStyle)
         }
 
+        // Consumer inline colour — must land AFTER the `UIColor.label` / inline-code foreground
+        // writes above so it overrides them, and marker + paint go in together.
+        if let color = pendingExternalForeground {
+            attrs[ExternalForegroundKey] = color
+            attrs[.foregroundColor] = color
+        } else if pendingExternalForegroundCleared {
+            attrs.removeValue(forKey: ExternalForegroundKey)
+            // Inline code / code block keep their own foreground when the colour is cleared
+            if !pendingStyles.contains("code") && !pendingStyles.contains("codeBlock") {
+                attrs[.foregroundColor] = UIColor.label
+            }
+        }
+
         textView.typingAttributes = attrs
     }
 
@@ -4190,6 +4606,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     }
 
     private func toggleListStyle(bullet: Bool) {
+        // Arm the active consumer colour before the attributedText resets below wipe
+        // typingAttributes — applyPendingStylesToTypingAttributes() rebuilds from pendingStyles.
+        captureExternalColorToPending()
         // Mutual exclusivity: exit code block mode before applying list (matches Android toggleListPrefix)
         // Remove code block attributes inline rather than calling toggleCodeBlock() to avoid
         // textView.attributedText reassignment mid-flow.
@@ -4247,6 +4666,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             pendingStyles.remove("underline")
             pendingStyles.remove("strikethrough")
             pendingStyles.remove("code")
+            // This branch converts a code-block line to a plain list line and drops every other
+            // inline style, so the consumer colour goes with them rather than surviving alone.
+            pendingStyles.remove(ExternalColorPendingKey)
+            pendingExternalForeground = nil
+            pendingExternalForegroundCleared = false
             explicitlyOffStyles.removeAll()
             // Reset typingAttributes to plain so list prefix doesn't inherit code block styling
             let plainParaStyle = NSMutableParagraphStyle()
@@ -4311,7 +4735,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         var lineOffsets: [(start: Int, line: String)] = []
         for line in lines {
             lineOffsets.append((start: lineOffset, line: line))
-            lineOffset += line.count + 1 // +1 for \n
+            lineOffset += (line as NSString).length + 1 // +1 for \n (UTF-16 units, to match NSRange)
         }
 
         for (index, entry) in lineOffsets.enumerated().reversed() {
@@ -4394,6 +4818,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         // set textView.attributedText and wipe typingAttributes.
         applyPendingStylesToTypingAttributes()
         deferredTypingAttrs = textView.typingAttributes
+        syncPendingStyleAnchor()
 
         // Re-check placeholder after all post-processing (applyListIndentation /
         // renumberNumberedLists may set textView.attributedText which can cause
@@ -4499,7 +4924,12 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                     guard let start = style["start"] as? Int,
                           let end = style["end"] as? Int,
                           let styleType = style["style"] as? String,
-                          start < end && end <= text.count else { continue }
+                          // UTF-16, not graphemes. JS hands these offsets over in UTF-16 units
+                          // (that is what String slicing and NSRange both use); `text.count` counts
+                          // GRAPHEMES, so one emoji made it one short and the guard silently dropped
+                          // every style on the line — the edit composer then opened a coloured/bold
+                          // message as plain text. Same bug the serializer had in ENG-38257.
+                          start < end && end <= (text as NSString).length else { continue }
 
                     let range = NSRange(location: start + prefixLength, length: end - start)
 
@@ -4528,6 +4958,14 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                         blockAttrString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
                     case "strikethrough":
                         blockAttrString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: range)
+                    case "textColor":
+                        // Edit round-trip: restore a consumer colour from the wire format so the
+                        // composer shows the colour rather than raw <color=…> text. Marker and
+                        // paint go in together, as everywhere else.
+                        if let hex = style["color"] as? String, let color = UIColor.fromHexString(hex) {
+                            blockAttrString.addAttribute(ExternalForegroundKey, value: color, range: range)
+                            blockAttrString.addAttribute(.foregroundColor, value: color, range: range)
+                        }
                     case "code":
                         let monoFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
                         blockAttrString.addAttribute(.font, value: monoFont, range: range)
@@ -4541,6 +4979,22 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                         }
                     default:
                         break
+                    }
+                }
+
+                // Order-independent re-assert of the consumer colour.
+                //
+                // The styles above are applied in whatever order the wire listed them, and both
+                // `code` and `link` write a foreground of their own. When a colour run overlapped
+                // one of those and happened to be listed first, the later case painted straight
+                // over it and the edit composer opened showing #6852D6 (or link blue) instead of
+                // the colour the message was sent with (ENG-38248, on the edit round-trip).
+                // ExternalForegroundKey is the marker the serializer reads, so re-deriving the
+                // paint from it makes the outcome independent of style order.
+                let blockRange = NSRange(location: 0, length: blockAttrString.length)
+                blockAttrString.enumerateAttribute(ExternalForegroundKey, in: blockRange, options: []) { value, subRange, _ in
+                    if let color = value as? UIColor {
+                        blockAttrString.addAttribute(.foregroundColor, value: color, range: subRange)
                     }
                 }
             }
@@ -4582,12 +5036,32 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                     pendingStylesInsertPos = endPosition
                     let cbParaStyle = NSMutableParagraphStyle()
                     cbParaStyle.lineHeightMultiple = RichTextEditorView.defaultLineHeightMultiple
+                    // Deliberately no colour: a code BLOCK owns its styling and destroys the colour
+                    // on its line, which is the documented rule on both platforms.
                     textView.typingAttributes = [
                         .font: UIFont.monospacedSystemFont(ofSize: 16, weight: .regular),
                         .foregroundColor: UIColor.label,
                         .paragraphStyle: cbParaStyle,
                         CodeBlockAttributeKey: true
                     ]
+                } else if let color = attrText.attribute(
+                    ExternalForegroundKey, at: checkPos, effectiveRange: nil
+                ) as? UIColor {
+                    // Arm the trailing run's consumer colour so text typed after an edit CONTINUES
+                    // in it. The caret already inherits the font-level styling from the character
+                    // before it, which is why inline code carried across an edit while the colour
+                    // did not — the colour is not a typing attribute the editor maintains by
+                    // itself, it rides `pendingExternalForeground`, and nothing armed that here.
+                    // Result: editing a red inline-code message and typing continued the code and
+                    // came out in the default label colour (ENG-38253).
+                    //
+                    // Marker and paint together, as everywhere else: ExternalForegroundKey is what
+                    // the serializer reads back, so without it the colour would show and then not
+                    // survive the send.
+                    textView.typingAttributes[ExternalForegroundKey] = color
+                    textView.typingAttributes[.foregroundColor] = color
+                    captureExternalColorToPending()
+                    pendingStylesInsertPos = endPosition
                 }
             }
         }
@@ -4608,6 +5082,15 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         return textView.text ?? ""
     }
 
+    /// Serializes the composer into the blocks array the JS side turns into wire markup.
+    ///
+    /// EVERY offset here is a UTF-16 offset, because that is what `NSRange` /
+    /// `NSAttributedString` / `NSRegularExpression` use — and what JS string slicing uses on the
+    /// other side of the bridge. Swift's `String.count` is a GRAPHEME count, so the two disagree
+    /// for exactly the characters users reach for most: emoji, flags, skin-tone sequences,
+    /// combining accents. Mixing them made every style range on a line stop one UTF-16 unit short
+    /// per preceding emoji, so the tail of a coloured message serialized as plain text even though
+    /// the composer showed it coloured (ENG-38257). Use `NSString.length`, never `String.count`.
     func getBlocksArray() -> [[String: Any]] {
         let text = textView.text ?? ""
         let attributedText = textView.attributedText ?? NSAttributedString()
@@ -4628,22 +5111,22 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             if line.hasPrefix("▎ • ") {
                 blockType = "quoteBullet"
                 displayText = String(line.dropFirst(4))
-            } else if let qnMatch = quoteNumberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
+            } else if let qnMatch = quoteNumberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: (line as NSString).length)) {
                 blockType = "quoteNumbered"
-                displayText = String(line.dropFirst(qnMatch.range.length))
+                displayText = (line as NSString).substring(from: qnMatch.range.length)
             } else if line.hasPrefix("• ") {
                 blockType = "bullet"
                 displayText = String(line.dropFirst(2))
-            } else if let match = numberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: line.count)) {
+            } else if let match = numberedRegex?.firstMatch(in: line, range: NSRange(location: 0, length: (line as NSString).length)) {
                 blockType = "numbered"
-                displayText = String(line.dropFirst(match.range.length))
+                displayText = (line as NSString).substring(from: match.range.length)
             } else if line.hasPrefix("▎ ") {
                 blockType = "quote"
                 displayText = String(line.dropFirst(2))
             }
 
             // Detect code block: check the line range for CodeBlockAttributeKey
-            let lineRange = NSRange(location: currentIndex, length: line.count)
+            let lineRange = NSRange(location: currentIndex, length: (line as NSString).length)
             if lineRange.location + lineRange.length <= attributedText.length && lineRange.length > 0 {
                 var hasCodeBlockAttr = false
                 attributedText.enumerateAttribute(CodeBlockAttributeKey, in: lineRange, options: []) { value, _, _ in
@@ -4667,9 +5150,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             displayText = displayText.replacingOccurrences(of: "\u{200B}", with: "")
 
             var styles: [[String: Any]] = []
-            let prefixLength = line.count - displayText.count
+            let prefixLength = (line as NSString).length - (displayText as NSString).length
             let styleRangeStart = currentIndex + prefixLength
-            let styleRangeLength = displayText.count
+            let styleRangeLength = (displayText as NSString).length
             let styleLineRange = NSRange(location: styleRangeStart, length: styleRangeLength)
 
             if styleLineRange.location + styleLineRange.length <= attributedText.length {
@@ -4709,6 +5192,17 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                     if attrs[.strikethroughStyle] != nil {
                         styles.append(["style": "strikethrough", "start": relativeStart, "end": relativeEnd])
                     }
+                    // Consumer inline colour. Offsets are already relative to the block prefix
+                    // (`• `/`▎ `/`1. ` and ZWS are stripped by the callers before extraction),
+                    // so a colour range can never cover a list/quote glyph.
+                    if let color = attrs[ExternalForegroundKey] as? UIColor {
+                        styles.append([
+                            "style": "textColor",
+                            "start": relativeStart,
+                            "end": relativeEnd,
+                            "color": color.toHexString()
+                        ])
+                    }
                 }
             }
 
@@ -4718,7 +5212,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 "styles": styles
             ])
 
-            currentIndex += line.count + 1
+            currentIndex += (line as NSString).length + 1  // +1 for the "\n" the split removed
         }
 
         return blocks
@@ -4733,6 +5227,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         pendingStyles.removeAll()
         explicitlyOffStyles.removeAll()
         pendingStylesInsertPos = -1
+        lastKnownTextLength = 0
         // Reset typingAttributes to plain so next typed text has no formatting
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineHeightMultiple = RichTextEditorView.defaultLineHeightMultiple
@@ -4897,6 +5392,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             ]
             // Track code block as a pending style so it survives textDidChange clearing
             pendingStyles.insert("codeBlock")
+            // Drop an armed consumer colour, or the first character typed into the empty block
+            // would come out coloured instead of the code block default.
+            pendingExternalForeground = nil
+            pendingExternalForegroundCleared = false
+            pendingStyles.remove(ExternalColorPendingKey)
             pendingStylesInsertPos = textView.selectedRange.location
             isInternalChange = false
             textView.setNeedsDisplay()
@@ -4955,6 +5455,17 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             mutableAttr.addAttribute(CodeBlockAttributeKey, value: true, range: lineRange)
             // Strip mention markers so setMentionRanges() won't re-apply mention styling
             mutableAttr.removeAttribute(MentionMarkerKey, range: lineRange)
+            // Same reason, for consumer colour: the blanket .foregroundColor reset above only
+            // changes what is drawn. Leaving the marker behind lets the re-apply passes that run
+            // after any mention re-styling paint the colour straight back over the block, so a
+            // code block would keep whatever colour the text had before it became code.
+            mutableAttr.removeAttribute(ExternalForegroundKey, range: lineRange)
+            mutableAttr.removeAttribute(ExternalBackgroundKey, range: lineRange)
+            // A colour armed for type-ahead would otherwise colour the next character typed
+            // inside the block.
+            pendingExternalForeground = nil
+            pendingExternalForegroundCleared = false
+            pendingStyles.remove(ExternalColorPendingKey)
             // Set pendingStyles + typingAttributes so newly typed characters
             // inherit code block mode (matches empty-line activation path)
             pendingStyles.insert("codeBlock")
@@ -5175,7 +5686,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 bgColor.getRed(&r, green: &g, blue: &b, alpha: &a)
                 // Mention bg: rgba(104/255, 82/255, 214/255, 0.15) — low alpha purple
                 let isMentionBg = abs(r - 104.0/255.0) < 0.05 && abs(g - 82.0/255.0) < 0.05 && abs(b - 214.0/255.0) < 0.05 && a < 0.3
-                if isMentionBg {
+                // A consumer-applied background that happens to look like the mention purple is not one.
+                let isExternal = mutableAttr.attribute(ExternalBackgroundKey, at: range.location, effectiveRange: nil) != nil
+                if isMentionBg && !isExternal {
                     mutableAttr.removeAttribute(.backgroundColor, range: range)
                 }
             }
@@ -5194,6 +5707,14 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             }
         }
 
+        // Re-apply consumer-applied foreground color (applyInlineStyle) after the blanket reset,
+        // so a colour set by a trailing-button formatter is not clobbered by mention re-styling.
+        mutableAttr.enumerateAttribute(ExternalForegroundKey, in: fullRange, options: []) { value, range, _ in
+            if let color = value as? UIColor {
+                mutableAttr.addAttribute(.foregroundColor, value: color, range: range)
+            }
+        }
+
         // Re-apply link foreground color (systemBlue) to ranges with LinkURLAttributeKey
         // so that links remain visually blue after the blanket reset above.
         mutableAttr.enumerateAttribute(LinkURLAttributeKey, in: fullRange, options: []) { value, range, _ in
@@ -5202,10 +5723,11 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             }
         }
 
-        // Re-apply inline code text color to ranges with inline code background
+        // Re-apply inline code text color to ranges with inline code background, except where a
+        // consumer colour is set — see paintInlineCodeForeground (ENG-38248).
         mutableAttr.enumerateAttribute(.backgroundColor, in: fullRange, options: []) { value, range, _ in
             if let bgColor = value as? UIColor, bgColor == inlineCodeBgColor {
-                mutableAttr.addAttribute(.foregroundColor, value: inlineCodeTextColor, range: range)
+                self.paintInlineCodeForeground(on: mutableAttr, range: range)
             }
         }
         
@@ -5286,8 +5808,10 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 cleanAttrs.removeValue(forKey: .backgroundColor)
             }
         }
-        // Remove mention foreground color — use component comparison
-        if let fg = cleanAttrs[.foregroundColor] as? UIColor {
+        // Remove mention foreground color — use component comparison. Skipped when a consumer
+        // inline colour is armed, so a swatch near mention purple isn't silently reverted.
+        if cleanAttrs[ExternalForegroundKey] == nil,
+           let fg = cleanAttrs[.foregroundColor] as? UIColor {
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             fg.getRed(&r, green: &g, blue: &b, alpha: &a)
             if abs(r - 104.0/255.0) < 0.05 && abs(g - 82.0/255.0) < 0.05 && abs(b - 214.0/255.0) < 0.05 && a > 0.9 {
@@ -5496,7 +6020,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                             case "code":
                                 let monoFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
                                 mutableAttr.addAttribute(.font, value: monoFont, range: fmtRange)
-                                mutableAttr.addAttribute(.foregroundColor, value: inlineCodeTextColor, range: fmtRange)
+                                paintInlineCodeForeground(on: mutableAttr, range: fmtRange)
                                 mutableAttr.addAttribute(.backgroundColor, value: inlineCodeBgColor, range: fmtRange)
                             case "codeBlock":
                                 let monoFont = UIFont.monospacedSystemFont(ofSize: 16, weight: .regular)
@@ -5555,6 +6079,8 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     /// Returns true if the string contains markdown syntax that should be parsed into rich text.
     /// Matches Android looksLikeMarkdown().
     func looksLikeMarkdown(_ str: String) -> Bool {
+        // Rich-text wire format — only ever reaches here from our own private pasteboard type.
+        if str.lowercased().contains("<color=") { return true }
         if str.contains("[") && str.contains("](") { return true }
         if str.contains("**") { return true }
         if str.contains("~~") { return true }
@@ -5579,6 +6105,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         var isUnderline = false
         var isStrikethrough = false
         var isCode = false
+        var activePasteColor: UIColor? = nil
 
         let defaultFont = UIFont.systemFont(ofSize: 16)
         let monoFont = UIFont.monospacedSystemFont(ofSize: 15, weight: .regular)
@@ -5613,11 +6140,46 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 }
             }
 
+            // Consumer colour wins over BOTH branches' foreground, applied after them rather than
+            // inside the `else`. Inline code paints `inlineCodeTextColor`, so while this lived in the
+            // non-code branch a pasted run that was ALSO code came out uniformly #6852D6 and the
+            // colour was silently dropped — copying a coloured message and pasting it back lost its
+            // colour (ENG-38253). `setContent` already re-asserts the colour over inline code for the
+            // edit path (ENG-38248); the paste path has to agree with it, or the same message looks
+            // different depending on how it reached the composer.
+            // Marker and paint go in together, as everywhere else: ExternalForegroundKey is what the
+            // serializer reads back, so without it the colour would show and then not survive a send.
+            if let color = activePasteColor {
+                attrs[ExternalForegroundKey] = color
+                attrs[.foregroundColor] = color
+            }
+
             result.append(NSAttributedString(string: currentText, attributes: attrs))
             currentText = ""
         }
 
         while i < len {
+            // <color=#rrggbb> … </color> — same grammar the formatter renders.
+            if chars[i] == "<" {
+                let rest = String(chars[i...])
+                if rest.lowercased().hasPrefix("</color>") {
+                    flush()
+                    activePasteColor = nil
+                    i += 8
+                    continue
+                }
+                if rest.lowercased().hasPrefix("<color="),
+                   let close = rest.firstIndex(of: ">") {
+                    let hex = String(rest[rest.index(rest.startIndex, offsetBy: 7)..<close])
+                        .trimmingCharacters(in: .whitespaces)
+                    if let color = UIColor.fromHexString(hex) {
+                        flush()
+                        activePasteColor = color
+                        i += rest.distance(from: rest.startIndex, to: close) + 1
+                        continue
+                    }
+                }
+            }
             if chars[i] == "[" {
                 if let (linkText, linkURL, fullEnd) = parseLinkAt(chars, from: i) {
                     flush()
@@ -5847,7 +6409,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
         isInternalChange = true
         textView.attributedText = mutableAttr
-        let newCursorPos = range.location + displayText.count
+        let newCursorPos = range.location + (displayText as NSString).length
         textView.selectedRange = NSRange(location: newCursorPos, length: 0)
 
         let paragraphStyle = NSMutableParagraphStyle()

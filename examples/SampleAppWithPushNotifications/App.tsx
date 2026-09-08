@@ -583,7 +583,24 @@ const App = (): React.ReactElement => {
   useEffect(() => {
     if (Platform.OS === 'ios') {
       // Check if the app was launched from a push notification.
-      checkInitialNotificationIOS();
+      //
+      // Deferred until a user is actually available.
+      //
+      // Two failure modes, both seen: firing on MOUNT (empty dep array) runs before the
+      // CometChat session is restored, so the handler's first await — getUser/getGroup —
+      // rejects and the catch swallows it. But gating on the `userLoggedIn` STATE is just as
+      // wrong: that flag is set by the loginSuccess LISTENER, which does not fire when a
+      // session is merely restored on relaunch — the exact case a cold-launch deep link is.
+      //
+      // getLoggedinUser() answers the real question ("is there a session?") in both cases.
+      CometChat.getLoggedinUser()
+        .then((u: CometChat.User | null) => {
+          if (u) checkInitialNotificationIOS();
+        })
+        .catch(() => {
+          // No session — nothing to deep-link into. The notification is left unconsumed so a
+          // later login can still pick it up.
+        });
       const onNotification = async (notification: any) => {
         try {
           await onRemoteNotificationIOS(notification);
@@ -597,7 +614,7 @@ const App = (): React.ReactElement => {
         PushNotificationIOS.removeEventListener('notification');
       };
     }
-  }, []);
+  }, [userLoggedIn]);
 
   /**
    * Initialize the VoIP handler after the user logs in.

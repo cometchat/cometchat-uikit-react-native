@@ -100,7 +100,26 @@ export class ListenerInitializer {
       },
       onCardMessageReceived: (cardMessage: any) => {
         CometChatUIEventHandler.emitMessageEvent(MessageEvents.onCardMessageReceived, cardMessage);
-      }
+      },
+      // Pin & Save realtime (§5.5/§6.6). Each carries a FULL BaseMessage with the
+      // pin/save attrs already on it, so a consumer replaces its copy and is done
+      // — no getMessageDetails round-trip.
+      //
+      // Pin/unpin is broadcast to the conversation. Save/unsave is private and
+      // reaches only this user's own devices, INCLUDING the one that made the
+      // call, which is why the SDK exempts it from the self-session guard.
+      onMessagePinned: (message: CometChat.BaseMessage) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessagePinned, message);
+      },
+      onMessageUnpinned: (message: CometChat.BaseMessage) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageUnpinned, message);
+      },
+      onMessageSaved: (message: CometChat.BaseMessage) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageSaved, message);
+      },
+      onMessageUnsaved: (message: CometChat.BaseMessage) => {
+        CometChatUIEventHandler.emitMessageEvent(MessageEvents.onMessageUnsaved, message);
+      },
     });
   }
 }

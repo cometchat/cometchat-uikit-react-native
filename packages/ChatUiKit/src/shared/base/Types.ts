@@ -20,6 +20,7 @@ export type AdditionalParams = {
   disableMentions?: boolean;
   hideReplyOption?: boolean,
   hideReplyInThreadOption?: boolean,
+  hideThreadSubscriptionOption?: boolean,
   hideShareMessageOption?: boolean,
   hideEditMessageOption?: boolean,
   hideTranslateMessageOption?: boolean,
@@ -30,6 +31,10 @@ export type AdditionalParams = {
   hideMessageInfoOption?: boolean,
   hideReportMessageOption?: boolean,
   hideMarkAsUnreadOption?: boolean,
+  hidePinMessageOption?: boolean,
+  hideUnpinMessageOption?: boolean,
+  hideSaveMessageOption?: boolean,
+  hideUnsaveMessageOption?: boolean,
   hideGroupActionMessages?: boolean,
   onReplyClick?: (messageId: string) => void;
   /** DD §9 — message-list rendering. true (default) → new per-type bubbles (render 1..N tiles, incl. a

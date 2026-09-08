@@ -113,6 +113,9 @@ export class CometChatUIEventHandler {
   static emitMessageEvent(name: string, param: object) {
     CometChatUIEventHandler.messageHandlers?.map((listener) => {
       switch (name) {
+        case listener._eventListener?.ccThreadSubscriptionChanged?.name:
+          listener._eventListener?.ccThreadSubscriptionChanged?.(param);
+          break;
         case listener._eventListener?.ccMessageDeleted?.name:
           listener._eventListener?.ccMessageDeleted?.(param);
           break;
@@ -193,6 +196,37 @@ export class CometChatUIEventHandler {
           break;
         case listener._eventListener?.onMessageModerated?.name:
           listener._eventListener?.onMessageModerated?.(param);
+          break;
+        // Pin & Save realtime. Without these four the SDK parses the socket frame,
+        // ListenerInitializer emits it, and the emit lands in a switch that matches
+        // nothing — so a pin made by another participant never reaches the message
+        // list and only appears on the next fetch.
+        case listener._eventListener?.onMessagePinned?.name:
+          listener._eventListener?.onMessagePinned?.(param);
+          break;
+        case listener._eventListener?.onMessageUnpinned?.name:
+          listener._eventListener?.onMessageUnpinned?.(param);
+          break;
+        case listener._eventListener?.onMessageSaved?.name:
+          listener._eventListener?.onMessageSaved?.(param);
+          break;
+        case listener._eventListener?.onMessageUnsaved?.name:
+          listener._eventListener?.onMessageUnsaved?.(param);
+          break;
+        // The cc* half: emitted by the device that PERFORMED the action, so a panel
+        // open next to the message list updates without waiting for a socket echo
+        // (and in a 1-1, where no echo is coming at all).
+        case listener._eventListener?.ccMessagePinned?.name:
+          listener._eventListener?.ccMessagePinned?.(param);
+          break;
+        case listener._eventListener?.ccMessageUnpinned?.name:
+          listener._eventListener?.ccMessageUnpinned?.(param);
+          break;
+        case listener._eventListener?.ccMessageSaved?.name:
+          listener._eventListener?.ccMessageSaved?.(param);
+          break;
+        case listener._eventListener?.ccMessageUnsaved?.name:
+          listener._eventListener?.ccMessageUnsaved?.(param);
           break;
       }
     });

@@ -18,6 +18,13 @@ import { DeepPartial } from "../shared/helper/types";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
 import { CometChatAIAssistantChatHistory } from "../CometChatAIAssistantChatHistory/CometChatAIAssistantChatHistory";
 import { CometChatTooltipMenu, MenuItemInterface } from "../shared/views/CometChatTooltipMenu";
+import {
+  isThreadSubscribed,
+  stampThreadSubscribed,
+  ThreadSubscriptionConfig,
+  toggleThreadSubscription,
+} from "../shared/utils/ThreadSubscriptionHelper";
+import { useToast } from "../shared/helper/useToast";
 import { skipNextAgentAutoLoad } from "../CometChatMessageList/CometChatMessageList";
 
 export type CometChatMessageHeaderInterface = {
@@ -106,6 +113,35 @@ export type CometChatMessageHeaderInterface = {
    */
   usersStatusVisibility?: boolean;
   /**
+   * The thread's root message. Set this when the header sits above a thread — it is what
+   * turns the header into a thread header, and it is the message the follow control acts on.
+   *
+   * @type {CometChat.BaseMessage}
+   */
+  parentMessage?: CometChat.BaseMessage;
+  /**
+   * Toggle visibility for the follow/unfollow control in the header's top bar.
+   *
+   * §6.2 names this flag on each platform's thread header; on this platform, as on Flutter,
+   * the landed design places the bell in the message header's top bar, so the same
+   * cross-platform name lives here. One concept, one name, per-platform placement.
+   *
+   * The control renders only when `parentMessage` is set AND the feature gate
+   * (`ThreadSubscriptionConfig.setEnabled`) is on — which is off by default, so an
+   * integrator opts in. `false` hides it even when both of those hold.
+   *
+   * CometChatThreadHeader keeps its own identically-named flag for the replies-row control;
+   * an app using this top-bar bell should switch that one off.
+   *
+   * @type {boolean}
+   */
+  threadSubscriptionVisibility?: boolean;
+  /**
+   * Called after the subscription for this thread changes, including the optimistic flip
+   * and any revert.
+   */
+  onThreadSubscriptionChange?: (subscribed: boolean) => void;
+  /**
    * Flag to hide the new chat button for AI agents (only applies to @agentic users)
    */
   hideNewChatButton?: boolean;
@@ -133,6 +169,17 @@ export type CometChatMessageHeaderInterface = {
    * Called when the user taps "Conversation Summary" in the options menu.
    */
   onConversationSummaryPress?: () => void;
+  /**
+   * When true, adds "Pinned Messages" as an item inside the ⋮ options menu (§6.3).
+   * The kit owns the label and icon so copy stays localised and consistent across
+   * integrators, rather than each app hand-rolling the entry via `options`.
+   */
+  showPinnedMessagesButton?: boolean;
+  /**
+   * Called when the user taps "Pinned Messages". The host opens
+   * CometChatPinnedMessages for this conversation.
+   */
+  onPinnedMessagesPress?: () => void;
 };
 
 interface Translations {
@@ -165,6 +212,9 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
     hideVoiceCallButton = false,
     hideVideoCallButton = false,
     usersStatusVisibility = true,
+    parentMessage,
+    threadSubscriptionVisibility = true,
+    onThreadSubscriptionChange,
     hideNewChatButton = false,
     hideChatHistoryButton = false,
     onNewChatButtonClick,
@@ -172,6 +222,8 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
     options,
     showConversationSummaryButton = false,
     onConversationSummaryPress,
+    showPinnedMessagesButton = false,
+    onPinnedMessagesPress,
   } = props;
 
   const [groupObj, setGroupObj] = useState(group);
@@ -184,6 +236,99 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
     user ? CometChat.RECEIVER_TYPE.USER : group ? CometChat.RECEIVER_TYPE.GROUP : null
   );
 
+  // ── Thread subscription (§6.2) ───────────────────────────────────────────────
+  // Only a header sitting above a thread has anything to follow, and the gate is off until
+  // the integrator opts in. Both must hold before the control exists at all.
+  const showThreadSubscription =
+    !!parentMessage && ThreadSubscriptionConfig.isEnabled() && threadSubscriptionVisibility;
+  // The state lives on the message now, so this reads the message, not an id.
+  const [threadSubscribed, setThreadSubscribed] = useState<boolean>(() =>
+    parentMessage ? isThreadSubscribed(parentMessage) : false
+  );
+  const { showToast, ToastElement } = useToast();
+  const threadListenerId = useRef(
+    "header_thread_" + Date.now() + "_" + (++__listenerIdCounter)
+  ).current;
+
+  useEffect(() => {
+    if (!parentMessage) return;
+    // Re-seed whenever the parent OBJECT changes: a re-fetch produces a new object carrying
+    // the server's answer, and a fetched flag always wins over anything mirrored locally.
+    setThreadSubscribed(isThreadSubscribed(parentMessage));
+    CometChatUIEventHandler.addMessageListener(threadListenerId, {
+      // Keep this an INLINE arrow on this exact property. emitMessageEvent dispatches by
+      // comparing the emitted name against the handler's Function.name, which JS infers from
+      // the property key — hoisting this into a named function elsewhere renames it and the
+      // event stops arriving, silently.
+      ccThreadSubscriptionChanged: ({ parentMessageId, subscribed }: any) => {
+        if (Number(parentMessageId) !== Number(parentMessage.getId())) return;
+        // Both halves matter: re-render, AND write the flag back onto the object we hold, so
+        // a remount or a direct read does not resurrect the pre-flip value.
+        stampThreadSubscribed(parentMessage, !!subscribed);
+        setThreadSubscribed(!!subscribed);
+        onThreadSubscriptionChange?.(!!subscribed);
+      },
+    });
+    return () => CometChatUIEventHandler.removeMessageListener(threadListenerId);
+  }, [parentMessage]);
+
+  const onThreadSubscriptionPress = useCallback(() => {
+    if (!parentMessage) return;
+    // The helper owns the debounce, the in-flight guard, the optimistic emit and the revert.
+    toggleThreadSubscription(parentMessage).then(
+      (subscribed: boolean) => {
+        // Both transitions are confirmed. The unsubscribe copy must not promise
+        // permanence: replying or being mentioned re-subscribes.
+        showToast(
+          t(
+            subscribed
+              ? "THREAD_SUBSCRIPTION_SUBSCRIBED_TOAST"
+              : "THREAD_SUBSCRIPTION_UNSUBSCRIBED_TOAST"
+          )
+        );
+      },
+      () => showToast(t("THREAD_SUBSCRIPTION_FAILED"))
+    );
+  }, [parentMessage, showToast, t]);
+
+  const ThreadSubscriptionButton = useCallback(
+    () => (
+      <TouchableOpacity
+        testID='MessageHeader.followToggle'
+        onPress={onThreadSubscriptionPress}
+        accessibilityRole='button'
+        // State-labelled, NOT action-labelled: the header says what IS, the action sheet
+        // says what a tap DOES (§6.5).
+        accessibilityLabel={
+          threadSubscribed
+            ? t("THREAD_SUBSCRIPTION_SUBSCRIBED")
+            : t("THREAD_SUBSCRIPTION_SUBSCRIBE")
+        }
+        accessibilityState={{ selected: threadSubscribed }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <View
+          testID={
+            threadSubscribed
+              ? "MessageHeader.bell.following"
+              : "MessageHeader.bell.notFollowing"
+          }
+          // Fixed width: the two glyphs are 19pt and 22pt wide, so without it the control
+          // shifts sideways on every toggle.
+          style={{ width: 22, alignItems: "center" }}
+        >
+          <Icon
+            name={threadSubscribed ? "thread-follow" : "thread-unfollow"}
+            color={threadSubscribed ? theme.color.primary : theme.color.iconSecondary}
+            height={23}
+            width={threadSubscribed ? 19 : 22}
+          />
+        </View>
+      </TouchableOpacity>
+    ),
+    [threadSubscribed, onThreadSubscriptionPress, t, theme]
+  );
+
   // Helper function to check if user is agentic
   const isAgenticUser = useCallback(() => {
     return userObj?.getRole?.() === '@agentic';
@@ -191,19 +336,26 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
 
   // Build menu items following CometChat pattern
   const buildMenuItems = useCallback((): MenuItemInterface[] => {
-    const baseItems: MenuItemInterface[] = options ? options({ user: userObj, group: groupObj }) : [];
-    if (showConversationSummaryButton && onConversationSummaryPress) {
-      return [
-        ...baseItems,
-        {
-          text: t('ai_conversation_summary_title'),
-          onPress: onConversationSummaryPress,
-          icon: <Icon name="ai-conversation-summary" width={20} height={20} color={theme.color.iconSecondary} />,
-        },
-      ];
+    const items: MenuItemInterface[] = options ? [...options({ user: userObj, group: groupObj })] : [];
+    // Appended, not early-returned: the original wrote `return [...]` inside the
+    // summary branch, which meant any item added after it could never appear
+    // whenever summary was enabled.
+    if (showPinnedMessagesButton && onPinnedMessagesPress) {
+      items.push({
+        text: t('PINNED_MESSAGES') ?? 'Pinned Messages',
+        onPress: onPinnedMessagesPress,
+        icon: <Icon name="keep" width={20} height={20} color={theme.color.iconSecondary} />,
+      });
     }
-    return baseItems;
-  }, [options, userObj, groupObj, isAgenticUser, showConversationSummaryButton, onConversationSummaryPress, theme, t]);
+    if (showConversationSummaryButton && onConversationSummaryPress) {
+      items.push({
+        text: t('ai_conversation_summary_title'),
+        onPress: onConversationSummaryPress,
+        icon: <Icon name="ai-conversation-summary" width={20} height={20} color={theme.color.iconSecondary} />,
+      });
+    }
+    return items;
+  }, [options, userObj, groupObj, isAgenticUser, showConversationSummaryButton, onConversationSummaryPress, showPinnedMessagesButton, onPinnedMessagesPress, theme, t]);
 
   // Handle option selection
   const handleOptionSelect = useCallback((item: MenuItemInterface) => {
@@ -237,7 +389,11 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
    */
   const BackButton = useCallback(
     () => (
-      <TouchableOpacity style={[messageHeaderStyles.backButtonStyle]} onPress={onBack}>
+      <TouchableOpacity
+        testID='MessageHeader.back'
+        style={[messageHeaderStyles.backButtonStyle]}
+        onPress={onBack}
+      >
         <Icon
           name='arrow-back-fill'
           size={messageHeaderStyles.backButtonIconStyle.width}
@@ -565,6 +721,11 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
                         hideVoiceCallButton,
                       });
                 })()}
+              {showThreadSubscription && (
+                <View style={{ marginLeft: theme.spacing.padding.p4 }}>
+                  <ThreadSubscriptionButton />
+                </View>
+              )}
               {TrailingView && !isAgenticUser() && (
                 <View style={{ marginLeft: theme.spacing.padding.p4 }}>
                   {TrailingView({ user: userObj, group })}
@@ -572,6 +733,7 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
               )}
               {menuItems.length > 0 && (
                 <TouchableOpacity
+                testID='MessageHeader.optionsMenu'
                 style={{ marginLeft: theme.spacing.padding.p2 }}
                   onPress={(e) => {
                     if (e.nativeEvent) {
@@ -613,6 +775,13 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
           }))}
         />
       )}
+
+      {/* Ungated on purpose. `showToast` only sets state — this is the ONLY thing that
+          renders it, so gating the two on different conditions means a toast that fires
+          into nothing. The element is null unless a message is pending anyway, so an
+          unconditional mount costs a null render and removes a whole class of
+          "the toast never appeared" bug. */}
+      {ToastElement}
     </>
   );
 };

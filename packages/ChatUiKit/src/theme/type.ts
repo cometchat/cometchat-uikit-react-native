@@ -1,6 +1,8 @@
 import { ColorValue, ImageSourcePropType, ImageStyle, TextStyle, ViewStyle } from "react-native";
 import { CallButtonStyle } from "../calls/CometChatCallButtons";
 import { ConversationStyle } from "../CometChatConversations/style";
+import { PinnedMessagesStyle } from "../CometChatPinnedMessages/style";
+import { SavedMessagesStyle } from "../CometChatSavedMessages/style";
 import { GroupMemberStyle } from "../CometChatGroupMembers/style";
 import { GroupStyle } from "../CometChatGroups/GroupsStyle";
 import { MessageComposerStyle } from "../CometChatMessageComposer/styles";
@@ -543,6 +545,8 @@ export interface CometChatTheme {
   callLogsStyles: CallLogsStyle;
   conversationStyles: ConversationStyle;
   notificationFeedStyles: NotificationFeedStyle;
+  pinnedMessagesStyles: PinnedMessagesStyle;
+  savedMessagesStyles: SavedMessagesStyle;
   confirmDialogStyles: ConfirmDialogStyle;
   reportDialogStyles: ReportDialogStyle;
   quickReactionStyle: {

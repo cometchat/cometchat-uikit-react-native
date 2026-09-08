@@ -61,6 +61,8 @@ RCT_EXTERN_METHOD(toggleChecklistItem:(nonnull NSNumber *)node)
 RCT_EXTERN_METHOD(setText:(nonnull NSNumber *)node text:(nonnull NSString *)text)
 RCT_EXTERN_METHOD(setSelection:(nonnull NSNumber *)node start:(nonnull NSInteger)start end:(nonnull NSInteger)end)
 RCT_EXTERN_METHOD(setMentionRanges:(nonnull NSNumber *)node ranges:(nonnull NSArray *)ranges)
+RCT_EXTERN_METHOD(applyInlineStyle:(nonnull NSNumber *)node key:(nonnull NSString *)key value:(nonnull NSNumber *)value)
+RCT_EXTERN_METHOD(removeInlineStyle:(nonnull NSNumber *)node key:(nonnull NSString *)key)
 RCT_EXTERN_METHOD(removeLink:(nonnull NSNumber *)node location:(nonnull NSInteger)location length:(nonnull NSInteger)length)
 RCT_EXTERN_METHOD(updateLink:(nonnull NSNumber *)node location:(nonnull NSInteger)location length:(nonnull NSInteger)length newUrl:(nonnull NSString *)newUrl newText:(nonnull NSString *)newText)
 

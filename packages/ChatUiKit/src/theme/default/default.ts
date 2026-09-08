@@ -6,6 +6,8 @@ import {
   getConversationStyleDark,
   getConversationStyleLight,
 } from "../../CometChatConversations/style";
+import { getPinnedMessagesStyleDark, getPinnedMessagesStyleLight } from "../../CometChatPinnedMessages/style";
+import { getSavedMessagesStyleDark, getSavedMessagesStyleLight } from "../../CometChatSavedMessages/style";
 import {
   getNotificationFeedStyleDark,
   getNotificationFeedStyleLight,
@@ -135,6 +137,8 @@ export const lightThemeMaker = (
     dateSeparatorStyles: getDateSeparatorStyleLight(color, spacing, typography),
     conversationStyles: getConversationStyleLight(color, spacing, typography),
     notificationFeedStyles: getNotificationFeedStyleLight(color, spacing, typography),
+    pinnedMessagesStyles: getPinnedMessagesStyleLight(color, spacing, typography),
+    savedMessagesStyles: getSavedMessagesStyleLight(color, spacing, typography),
     confirmDialogStyles: getConfirmDialogStyleLight(color, spacing, typography),
     reportDialogStyles: getReportDialogStyleLight(color, spacing, typography),
     messageHeaderStyles: getMessageHeaderStyle(color, spacing, typography),
@@ -177,6 +181,8 @@ export const darkThemeMaker = (
     dateSeparatorStyles: getDateSeparatorStyleDark(color, spacing, typography),
     conversationStyles: getConversationStyleDark(color, spacing, typography),
     notificationFeedStyles: getNotificationFeedStyleDark(color, spacing, typography),
+    pinnedMessagesStyles: getPinnedMessagesStyleDark(color, spacing, typography),
+    savedMessagesStyles: getSavedMessagesStyleDark(color, spacing, typography),
     confirmDialogStyles: getConfirmDialogStyleDark(color, spacing, typography),
     reportDialogStyles: getReportDialogStyleDark(color, spacing, typography),
     messageHeaderStyles: getMessageHeaderStyle(color, spacing, typography),

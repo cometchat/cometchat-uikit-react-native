@@ -48,6 +48,8 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
         const val COMMAND_SET_MENTION_RANGES = "setMentionRanges"
         const val COMMAND_REMOVE_LINK = "removeLink"
         const val COMMAND_UPDATE_LINK = "updateLink"
+        const val COMMAND_APPLY_INLINE_STYLE = "applyInlineStyle"
+        const val COMMAND_REMOVE_INLINE_STYLE = "removeInlineStyle"
 
         private const val TAG_EDITOR = "editor"
     }
@@ -123,7 +125,9 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
             COMMAND_SET_CONTENT to 29,
             COMMAND_SET_MENTION_RANGES to 30,
             COMMAND_REMOVE_LINK to 31,
-            COMMAND_UPDATE_LINK to 32
+            COMMAND_UPDATE_LINK to 32,
+            COMMAND_APPLY_INLINE_STYLE to 33,
+            COMMAND_REMOVE_INLINE_STYLE to 34
         )
     }
 
@@ -199,6 +203,11 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
                                         if (styleName == "link" && style.hasKey("url")) {
                                             styleMap["url"] = style.getString("url") ?: ""
                                         }
+                                        // Preserve colour for textColor styles — without this the
+                                        // edit round-trip loses the colour and renders plain.
+                                        if (styleName == "textColor" && style.hasKey("color")) {
+                                            styleMap["color"] = style.getString("color") ?: ""
+                                        }
                                         stylesList.add(styleMap)
                                     }
                                 }
@@ -220,6 +229,16 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
                             }
                             view.setMentionRanges(ranges)
                         }
+                    }
+                    COMMAND_APPLY_INLINE_STYLE -> {
+                        val key = args?.getString(0) ?: return
+                        // ARGB int from RN's processColor()
+                        val color = args?.getInt(1) ?: return
+                        view.applyInlineStyle(key, color)
+                    }
+                    COMMAND_REMOVE_INLINE_STYLE -> {
+                        val key = args?.getString(0) ?: return
+                        view.removeInlineStyle(key)
                     }
                     COMMAND_REMOVE_LINK -> {
                         val location = args?.getInt(0) ?: return
