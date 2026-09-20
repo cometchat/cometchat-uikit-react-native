@@ -19,33 +19,14 @@ import {
   UIKitSettings,
 } from '@cometchat/chat-uikit-react-native';
 
-import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import RootStackNavigator from './src/navigation/RootStackNavigator';
 import { AppConstants } from './src/utils/AppConstants';
-import PushNotificationIOS from '@react-native-community/push-notification-ios';
-import VoipPushNotification from 'react-native-voip-push-notification';
-import {
-  displayLocalNotification,
-  requestAndroidPermissions,
-  checkInitialNotificationIOS,
-  onRemoteNotificationIOS,
-  getAndRegisterFCMToken,
-  handleIosApnsToken,
-  handleIosVoipToken,
-  navigateToConversation,
-} from './src/utils/helper';
-import { registerPushToken } from './src/utils/PushNotification';
-import { voipHandler } from './src/utils/VoipNotificationHandler';
-import { navigationRef, navigate } from './src/navigation/NavigationService';
-import notifee, { EventType } from '@notifee/react-native';
+import { setupPushOnLogin } from './src/utils/CometChatPushV2';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useActiveChat } from './src/utils/ActiveChatContext';
-import RNCallKeep from 'react-native-callkeep';
-import { consumePendingAnsweredCall, isPendingStale } from './src/utils/PendingCallManager';
 import { useConfig } from './src/config/store';
 import { DeepPartial } from '@cometchat/chat-uikit-react-native/src/shared/helper/types';
 import { createTypography } from './src/utils/themeTypography';
@@ -54,7 +35,6 @@ import { createTypography } from './src/utils/themeTypography';
 const listenerId = 'app';
 
 const App = (): React.ReactElement => {
-  const { activeChat } = useActiveChat();
   const [callReceived, setCallReceived] = useState(false);
   const incomingCall = useRef<CometChat.Call | CometChat.CustomMessage | null>(
     null,
@@ -62,10 +42,7 @@ const App = (): React.ReactElement => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userLoggedIn, setUserLoggedIn] = useState(false);
-  const [currentToken, setCurrentToken] = useState('');
-  const [isTokenRegistered, setIsTokenRegistered] = useState(false);
   const [hasValidAppCredentials, setHasValidAppCredentials] = useState(false);
-  const [navigationReadyFlag, setNavigationReadyFlag] = useState(false);
   const styleConfig = useConfig(state => state?.settings?.style);
 
   const theme : { light:  DeepPartial<CometChatTheme>; dark: DeepPartial<CometChatTheme> } = {
@@ -122,17 +99,6 @@ const App = (): React.ReactElement => {
         const loggedInUser = CometChatUIKit.loggedInUser;
         if (loggedInUser) {
           setIsLoggedIn(true);
-        } else {
-          // Clear badge on fresh install or when no user is logged in
-          try {
-            if (Platform.OS === 'ios') {
-              PushNotificationIOS.setApplicationIconBadgeNumber(0);
-            } else if (Platform.OS === 'android') {
-              await notifee.cancelAllNotifications();
-            }
-          } catch (error) {
-            console.error('Error :', error);
-          }
         }
 
       } catch (error) {
@@ -145,97 +111,13 @@ const App = (): React.ReactElement => {
     init();
   }, []);
 
-  // Track when navigation ref is ready (should be ready shortly after first render of navigator)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (navigationRef.isReady()) {
-        setNavigationReadyFlag(true);
-        clearInterval(interval);
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
-
-  // When user becomes logged in & navigation ready, check for any pending answered call
-  useEffect(() => {
-    async function maybeResumePendingCall() {
-      if (!navigationReadyFlag || !isLoggedIn) return;
-      const pending = await consumePendingAnsweredCall();
-      if (pending && !isPendingStale(pending)) {
-        try {
-          console.log(
-            '[App] Resuming pending answered call',
-            pending.sessionId,
-          );
-          // Attempt acceptance (may already be joined)
-          let acceptedCall: any = null;
-          try {
-            acceptedCall = await CometChat.acceptCall(pending.sessionId);
-          } catch (err: any) {
-            if (err?.code === 'ERR_CALL_USER_ALREADY_JOINED') {
-              acceptedCall = CometChat.getActiveCall();
-            } else {
-              throw err;
-            }
-          }
-          // Close native incoming UI now that we're resuming
-          RNCallKeep.endAllCalls();
-          const active = acceptedCall || CometChat.getActiveCall();
-          const callTypeForNav =
-            (typeof active?.getType === 'function'
-              ? active.getType()
-              : undefined) ??
-            (pending.raw?.callType as any) ??
-            (pending.raw?.type as any);
-
-          voipHandler.msg = active || pending.raw || {};
-          voipHandler.isAnswered = true;
-
-          navigate('OngoingCallScreen', {
-            sessionId: pending.sessionId,
-            callType: callTypeForNav,
-          });
-
-        } catch (e) {
-          console.log('[App] Failed resuming pending call', e);
-        }
-      }
-    }
-    maybeResumePendingCall();
-  }, [navigationReadyFlag, isLoggedIn]);
-
   /**
-   * Handle incoming call events.
-   * iOS specific --> To disable the incoming call screen when the call is answered through the VOIP)
-   * This effect listens for incoming calls and updates the state accordingly.
+   * Monitor app state changes to verify the logged-in status when the app
+   * becomes active.
    */
   useEffect(() => {
-    if (Platform.OS === 'ios') {
-      RNCallKeep.addEventListener('didDisplayIncomingCall', () => {
-        setCallReceived(false);
-        incomingCall.current = null;
-      });
-    }
-  }, []);
-
-  /**
-   * Monitor app state changes to verify the logged-in status and clear notifications.
-   * When the app becomes active, it cancels Android notifications and checks the login status.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      // Request required Android permissions for notifications.
-      requestAndroidPermissions();
-    }
     const handleAppStateChange = async (nextState: AppStateStatus) => {
       if (nextState === 'active') {
-        // Clear badge only for iOS when app becomes active
-        if (Platform.OS === 'ios') {
-          PushNotificationIOS.setApplicationIconBadgeNumber(0);
-        } else if (Platform.OS === 'android') {
-          // Clear all notifications when app becomes active (clears badge automatically)
-          await notifee.cancelAllNotifications();
-        }
         try {
           // Verify if there is a valid logged-in user.
           const chatUser = await CometChat.getLoggedinUser();
@@ -268,13 +150,10 @@ const App = (): React.ReactElement => {
         },
         logoutSuccess: () => {
           setUserLoggedIn(false);
-          setIsTokenRegistered(false);
-          // Clear badge on logout
-          if (Platform.OS === 'ios') {
-            PushNotificationIOS.setApplicationIconBadgeNumber(0);
-          } else if (Platform.OS === 'android') {
-            notifee.cancelAllNotifications();
-          }
+          // Also clear the restored-session flag so the push effect below cleans up.
+          // (The push token is unregistered BEFORE logout, in Conversations handleLogout —
+          // unregisterPushToken needs the session, so it cannot run from here.)
+          setIsLoggedIn(false);
         },
         logoutFailure: (e: CometChat.CometChatException) => {
           console.log('LoginListener :: logoutFailure', e.message);
@@ -289,8 +168,20 @@ const App = (): React.ReactElement => {
   }, []);
 
   /**
+   * NEW push wiring (@cometchat/push-notifications-react-native). Active while a user is
+   * logged in — a fresh login OR a restored session. The cleanup removes the push handlers
+   * when the user logs out (or App unmounts), so a later login never doubles them.
+   */
+  const pushActive = isLoggedIn || userLoggedIn;
+  useEffect(() => {
+    if (!pushActive) return;
+    return setupPushOnLogin();
+  }, [pushActive]);
+
+  /**
    * Attach CometChat call listeners to handle incoming, outgoing, and cancelled call events.
-   * Also handles UI events for call end.
+   * Also handles UI events for call end. This is the in-app (foreground / WebSocket)
+   * call ring — the push package owns the background/killed path.
    */
   useEffect(() => {
     // Listener for call events.
@@ -414,268 +305,6 @@ const App = (): React.ReactElement => {
       CometChatUIEventHandler.removeUIListener(cardActionListenerId);
     };
   }, []);
-
-  /**
-   * Android only: Listen for incoming FCM messages while the app is in the foreground.
-   * Displays a local notification when a message is received.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      // Subscribe to FCM messages.
-      const unsubscribe = messaging().onMessage(async remoteMessage => {
-        // Handle badge count from push notification
-        const unreadCount = remoteMessage.data?.unreadMessageCount;
-        if (unreadCount !== undefined && unreadCount !== null) {
-          const count = parseInt(unreadCount as string, 10);
-          if (!isNaN(count) && count >= 0) {
-            try {
-              await notifee.setBadgeCount(count);
-            } catch (error) {
-              console.error('Error setting badge:', error);
-            }
-          }
-        } else {
-          console.log('No unreadMessageCount in payload - check dashboard settings');
-        }
-        // Display local notification
-        try {
-          await displayLocalNotification(remoteMessage, activeChat);
-        } catch (error) {
-          console.log('Error displaying local notification:', error);
-        }
-      });
-      return () => unsubscribe();
-    }
-  }, [activeChat]);
-
-  /**
-   * Android only: Listen to Notifee's foreground events to handle notification presses.
-   * Navigates to the corresponding conversation based on the notification data.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const unsubscribeNotifee = notifee.onForegroundEvent(
-        ({ type, detail }) => {
-          try {
-            if (type === EventType.PRESS) {
-              const { notification } = detail;
-              // Cancel the notification after it is pressed.
-              if (notification?.id) {
-                notifee.cancelNotification(notification.id);
-              }
-              // Retrieve notification data and navigate to the corresponding conversation.
-              const data = detail?.notification?.data || {};
-              navigateToConversation(navigationRef, data);
-            }
-          } catch (error) {
-            console.log('Error handling notifee foreground event:', error);
-          }
-        },
-      );
-      return () => unsubscribeNotifee();
-    }
-  }, []);
-
-  /**
-   * Android only: Check if the app was launched from a notification.
-   * Cancels the initial notification and navigates to the conversation if applicable.
-   */
-  useEffect(() => {
-    async function checkAndNavigate() {
-      if (Platform.OS === 'android') {
-        // Get the initial notification if the app was opened via a notification.
-        const initialNotification = await notifee.getInitialNotification();
-        if (initialNotification) {
-          const { notification } = initialNotification;
-          if (notification?.id) {
-            // Cancel the notification.
-            await notifee.cancelNotification(notification.id);
-          }
-          // Navigate using the notification data.
-          const data = notification?.data || {};
-          if (navigationRef.isReady()) {
-            navigateToConversation(navigationRef, data);
-          }
-        }
-      }
-    }
-    checkAndNavigate();
-  }, []);
-
-  /**
-   * Android only: Listen for FCM token refresh events.
-   * When a new token is received and the user is logged in, register it with CometChat.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const unsubscribeOnTokenRefresh = messaging().onTokenRefresh(
-        async newToken => {
-          try {
-            console.log('FCM Token refreshed:', newToken);
-            if (
-              userLoggedIn &&
-              newToken !== currentToken &&
-              !isTokenRegistered
-            ) {
-              await registerPushToken(newToken, true, false);
-              console.log('New token registered with CometChat (FCM).');
-              setCurrentToken(newToken);
-              setIsTokenRegistered(true);
-            }
-          } catch (error) {
-            console.error(
-              'Failed to register new token with CometChat:',
-              error,
-            );
-          }
-        },
-      );
-      return () => unsubscribeOnTokenRefresh();
-    }
-  }, [userLoggedIn, currentToken, isTokenRegistered]);
-
-  /**
-   * Android only: After user logs in, trigger initial FCM token retrieval.
-   * Uses a small delay to ensure that the user login process has completed.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'android' && userLoggedIn && !isTokenRegistered) {
-      const timer = setTimeout(() => {
-        getAndRegisterFCMToken(
-          userLoggedIn,
-          currentToken,
-          isTokenRegistered,
-          setIsTokenRegistered,
-          setCurrentToken,
-        );
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [userLoggedIn, isTokenRegistered, currentToken]);
-
-  /**
-   * iOS only: Listen for VoIP token registration events.
-   * Handles the registration of the VoIP token with CometChat.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      const voipListener = VoipPushNotification.addEventListener(
-        'register',
-        async (voipToken: string) => {
-          try {
-            console.log('VoIP Token:', voipToken);
-            await handleIosVoipToken(userLoggedIn, voipToken);
-          } catch (error) {
-            console.log('Error handling VoIP token:', error);
-          }
-        },
-      );
-      return () => {
-        VoipPushNotification.removeEventListener('register');
-      };
-    }
-  }, [userLoggedIn]);
-
-  /**
-   * iOS only: Listen for push notifications (both background and foreground)
-   * and handle them accordingly.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      // Check if the app was launched from a push notification.
-      //
-      // Deferred until a user is actually available.
-      //
-      // Two failure modes, both seen: firing on MOUNT (empty dep array) runs before the
-      // CometChat session is restored, so the handler's first await — getUser/getGroup —
-      // rejects and the catch swallows it. But gating on the `userLoggedIn` STATE is just as
-      // wrong: that flag is set by the loginSuccess LISTENER, which does not fire when a
-      // session is merely restored on relaunch — the exact case a cold-launch deep link is.
-      //
-      // getLoggedinUser() answers the real question ("is there a session?") in both cases.
-      CometChat.getLoggedinUser()
-        .then((u: CometChat.User | null) => {
-          if (u) checkInitialNotificationIOS();
-        })
-        .catch(() => {
-          // No session — nothing to deep-link into. The notification is left unconsumed so a
-          // later login can still pick it up.
-        });
-      const onNotification = async (notification: any) => {
-        try {
-          await onRemoteNotificationIOS(notification);
-        } catch (error) {
-          console.log('Error in onRemoteNotificationIOS:', error);
-        }
-      };
-      PushNotificationIOS.addEventListener('notification', onNotification);
-
-      return () => {
-        PushNotificationIOS.removeEventListener('notification');
-      };
-    }
-  }, [userLoggedIn]);
-
-  /**
-   * Initialize the VoIP handler after the user logs in.
-   * For iOS, initialization is immediate. For Android, a delay is used to ensure login completion.
-   */
-  useEffect(() => {
-    try {
-      if (Platform.OS === 'ios') {
-        voipHandler.initialize();
-      } else if (Platform.OS === 'android' && userLoggedIn) {
-        const timer = setTimeout(() => {
-          voipHandler.initialize();
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-    } catch (error) {
-      console.log('Error initializing VoIP handler:', error);
-    }
-  }, [userLoggedIn]);
-
-  /**
-   * iOS only: Request push notification permissions and handle APNs token registration.
-   * Also triggers VoIP token registration.
-   */
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      // Request iOS push notification permissions.
-      PushNotificationIOS.requestPermissions()
-        .then(data => {
-          console.log('PushNotificationIOS.requestPermissions:', data);
-        })
-        .catch(error => {
-          console.error('PushNotificationIOS.requestPermissions error:', error);
-        });
-
-      // Function to handle APNs token registration.
-      const handleApnsToken = async (deviceToken: string) => {
-        try {
-          console.log('iOS Device (APNs) Token:', deviceToken);
-          // Register for VoIP notifications.
-          VoipPushNotification.registerVoipToken();
-          await handleIosApnsToken(
-            userLoggedIn,
-            deviceToken,
-            currentToken,
-            isTokenRegistered,
-            setCurrentToken,
-            setIsTokenRegistered,
-          );
-        } catch (err) {
-          console.log('Error handling APNs token:', err);
-        }
-      };
-
-      // Listen for the APNs token registration event.
-      PushNotificationIOS.addEventListener('register', handleApnsToken);
-      return () => {
-        PushNotificationIOS.removeEventListener('register');
-      };
-    }
-  }, [userLoggedIn, currentToken, isTokenRegistered]);
 
   // Show a blank/splash screen while the app is initializing.
   if (isInitializing) {

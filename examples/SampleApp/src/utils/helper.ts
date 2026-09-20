@@ -24,7 +24,7 @@ interface Translations {
   hoursAgo: (hours: number) => string;
 }
 
-interface NotifeeData {
+interface NotificationData {
   receiverType?: 'user' | 'group';
   conversationId?: string;
   sender?: string;
@@ -224,7 +224,7 @@ export const sampleData = {
  */
 export async function navigateToConversation(
   navigationRef: NavigationContainerRefWithCurrent<RootStackParamList>,
-  data?: NotifeeData,
+  data?: NotificationData,
 ) {
   if (!data || !navigationRef.current) {
     return;

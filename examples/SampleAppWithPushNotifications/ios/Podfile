@@ -16,8 +16,6 @@ target 'SampleAppWithPushNotifications' do
   pod 'SPTPersistentCache', :modular_headers => true
   pod 'DVAssetLoaderDelegate', :modular_headers => true
 
-  pod 'RNCallKeep', :path => '../node_modules/react-native-callkeep'
-  pod 'RNVoipPushNotification', :path => '../node_modules/react-native-voip-push-notification'
 
   
 

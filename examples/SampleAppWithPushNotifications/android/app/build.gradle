@@ -118,7 +118,5 @@ dependencies {
         implementation jscFlavor
     }
 
-    implementation 'com.google.firebase:firebase-messaging:21.7.1' 
-    implementation project(':react-native-callkeep')
     implementation 'com.facebook.fresco:animated-gif:3.6.0' //gif android
 }

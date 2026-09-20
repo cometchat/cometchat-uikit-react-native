@@ -15,9 +15,6 @@ PODS:
   - Firebase/Database (12.10.0):
     - Firebase/CoreOnly
     - FirebaseDatabase (~> 12.10.0)
-  - Firebase/Messaging (12.10.0):
-    - Firebase/CoreOnly
-    - FirebaseMessaging (~> 12.10.0)
   - FirebaseAppCheckInterop (12.10.0)
   - FirebaseAuth (12.10.0):
     - FirebaseAppCheckInterop (~> 12.10.0)
@@ -43,26 +40,9 @@ PODS:
     - FirebaseSharedSwift (~> 12.10.0)
     - GoogleUtilities/UserDefaults (~> 8.1)
     - leveldb-library (~> 1.22)
-  - FirebaseInstallations (12.10.0):
-    - FirebaseCore (~> 12.10.0)
-    - GoogleUtilities/Environment (~> 8.1)
-    - GoogleUtilities/UserDefaults (~> 8.1)
-    - PromisesObjC (~> 2.4)
-  - FirebaseMessaging (12.10.0):
-    - FirebaseCore (~> 12.10.0)
-    - FirebaseInstallations (~> 12.10.0)
-    - GoogleDataTransport (~> 10.1)
-    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
-    - GoogleUtilities/Environment (~> 8.1)
-    - GoogleUtilities/Reachability (~> 8.1)
-    - GoogleUtilities/UserDefaults (~> 8.1)
-    - nanopb (~> 3.30910.0)
   - FirebaseSharedSwift (12.10.0)
   - fmt (11.0.2)
   - glog (0.3.5)
-  - GoogleDataTransport (10.1.0):
-    - nanopb (~> 3.30910.0)
-    - PromisesObjC (~> 2.4)
   - GoogleUtilities/AppDelegateSwizzler (8.1.0):
     - GoogleUtilities/Environment
     - GoogleUtilities/Logger
@@ -93,12 +73,6 @@ PODS:
   - hermes-engine/Pre-built (0.81.4)
   - JitsiWebRTC (124.0.2)
   - leveldb-library (1.22.6)
-  - nanopb (3.30910.0):
-    - nanopb/decode (= 3.30910.0)
-    - nanopb/encode (= 3.30910.0)
-  - nanopb/decode (3.30910.0)
-  - nanopb/encode (3.30910.0)
-  - PromisesObjC (2.4.0)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -1841,6 +1815,8 @@ PODS:
     - SocketRocket
   - react-native-background-timer (2.4.1):
     - React-Core
+  - react-native-cometchat-push-notifications (1.0.0):
+    - React-Core
   - react-native-cometchat-ui-kit (5.5.0):
     - React-Core
     - react-native-cometchat-ui-kit/Video (= 5.5.0)
@@ -2562,8 +2538,6 @@ PODS:
     - React-utils (= 0.81.4)
     - SocketRocket
   - RecaptchaInterop (101.0.0)
-  - RNCallKeep (4.3.16):
-    - React
   - RNCAsyncStorage (2.2.0):
     - boost
     - DoubleConversion
@@ -2620,8 +2594,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNCPushNotificationIOS (1.12.0):
-    - React-Core
   - RNDateTimePicker (8.6.0):
     - boost
     - DoubleConversion
@@ -2741,37 +2713,6 @@ PODS:
     - RNFBApp
     - SocketRocket
     - Yoga
-  - RNFBMessaging (23.8.8):
-    - boost
-    - DoubleConversion
-    - fast_float
-    - Firebase/Messaging (= 12.10.0)
-    - FirebaseCoreExtension
-    - fmt
-    - glog
-    - hermes-engine
-    - RCT-Folly
-    - RCT-Folly/Fabric
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - RNFBApp
-    - SocketRocket
-    - Yoga
   - RNGestureHandler (2.30.1):
     - boost
     - DoubleConversion
@@ -2829,11 +2770,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNNotifee (9.1.8):
-    - React-Core
-    - RNNotifee/NotifeeCore (= 9.1.8)
-  - RNNotifee/NotifeeCore (9.1.8):
-    - React-Core
   - RNScreens (4.24.0):
     - boost
     - DoubleConversion
@@ -2950,8 +2886,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNVoipPushNotification (3.3.3):
-    - React-Core
   - SocketRocket (0.7.1)
   - SPTPersistentCache (1.1.0)
   - VisionCamera (4.7.3):
@@ -3007,6 +2941,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-background-timer (from `../node_modules/react-native-background-timer`)
+  - "react-native-cometchat-push-notifications (from `../node_modules/@cometchat/push-notifications-react-native`)"
   - "react-native-cometchat-ui-kit (from `../node_modules/@cometchat/chat-uikit-react-native`)"
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -3042,22 +2977,17 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios`)
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
-  - RNCallKeep (from `../node_modules/react-native-callkeep`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
-  - "RNCPushNotificationIOS (from `../node_modules/@react-native-community/push-notification-ios`)"
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNDeviceInfo (from `../node_modules/react-native-device-info`)
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
   - "RNFBAuth (from `../node_modules/@react-native-firebase/auth`)"
   - "RNFBDatabase (from `../node_modules/@react-native-firebase/database`)"
-  - "RNFBMessaging (from `../node_modules/@react-native-firebase/messaging`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNLocalize (from `../node_modules/react-native-localize`)
-  - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
-  - RNVoipPushNotification (from `../node_modules/react-native-voip-push-notification`)
   - SocketRocket (~> 0.7.1)
   - SPTPersistentCache
   - VisionCamera (from `../node_modules/react-native-vision-camera`)
@@ -3074,16 +3004,11 @@ SPEC REPOS:
     - FirebaseCoreExtension
     - FirebaseCoreInternal
     - FirebaseDatabase
-    - FirebaseInstallations
-    - FirebaseMessaging
     - FirebaseSharedSwift
-    - GoogleDataTransport
     - GoogleUtilities
     - GTMSessionFetcher
     - JitsiWebRTC
     - leveldb-library
-    - nanopb
-    - PromisesObjC
     - RecaptchaInterop
     - SocketRocket
     - SPTPersistentCache
@@ -3174,6 +3099,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-background-timer:
     :path: "../node_modules/react-native-background-timer"
+  react-native-cometchat-push-notifications:
+    :path: "../node_modules/@cometchat/push-notifications-react-native"
   react-native-cometchat-ui-kit:
     :path: "../node_modules/@cometchat/chat-uikit-react-native"
   react-native-netinfo:
@@ -3244,14 +3171,10 @@ EXTERNAL SOURCES:
     :path: build/generated/ios
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
-  RNCallKeep:
-    :path: "../node_modules/react-native-callkeep"
   RNCAsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNCClipboard:
     :path: "../node_modules/@react-native-clipboard/clipboard"
-  RNCPushNotificationIOS:
-    :path: "../node_modules/@react-native-community/push-notification-ios"
   RNDateTimePicker:
     :path: "../node_modules/@react-native-community/datetimepicker"
   RNDeviceInfo:
@@ -3262,20 +3185,14 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-firebase/auth"
   RNFBDatabase:
     :path: "../node_modules/@react-native-firebase/database"
-  RNFBMessaging:
-    :path: "../node_modules/@react-native-firebase/messaging"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNLocalize:
     :path: "../node_modules/react-native-localize"
-  RNNotifee:
-    :path: "../node_modules/@notifee/react-native"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
-  RNVoipPushNotification:
-    :path: "../node_modules/react-native-voip-push-notification"
   VisionCamera:
     :path: "../node_modules/react-native-vision-camera"
   Yoga:
@@ -3296,19 +3213,14 @@ SPEC CHECKSUMS:
   FirebaseCoreExtension: 3473a6ec16a91aee29fb75994a86c0220d2cddf3
   FirebaseCoreInternal: e7bbaeb00ab73011298f35ed223aa7371e212948
   FirebaseDatabase: 20827e4146ccece4eec6f6e3cf4c2254c417c9be
-  FirebaseInstallations: 047343aa91fd6a1ebfa3eb374ddecf36a8aaddfd
-  FirebaseMessaging: ed18fb50634e6e85b5d3e77e628c21e2c928cc53
   FirebaseSharedSwift: 3d1e448b7202e36821a492941c84592d1308ea14
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
-  GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMSessionFetcher: 904bdd2a82c635bcd6f44edf94cc8775c5d1d6e6
   hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
   JitsiWebRTC: b47805ab5668be38e7ee60e2258f49badfe8e1d0
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
-  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
-  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
   RCTDeprecation: c0ed3249a97243002615517dff789bf4666cf585
   RCTRequired: 58719f5124f9267b5f9649c08bf23d9aea845b23
@@ -3343,6 +3255,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: e4a65db5f4df53369f39558c0cf2f480f6d3d6c7
   React-microtasksnativemodule: 86334c5c06315e0bccb7b6e6f2c905e92f98b615
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
+  react-native-cometchat-push-notifications: 8888495ee335776420e153e063d3644b48a41471
   react-native-cometchat-ui-kit: bde3be9deaaedd5e88cab8dca925a1986adccc9e
   react-native-netinfo: 64f05e94821ee3f3adcd9b67b35c1480e5564915
   react-native-safe-area-context: eda63a662750758c1fdd7e719c9f1026c8d161cb
@@ -3379,27 +3292,22 @@ SPEC CHECKSUMS:
   ReactCodegen: 2cfa890e84ecf7f3a708f1ed9c0f2c0b22a23c9a
   ReactCommon: e9ab32f1d1482d207867b4fdd139361302b9dcc6
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RNCallKeep: 1930a01d8caf48f018be4f2db0c9f03405c2f977
   RNCAsyncStorage: fd44f4b03e007e642e98df6726737bc66e9ba609
   RNCClipboard: e560338bf6cc4656a09ff90610b62ddc0dbdad65
-  RNCPushNotificationIOS: 85957a0534fd1309b4c028ccbe5b1baf9ab5cf57
   RNDateTimePicker: bfb315bc0439c9aeb649fbf7944475a7f268f9f6
   RNDeviceInfo: bcce8752b5043a623fe3c26789679b473f705d3c
   RNFBApp: 66e966d59c12c1cad8822b69b4ac1be42e7c4964
   RNFBAuth: 22fc2c67a731a481a2f91d786f761860c80f9363
   RNFBDatabase: 045c4b9a8b295ae76f061fda6b2a7466af6cb416
-  RNFBMessaging: 4052eb5e3f12cf31db9e2e7d7f565963eab9757a
   RNGestureHandler: 5473f049cec3850f0c1f2fafd78210751cf928bc
   RNLocalize: c46dd4008dc8990a098fcafd6ee051122a1ccfda
-  RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
   RNScreens: e902eba58a27d3ad399a495d578e8aba3ea0f490
   RNSVG: b1cb00d54dbc3066a3e98732e5418c8361335124
-  RNVoipPushNotification: 4998fe6724d421da616dca765da7dc421ff54c4e
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SPTPersistentCache: df36ea46762d7cf026502bbb86a8b79d0080dff4
   VisionCamera: 7187b3dac1ff3071234ead959ce311875748e14f
   Yoga: 9b30b783a17681321b52ac507a37219d7d795ace
 
-PODFILE CHECKSUM: 58fa75870dec57f70ab8588dfd2a06d63fabe907
+PODFILE CHECKSUM: ebe41cdc2acc18fb6cf3f6bbb6fd2664f24ca1cd
 
 COCOAPODS: 1.16.2

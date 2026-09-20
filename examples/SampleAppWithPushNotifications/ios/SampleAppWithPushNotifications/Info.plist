@@ -52,11 +52,9 @@
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>audio</string>
 		<string>voip</string>
 		<string>remote-notification</string>
-		<string>push-to-talk</string>
-		<string>processing</string>
-		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

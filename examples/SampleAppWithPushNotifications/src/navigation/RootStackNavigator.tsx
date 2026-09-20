@@ -9,9 +9,7 @@ import { RootStackParamList } from './types';
 import { navigationRef, processPendingNavigation } from './NavigationService';
 import SampleUser from '../components/login/SampleUser';
 import AppCredentials from '../components/login/AppCredentials';
-import { Platform, StatusBar, useColorScheme } from 'react-native';
-import notifee from '@notifee/react-native';
-import { navigateToConversation } from '../utils/helper';
+import { StatusBar, useColorScheme } from 'react-native';
 import Conversations from '../components/conversations/screens/Conversations';
 import CreateConversation from '../components/conversations/screens/CreateConversation';
 import Messages from '../components/conversations/screens/Messages';
@@ -53,26 +51,6 @@ const RootStackNavigator = ({isLoggedIn, hasValidAppCredentials: _hasValidAppCre
   const backgroundColor = theme.color.background2;
   const barStyle = isDark ? 'light-content' : 'dark-content';
 
-  async function checkInitialNotification() {
-    if (Platform.OS === 'android') {
-      // Retrieve the initial notification that opened the app.
-      const initialNotification = await notifee.getInitialNotification();
-
-      if (initialNotification) {
-        const { notification } = initialNotification;
-
-        // Cancel the notification if needed.
-        if (notification?.id) {
-          await notifee.cancelNotification(notification.id);
-        }
-
-        // Retrieve data attached to the notification.
-        const data = notification?.data || {};
-        navigateToConversation(navigationRef, data);
-      }
-    }
-  }
-
   return (
     <>
       <StatusBar
@@ -84,7 +62,6 @@ const RootStackNavigator = ({isLoggedIn, hasValidAppCredentials: _hasValidAppCre
         ref={navigationRef}
         onReady={() => {
           processPendingNavigation();
-          checkInitialNotification(); // Check for initial notification (SampleAppWithPushNotifications)
         }}
         theme={NavigationTheme}
       >

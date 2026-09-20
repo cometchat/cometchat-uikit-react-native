@@ -5,7 +5,6 @@ import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
-import io.wazo.callkeep.RNCallKeepModule 
 
 class MainActivity : ReactActivity() {
 
@@ -27,15 +26,4 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
-
-  override fun onRequestPermissionsResult(
-      requestCode: Int,
-      permissions: Array<String>,
-      grantResults: IntArray
-  ) {
-      super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-      if (requestCode == RNCallKeepModule.REQUEST_READ_PHONE_STATE) {
-          RNCallKeepModule.onRequestPermissionsResult(requestCode, permissions, grantResults)
-      }
-  }
 }

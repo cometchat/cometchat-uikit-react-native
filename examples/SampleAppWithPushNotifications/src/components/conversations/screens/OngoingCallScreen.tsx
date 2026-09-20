@@ -3,7 +3,6 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { navigate, navigationRef } from '../../../navigation/NavigationService';
 import { CometChatCalls } from '@cometchat/calls-sdk-react-native';
 import { CometChatOngoingCall } from '@cometchat/chat-uikit-react-native';
-import { voipHandler } from '../../../utils/VoipNotificationHandler';
 import { SCREEN_CONSTANTS } from '../../../utils/AppConstants';
 import type { RouteProp } from '@react-navigation/native';
 import { CallType, RootStackParamList } from '../../../navigation/types';
@@ -57,10 +56,8 @@ const OngoingCallScreen = ({ navigation, route }: Props) => {
           index: 0,
           routes: [{ name: SCREEN_CONSTANTS.BOTTOM_TAB_NAVIGATOR }],
         });
-        voipHandler?.removeCallDialer();
       },
       onCallEndButtonPressed: () => {
-        voipHandler?.removeCallDialer();
         if (sessionID) CometChat.endCall(sessionID);
         navigate('BottomTabNavigator', undefined as any);
         navigationRef.reset({

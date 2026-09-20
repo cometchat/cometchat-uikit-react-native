@@ -1,8 +1,7 @@
+import { CometChatPushNotifications } from '@cometchat/push-notifications-react-native';
 import {CometChat} from '@cometchat/chat-sdk-react-native';
 import React, {useCallback, useContext, useRef, useState} from 'react';
-import {TouchableOpacity, View, Platform} from 'react-native';
-import PushNotificationIOS from '@react-native-community/push-notification-ios';
-import notifee from '@notifee/react-native';
+import {Alert, TouchableOpacity, View, Platform} from 'react-native';
 import {
   Icon,
   CometChatAvatar,
@@ -20,7 +19,6 @@ import {
 import {TooltipMenu} from '../../../utils/TooltipMenu';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../../../navigation/types';
-import {unregisterPushToken} from '../../../utils/PushNotification';
 import AccountCircle from '../../../assets/icons/AccountCircle';
 import AddComment from '../../../assets/icons/AddComment';
 import InfoIcon from '../../../assets/icons/InfoIcon';
@@ -118,12 +116,17 @@ const Conversations: React.FC<{}> = ({}) => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
 
-    // Step 1: Unregister push token
+    // Step 1: Unregister the push token BEFORE logout. unregisterPushToken needs the
+    // session: run after logout it is rejected (no authToken), the device stays
+    // registered, and the logged-out user keeps receiving notifications.
     try {
-      await unregisterPushToken();
+      await CometChatPushNotifications.unregister();
     } catch (error) {
       console.error('Failed to unregister push token:', error);
       setIsLoggingOut(false);
+      // Don't log out while this device would still receive the user's pushes, but say
+      // so: otherwise the Logout button just seems to do nothing.
+      Alert.alert('Could not log out', 'Check your internet connection and try again.');
       return;
     }
 
@@ -136,16 +139,8 @@ const Conversations: React.FC<{}> = ({}) => {
       return; // Exit if CometChat logout fails
     }
 
-    // Step 3: Clear badge count on logout
-    try {
-      if (Platform.OS === 'ios') {
-        PushNotificationIOS.setApplicationIconBadgeNumber(0);
-      } else if (Platform.OS === 'android') {
-        await notifee.cancelAllNotifications();
-      }
-    } catch (error) {
-      console.error('Error :', error);
-    }
+    // Badge/notification cleanup on logout is handled natively by
+    // @cometchat/push-notifications-react-native.
 
     // If all operations succeed, navigate to the LoginScreen
     setIsLoggingOut(false);
