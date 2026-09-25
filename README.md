@@ -44,6 +44,20 @@ To set up React Native Chat UIKit and utilize CometChat for your chat functional
 3. Check the [Key Concepts](https://www.cometchat.com/docs/fundamentals/key-concepts) to understand the basic components of CometChat.
 4. Refer to the [Integration Steps](https://www.cometchat.com/docs/ui-kit/react-native/5.0/getting-started) in our documentation to integrate the UI Kit into your iOS app.
 
+## Integrate with AI Coding Agents
+
+[CometChat Agent Skills](https://www.cometchat.com/docs/agent-skills) teach your AI coding agent how to build with the CometChat React Native UI Kit in bare React Native or Expo apps. Ask your agent to *"add chat to my app"* and it detects your project setup, walks you through a short plan for your approval, and then writes the integration code directly into your existing app, following the official CometChat guides. The skills work with Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, and other popular coding agents.
+
+Run the installer in your project root (requires Node.js 18+):
+
+```bash
+npx @cometchat/skills add
+```
+
+The skills are installed for Claude Code by default; pass `--ide <agent>` (for example, `--ide cursor`) to install them for a different agent. Then open your project in your agent and prompt it with *"add chat to my app"*, or run `/cometchat`.
+
+To learn more, visit [CometChat Agent Skills](https://www.cometchat.com/docs/agent-skills).
+
 ## Help and Support
 
 For issues running the project or integrating with our UI Kits, consult our [documentation](https://www.cometchat.com/docs/ui-kit/react-native/5.0/overview)
