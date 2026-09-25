@@ -18,6 +18,7 @@ import { useCometChatTranslation } from '../../resources/CometChatLocalizeNew';
 import { groupAttachments } from '../../utils/groupAttachments';
 import { CometChatUIKit } from '../../CometChatUiKit';
 import { CometChatCaptionText } from '../CometChatCaptionText';
+import { AdditionalParams } from "../../base/Types";
 
 const { FileManager } = NativeModules;
 const fileEventEmitter = new NativeEventEmitter(FileManager);
@@ -53,6 +54,8 @@ export interface CometChatFilesBubbleProps {
   /** Per-instance style overrides (applied over the tokenized defaults) — same pattern as the
    *  other bubbles (e.g. CometChatAudioBubble / CometChatFileBubble). */
   style?: CometChatTheme["filesBubbleStyles"];
+  /** Render-time params from the message list — carries the consumer's `textFormatters`. */
+  additionalParams?: AdditionalParams;
 }
 
 /**
@@ -64,6 +67,7 @@ export function CometChatFilesBubble({
   message,
   theme,
   style,
+  additionalParams,
 }: CometChatFilesBubbleProps) {
   const { t } = useCometChatTranslation();
   const compTheme = useCompTheme();
@@ -298,6 +302,7 @@ export function CometChatFilesBubble({
       {Boolean(caption) && (
         <CometChatCaptionText
           message={message}
+          additionalParams={additionalParams}
           caption={caption}
           theme={theme}
           containerStyle={{

@@ -24,6 +24,7 @@ import { useCompTheme } from '../../../theme/hook';
 import { CometChatCaptionText } from '../CometChatCaptionText';
 import { useCometChatTranslation } from '../../resources/CometChatLocalizeNew';
 import { ATTACHMENT_COLLAPSED_LIMIT } from '../../constants/UIKitConstants';
+import { AdditionalParams } from "../../base/Types";
 
 const { SoundPlayer, FileManager } = NativeModules;
 const soundEvents = new NativeEventEmitter(SoundPlayer);
@@ -440,6 +441,8 @@ export interface CometChatAudiosBubbleProps {
   message: CometChat.MediaMessage;
   theme: CometChatTheme;
   style?: CometChatTheme["audiosBubbleStyles"];
+  /** Render-time params from the message list — carries the consumer's `textFormatters`. */
+  additionalParams?: AdditionalParams;
 }
 
 /**
@@ -451,6 +454,7 @@ export function CometChatAudiosBubble({
   message,
   theme,
   style,
+  additionalParams,
 }: CometChatAudiosBubbleProps) {
   const compTheme = useCompTheme();
   const s = deepMerge(
@@ -569,6 +573,7 @@ export function CometChatAudiosBubble({
       {Boolean(caption) && (
         <CometChatCaptionText
           message={message}
+          additionalParams={additionalParams}
           caption={caption}
           theme={theme}
           containerStyle={{

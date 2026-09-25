@@ -7,6 +7,7 @@ import {
   CometChatUrlsFormatter,
   CometChatRichTextFormatter,
 } from "../..";
+import { applyRawFormatters } from "../formatters/applyRawFormatters";
 import { CometChatTheme } from "../../theme/type";
 import {
   AdditionalAttachmentOptionsParams,
@@ -189,7 +190,7 @@ export class MessageDataSource implements DataSource {
     return <CometChatStreamMessageBubble key={message.getId() + message.getType()} message={message} theme={theme} />;
   }
 
-  handleCopy = (message: CometChat.BaseMessage) => {
+  handleCopy = (message: CometChat.BaseMessage, textFormatters?: Array<CometChatTextFormatter>) => {
     try {
       let textToCopy = "";
 
@@ -206,7 +207,7 @@ export class MessageDataSource implements DataSource {
       // Clean plain text for every other app; colour preserved in a private representation
       // that only our own composer reads back on paste.
       if (textToCopy?.trim()) {
-        ClipboardPasteHandler.copyMessageText(textToCopy);
+        ClipboardPasteHandler.copyMessageText(textToCopy, textFormatters);
       }
     } catch (err) {
       console.error(err);
@@ -235,7 +236,7 @@ export class MessageDataSource implements DataSource {
       options: undefined,
 
       FooterView: (message: CometChat.BaseMessage) => (
-        <TouchableOpacity onPress={() => this.handleCopy(message as CometChat.AIAssistantMessage)}>
+        <TouchableOpacity onPress={() => this.handleCopy(message as CometChat.AIAssistantMessage, additionalParams?.textFormatters)}>
           <Icon name="ai-copy-option" width={24} height={24} containerStyle={styles.aiCopyIcon} color={theme.color.textSecondary} />
         </TouchableOpacity>
       ),
@@ -1531,6 +1532,7 @@ export class MessageDataSource implements DataSource {
       <CometChatMessagePreview
         message={hasQuotedMessage}
         theme={replyTheme}
+        textFormatters={additionalParams?.textFormatters}
         style={{
           backgroundColor: isOutgoingMessage ? theme.color.extendedPrimary800 : theme.color.neutral400,
           borderRadius: 8,
@@ -1611,6 +1613,10 @@ export class MessageDataSource implements DataSource {
     let loggedInUser = CometChatUIKit.loggedInUser;
     let mentionedUsers = message.getMentionedUsers();
     let textFormatters = [...(additionalParams?.textFormatters || [])];
+    // A consumer's own wire token becomes UI Kit markup here, before markdown, mentions or
+    // links parse the text — once the rich-text formatter has built elements out of it, a
+    // pattern that spans any of that markup can no longer be matched.
+    messageText = applyRawFormatters(messageText, textFormatters);
     const isMessageSentByLoggedInUser = message.getSender()?.getUid() === loggedInUser?.getUid();
     const _style: Partial<CometChatTheme["textBubbleStyles"]> = isMessageSentByLoggedInUser
       ? (theme.messageListStyles.outgoingMessageBubbleStyles
@@ -1932,12 +1938,12 @@ export class MessageDataSource implements DataSource {
     const audioType = (message.getMetadata?.() as Record<string, any> | undefined)?.audioType;
     if (audioType !== "voice_note") {
       // shared/picked audio file(s) → headphone + filename cards
-      return <CometChatAudiosBubble message={message} theme={theme} />;
+      return <CometChatAudiosBubble message={message} theme={theme} additionalParams={additionalParams} />;
     }
     // DD §8.1a — recorded voice note → waveform: a STACK (2+) uses CometChatVoiceNoteBubble; a SINGLE
     // recording (the usual case — voice notes are recorded one at a time) uses the single-audio bubble.
     if (isGalleryMessage(message)) {
-      return <CometChatVoiceNoteBubble message={message} theme={theme} />;
+      return <CometChatVoiceNoteBubble message={message} theme={theme} additionalParams={additionalParams} />;
     }
     const attachment = message.getAttachment();
     return ChatConfigurator.dataSource.getAudioMessageBubble(
@@ -1964,7 +1970,7 @@ export class MessageDataSource implements DataSource {
     // A VIDEO message ALWAYS renders the video grid — no fallback to a file list. Any attachment that
     // isn't a video (image / audio / file) shows a "no preview" placeholder cell inside the grid, and
     // a "No preview available" fullscreen on tap (see CometChatVideosBubble + CometChatMediaViewer).
-    return <CometChatVideosBubble message={message} theme={theme} />;
+    return <CometChatVideosBubble message={message} theme={theme} additionalParams={additionalParams} />;
   }
   getImageMessageContentView(
     message: CometChat.MediaMessage,
@@ -1983,7 +1989,7 @@ export class MessageDataSource implements DataSource {
     // An IMAGE message ALWAYS renders the image grid — no fallback to a file list. Any attachment that
     // can't be previewed (unsupported format / load error) shows a "no preview" placeholder cell inside
     // the grid instead (see CometChatImagesBubble's ImageCell).
-    return <CometChatImagesBubble message={message} theme={theme} />;
+    return <CometChatImagesBubble message={message} theme={theme} additionalParams={additionalParams} />;
   }
   getFileMessageContentView(
     message: CometChat.MediaMessage,
@@ -1999,7 +2005,7 @@ export class MessageDataSource implements DataSource {
       );
     }
     // DD §9 (flag=true, default): the new FilesBubble renders 1..N — including a single file.
-    return <CometChatFilesBubble message={message} theme={theme} />;
+    return <CometChatFilesBubble message={message} theme={theme} additionalParams={additionalParams} />;
   }
 
   getTextMessageTemplate(

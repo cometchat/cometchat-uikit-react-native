@@ -12,6 +12,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { useTheme } from "../../../theme";
+import { useCometChatTranslation } from "../../resources/CometChatLocalizeNew";
 import { Icon } from "../../icons/Icon";
 import styles from "./styles";
 
@@ -163,7 +164,7 @@ export default function Header({
   titleStyle = {},
   titleViewStyle,
   containerStyle,
-  searchPlaceholderText = "Search",
+  searchPlaceholderText,
   confirmSelectionStyle,
   selectionCancelStyle,
   titleSeparatorStyle = {},
@@ -174,7 +175,11 @@ export default function Header({
   onSearchBarClicked,
 }: HeaderProps) {
   const theme = useTheme();
+  const { t } = useCometChatTranslation();
   const inputRef = useRef<TextInput>(null);
+  // Callers that pass nothing used to get a hardcoded English "Search", which
+  // is why the conversation list's search box stayed English in every locale.
+  const searchPlaceholder = searchPlaceholderText ?? t("SEARCH");
   return (
     <View style={[styles.listBaseHeaderStyle, { width: '100%' }]}>
       {/* Header section with border */}
@@ -277,6 +282,7 @@ export default function Header({
           ) : (
           
             <Pressable
+              testID='List.searchBar'
               onPress={onSearchBarClicked}
               disabled={!onSearchBarClicked}
             >
@@ -309,7 +315,7 @@ export default function Header({
                 />
                 <TextInput
                   ref={inputRef}
-                  placeholder={searchPlaceholderText}
+                  placeholder={searchPlaceholder}
                   placeholderTextColor={
                     searchStyle?.placehodlerTextStyle?.color || theme.color.textTertiary
                   }

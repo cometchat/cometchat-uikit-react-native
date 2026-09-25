@@ -40,6 +40,7 @@ import {
   matchColorTagAt,
   stripColorTags,
 } from '../shared/formatters/richTextWireFormat';
+import { applyRawFormatters } from '../shared/formatters/applyRawFormatters';
 
 /**
  * Stack-key prefix for the value-carrying text-colour style during send serialization.
@@ -282,7 +283,7 @@ const RecordAudio = (props: any) => {
  * MessagePreviewTray component for displaying edit/reply message preview (v5 pattern)
  */
 const MessagePreviewTray = (props: any) => {
-  const { shouldShow = false, message = null, onClose = () => {}, title = '' } = props;
+  const { shouldShow = false, message = null, onClose = () => {}, title = '', textFormatters } = props;
   const { t } = useCometChatTranslation();
   if (!shouldShow) return null;
   // Editing a media caption: caption text is the editable subtitle; a muted overline (media-type icon +
@@ -292,9 +293,12 @@ const MessagePreviewTray = (props: any) => {
     <CometChatMessagePreview
       messagePreviewTitle={title}
       message={message}
+      textFormatters={textFormatters}
       {...(isMediaCaptionEdit
         ? {
-            messagePreviewSubtitle: message.getCaption() ?? '',
+            // The caption goes in as a plain string, so a consumer's token is rewritten here —
+            // `textFormatters` above only reaches the message-text path.
+            messagePreviewSubtitle: applyRawFormatters(message.getCaption() ?? '', textFormatters),
             hideSubtitleIcon: true,
             overlineText: attachmentCountLabel(message.getType?.(), message.getAttachments?.()?.length ?? 1),
           }
@@ -552,6 +556,14 @@ export interface ComposerInputHandle {
   setSelection: (start: number, end?: number) => void;
   /** Inserts a hyperlink, wrapping the current selection when there is one. */
   insertLink: (url: string, text: string) => void;
+  /**
+   * Replaces the selected text, or inserts at the caret when nothing is selected — how a trailing
+   * button writes its own wire token into the composer.
+   *
+   * Prefer this over `getText` + `setText`: rewriting the whole input re-seeds the editor, while
+   * this touches only the selected run and leaves the formatting around it alone.
+   */
+  replaceSelection: (text: string) => void;
   toggleBold: () => void;
   toggleItalic: () => void;
   toggleUnderline: () => void;
@@ -2022,13 +2034,15 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         
         // Clone and store formatter using tracking character as key (matching MessageComposer pattern)
         const newFormatter = CommonUtils.clone(formatter);
-        if (trackingChar) {
-          allFormatters.current.set(trackingChar, newFormatter);
-          
-          // Set up tracking characters for mention detection
-          if (!trackingCharacters.current.includes(trackingChar)) {
-            trackingCharacters.current.push(trackingChar);
-          }
+        // A formatter with no tracking character has no suggestion list, but it still takes part in
+        // the send and edit-preview lifecycle — so key it by id instead of dropping it. The prefix
+        // keeps it out of reach of the single-character lookup that opens the suggestion list.
+        const formatterKey = trackingChar || `formatter:${formatter.getId?.() ?? allFormatters.current.size}`;
+        allFormatters.current.set(formatterKey, newFormatter);
+
+        // Set up tracking characters for mention detection
+        if (trackingChar && !trackingCharacters.current.includes(trackingChar)) {
+          trackingCharacters.current.push(trackingChar);
         }
       });
     }, []);
@@ -3547,6 +3561,11 @@ export const CometChatCompactMessageComposer = React.forwardRef(
           mode: ConversationOptionConstants.edit,
         });
 
+        // A consumer's own wire token becomes UI Kit markup before the editor parses it, so an edit
+        // opens showing the styling rather than the raw token. `handlePreMessageSend` below turns it
+        // back into the consumer's format when the edit is saved.
+        resolvedText = applyRawFormatters(resolvedText, textFormatters);
+
         // Parse markdown into structured blocks and load into the native editor
         const blocks = markdownToBlocks(resolvedText);
         inputTextRef.current = resolvedText;
@@ -3630,6 +3649,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         setText: (text: string) => setInputTextProgrammatic(text),
         setSelection: (start: number, end?: number) => inputRef.current?.setSelection(start, end),
         insertLink: (url: string, text: string) => inputRef.current?.insertLink(url, text),
+        replaceSelection: (text: string) => inputRef.current?.replaceSelection(text),
         toggleBold: () => inputRef.current?.toggleBold(),
         toggleItalic: () => inputRef.current?.toggleItalic(),
         toggleUnderline: () => inputRef.current?.toggleUnderline(),
@@ -4523,6 +4543,13 @@ export const CometChatCompactMessageComposer = React.forwardRef(
           textMessage.setParentMessageId(parentMessageId as number);
         }
         outgoing = textMessage;
+
+        // An edit IS a send: without this a consumer's formatter never converts the text back to
+        // its own wire format, and the mentions formatter never re-attaches the mentioned users.
+        // Captions are left alone — the media send path does not run this hook either.
+        allFormatters.current.forEach((formatter) => {
+          outgoing = formatter.handlePreMessageSend(outgoing);
+        });
       }
 
       // Clear input and preview
@@ -5048,6 +5075,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
               <MessagePreviewTray
                 shouldShow={messagePreview !== null}
                 message={messagePreview?.message}
+                textFormatters={textFormatters}
                 title={t('EDIT_MESSAGE')}
                 onClose={() => {
                   setMessagePreview(null);
@@ -5058,6 +5086,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
               {replyMessage && replyMessage.message && (
                 <CometChatMessagePreview
                   message={replyMessage.message}
+                  textFormatters={textFormatters}
                   showCloseIcon={true}
                   closeIconURL={ICONS.CLOSE}
                   onCloseClick={closeReplyPreview}

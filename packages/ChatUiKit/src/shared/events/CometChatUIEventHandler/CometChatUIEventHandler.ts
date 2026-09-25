@@ -1,4 +1,3 @@
-import { SuggestionItem } from "../../views";
 import {
   CallListener,
   CallUIEventListener,
@@ -26,60 +25,28 @@ export class CometChatUIEventHandler {
 
   constructor() {}
 
-  static emitPanelEvent(name: string, param: object) {
-    CometChatUIEventHandler.panelHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.ccHidePanel?.name:
-          listener._eventListener?.ccHidePanel?.(param);
-          break;
-        case listener._eventListener?.ccShowPanel?.name:
-          listener._eventListener?.ccShowPanel?.(param);
-          break;
-      }
+  private static dispatch(
+    handlers: ReadonlyArray<{ _eventListener?: object }> | undefined,
+    name: string,
+    param: object
+  ) {
+    // Never dispatch to an inherited built-in ("constructor", "toString", "__proto__", …).
+    if (name in Object.prototype) return;
+
+    handlers?.forEach(({ _eventListener }) => {
+      const listener = _eventListener as Record<string, unknown> | undefined;
+      const handler = listener?.[name];
+      // .call keeps the receiver, so a method handler's `this` is its own listener object.
+      if (typeof handler === "function") (handler as (p: object) => void).call(listener, param);
     });
   }
 
+  static emitPanelEvent(name: string, param: object) {
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.panelHandlers, name, param);
+  }
+
   static emitCallEvent(name: string, param: object) {
-    CometChatUIEventHandler.callHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.ccIncomingCallReceived?.name:
-          listener._eventListener?.ccIncomingCallReceived?.(param);
-          break;
-        case listener._eventListener?.ccOutgoingCallAccepted?.name:
-          listener._eventListener?.ccOutgoingCallAccepted?.(param);
-          break;
-        case listener._eventListener?.ccOutgoingCallRejected?.name:
-          listener._eventListener?.ccOutgoingCallRejected?.(param);
-          break;
-        case listener._eventListener?.ccIncomingCallCancelled?.name:
-          listener._eventListener?.ccIncomingCallCancelled?.(param);
-          break;
-        case listener._eventListener?.ccOutgoingCall?.name:
-          listener._eventListener?.ccOutgoingCall?.(param);
-          break;
-        case listener._eventListener?.ccCallAccepted?.name:
-          listener._eventListener?.ccCallAccepted?.(param);
-          break;
-        case listener._eventListener?.ccCallRejected?.name:
-          listener._eventListener?.ccCallRejected?.(param);
-          break;
-        case listener._eventListener?.ccCallEnded?.name:
-          listener._eventListener?.ccCallEnded?.(param);
-          break;
-        case listener._eventListener?.ccOutgoingCallCancelled?.name:
-          listener._eventListener?.ccOutgoingCallCancelled?.(param);
-          break;
-        case listener._eventListener?.ccCallInitiated?.name:
-          listener._eventListener?.ccCallInitiated?.(param);
-          break;
-        case listener._eventListener?.ccShowOngoingCall?.name:
-          listener._eventListener?.ccShowOngoingCall?.(param);
-          break;
-        case listener._eventListener?.ccCallFailed?.name:
-          listener._eventListener?.ccCallFailed?.(param);
-          break;
-      }
-    });
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.callHandlers, name, param);
   }
 
   static addCallListener(name: string, callHandler: CallUIEventListener) {
@@ -111,125 +78,7 @@ export class CometChatUIEventHandler {
   }
 
   static emitMessageEvent(name: string, param: object) {
-    CometChatUIEventHandler.messageHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.ccThreadSubscriptionChanged?.name:
-          listener._eventListener?.ccThreadSubscriptionChanged?.(param);
-          break;
-        case listener._eventListener?.ccMessageDeleted?.name:
-          listener._eventListener?.ccMessageDeleted?.(param);
-          break;
-        case listener._eventListener?.ccMessageEdited?.name:
-          listener._eventListener?.ccMessageEdited?.(param);
-          break;
-        case listener._eventListener?.ccMessageRead?.name:
-          listener._eventListener?.ccMessageRead?.(param);
-          break;
-        case listener._eventListener?.ccMessageSent?.name:
-          listener._eventListener?.ccMessageSent?.(param);
-          break;
-        case listener._eventListener?.ccMessageDelivered?.name:
-          listener._eventListener?.ccMessageSent?.(param);
-          break;
-        case listener._eventListener?.ccActiveChatChanged?.name:
-          listener._eventListener?.ccActiveChatChanged?.(param);
-          break;
-        case listener._eventListener?.onTextMessageReceived?.name:
-          listener._eventListener?.onTextMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onMediaMessageReceived?.name:
-          listener._eventListener?.onMediaMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onCustomMessageReceived?.name:
-          listener._eventListener?.onCustomMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onTypingStarted?.name:
-          listener._eventListener?.onTypingStarted?.(param);
-          break;
-        case listener._eventListener?.onTypingEnded?.name:
-          listener._eventListener?.onTypingEnded?.(param);
-          break;
-        case listener._eventListener?.onMessagesDelivered?.name:
-          listener._eventListener?.onMessagesDelivered?.(param);
-          break;
-        case listener._eventListener?.onMessagesRead?.name:
-          listener._eventListener?.onMessagesRead?.(param);
-          break;
-        case listener._eventListener?.onMessageEdited?.name:
-          listener._eventListener?.onMessageEdited?.(param);
-          break;
-        case listener._eventListener?.onMessageDeleted?.name:
-          listener._eventListener?.onMessageDeleted?.(param);
-          break;
-        case listener._eventListener?.onTransientMessageReceived?.name:
-          listener._eventListener?.onTransientMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onFormMessageReceived?.name:
-          listener._eventListener?.onFormMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onCardMessageReceived?.name:
-          listener._eventListener?.onCardMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onSchedulerMessageReceived?.name:
-          listener._eventListener?.onSchedulerMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onCustomInteractiveMessageReceived?.name:
-          listener._eventListener?.onCustomInteractiveMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onInteractionGoalCompleted?.name:
-          listener._eventListener?.onInteractionGoalCompleted?.(param);
-          break;
-        case listener._eventListener?.onMessageReactionRemoved?.name:
-          listener._eventListener?.onMessageReactionRemoved?.(param);
-          break;
-        case listener._eventListener?.onMessageReactionAdded?.name:
-          listener._eventListener?.onMessageReactionAdded?.(param);
-          break;
-        case listener._eventListener?.onMessagesDeliveredToAll?.name:
-          listener._eventListener?.onMessagesDeliveredToAll?.(param);
-          break;
-        case listener._eventListener?.onMessagesReadByAll?.name:
-          listener._eventListener?.onMessagesReadByAll?.(param);
-          break;
-        case listener._eventListener?.onAIAssistantMessageReceived?.name:
-          listener._eventListener?.onAIAssistantMessageReceived?.(param);
-          break;
-        case listener._eventListener?.onMessageModerated?.name:
-          listener._eventListener?.onMessageModerated?.(param);
-          break;
-        // Pin & Save realtime. Without these four the SDK parses the socket frame,
-        // ListenerInitializer emits it, and the emit lands in a switch that matches
-        // nothing — so a pin made by another participant never reaches the message
-        // list and only appears on the next fetch.
-        case listener._eventListener?.onMessagePinned?.name:
-          listener._eventListener?.onMessagePinned?.(param);
-          break;
-        case listener._eventListener?.onMessageUnpinned?.name:
-          listener._eventListener?.onMessageUnpinned?.(param);
-          break;
-        case listener._eventListener?.onMessageSaved?.name:
-          listener._eventListener?.onMessageSaved?.(param);
-          break;
-        case listener._eventListener?.onMessageUnsaved?.name:
-          listener._eventListener?.onMessageUnsaved?.(param);
-          break;
-        // The cc* half: emitted by the device that PERFORMED the action, so a panel
-        // open next to the message list updates without waiting for a socket echo
-        // (and in a 1-1, where no echo is coming at all).
-        case listener._eventListener?.ccMessagePinned?.name:
-          listener._eventListener?.ccMessagePinned?.(param);
-          break;
-        case listener._eventListener?.ccMessageUnpinned?.name:
-          listener._eventListener?.ccMessageUnpinned?.(param);
-          break;
-        case listener._eventListener?.ccMessageSaved?.name:
-          listener._eventListener?.ccMessageSaved?.(param);
-          break;
-        case listener._eventListener?.ccMessageUnsaved?.name:
-          listener._eventListener?.ccMessageUnsaved?.(param);
-          break;
-      }
-    });
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.messageHandlers, name, param);
   }
 
   static addMessageListener(name: string, messageHandler: MessageUIEventListener) {
@@ -261,17 +110,7 @@ export class CometChatUIEventHandler {
   }
 
   static emitConversationEvent(name: string, param: object) {
-    CometChatUIEventHandler.conversationHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.ccConversationDeleted?.name:
-          listener._eventListener?.ccConversationDeleted?.(param);
-          break;
-          //added for markAsUnread 
-        case listener._eventListener?.ccUpdateConversation?.name:
-          listener._eventListener?.ccUpdateConversation?.(param);
-          break;
-      }
-    });
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.conversationHandlers, name, param);
   }
 
   static addConversationListener(name: string, conversationHandler: ConversationUIEventListener) {
@@ -303,40 +142,7 @@ export class CometChatUIEventHandler {
   }
 
   static emitGroupEvent(name: string, param: object) {
-    CometChatUIEventHandler.groupHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.ccGroupCreated?.name:
-          listener._eventListener?.ccGroupCreated?.(param);
-          break;
-        case listener._eventListener?.ccGroupDeleted?.name:
-          listener._eventListener?.ccGroupDeleted?.(param);
-          break;
-        case listener._eventListener?.ccGroupLeft?.name:
-          listener._eventListener?.ccGroupLeft?.(param);
-          break;
-        case listener._eventListener?.ccGroupMemberBanned?.name:
-          listener._eventListener?.ccGroupMemberBanned?.(param);
-          break;
-        case listener._eventListener?.ccGroupMemberJoined?.name:
-          listener._eventListener?.ccGroupMemberJoined?.(param);
-          break;
-        case listener._eventListener?.ccGroupMemberKicked?.name:
-          listener._eventListener?.ccGroupMemberKicked?.(param);
-          break;
-        case listener._eventListener?.ccGroupMemberScopeChanged?.name:
-          listener._eventListener?.ccGroupMemberScopeChanged?.(param);
-          break;
-        case listener._eventListener?.ccGroupMemberUnBanned?.name:
-          listener._eventListener?.ccGroupMemberUnBanned?.(param);
-          break;
-        case listener._eventListener?.ccOwnershipChanged?.name:
-          listener._eventListener?.ccOwnershipChanged?.(param);
-          break;
-        case listener._eventListener?.ccGroupMemberAdded?.name:
-          listener._eventListener?.ccGroupMemberAdded?.(param);
-          break;
-      }
-    });
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.groupHandlers, name, param);
   }
 
   static addGroupListener(name: string, groupHandler: GroupUIEventListener) {
@@ -368,16 +174,7 @@ export class CometChatUIEventHandler {
   }
 
   static emitUserEvent(name: string, param: object) {
-    CometChatUIEventHandler.userHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.ccUserBlocked?.name:
-          listener._eventListener?.ccUserBlocked?.(param);
-          break;
-        case listener._eventListener?.ccUserUnBlocked?.name:
-          listener._eventListener?.ccUserUnBlocked?.(param);
-          break;
-      }
-    });
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.userHandlers, name, param);
   }
 
   static addUserListener(name: string, userHandler: UserUIEventListener) {
@@ -409,38 +206,7 @@ export class CometChatUIEventHandler {
   }
 
   static emitUIEvent(name: string, param: object) {
-    CometChatUIEventHandler.uiHandlers?.map((listener) => {
-      switch (name) {
-        case listener._eventListener?.hidePanel?.name:
-          listener._eventListener?.hidePanel?.(param);
-          break;
-        case listener._eventListener?.showPanel?.name:
-          listener._eventListener?.showPanel?.(param);
-          break;
-        case listener._eventListener?.openChat?.name:
-          listener._eventListener?.openChat?.(param);
-          break;
-        case listener._eventListener?.ccToggleBottomSheet?.name:
-          listener._eventListener?.ccToggleBottomSheet?.(param);
-          break;
-        case listener._eventListener?.ccComposeMessage?.name:
-          listener._eventListener?.ccComposeMessage?.(param);
-          break;
-        // case listener._eventListener?.ccMentionClick?.name:
-        //     listener._eventListener?.ccMentionClick(param);
-        //     break;
-        case listener._eventListener?.ccSuggestionData?.name:
-          listener._eventListener?.ccSuggestionData?.(
-            param as { id: string; data: Array<SuggestionItem> }
-          );
-          break;
-        case listener._eventListener?.ccCardActionClicked?.name:
-          listener._eventListener?.ccCardActionClicked?.(
-            param as { message: any; action: any }
-          );
-          break;
-      }
-    });
+    CometChatUIEventHandler.dispatch(CometChatUIEventHandler.uiHandlers, name, param);
   }
 
   static addUIListener(name: string, uiHandlers: UIEventListener) {
@@ -461,13 +227,13 @@ export class CometChatUIEventHandler {
 
   static removeUIListener(name: string) {
     try {
-      CometChatUIEventHandler.userHandlers = CometChatUIEventHandler.userHandlers?.filter(
+      CometChatUIEventHandler.uiHandlers = CometChatUIEventHandler.uiHandlers?.filter(
         (listener) => {
           return listener._name !== name;
         }
       );
     } catch (err) {
-      console.log("removeUserListener", err);
+      console.log("removeUIListener", err);
     }
   }
 }

@@ -20,7 +20,8 @@
  * @module CometChatPinnedMessages
  */
 import { CometChat } from "@cometchat/chat-sdk-react-native";
-import Clipboard from "@react-native-clipboard/clipboard";
+import { ClipboardPasteHandler } from "../shared/views/ClipboardPasteHandler/ClipboardPasteHandler";
+import { stripRichText } from "../shared/utils/stripRichText";
 import React, { JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, NativeModules, Pressable, Text, View } from "react-native";
 import { ChatConfigurator } from "../shared";
@@ -56,6 +57,9 @@ import {
 } from "../shared/utils/PinSaveHelper";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { MessageEvents } from "../shared/events/messages";
+import { CometChatTextFormatter } from "../shared/formatters/CometChatTextFormatter";
+import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
+import { buildPinnedMessagesRequest } from "../shared/utils/PinnedMessagesHelper";
 
 /**
  * The options this panel is willing to show, as an ALLOW-LIST.
@@ -106,6 +110,19 @@ export interface CometChatPinnedMessagesInterface {
   group?: CometChat.Group;
   /** Page size. Defaults to 30; the server caps a conversation at 100. */
   limit?: number;
+  /**
+   * Your own request builder, for anything `limit` alone cannot express — a search
+   * term, a category or type filter, a different page size.
+   *
+   * `setPinnedOnly(true)` and the `user`/`group` conversation scope are re-asserted
+   * on whatever you pass, so a builder that forgets them still returns this
+   * conversation's pinned messages rather than ordinary history. Set them anyway to
+   * keep the intent readable.
+   *
+   * The `limit` prop wins: `limit={10}` with a builder that calls `setLimit(50)` pages
+   * in tens. Without the prop the builder's own limit is used, and with neither, 30.
+   */
+  messagesRequestBuilder?: CometChat.MessagesRequestBuilder;
   /** Closes the panel — rendered as the ✕ in the header. */
   onBack?: () => void;
   /** Tapping a row — the host jumps its message list to this message. */
@@ -127,6 +144,12 @@ export interface CometChatPinnedMessagesInterface {
   /** Hide Unsave in the long-press sheet (§6.7). */
   hideUnsaveMessageOption?: boolean;
   ItemView?: (message: CometChat.BaseMessage) => JSX.Element;
+  /**
+   * Text formatters, same array the host passes to CometChatMessageList. The panel renders real
+   * bubbles, so without this a consumer's own token reaches the template unrecognised and the
+   * pinned copy of a message reads differently from the same message in the list.
+   */
+  textFormatters?: Array<CometChatTextFormatter>;
   title?: string;
   /** Per-instance style overrides, merged over the theme's pinnedMessagesStyles. */
   style?: DeepPartial<PinnedMessagesStyle>;
@@ -139,6 +162,7 @@ export const CometChatPinnedMessages = (props: CometChatPinnedMessagesInterface)
     user,
     group,
     limit,
+    messagesRequestBuilder,
     onBack,
     onItemPress,
     hideUnpinMessageOption = false,
@@ -148,6 +172,7 @@ export const CometChatPinnedMessages = (props: CometChatPinnedMessagesInterface)
     hideShareMessageOption = false,
     hideMessageInfoOption = false,
     ItemView,
+    textFormatters,
     title,
     style,
   } = props;
@@ -223,17 +248,10 @@ export const CometChatPinnedMessages = (props: CometChatPinnedMessagesInterface)
    * A factory rather than an inline build: a request is single-use, so retrying after
    * an error needs a fresh one.
    */
-  const buildRequest = useCallback(() => {
-    const builder = new CometChat.MessagesRequestBuilder().setPinnedOnly(true);
-    // ALWAYS set. The SDK has no default: a request that never called setLimit() is
-    // rejected with SET_LIMIT_IS_COMPULSORY before any network call. 30 matches the
-    // SDK's own DEFAULT_VALUES.MSGS_LIMIT.
-    builder.setLimit(limit ?? 30);
-    // Exactly one of these; the SDK rejects neither-set.
-    if (group) builder.setGUID(group.getGuid());
-    else if (user) builder.setUID(user.getUid());
-    return builder.build();
-  }, [limit, group, user]);
+  const buildRequest = useCallback(
+    () => buildPinnedMessagesRequest({ user, group, limit, messagesRequestBuilder }),
+    [limit, group, user, messagesRequestBuilder]
+  );
 
   if (request.current === null) request.current = buildRequest();
 
@@ -483,8 +501,8 @@ export const CometChatPinnedMessages = (props: CometChatPinnedMessagesInterface)
   }, [group, user]);
 
   const templates: CometChatMessageTemplate[] = useMemo(
-    () => ChatConfigurator.dataSource.getAllMessageTemplates(theme),
-    [theme]
+    () => ChatConfigurator.dataSource.getAllMessageTemplates(theme, { textFormatters }),
+    [theme, textFormatters]
   );
 
   const templatesMap = useMemo(() => {
@@ -583,10 +601,15 @@ export const CometChatPinnedMessages = (props: CometChatPinnedMessagesInterface)
   };
 
   const onCopy = (message: CometChat.BaseMessage) => {
-    // ponytail: raw text, not the mention-resolved string the message list copies via
-    // its local getPlainString (not exported). Copying "@uid" instead of "@Name" is
-    // the known ceiling; lift it by extracting that helper into shared/utils.
-    Clipboard.setString(textOf(message));
+    // Via the shared handler, NOT Clipboard directly: it strips the rich-text wire
+    // format for the plain clipboard while keeping the rich version for a paste back
+    // into our own composer. Copying raw put `<color=#e11d48>` into Notes and mail.
+    //
+    // ponytail: still the raw text rather than the mention-resolved string the message
+    // list copies via its local getPlainString (not exported). Copying "@uid" instead
+    // of "@Name" is the known ceiling; lift it by extracting that helper into
+    // shared/utils.
+    ClipboardPasteHandler.copyMessageText(textOf(message), textFormatters);
     // Deferred like the message list does: unmounting the Modal while Clipboard is
     // still touching views crashes Fabric on iOS.
     requestAnimationFrame(closeSheet);
@@ -597,7 +620,8 @@ export const CometChatPinnedMessages = (props: CometChatPinnedMessagesInterface)
       message instanceof CometChat.MediaMessage ? message.getAttachment() : undefined;
     const fileUrl = attachment?.getUrl() ?? "";
     const shareObj = {
-      message: textOf(message),
+      // Plain text: the share target is another app, which cannot read our wire format.
+      message: stripRichText(applyRawFormatters(textOf(message), textFormatters)),
       type: message.getType(),
       mediaName: attachment?.getName() ?? "",
       fileUrl,

@@ -152,6 +152,8 @@ export interface RichTextEditorRef {
   setChecklist: () => void;
   setParagraph: () => void;
   insertLink: (url: string, text: string) => void;
+  /** Replaces the selection with plain text, or inserts at the caret when nothing is selected. */
+  replaceSelection: (text: string) => void;
   undo: () => void;
   redo: () => void;
   clearFormatting: () => void;

@@ -1,5 +1,5 @@
 import React, { ReactNode, useState, useEffect, useMemo, useCallback } from "react";
-import { getAvailableLanguages, translate } from "./CometChatLocalizationHelper";
+import { resolveDeviceLanguage, resolveLanguage, translate } from "./CometChatLocalizationHelper";
 import { CometChatLocalizeContext } from "./CometChatLocalizeContext";
 import { setGlobalLanguage } from './LocalizationManager';
 import * as RNLocalize from 'react-native-localize';
@@ -17,20 +17,17 @@ interface CometChatI18nProviderProps {
     };
 }
 
-const getDeviceLanguage = (): Language => {
+const getDeviceLanguage = (customLanguages: string[] = []): Language => {
     try {
         const locales = RNLocalize.getLocales();
         if (Array.isArray(locales) && locales.length > 0) {
-            const code = locales[0].languageCode as Language;
-            console.log(locales[0], " device language detected");
-            return code;
+            return resolveDeviceLanguage(locales[0], customLanguages);
         }
     } catch (error) {
         console.warn('Error getting device language:', error);
     }
     return 'en';
 };
-
 
 
 export const CometChatI18nProvider = ({
@@ -41,44 +38,32 @@ export const CometChatI18nProvider = ({
     translations
 }: CometChatI18nProviderProps) => {
     const [language, setLanguage] = useState<Language>(() => {
+        const customLanguages = translations ? Object.keys(translations) : [];
         if (selectedLanguage) {
-            console.log(selectedLanguage, " selected language provided");
-            const availableLanguages = getAvailableLanguages();
-            const customLanguages = translations ? Object.keys(translations) : [];
-            const allAvailableLanguages = [...availableLanguages, ...customLanguages];
-
-
-            if (allAvailableLanguages.includes(selectedLanguage)) {
-                return selectedLanguage;
-            } else {
-
-                console.warn(`Language '${selectedLanguage}' not found. Using fallback: ${fallbackLanguage}`);
-                return fallbackLanguage;
+            const resolved = resolveLanguage([selectedLanguage], customLanguages);
+            if (resolved) {
+                return resolved;
             }
+            console.warn(`Language '${selectedLanguage}' not found. Using fallback: ${fallbackLanguage}`);
+            return fallbackLanguage;
         } else if (autoDetectLanguage) {
-            console.log("Using device language");
-            return getDeviceLanguage();
+            return getDeviceLanguage(customLanguages);
         }
         return fallbackLanguage;
     });
 
     useEffect(() => {
+        const customLanguages = translations ? Object.keys(translations) : [];
         if (selectedLanguage) {
-            console.log(selectedLanguage, " selected language changed via props");
-            const availableLanguages = getAvailableLanguages();
-            const customLanguages = translations ? Object.keys(translations) : [];
-            const allAvailableLanguages = [...availableLanguages, ...customLanguages];
-
-            if (allAvailableLanguages.includes(selectedLanguage)) {
-                setLanguage(selectedLanguage);
-                console.log(selectedLanguage, " language set from props");
+            const resolved = resolveLanguage([selectedLanguage], customLanguages);
+            if (resolved) {
+                setLanguage(resolved);
             } else {
                 console.warn(`Language '${selectedLanguage}' not found (set via prop). Using fallback: ${fallbackLanguage}`);
                 setLanguage(fallbackLanguage);
             }
         } else if (autoDetectLanguage) {
-            console.log("Auto-detecting device language");
-            setLanguage(getDeviceLanguage());
+            setLanguage(getDeviceLanguage(customLanguages));
         }
     }, [selectedLanguage, autoDetectLanguage, fallbackLanguage, translations]);
 

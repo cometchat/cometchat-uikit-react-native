@@ -144,7 +144,8 @@ export class CometChatUIKit {
           });
       },
       (error: any) => {
-        // console.log("Initialization failed with error:", error);
+        console.error("[CometChatUIKit] SDK initialization failed:", error);
+        throw error;
       }
     );
   }

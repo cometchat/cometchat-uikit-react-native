@@ -72,6 +72,14 @@ class RichTextEditorViewManager: RCTViewManager {
         }
     }
 
+    @objc func replaceSelection(_ node: NSNumber, text: NSString) {
+        DispatchQueue.main.async {
+            if let view = self.bridge?.uiManager.view(forReactTag: node) as? RichTextEditorView {
+                view.replaceSelection(with: text as String)
+            }
+        }
+    }
+
     @objc func undo(_ node: NSNumber) {
         DispatchQueue.main.async {
             if let view = self.bridge?.uiManager.view(forReactTag: node) as? RichTextEditorView {

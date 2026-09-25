@@ -33,6 +33,7 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
         const val COMMAND_SET_CHECKLIST = "setChecklist"
         const val COMMAND_SET_PARAGRAPH = "setParagraph"
         const val COMMAND_INSERT_LINK = "insertLink"
+        const val COMMAND_REPLACE_SELECTION = "replaceSelection"
         const val COMMAND_UNDO = "undo"
         const val COMMAND_REDO = "redo"
         const val COMMAND_CLEAR_FORMATTING = "clearFormatting"
@@ -127,7 +128,8 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
             COMMAND_REMOVE_LINK to 31,
             COMMAND_UPDATE_LINK to 32,
             COMMAND_APPLY_INLINE_STYLE to 33,
-            COMMAND_REMOVE_INLINE_STYLE to 34
+            COMMAND_REMOVE_INLINE_STYLE to 34,
+            COMMAND_REPLACE_SELECTION to 35
         )
     }
 
@@ -160,6 +162,12 @@ class RichTextEditorViewManager : SimpleViewManager<LinearLayout>() {
                         val linkText = args?.getString(1) ?: ""
                         if (url.isNotEmpty() && linkText.isNotEmpty()) {
                             view.insertLink(url, linkText)
+                        }
+                    }
+                    COMMAND_REPLACE_SELECTION -> {
+                        val replacement = args?.getString(0) ?: ""
+                        if (replacement.isNotEmpty()) {
+                            view.replaceSelection(replacement)
                         }
                     }
                     COMMAND_UNDO -> view.onUndoClick()

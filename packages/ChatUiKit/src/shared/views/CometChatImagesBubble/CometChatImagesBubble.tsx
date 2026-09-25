@@ -11,6 +11,7 @@ import { CometChatMediaViewer } from '../CometChatMediaViewer';
 import { CometChatCaptionText } from '../CometChatCaptionText';
 import { Icon } from '../../icons/Icon';
 import { isImageMime } from '../CometChatMediaViewer/mediaViewerUtils';
+import { AdditionalParams } from "../../base/Types";
 
 // ---------------------------------------------------------------------------
 // Design doc §8.1 — ImagesBubble: renders a single-kind IMAGE message (all images after the §7 fan-out)
@@ -211,6 +212,8 @@ export interface CometChatImagesBubbleProps {
   theme: CometChatTheme;
   /** Per-instance style overrides — shares the `mediaGridBubbleStyles` theme key with VideosBubble. */
   style?: CometChatTheme["mediaGridBubbleStyles"];
+  /** Render-time params from the message list — carries the consumer's `textFormatters`. */
+  additionalParams?: AdditionalParams;
 }
 
 /**
@@ -221,6 +224,7 @@ export function CometChatImagesBubble({
   message: initialMessage,
   theme,
   style,
+  additionalParams,
 }: CometChatImagesBubbleProps) {
   const compTheme = useCompTheme();
   const s = deepMerge(theme.mediaGridBubbleStyles ?? {}, compTheme.mediaGridBubbleStyles ?? {}, style ?? {});
@@ -287,6 +291,7 @@ export function CometChatImagesBubble({
       {Boolean(caption) && (
         <CometChatCaptionText
           message={message}
+          additionalParams={additionalParams}
           caption={caption}
           theme={theme}
           containerStyle={{

@@ -2,6 +2,7 @@
  * Utility functions for markdown text processing.
  */
 import { stripColorTags } from "../formatters/richTextWireFormat";
+import { urlPattern, emailPattern } from "../constants/textPatterns";
 
 /**
  * Strips markdown syntax characters from text, returning clean readable content.
@@ -25,10 +26,31 @@ import { stripColorTags } from "../formatters/richTextWireFormat";
 export function stripMarkdown(text: string, keepColorTags = false): string {
   if (!text) return text;
 
-  // 0. Remove the rich-text wire format's colour tokens. Not markdown and not HTML, so no
+  // 0a. Stash URLs before any rule below runs, the same protection
+  //     CometChatRichTextFormatter got in ENG-38182. Without it, markers that PAIR inside a
+  //     single URL are eaten and the address silently changes: a search row rendered
+  //     https://example.com/a__b__c as https://example.com/abc, and /docs/_sources/index_page_
+  //     as /docs/sources/index_page. The bubble was fixed; every plain-text sink fed by this
+  //     function — search rows, saved rows, the preview tray, share — was not.
+  const protectedUrls: string[] = [];
+  let staged = text;
+  try {
+    const keep = (match: string) => {
+      protectedUrls.push(match);
+      return `\x00U${protectedUrls.length - 1}\x00`;
+    };
+    // Emails first — the url pattern matches only an address's domain, leaving the local
+    // part's underscores exposed to the markdown rules below.
+    staged = text.replace(new RegExp(emailPattern, "gi"), keep);
+    staged = staged.replace(new RegExp(urlPattern, "gi"), keep);
+  } catch {
+    // A bad pattern must not cost the caller their text; fall back to stripping unprotected.
+  }
+
+  // 0b. Remove the rich-text wire format's colour tokens. Not markdown and not HTML, so no
   //    rule below matches them — without this they reach every plain-text sink verbatim
   //    (share sheet, search subtitles, previews).
-  let result = keepColorTags ? text : stripColorTags(text);
+  let result = keepColorTags ? staged : stripColorTags(staged);
 
   // 1. Remove code block fences (``` on their own lines or inline ```)
   result = result.replace(/```[\s\S]*?```/g, (match) => {
@@ -85,6 +107,11 @@ export function stripMarkdown(text: string, keepColorTags = false): string {
 
   // 11. Remove any remaining backslash escapes (e.g., \* \_ \` \~)
   result = result.replace(/\\([*_`~>\\])/g, '$1');
+
+  // 12. Put the URLs back exactly as they arrived.
+  if (protectedUrls.length) {
+    result = result.replace(/\x00U(\d+)\x00/g, (_m, i) => protectedUrls[Number(i)] ?? "");
+  }
 
   return result;
 }
@@ -151,9 +178,12 @@ export function preparePreviewText(text: string): PreviewTextResult {
       return { text: orderedMatch[2].trim(), isBlockquote: false, codeBlockFirstLine: null, listPrefix: `${orderedMatch[1]}. ` };
     }
 
-    // Bullet list — content only, prefix in listPrefix
+    // Bullet list — content only, prefix in listPrefix.
+    // The DISPLAY marker, not the markdown source character: the row showed a literal "- " while
+    // the message bubble renders the same list with "‧ ". BULLET_MARKER in the rich text formatter
+    // is the same glyph, so a preview and its bubble now agree.
     if (trimmed.startsWith('- ')) {
-      return { text: trimmed.substring(2).trim(), isBlockquote: false, codeBlockFirstLine: null, listPrefix: '- ' };
+      return { text: trimmed.substring(2).trim(), isBlockquote: false, codeBlockFirstLine: null, listPrefix: '‧ ' };
     }
 
     // Plain text — collapse any inline code blocks

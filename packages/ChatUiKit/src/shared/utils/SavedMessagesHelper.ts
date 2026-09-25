@@ -11,6 +11,7 @@
  * @module SavedMessagesHelper
  */
 import { CometChat } from "@cometchat/chat-sdk-react-native";
+import { cloneRequestBuilder } from "./cloneRequestBuilder";
 
 /** What a saved row needs to render its "where did this come from" line. */
 export interface SavedMessageSource {
@@ -99,6 +100,11 @@ export interface SavedMessagePreview {
 /**
  * The subtitle content for a saved row. Never throws; an unrecognised type falls
  * back to the generic document glyph rather than rendering an empty line.
+ */
+/**
+ * Returns the preview's RAW text — inline formatting included. The component renders
+ * it through CometChatRichTextFormatter, the same way the conversation list does, so
+ * a coloured message reads coloured in the row rather than as `<color=#e11d48>`.
  */
 export const previewFor = (message?: CometChat.BaseMessage | null): SavedMessagePreview => {
   const empty: SavedMessagePreview = { icon: "description-fill", labelKey: null, text: null };
@@ -220,12 +226,42 @@ export const sourceLabelFor = (
  * Single-use by design — build a new one to refresh. The server caps the whole set
  * at 100.
  */
-export const buildSavedMessagesRequest = (limit?: number) => {
-  const builder = new CometChat.MessagesRequestBuilder().setSavedOnly(true);
-  // ALWAYS set. The SDK has no default: MessagesRequestBuilder.limit stays undefined
-  // unless setLimit() is called, and makeAPICall() then rejects with
+export const buildSavedMessagesRequest = (
+  limit?: number,
+  messagesRequestBuilder?: CometChat.MessagesRequestBuilder
+) => {
+  // A COPY of the integrator's builder, never their object. They may hand the same
+  // instance to CometChatPinnedMessages too, and the invariants below are contradictory
+  // between the two panels — mutating in place would make whichever built second
+  // corrupt the first. See cloneRequestBuilder for why the copy is prototype-preserving.
+  const builder = messagesRequestBuilder
+    ? cloneRequestBuilder(messagesRequestBuilder)
+    : new CometChat.MessagesRequestBuilder();
+
+  // The full invariant, not just half of it. setSavedOnly alone is not enough: a builder
+  // carrying pinnedOnly=true makes the SDK reject the request with
+  // PINNED_AND_SAVED_BOTH_SET before any network call, and the panel shows its error
+  // state instead of the saved list.
+  builder.setSavedOnly(true);
+  builder.setPinnedOnly(false);
+
+  // ALWAYS set, on every path. The SDK has no default: MessagesRequestBuilder.limit
+  // stays undefined unless setLimit() is called, and makeAPICall() then rejects with
   // SET_LIMIT_IS_COMPULSORY *before* any request goes out — an error screen with an
-  // empty network log. 30 matches the SDK's own DEFAULT_VALUES.MSGS_LIMIT.
-  builder.setLimit(limit ?? 30);
+  // empty network log. So a passed-in builder cannot be trusted to have set one.
+  // Precedence: the `limit` argument, else the builder's own, else 30 (the SDK's
+  // DEFAULT_VALUES.MSGS_LIMIT).
+  const builderLimit = (builder as unknown as { limit?: number }).limit;
+  builder.setLimit(limit ?? builderLimit ?? 30);
+
+  // Deliberately NO uid/guid: `saved=1` is account-wide, and scoping it to one
+  // conversation would turn this cross-conversation inbox into a per-chat list. The
+  // JSDoc asks callers not to set them; this enforces it, because a builder shared with
+  // the pinned panel arrives already carrying one. Cleared on our copy, so the caller's
+  // own builder keeps whatever scope they gave it. There is no setter that unsets these.
+  const scope = builder as unknown as { uid?: string; guid?: string };
+  scope.uid = undefined;
+  scope.guid = undefined;
+
   return builder.build();
 };

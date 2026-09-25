@@ -185,9 +185,9 @@ export interface CometChatGroupMembersInterface
    */
   hideHeader?: boolean;
   /**
-   * Hide the Submit Button.
+   * Callback when an error occurs.
    */
-  onError?: () => void;
+  onError?: (e: CometChat.CometChatException) => void;
   /**
    * search Keyword
    */

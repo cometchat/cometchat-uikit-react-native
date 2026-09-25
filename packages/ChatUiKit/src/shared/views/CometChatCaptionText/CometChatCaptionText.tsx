@@ -10,6 +10,7 @@ import {
   CometChatUrlsFormatter,
   CometChatRichTextFormatter,
 } from "../../formatters";
+import { applyRawFormatters } from "../../formatters/applyRawFormatters";
 import { CommonUtils } from "../../utils/CommonUtils";
 import { CometChatUIKit } from "../../CometChatUiKit";
 import { MentionsTargetElement } from "../../constants/UIKitConstants";
@@ -46,9 +47,15 @@ export function CometChatCaptionText({
     () => buildCaptionFormatters(message, theme, additionalParams),
     [message, theme, additionalParams]
   );
+  // A consumer's own wire token becomes UI Kit markup before the chain above parses the caption —
+  // same order the text bubble uses, so a caption and a text message render identically.
+  const text = useMemo(
+    () => applyRawFormatters(caption, additionalParams?.textFormatters),
+    [caption, additionalParams]
+  );
   return (
     <CometChatTextBubble
-      text={caption}
+      text={text}
       textStyle={textStyle}
       textContainerStyle={containerStyle}
       textFormatters={formatters}

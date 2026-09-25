@@ -4,6 +4,7 @@ import { Text, TextStyle, ViewStyle, Platform, Linking, View } from "react-nativ
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
 import { COLOR_OPEN_TAG, HEX_COLOR_REGEX, findColorTag, stripColorTags } from "../richTextWireFormat";
 import { isTextElement, isViewElement } from "../../utils/elementType";
+import { urlPattern, emailPattern } from "../../constants/textPatterns";
 
 /**
  * Style configuration for rich text formatting
@@ -36,6 +37,12 @@ const QUOTE_BULLET_REGEX = /^- (.*)$/;
 const QUOTE_ORDERED_REGEX = /^(\s*)(\d+)\.\s(.*)$/;
 // Mention pattern — used to exclude mention UIDs from markdown marker detection
 const MENTION_PATTERN_REGEX = /<@(?:uid|all):[^>]*>/g;
+// URL pattern — used to exclude URLs from markdown marker detection (ENG-38182)
+const URL_PATTERN_REGEX = new RegExp(urlPattern, "gi");
+// Emails are stashed BEFORE urls: the url pattern matches only the DOMAIN of an address, so
+// `my_name@corp.co.uk` had its local part left exposed and two such addresses in one message
+// paired their underscores into italics — `my_name@` and `my_alt@` rendered as `myname@`/`myalt@`.
+const EMAIL_PATTERN_REGEX = new RegExp(emailPattern, "gi");
 
 // Pre-allocated style objects — avoids creating new objects on every render
 const LIST_ROW_STYLE = { flexDirection: 'row' as const, flexShrink: 1 as const };
@@ -563,29 +570,34 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
       return text;
     }
 
-    // Replace mention patterns with null-byte placeholders before parsing so
-    // findItalic/findNextFormat never see underscores or brackets inside UIDs.
-    // After parsing, restore the original mention strings in the output.
-    const mentionSlots: string[] = [];
-    const sanitized = text.replace(MENTION_PATTERN_REGEX, (match) => {
-      const idx = mentionSlots.length;
-      mentionSlots.push(match);
+    // Replace mention patterns and URLs with null-byte placeholders before parsing so
+    // findItalic/findNextFormat never see underscores inside UIDs or URLs.
+    const protectedSlots: string[] = [];
+    const stash = (match: string) => {
+      const idx = protectedSlots.length;
+      protectedSlots.push(match);
       return `\x00M${idx}\x00`;
-    });
+    };
+    let sanitized = text.replace(MENTION_PATTERN_REGEX, stash);
+    try {
+      sanitized = sanitized.replace(EMAIL_PATTERN_REGEX, stash);
+      sanitized = sanitized.replace(URL_PATTERN_REGEX, stash);
+    } catch {
+    }
 
-    // Restore mention placeholders in a string or JSX tree
-    const restoreMentions = (node: JSX.Element | string): JSX.Element | string => {
+    // Restore mention/URL placeholders in a string or JSX tree
+    const restoreProtected = (node: JSX.Element | string): JSX.Element | string => {
       if (typeof node === 'string') {
-        if (mentionSlots.length === 0 || node.indexOf('\x00') < 0) return node;
-        return node.replace(/\x00M(\d+)\x00/g, (_, idx) => mentionSlots[Number(idx)] ?? _);
+        if (protectedSlots.length === 0 || node.indexOf('\x00') < 0) return node;
+        return node.replace(/\x00M(\d+)\x00/g, (_, idx) => protectedSlots[Number(idx)] ?? _);
       }
       if (!React.isValidElement(node)) return node;
       const el = node as React.ReactElement<any>;
       const children = el.props.children;
       if (!children) return node;
       const restored = React.Children.map(children, (child: any) => {
-        if (typeof child === 'string') return restoreMentions(child);
-        if (React.isValidElement(child)) return restoreMentions(child as JSX.Element);
+        if (typeof child === 'string') return restoreProtected(child);
+        if (React.isValidElement(child)) return restoreProtected(child as JSX.Element);
         return child;
       });
       return React.cloneElement(el, {}, ...(restored || []));
@@ -602,16 +614,16 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
       const match = this.findNextFormat(remaining);
       if (match) {
         if (match.startIndex > 0) {
-          elements.push(restoreMentions(remaining.substring(0, match.startIndex)) as string);
+          elements.push(restoreProtected(remaining.substring(0, match.startIndex)) as string);
         }
-        // Restore mentions in matched content before recursive parsing
+        // Restore mentions/URLs in matched content before recursive parsing
         const restoredContent = (typeof match.content === 'string' && match.content.indexOf('\x00') >= 0)
-          ? restoreMentions(match.content) as string
+          ? restoreProtected(match.content) as string
           : match.content;
         if (match.type === "link" && match.url) {
           // Render link as tappable blue underlined text (same as CometChatUrlsFormatter)
           const innerContent = this.parseInlineFormats(restoredContent);
-          const linkUrl = match.url;
+          const linkUrl = restoreProtected(match.url) as string;
           elements.push(
             <Text
               key={`fmt-${keyCounter++}`}
@@ -675,7 +687,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
         }
         remaining = remaining.substring(match.endIndex);
       } else {
-        elements.push(restoreMentions(remaining) as string);
+        elements.push(restoreProtected(remaining) as string);
         remaining = "";
       }
     }

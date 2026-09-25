@@ -10,12 +10,6 @@ import { CometChatTheme } from '../../theme/type';
 import { CometChatMessageTemplate } from '../../shared/modals/CometChatMessageTemplate';
 import { getModerationStatus } from '../../shared/utils/MessageUtils';
 
-const WINDOW_HEIGHT = Dimensions.get('window').height;
-const SHEET_MAX_HEIGHT_RATIO = 0.52;
-// Quick reactions row height (~56) + sheet paddingTop (25) + safety margin
-const RESERVED_HEIGHT = 100;
-const ACTION_SHEET_MAX_HEIGHT = WINDOW_HEIGHT * SHEET_MAX_HEIGHT_RATIO - RESERVED_HEIGHT;
-
 interface MessageOptionsSheetProps {
   bottomSheetRef: React.RefObject<any>;
   isOpen: boolean;
@@ -112,7 +106,9 @@ export const MessageOptionsSheet: React.FC<MessageOptionsSheetProps> = ({
           style={mergedTheme?.messageListStyles?.messageInformationStyles}
         />
       ) : (
-        <View style={{ flex: 1 }}>
+        // flexShrink rather than flex: 1 — in React Native flex: 1 never shrinks below its
+        // content, so the column would keep its full height and the list could never scroll.
+        <View style={{ flexShrink: 1 }}>
           {/* Show quick reactions for disapproved messages */}
           {!hideReactionOption && getModerationStatus(selectedMessage) !== 'disapproved' && (
             <CometChatQuickReactions
@@ -141,7 +137,10 @@ export const MessageOptionsSheet: React.FC<MessageOptionsSheetProps> = ({
             theme={mergedTheme}
           />
 
-          <View style={{ maxHeight: ACTION_SHEET_MAX_HEIGHT }}>
+          {/* The list takes whatever height the sheet has left after the rows above it, and
+              scrolls within that. A fixed cap has to guess the height of those rows, and a guess
+              that misses pushes the last options below the screen where they can't be reached. */}
+          <View style={{ flexShrink: 1 }}>
             <CometChatActionSheet
               actions={quickActions.list}
               style={mergedTheme.messageListStyles.messageOptionsStyles}

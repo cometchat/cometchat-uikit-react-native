@@ -42,6 +42,7 @@ import { Icon } from "../shared/icons/Icon";
 import { CommonUtils } from "../shared/utils/CommonUtils";
 import { stripMarkdown, preparePreviewText } from "../shared/utils/MarkdownUtils";
 import { CometChatRichTextFormatter } from "../shared/formatters/CometChatRichTextFormatter";
+import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
 import { getMessagePreviewInternal, applyMentionsFormatting } from "../shared/utils/MessageUtils";
 import { CometChatBadge } from "../shared/views/CometChatBadge";
 import { useToast } from "../shared/helper/useToast";
@@ -1104,7 +1105,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
     if (!lastMessage) return null;
     let messageText: string | JSX.Element = "";
     messageText = ChatConfigurator.getDataSource().getLastConversationMessage(conversations, theme);
-    
+
+    // Rewrite a consumer's own wire token first: block detection and markdown stripping below
+    // would otherwise flatten it away before the formatter ever sees the message.
+    if (typeof messageText === "string") {
+      messageText = applyRawFormatters(messageText, textFormatters);
+    }
+
     // Detect block-level elements in text messages before stripMarkdown flattens them
     let blockType: 'blockquote' | 'codeBlock' | 'list' | null = null;
     let codeBlockLine = '';

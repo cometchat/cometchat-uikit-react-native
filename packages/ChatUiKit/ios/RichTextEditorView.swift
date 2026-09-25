@@ -3141,11 +3141,19 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
     /// Returns true when a UTI represents pasteable media (image/video/audio/file),
     /// and false for plain text / URLs which should paste as text.
+    ///
+    /// Rich-text containers are excluded too. Copying TEXT puts one on the pasteboard next to
+    /// the plain string — Safari adds a web archive, Notes / Mail / Pages / TextEdit add RTFD.
+    /// Both conform to public.data, so without this a text copy from those apps was uploaded
+    /// as a WEBARCHIVE / RTFD attachment and the text itself was never pasted.
     private static func isMediaTypeIdentifier(_ typeId: String) -> Bool {
         if #available(iOS 14.0, *) {
             guard let type = UTType(typeId) else { return false }
             // Exclude plain text and URLs — those are handled by the text-paste path.
             if type.conforms(to: .plainText) || type.conforms(to: .url) || type.conforms(to: .text) {
+                return false
+            }
+            if type.conforms(to: .webArchive) || type.conforms(to: .rtfd) || type.conforms(to: .flatRTFD) {
                 return false
             }
             return type.conforms(to: .image)
@@ -3158,6 +3166,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // Pre-iOS 14 fallback using MobileCoreServices.
             let cf = typeId as CFString
             if UTTypeConformsTo(cf, kUTTypePlainText) || UTTypeConformsTo(cf, kUTTypeText) || UTTypeConformsTo(cf, kUTTypeURL) {
+                return false
+            }
+            if UTTypeConformsTo(cf, kUTTypeWebArchive) || UTTypeConformsTo(cf, kUTTypeRTFD) || UTTypeConformsTo(cf, kUTTypeFlatRTFD) {
                 return false
             }
             return UTTypeConformsTo(cf, kUTTypeImage)
@@ -5283,6 +5294,38 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             .foregroundColor: UIColor.label,
             .paragraphStyle: paragraphStyle
         ]
+
+        placeholderLabel.isHidden = !textView.text.isEmpty
+        isInternalChange = false
+        saveToUndoStack()
+        sendContentChange()
+        updateToolbarButtonStates()
+        emitActiveStyles()
+    }
+
+    /// Replaces the current selection with plain text, or inserts at the caret when nothing is
+    /// selected — the editor-side half of a consumer's toolbar button.
+    ///
+    /// The run goes in with the editor's current typing attributes rather than the attributes of
+    /// whatever it replaced, so a consumer's own wire token lands as plain characters instead of
+    /// inheriting, say, the bold of the word it wrapped.
+    func replaceSelection(with text: String) {
+        let range = textView.selectedRange
+        let mutableAttrString = NSMutableAttributedString(attributedString: textView.attributedText)
+        let insertion = NSAttributedString(string: text, attributes: textView.typingAttributes)
+
+        isInternalChange = true
+        if range.length > 0 {
+            mutableAttrString.replaceCharacters(in: range, with: insertion)
+        } else {
+            mutableAttrString.insert(insertion, at: range.location)
+        }
+        textView.attributedText = mutableAttrString
+
+        // Caret after the inserted run. NSString length, not `text.count`: an emoji is one
+        // Character but two UTF-16 units, and the text view counts in UTF-16.
+        let caret = range.location + (text as NSString).length
+        textView.selectedRange = NSRange(location: caret, length: 0)
 
         placeholderLabel.isHidden = !textView.text.isEmpty
         isInternalChange = false

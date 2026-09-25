@@ -12,6 +12,7 @@ import { CometChatMessageEvents } from '../../events/CometChatMessageEvents';
 import { CometChatMediaViewer } from '../CometChatMediaViewer';
 import { CometChatCaptionText } from '../CometChatCaptionText';
 import { isVideoMime } from '../CometChatMediaViewer/mediaViewerUtils';
+import { AdditionalParams } from "../../base/Types";
 
 // ---------------------------------------------------------------------------
 // Design doc §8.1 — VideosBubble: renders a single-kind VIDEO message (all videos after the §7 fan-out)
@@ -309,6 +310,8 @@ export interface CometChatVideosBubbleProps {
   theme: CometChatTheme;
   /** Per-instance style overrides — shares the `mediaGridBubbleStyles` theme key with ImagesBubble. */
   style?: CometChatTheme["mediaGridBubbleStyles"];
+  /** Render-time params from the message list — carries the consumer's `textFormatters`. */
+  additionalParams?: AdditionalParams;
 }
 
 /**
@@ -319,6 +322,7 @@ export function CometChatVideosBubble({
   message: initialMessage,
   theme,
   style,
+  additionalParams,
 }: CometChatVideosBubbleProps) {
   const compTheme = useCompTheme();
   const s = deepMerge(theme.mediaGridBubbleStyles ?? {}, compTheme.mediaGridBubbleStyles ?? {}, style ?? {});
@@ -402,6 +406,7 @@ export function CometChatVideosBubble({
       {Boolean(caption) && (
         <CometChatCaptionText
           message={message}
+          additionalParams={additionalParams}
           caption={caption}
           theme={theme}
           containerStyle={{

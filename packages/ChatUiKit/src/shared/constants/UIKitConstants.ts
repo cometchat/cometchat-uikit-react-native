@@ -52,23 +52,9 @@ export const PASSWORD_GROUP_COLOR = "rgb(247, 165, 0)";
 export const IMAGE_PREFETCH_MAX_ATTEMPTS = 5;
 export const IMAGE_PREFETCH_TIMEOUT = 800;
 
-const wordBoundary = {
-  start: `(?:^|:|;|'|"|,|{|}|\\.|\\s|\\!|\\?|\\(|\\)|\\[|\\]|\\*)`,
-  end: `(?=$|:|;|'|"|,|{|}|\\.|\\s|\\!|\\?|\\(|\\)|\\[|\\]|\\*)`,
-};
-
-export const emailPattern =
-  wordBoundary.start + `[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}` + wordBoundary.end;
-
-export const urlPattern =
-  `((https?://|ftp://|www\\.|pic\\.)[-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]+[\\w/#](\\(\\))?` +
-  `|[a-zA-Z][a-zA-Z0-9]*[-a-zA-Z0-9]*(?:\\.[a-zA-Z0-9][-a-zA-Z0-9]*)*\\.[a-zA-Z]{2,}(?:[:/][-\\w;/?:@&=+$\\|\\_.!~*\\|'()\\[\\]%#,☺]*[\\w/#](\\(\\))?)?)` +
-  wordBoundary.end;
-
-export const phoneNumPattern =
-  wordBoundary.start +
-  `(?:\\+?(\\d{1,3}))?([-. (]*(\\d{3})[-. )]*)?((\\d{3})[-. ]*(\\d{2,4})(?:[-.x ]*(\\d+))?)` +
-  wordBoundary.end;
+// Moved to their own import-free module so a leaf like MarkdownUtils can use `urlPattern`
+// without dragging the Chat SDK in through this file. Re-exported so callers are unaffected.
+export { emailPattern, urlPattern, phoneNumPattern } from "./textPatterns";
 
 export const MetadataConstants = {
   file: "file",

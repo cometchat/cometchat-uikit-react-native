@@ -30,6 +30,7 @@ const COMMANDS = {
   setChecklist: 'setChecklist',
   setParagraph: 'setParagraph',
   insertLink: 'insertLink',
+  replaceSelection: 'replaceSelection',
   undo: 'undo',
   redo: 'redo',
   clearFormatting: 'clearFormatting',
@@ -212,6 +213,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorPropsExtended
     },
     insertLink: (url: string, text: string) => {
       dispatchCommand(nativeRef, COMMANDS.insertLink, [url, text]);
+    },
+    replaceSelection: (text: string) => {
+      dispatchCommand(nativeRef, COMMANDS.replaceSelection, [text]);
     },
     undo: () => {
       dispatchCommand(nativeRef, COMMANDS.undo);

@@ -8,6 +8,7 @@ import { CometChatAudioBubble } from '../CometChatAudioBubble';
 import { CometChatCaptionText } from '../CometChatCaptionText';
 import { deepMerge } from '../../helper/helperFunctions';
 import { useCompTheme } from '../../../theme/hook';
+import { AdditionalParams } from "../../base/Types";
 
 // ---------------------------------------------------------------------------
 // Design doc §8.1a — the "VoiceNoteBubble": renders a RECORDED voice-note message
@@ -23,6 +24,8 @@ export interface CometChatVoiceNoteBubbleProps {
   theme: CometChatTheme;
   /** Per-instance style overrides (same pattern as the other bubbles). */
   style?: CometChatTheme["voiceNoteBubbleStyles"];
+  /** Render-time params from the message list — carries the consumer's `textFormatters`. */
+  additionalParams?: AdditionalParams;
 }
 
 /**
@@ -33,6 +36,7 @@ export function CometChatVoiceNoteBubble({
   message,
   theme,
   style,
+  additionalParams,
 }: CometChatVoiceNoteBubbleProps) {
   const compTheme = useCompTheme();
   const s = deepMerge(theme.voiceNoteBubbleStyles ?? {}, compTheme.voiceNoteBubbleStyles ?? {}, style ?? {});
@@ -60,6 +64,7 @@ export function CometChatVoiceNoteBubble({
       {Boolean(caption) && (
         <CometChatCaptionText
           message={message}
+          additionalParams={additionalParams}
           caption={caption}
           theme={theme}
           containerStyle={{

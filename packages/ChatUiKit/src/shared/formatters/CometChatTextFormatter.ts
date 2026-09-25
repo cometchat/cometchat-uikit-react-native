@@ -215,6 +215,28 @@ export abstract class CometChatTextFormatter {
   }
 
   /**
+   * Rewrites the message's stored text before the UI Kit parses any of it.
+   *
+   * Runs on every surface a message appears on — bubble, conversation row, reply/edit preview,
+   * search result, media caption, message information — and on the text loaded back into the
+   * composer for editing, always BEFORE the built-in markdown, mention and link handling.
+   *
+   * This is where a formatter maps its own wire token onto markup the UI Kit already draws,
+   * e.g. `(#e5484d)red()` to `<color=#e5484d>red</color>`. `getFormattedText` cannot do that
+   * job: by then markdown has already turned the text into elements, so a pattern that spans
+   * any of that markup no longer matches.
+   *
+   * Returns the text untouched by default, so a formatter that does not override it behaves
+   * exactly as it did before this hook existed.
+   *
+   * @param text - The message text as stored on the server.
+   * @returns The text to render, written in the UI Kit's own grammar.
+   */
+  formatRawText(text: string): string {
+    return text;
+  }
+
+  /**
    * Handles the message before sending it.
    * @param message - The message to handle.
    * @returns The message after handling.

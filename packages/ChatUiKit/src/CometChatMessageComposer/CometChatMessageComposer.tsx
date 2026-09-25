@@ -57,6 +57,7 @@ import {
   messageStatus,
 } from "../shared/utils/CometChatMessageHelper";
 import { CommonUtils } from "../shared/utils/CommonUtils";
+import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
 import { isCursorWithinMentionRange, getMentionRangeAtCursor } from "../shared/utils/MentionUtils";
 import { permissionUtil } from "../shared/utils/PermissionUtil";
 import { CometChatMediaRecorder } from "../shared/views/CometChatMediaRecorder";
@@ -1921,10 +1922,15 @@ export const CometChatMessageComposer = React.forwardRef(
         if (user) formatter.setUser(user);
         if (group) formatter.setGroup(group);
         let trackingCharacter = formatter.getTrackingCharacter();
-        trackingCharacters.current.push(trackingCharacter);
+        if (trackingCharacter) trackingCharacters.current.push(trackingCharacter);
 
         let newFormatter = CommonUtils.clone(formatter);
-        allFormatters.current.set(trackingCharacter, newFormatter);
+        // A formatter with no tracking character has no suggestion list, but it still takes part in
+        // the send and edit-preview lifecycle — so key it by id instead of letting an empty key
+        // collapse them all into one entry. The prefix keeps it clear of tracking-character lookups.
+        const formatterKey =
+          trackingCharacter || `formatter:${formatter.getId?.() ?? allFormatters.current.size}`;
+        allFormatters.current.set(formatterKey, newFormatter);
       });
     }, []);
 
@@ -2857,12 +2863,17 @@ export const CometChatMessageComposer = React.forwardRef(
                 <CometChatMessagePreview
                   messagePreviewTitle={t("EDIT_MESSAGE")}
                   message={messagePreview?.message}
+                  textFormatters={textFormatters}
                   // Editing a media caption: caption text is the editable subtitle; a muted overline
                   // (media-type icon + attachment count) restores the context the hidden thumbnail gave.
                   {...(typeof messagePreview?.message?.getCaption === "function"
                     ? {
-                        messagePreviewSubtitle:
+                        // A caption arrives as a plain string, so a consumer's token is rewritten
+                        // here — `textFormatters` above only covers the message-text path.
+                        messagePreviewSubtitle: applyRawFormatters(
                           messagePreview.message.getCaption() ?? "",
+                          textFormatters
+                        ),
                         hideSubtitleIcon: true,
                         overlineText: attachmentCountLabel(messagePreview.message.getType?.(), messagePreview.message.getAttachments?.()?.length ?? 1),
                       }
@@ -2888,6 +2899,7 @@ export const CometChatMessageComposer = React.forwardRef(
               {replyMessage && replyMessage.message && (
                 <CometChatMessagePreview
                   message={replyMessage.message}
+                  textFormatters={textFormatters}
                   showCloseIcon={true}
                   closeIconURL={ICONS.CLOSE}
                   onCloseClick={() => {

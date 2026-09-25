@@ -208,7 +208,10 @@ const CometChatBottomSheet = forwardRef(
         >
           <View
             style={{
-              ...(doNotOccupyEntireHeight ? {} : { flex: 1 }),
+              // Content-sized sheets must still shrink to the sheet's maxHeight: without
+              // flexShrink this view keeps its full content height and overflows past the
+              // bottom of the screen, leaving the last rows of a scrollable child unreachable.
+              ...(doNotOccupyEntireHeight ? { flexShrink: 1 } : { flex: 1 }),
               paddingBottom: style.paddingBottom ?? 0,
             }}
           >

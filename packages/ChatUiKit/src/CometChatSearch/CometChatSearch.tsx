@@ -20,6 +20,8 @@ import { getCometChatTranslation } from '../shared/resources/CometChatLocalizeNe
 import { CommonUtils } from '../shared/utils/CommonUtils';
 import { stripMarkdown } from '../shared/utils/MarkdownUtils';
 import { CometChatRichTextFormatter } from '../shared/formatters/CometChatRichTextFormatter';
+import { CometChatTextFormatter } from '../shared/formatters/CometChatTextFormatter';
+import { applyRawFormatters } from '../shared/formatters/applyRawFormatters';
 import { ExtensionConstants } from '../extensions/ExtensionConstants';
 import { getExtensionData } from '../extensions/ExtensionModerator';
 
@@ -34,10 +36,16 @@ const searchRichTextFormatter = new CometChatRichTextFormatter();
  * so only colour runs remain — the result is always inline `<Text>`, never a block-level `View`.
  * Returns a JSX element when the text carries colour, a plain string otherwise.
  */
-const formatPreviewText = (rawText: any, message?: CometChat.BaseMessage): string | JSX.Element => {
+const formatPreviewText = (
+  rawText: any,
+  message?: CometChat.BaseMessage,
+  textFormatters?: Array<CometChatTextFormatter>
+): string | JSX.Element => {
   if (typeof rawText !== 'string') return rawText;
 
-  let text = stripMarkdown(rawText, true).replace(/<@all:(.*?)>/g, '@$1');
+  // A consumer's own wire token becomes UI Kit markup first; `stripMarkdown` below removes
+  // anything it does not recognise, so nothing left until later would survive.
+  let text = stripMarkdown(applyRawFormatters(rawText, textFormatters), true).replace(/<@all:(.*?)>/g, '@$1');
 
   try {
     const mentionedUsers: CometChat.User[] = (message && (message).getMentionedUsers && (message).getMentionedUsers()) || [];
@@ -329,6 +337,15 @@ interface CometChatSearchProps {
   conversationItemView?: (conversation: CometChat.Conversation, searchKeyword?: string) => React.ReactElement;
 
   /**
+   * Text formatters, the same instances passed to the message list and the composer.
+   *
+   * A search row renders the message's own text, so a consumer's wire token has to be rewritten
+   * here too — otherwise a message reads coloured in the chat and raw in the search results.
+   * Only `formatRawText` is used: rows are flattened to a single line.
+   */
+  textFormatters?: Array<CometChatTextFormatter>;
+
+  /**
    * Custom view component for text message items
    * @param message - The text message object to render
    * @param searchKeyword - The search keyword used
@@ -606,10 +623,11 @@ interface ConversationItemProps {
   mergedStyles: any;
   theme: any;
   conversationItemView?: (conversation: CometChat.Conversation, searchKeyword?: string) => React.ReactElement;
+  textFormatters?: Array<CometChatTextFormatter>;
 }
 
 const ConversationItem = React.memo<ConversationItemProps>((
-  { conversation, searchText, onPress, mergedStyles, theme, conversationItemView }
+  { conversation, searchText, onPress, mergedStyles, theme, conversationItemView, textFormatters }
 ) => {
   const getStatusIndicator = () => {
     const withObj = conversation.getConversationWith();
@@ -684,7 +702,7 @@ const ConversationItem = React.memo<ConversationItemProps>((
           {conversation.getConversationWith().getName()}
         </Text>
         <Text style={mergedStyles.conversationItemStyle?.subtitleStyle} numberOfLines={2}>
-          {formatPreviewText((conversation.getLastMessage())?.getText?.(), conversation.getLastMessage())}
+          {formatPreviewText((conversation.getLastMessage())?.getText?.(), conversation.getLastMessage(), textFormatters)}
         </Text>
       </View>
       {renderTrailingView()}
@@ -728,6 +746,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
   emptyView,
   errorView,
   conversationItemView,
+  textFormatters,
   textMessageItemView,
   imageMessageItemView,
   audioMessageItemView,
@@ -1468,7 +1487,10 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     // The caption carries wire markup since ENG-38258, and it is concatenated with the count
     // label below — so it is flattened here, exactly as the conversation row flattens it.
     const caption = stripMarkdown(
-      (typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "") || ""
+      applyRawFormatters(
+        (typeof (message as any).getCaption === "function" ? (message as any).getCaption() : "") || "",
+        textFormatters
+      )
     );
     const firstName =
       atts[0]?.getName?.() || (message.getAttachment?.() as any)?.getName?.() || "";
@@ -1517,7 +1539,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       return getMediaSearchSubtitle(message as CometChat.MediaMessage);
     }
     if (messageType === "text") {
-      return formatPreviewText((message as CometChat.TextMessage).getText?.() ?? "", message)
+      return formatPreviewText((message as CometChat.TextMessage).getText?.() ?? "", message, textFormatters)
         || messageType || "Message";
     }
     if (message.getCategory() === MessageCategoryConstants.card) {
@@ -1865,6 +1887,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
               mergedStyles={mergedStyles}
               theme={theme}
               conversationItemView={conversationItemView}
+              textFormatters={textFormatters}
             />
           );
         

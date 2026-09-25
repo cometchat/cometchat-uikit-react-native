@@ -17,8 +17,23 @@
  * @module CometChatSavedMessages
  */
 import { CometChat } from "@cometchat/chat-sdk-react-native";
+import { CometChatRichTextFormatter } from "../shared/formatters/CometChatRichTextFormatter";
+import { preparePreviewText, stripMarkdown } from "../shared/utils/MarkdownUtils";
+import {
+  applyMentionsFormatting,
+  getMessagePreviewInternal,
+} from "../shared/utils/MessageUtils";
+import { MessageCategoryConstants } from "../shared/constants/UIKitConstants";
 import React, { JSX, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, GestureResponderEvent, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  GestureResponderEvent,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useCompTheme, useTheme } from "../theme/hook";
 import { deepMerge } from "../shared/helper/helperFunctions";
 import { DeepPartial } from "../shared/helper/types";
@@ -50,10 +65,34 @@ import {
 } from "../shared/utils/PinSaveHelper";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { MessageEvents } from "../shared/events/messages";
+import { CometChatTextFormatter } from "../shared/formatters/CometChatTextFormatter";
+import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
+
+/**
+ * Module-level rich text formatter — reused across renders (no GC churn), mirroring
+ * CometChatConversations. A saved row shows the same preview a conversation row does,
+ * so it renders inline formatting rather than stripping it.
+ */
+const savedRichTextFormatter = new CometChatRichTextFormatter();
 
 export interface CometChatSavedMessagesInterface {
   /** Page size. Defaults to 30; the server caps the whole set at 100. */
   limit?: number;
+  /**
+   * Your own request builder, for anything `limit` alone cannot express — a search
+   * term, a category or type filter, a different page size.
+   *
+   * `setSavedOnly(true)` is re-asserted on whatever you pass, so a builder that
+   * forgets it still returns saved messages rather than ordinary history. Set it
+   * anyway to keep the intent readable.
+   *
+   * Do NOT scope it to a conversation: saved is account-wide, and a uid/guid would
+   * turn this cross-conversation list into a per-chat one.
+   *
+   * The `limit` prop wins: `limit={10}` with a builder that calls `setLimit(50)` pages
+   * in tens. Without the prop the builder's own limit is used, and with neither, 30.
+   */
+  messagesRequestBuilder?: CometChat.MessagesRequestBuilder;
   /** Closes the surface — rendered as the ✕ in the header. */
   onBack?: () => void;
   /**
@@ -69,6 +108,12 @@ export interface CometChatSavedMessagesInterface {
   hideUnsaveMessageOption?: boolean;
   /** Replace the whole row body. */
   ItemView?: (message: CometChat.BaseMessage) => JSX.Element;
+  /**
+   * Text formatters, same array the host passes to CometChatMessageList. Without them a consumer's
+   * own wire token is not UI Kit markup yet, so the formatter below has nothing to recognise and
+   * the row prints the token verbatim.
+   */
+  textFormatters?: Array<CometChatTextFormatter>;
   title?: string;
   /** Per-instance style overrides, merged over the theme's savedMessagesStyles. */
   style?: DeepPartial<SavedMessagesStyle>;
@@ -77,9 +122,34 @@ export interface CometChatSavedMessagesInterface {
 type ListState = "loading" | "loaded" | "error" | "empty";
 
 export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) => {
-  const { limit, onBack, onItemPress, hideUnsaveMessageOption = false, ItemView, title, style } = props;
+  const {
+    limit,
+    messagesRequestBuilder,
+    onBack,
+    onItemPress,
+    hideUnsaveMessageOption = false,
+    ItemView,
+    textFormatters,
+    title,
+    style,
+  } = props;
 
   const theme = useTheme() as CometChatTheme;
+
+  // Same inline-code treatment the conversation list gives its subtitle.
+  useMemo(() => {
+    savedRichTextFormatter.setStyle({
+      inlineCodeStyle: { color: theme.color.primary as string },
+      inlineCodeContainerStyle: {
+        backgroundColor: "rgba(120, 120, 128, 0.22)",
+        borderRadius: 4,
+        borderWidth: 0.5,
+        borderColor: "rgba(120, 120, 128, 0.35)",
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+      },
+    });
+  }, [theme]);
   const compTheme = useCompTheme();
   const { t } = useCometChatTranslation();
 
@@ -126,8 +196,11 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
   /**
    * The request is single-use and accumulates its own paging state, so it lives in
    * a ref for the lifetime of the screen. Refreshing means building a NEW one.
+   *
+   * Built lazily below: a useRef ARGUMENT runs on every render and all but the first
+   * result is discarded, so the inline form built a request per render.
    */
-  const request = useRef(buildSavedMessagesRequest(limit));
+  const request = useRef<CometChat.MessagesRequest | null>(null);
   const fetching = useRef(false);
   /**
    * The end of a cursor-paged list is an empty page — there is nothing to ask the request
@@ -136,8 +209,12 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
    */
   const exhausted = useRef(false);
 
+  if (request.current === null) {
+    request.current = buildSavedMessagesRequest(limit, messagesRequestBuilder);
+  }
+
   const loadNext = useCallback(async () => {
-    if (fetching.current || exhausted.current) return;
+    if (fetching.current || exhausted.current || !request.current) return;
     fetching.current = true;
     try {
       // fetchPrevious(), not fetchNext() — "previous" is older, which is the direction
@@ -194,13 +271,15 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
    * a retried request must start from the top of the list, not from a half-walked cursor.
    */
   const reload = useCallback(() => {
-    request.current = buildSavedMessagesRequest(limit);
+    request.current = buildSavedMessagesRequest(limit, messagesRequestBuilder);
     exhausted.current = false;
     fetching.current = false;
     setMessages([]);
     setState("loading");
     loadNext();
-  }, [limit, loadNext]);
+    // messagesRequestBuilder included: without it a retry after the prop changes rebuilds
+    // the request from the builder captured at mount.
+  }, [limit, messagesRequestBuilder, loadNext]);
 
   useEffect(() => {
     CometChat.getLoggedinUser()
@@ -412,7 +491,116 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
     );
     const prefix = prefixName ? `${prefixName}: ` : "";
 
-    const label = preview.text ?? (preview.labelKey ? (t(preview.labelKey) ?? "") : "");
+    const rawLabel = preview.text ?? (preview.labelKey ? (t(preview.labelKey) ?? "") : "");
+
+    // Render inline formatting rather than printing the wire format. preparePreviewText
+    // reduces a multi-line or block message to one line — the formatter must not meet
+    // block-level markers — and reports which KIND of block it found. The four cases get
+    // the same treatment the conversation list gives them, so a saved row reads like the
+    // chat it came from.
+    //
+    // `prepared.text` is EMPTY for a code block: its content arrives in
+    // `codeBlockFirstLine`. Reading only `.text` rendered an empty subtitle for any
+    // message that was just a code block.
+    // The consumer's own token becomes UI Kit markup BEFORE any of the preparation below: run it
+    // after preparePreviewText or the rich formatter and the token has already been flattened into
+    // plain characters, with nothing left to colour.
+    const prepared = preparePreviewText(applyRawFormatters(rawLabel, textFormatters));
+    // The conversation list's pipeline, step for step, so the same message reads the
+    // same in Chats and in Saved Messages:
+    //   text message   -> rich formatter (colour, bold, italic, inline code)
+    //   anything else  -> stripMarkdown, as markers would render as literal characters
+    //   then           -> mentions resolved from "@uid" to the user's name
+    const format = (value: string): string | JSX.Element => {
+      const trimmed = value.trim();
+      const isPlainTextMessage =
+        message instanceof CometChat.TextMessage &&
+        message.getCategory() === MessageCategoryConstants.message;
+
+      let content: string | JSX.Element = isPlainTextMessage
+        ? (savedRichTextFormatter.getFormattedText(trimmed) ?? trimmed)
+        : stripMarkdown(trimmed);
+
+      content = applyMentionsFormatting(message, content, trimmed, undefined);
+      return content;
+    };
+
+    // A message that leads with a URL previews as a link chip rather than the raw
+    // address, matching the conversation list. Checked on the first 50 characters, as
+    // the list does, so a link mentioned late in a long message is not treated as one.
+    const leadsWithLink =
+      message instanceof CometChat.TextMessage &&
+      message.getCategory() === MessageCategoryConstants.message &&
+      (() => {
+        const raw = typeof message.getText === "function" ? message.getText() : undefined;
+        return typeof raw === "string" && !!raw.slice(0, 50).match(/https?:\/\//);
+      })();
+
+    // Whether `label` already brings its own wrapper element. The block branches below return a
+    // <View>, and a <View> nested inside a <Text> lays out on iOS but COLLAPSES on Android — the
+    // saved row showed a bare "…" for every code block and blockquote. CometChatConversations
+    // renders its equivalent bare for exactly this reason.
+    let labelIsSelfWrapped = false;
+    let label: string | JSX.Element;
+    if (leadsWithLink) {
+      label = getMessagePreviewInternal("link-fill", t("LINK") ?? "Link", { theme });
+      labelIsSelfWrapped = true;
+    } else if (prepared.codeBlockFirstLine !== null) {
+      label = (
+        <View style={localStyles.codeBlockRow}>
+          <View
+            style={[
+              localStyles.codeBlockBadge,
+              {
+                backgroundColor: (theme?.color?.background2 as string) || "#FAFAFA",
+                borderColor: (theme?.color?.borderDefault as string) || "#E8E8E8",
+              },
+            ]}
+          >
+            <Text
+              numberOfLines={1}
+              ellipsizeMode='tail'
+              style={[
+                localStyles.codeBlockText,
+                { color: (theme?.color?.textPrimary as string) || "#141414" },
+              ]}
+            >
+              {prepared.codeBlockFirstLine + ".."}
+            </Text>
+          </View>
+        </View>
+      );
+      labelIsSelfWrapped = true;
+    } else if (prepared.isBlockquote) {
+      label = (
+        <View style={localStyles.blockquoteRow}>
+          <View
+            style={[
+              localStyles.blockquoteBar,
+              { backgroundColor: theme?.color?.primary as string },
+            ]}
+          />
+          <Text
+            numberOfLines={1}
+            ellipsizeMode='tail'
+            style={[itemStyle?.subtitleStyle, localStyles.blockquoteText]}
+          >
+            {format(prepared.text)}
+          </Text>
+        </View>
+      );
+      labelIsSelfWrapped = true;
+    } else if (prepared.listPrefix) {
+      label = (
+        <Text numberOfLines={1} ellipsizeMode='tail' style={itemStyle?.subtitleStyle}>
+          {prepared.listPrefix}
+          {format(prepared.text)}
+        </Text>
+      );
+      labelIsSelfWrapped = true;
+    } else {
+      label = format(prepared.text);
+    }
 
     return (
       <View style={localStyles.subtitleRow}>
@@ -433,13 +621,17 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
             containerStyle={styles.previewIconContainerStyle}
           />
         ) : null}
-        <Text
-          numberOfLines={1}
-          ellipsizeMode='tail'
-          style={[itemStyle?.subtitleStyle, localStyles.subtitleText]}
-        >
-          {label}
-        </Text>
+        {labelIsSelfWrapped ? (
+          label
+        ) : (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode='tail'
+            style={[itemStyle?.subtitleStyle, localStyles.subtitleText]}
+          >
+            {label}
+          </Text>
+        )}
       </View>
     );
   };
@@ -620,10 +812,55 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
  * lives in ./style.ts (or conversationStyles, for the row chrome) and is merged in.
  */
 const localStyles = StyleSheet.create({
+  // Block-preview styling, matching CometChatConversations so a saved row and a
+  // conversation row render the same message identically.
+  codeBlockRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 2,
+  },
+  codeBlockBadge: {
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    flexShrink: 1,
+  },
+  codeBlockText: {
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontSize: 11,
+  },
+  blockquoteRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    backgroundColor: "rgba(104, 81, 214, 0.08)",
+    borderRadius: 6,
+    flexShrink: 2,
+    minHeight: 22,
+    paddingVertical: 1,
+  },
+  blockquoteBar: {
+    width: 3,
+    borderRadius: 1.5,
+    marginVertical: 3,
+    marginLeft: 4,
+  },
+  blockquoteText: {
+    flex: 1,
+    paddingHorizontal: 5,
+    lineHeight: 18,
+  },
   subtitleRow: {
     flexDirection: "row",
     alignItems: "center",
     flexShrink: 1,
+    // flex:1 so the row actually FILLS the list item's subtitle slot. Without it the row is
+    // content-sized, and the block children inside (the code-block badge, the blockquote bar +
+    // text) size from a Text whose `flex: 1` gives it a flex-basis of 0 — contributing nothing to
+    // the content width. On Android that collapses to zero and the row renders a bare "…".
+    // CometChatConversations avoids this by returning a FRAGMENT, so its children sit directly in
+    // the list item's subtitle container rather than inside an extra content-sized View.
+    flex: 1,
   },
   subtitleText: {
     flexShrink: 1,

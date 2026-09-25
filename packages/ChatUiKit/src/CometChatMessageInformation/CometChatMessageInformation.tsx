@@ -9,6 +9,7 @@ import {
   CometChatUIEventHandler,
   CometChatUiKitConstants,
 } from "../shared";
+import { CometChatTextFormatter } from "../shared/formatters/CometChatTextFormatter";
 import { MessageUtils } from "../shared/utils/MessageUtils";
 import { Style } from "./styles";
 import { useTheme } from "../theme";
@@ -33,6 +34,11 @@ type Recipient = {
 
 export interface CometChatMessageInformationInterface {
   title?: string;
+  /**
+   * Text formatters, only needed when this screen is used on its own — opened from the message
+   * list, the template it receives already carries them.
+   */
+  textFormatters?: Array<CometChatTextFormatter>;
   message: CometChat.BaseMessage;
   template?: CometChatMessageTemplate;
   BubbleView?: (message: CometChat.BaseMessage) => JSX.Element;
@@ -60,6 +66,7 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
     title = t("MESSAGE_INFORMATION"),
     message,
     template,
+    textFormatters,
     BubbleView,
     ListItemView,
     receiptDatePattern,
@@ -354,7 +361,9 @@ export const CometChatMessageInformation = (props: CometChatMessageInformationIn
                   message,
                   templates: template
                     ? [template]
-                    : ChatConfigurator.dataSource.getAllMessageTemplates(theme),
+                    // Opened straight from the message list, the template above already carries the
+                    // consumer's formatters. Standalone, they have to come in through the prop.
+                    : ChatConfigurator.dataSource.getAllMessageTemplates(theme, { textFormatters }),
                   alignment: "right",
                   theme: theme,
                 })}

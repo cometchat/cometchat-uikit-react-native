@@ -455,7 +455,6 @@
 "AI_AGENT_MESSAGE": "AI agent message",
 	"NO_USERS_FOUND": "No Users Found",
 	"USERS_EMPTY_STATE_MESSAGE": "We couldn’t find any users matching your search. Try adjusting your search.",
-	"SAVE": "Save",
 	"RETRY": "Retry",
 	"TAP_TO_START_CONVERSATION": "Tap to start conversation",
 	"TEXT_TRANSLATED": "Text Translated",

@@ -5514,6 +5514,26 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         sendContentChange()
     }
 
+    /**
+     * Replaces the current selection with plain text, or inserts at the caret when nothing is
+     * selected — the editor-side half of a consumer's toolbar button.
+     *
+     * The run is inserted without carrying the spans of whatever it replaced, so a consumer's own
+     * wire token lands as plain characters rather than inheriting the styling around it.
+     */
+    fun replaceSelection(replacement: String) {
+        val editable = text ?: return
+        val start = selectionStart.coerceAtMost(selectionEnd).coerceIn(0, editable.length)
+        val end = selectionStart.coerceAtLeast(selectionEnd).coerceIn(0, editable.length)
+
+        isInternalChange = true
+        editable.replace(start, end, replacement)
+        isInternalChange = false
+
+        setSelection((start + replacement.length).coerceAtMost(text?.length ?: 0))
+        sendContentChange()
+    }
+
     fun removeLink(location: Int, length: Int) {
         val editable = text ?: return
         val end = location + length

@@ -1,6 +1,7 @@
 let __listenerIdCounter = 0;
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { ClipboardPasteHandler } from "../shared/views/ClipboardPasteHandler/ClipboardPasteHandler";
+import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
 import React, {
   forwardRef,
   JSX,
@@ -4492,7 +4493,7 @@ export const CometChatMessageList = memo(
         // getPlainString resolves mention tokens but leaves the rich-text wire format alone.
         // copyMessageText puts clean plain text on the clipboard for every other app and keeps
         // the colour in a private representation our own composer restores on paste.
-        ClipboardPasteHandler.copyMessageText(getPlainString(item["text"], item));
+        ClipboardPasteHandler.copyMessageText(getPlainString(item["text"], item), textFormatters);
         // Defer modal dismiss to next frame to avoid Fabric race condition
         // where unmounting the Modal while Clipboard is still accessing views
         // causes EXC_BAD_ACCESS (SIGSEGV) at null pointer in mount phase.
@@ -4554,7 +4555,9 @@ export const CometChatMessageList = memo(
         // Strip markdown/HTML from raw text BEFORE mention replacement,
         // because getPlainString can break HTML tags (e.g., </u> becomes /u>)
         let rawText = messageObject?.getData()["text"] || "";
-        let strippedText = stripMarkdown(rawText);
+        // The app's own token becomes UI Kit markup BEFORE stripping, the same order the pinned
+        // panel uses. Without it a consumer's `(#e11d48)text()` reaches the share sheet verbatim.
+        let strippedText = stripMarkdown(applyRawFormatters(rawText, textFormatters));
         let textMessage = getPlainString(strippedText, messageObject);
         let fileUrl = messageObject.getData()["url"];
 

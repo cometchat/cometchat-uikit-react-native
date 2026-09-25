@@ -7,6 +7,8 @@ import { getCometChatTranslation } from "../../resources/CometChatLocalizeNew/Lo
 import { Icon } from "../../icons/Icon";
 import { stripMarkdown, preparePreviewText } from "../MarkdownUtils";
 import { CometChatRichTextFormatter } from "../../formatters/CometChatRichTextFormatter";
+import { CometChatTextFormatter } from "../../formatters/CometChatTextFormatter";
+import { applyRawFormatters } from "../../formatters/applyRawFormatters";
 import { applyMentionsFormatting } from "../MessageUtils";
 import { attachmentCountLabel } from "../conversationUtils";
 import { isViewElement } from "../elementType";
@@ -50,6 +52,10 @@ interface CometChatMessagePreviewProps {
 
   // Mentions style override for reply preview context
   mentionsStyle?: any;
+
+  // Consumer-supplied formatters. Only `formatRawText` is used here: the preview renders the
+  // message's own text, so a consumer's wire token has to be rewritten before it is flattened.
+  textFormatters?: Array<CometChatTextFormatter>;
 }
 
 /**
@@ -73,6 +79,7 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
     titleStyle,
     isDeletedMessage = false,
     mentionsStyle,
+    textFormatters,
   } = props;
   
   const theme = useTheme();
@@ -121,6 +128,10 @@ const CometChatMessagePreview = (props: CometChatMessagePreviewProps) => {
           case CometChat.MESSAGE_TYPE.TEXT:
             const textMessage = message as CometChat.TextMessage;
             let text = (typeof textMessage.getText === 'function' ? textMessage.getText() : (textMessage as any).text) || "";
+
+            // A consumer's own wire token first — `preparePreviewText` strips markup it does not
+            // recognise, so anything left until after it is gone.
+            text = applyRawFormatters(text, textFormatters);
 
             // Prepare text for preview: collapse code blocks, strip block markers, flatten to single line
             const previewResult = preparePreviewText(text);
