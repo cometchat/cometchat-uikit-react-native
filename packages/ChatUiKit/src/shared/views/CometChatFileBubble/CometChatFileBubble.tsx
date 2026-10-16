@@ -87,7 +87,8 @@ export const CometChatFileBubble = ({
     if (Platform.OS == "android") {
       listener = eventEmitter.addListener(
         "downloadComplete",
-        (data: { downloadId: number }) => {
+        (event) => {
+          const data = event as { downloadId: number };
           if (data.downloadId && downloadIdRef.current && data.downloadId == downloadIdRef.current) {
             setProcessing(false);
             setFileExists(true);

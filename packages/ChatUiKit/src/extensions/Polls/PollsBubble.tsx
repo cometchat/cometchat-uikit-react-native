@@ -227,10 +227,10 @@ export const PollsBubble = (props: PollsBubbleInterface) => {
     const secondavatarStyle = voteravatarStyle;
     const thirdavatarStyle = voteravatarStyle;
     if (secondavatarStyle && secondavatarStyle.containerStyle) {
-      secondavatarStyle.containerStyle.marginLeft = -10;
+      Object.assign(secondavatarStyle.containerStyle, { marginLeft: -10 });
     }
     if (thirdavatarStyle && thirdavatarStyle.containerStyle) {
-      thirdavatarStyle.containerStyle.marginLeft = -10;
+      Object.assign(thirdavatarStyle.containerStyle, { marginLeft: -10 });
     }
     // Ensure value is a string for rendering
     let optionText = typeof value === 'string' ? value : (value && value.value ? value.value : String(value));

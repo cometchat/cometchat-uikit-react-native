@@ -1,6 +1,7 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, LayoutChangeEvent, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { CallingPackage } from "../CallingPackage";
 import { useTheme } from "../../theme";
 import { JSX } from "react";
@@ -8,6 +9,9 @@ import { NativeModules } from "react-native";
 const { Proximity } = NativeModules;
 
 const CometChatCalls = CallingPackage.CometChatCalls;
+
+/** How long the call area must keep the same size before the Calls SDK is mounted into it. */
+const CALL_AREA_SETTLE_MS = 150;
 
 /**
  * Props for the CometChatOngoingCall component.
@@ -88,22 +92,57 @@ export const CometChatOngoingCall = (props: CometChatOngoingCallInterface): JSX.
     };
   }, [callToken]);
 
+  // Size of the area the Calls SDK draws into, once it has stopped changing.
+  const [callArea, setCallArea] = useState<{ width: number; height: number } | null>(null);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
+
+  // The Calls SDK saves the size of its FIRST layout in a module-level variable and reuses it
+  // for every later call in the app session. Mount it only after this area has settled — the
+  // SafeAreaView below applies its padding a frame after the first layout — and hand it a box
+  // of exactly that size, so the size it saves is the real one.
+  const onCallAreaLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      setCallArea((prev) =>
+        prev && prev.width === width && prev.height === height ? prev : { width, height }
+      );
+    }, CALL_AREA_SETTLE_MS);
+  };
+
+  // Keep the call inside the safe area: on RN 0.87 Android is edge-to-edge, and a full-screen
+  // parent (the accepted CometChatIncomingCall, or the Modal of CometChatOutgoingCall) reaches
+  // under the system bars. The native SafeAreaView pads only for the insets it overlaps.
   return (
-    <View style={[{ height: "100%", width: "100%", position: "relative" }]}>
-      {(callSettings.current && callToken && (
-        <CometChatCalls.Component callSettings={callSettings.current} callToken={callToken} />
-      )) || (
-        <View
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-            backgroundColor: "transparent",
-          }}
-        >
-          <ActivityIndicator size={"large"} color={theme.color.primary} />
-        </View>
-      )}
-    </View>
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      style={{
+        height: "100%",
+        width: "100%",
+        position: "relative",
+        backgroundColor: theme.color.background1,
+      }}
+    >
+      <View style={{ flex: 1 }} onLayout={onCallAreaLayout}>
+        {(callSettings.current && callToken && callArea && (
+          <View style={{ width: callArea.width, height: callArea.height }}>
+            <CometChatCalls.Component callSettings={callSettings.current} callToken={callToken} />
+          </View>
+        )) || (
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+              backgroundColor: "transparent",
+            }}
+          >
+            <ActivityIndicator size={"large"} color={theme.color.primary} />
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };

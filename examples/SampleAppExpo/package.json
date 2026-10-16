@@ -1,6 +1,6 @@
 {
   "name": "sampleappexpo",
-  "version": "5.5.1",
+  "version": "5.5.2",
   "main": "index.js",
   "scripts": {
     "start": "expo start --dev-client",
@@ -11,7 +11,7 @@
   "dependencies": {
     "@cometchat/calls-sdk-react-native": "^4.4.0",
     "@cometchat/chat-sdk-react-native": "^4.1.0",
-    "@cometchat/chat-uikit-react-native": "^5.5.1",
+    "@cometchat/chat-uikit-react-native": "^5.5.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/datetimepicker": "^8.4.5",
@@ -23,6 +23,7 @@
     "dayjs": "^1.11.18",
     "expo": "~54.0.12",
     "expo-audio": "^1.0.13",
+    "expo-build-properties": "~1.0.10",
     "expo-camera": "^17.0.8",
     "expo-dev-client": "^6.0.13",
     "expo-font": "~14.0.9",

@@ -1,11 +1,11 @@
 import React, { JSX, useCallback, useEffect, useRef, useState } from "react";
 import {
   EmitterSubscription,
+  GestureResponderEvent,
   ImageSourcePropType,
   ImageStyle,
   NativeEventEmitter,
   NativeModules,
-  Platform,
   StyleProp,
   Text,
   TextStyle,
@@ -15,6 +15,7 @@ import {
 import { Icon } from "../../icons/Icon";
 import { AnimatedAudioWaves } from "./AnimatedAudioWaves";
 import { audioPlaybackCoordinator } from "../../utils/audioPlaybackCoordinator";
+import { TouchStart, isTapDuration, movedBeyondSlop, touchStartOf } from "../../utils/tapGesture";
 
 const { SoundPlayer } = NativeModules;
 const eventEmitter = new NativeEventEmitter(SoundPlayer);
@@ -128,7 +129,8 @@ export const CometChatAudioBubble = ({
   // Native fires soundPlayStatus on natural completion AND when a new play() replaces this clip.
   // Interrupt echo (we were interrupted) → ignore; genuine finish → reset to idle.
   useEffect(() => {
-    subRef.current = eventEmitter.addListener("soundPlayStatus", (data) => {
+    subRef.current = eventEmitter.addListener("soundPlayStatus", (event) => {
+      const data = event as { url?: string };
       if (audioUrl !== data.url) return;
       if (wasInterruptedRef.current) return;
       setStatus("");
@@ -173,25 +175,21 @@ export const CometChatAudioBubble = ({
     if (audioUrl) play(currentTimeRef.current || 0);
   };
 
-  const pressTime = useRef<number | null>(0);
+  // Raw touches (not a Touchable) so the bubble's long-press and the list's scroll keep working.
+  // A finger always moves a little during a tap: only a move past the slop cancels it (a scroll).
+  const press = useRef<TouchStart | null>(null);
 
-  const handleTouchStart = () => {
-    pressTime.current = Date.now();
+  const handleTouchStart = (e: GestureResponderEvent) => {
+    press.current = touchStartOf(e);
   };
 
   const handleTouchEnd = () => {
-    if (pressTime.current === null && Platform.OS === "ios") return;
-    const endTime = Date.now();
-    const pressDuration = endTime - (pressTime.current ?? 0);
-    if (pressDuration < 500) {
-      playPauseAudio();
-    }
+    if (press.current && isTapDuration(press.current)) playPauseAudio();
+    press.current = null;
   };
 
-  const onTouchMove = () => {
-    if (Platform.OS === "ios") {
-      pressTime.current = null;
-    }
+  const onTouchMove = (e: GestureResponderEvent) => {
+    if (press.current && movedBeyondSlop(press.current, e)) press.current = null;
   };
 
   const displayDuration = useCallback(

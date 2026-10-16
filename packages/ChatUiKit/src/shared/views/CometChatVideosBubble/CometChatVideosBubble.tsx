@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, ImageStyle, StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CometChatTheme } from '../../../theme/type';
@@ -8,10 +8,10 @@ import { deepMerge } from '../../helper/helperFunctions';
 import { Icon } from '../../icons/Icon';
 import { getExtensionData } from '../../../extensions/ExtensionModerator';
 import { CometChatUIKit } from '../../CometChatUiKit';
-import { CometChatMessageEvents } from '../../events/CometChatMessageEvents';
 import { CometChatMediaViewer } from '../CometChatMediaViewer';
 import { CometChatCaptionText } from '../CometChatCaptionText';
 import { isVideoMime } from '../CometChatMediaViewer/mediaViewerUtils';
+import { useLocalVideoThumbnail } from '../../utils/videoThumbnail';
 import { AdditionalParams } from "../../base/Types";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +54,8 @@ interface VideoCellProps {
   testID?: string;
   overflowCount?: number;
   thumbnailUrl?: string;
+  /** Retry a failed server thumbnail — only for a just-sent message, whose thumbnail may not exist yet. */
+  retryThumbnail?: boolean;
   cellStyle?: StyleProp<ViewStyle>;
   playButtonStyle?: StyleProp<ViewStyle>;
   playIconStyle?: ImageStyle;
@@ -63,6 +65,14 @@ interface VideoCellProps {
   overflowTextStyle?: TextStyle;
 }
 
+// The thumbnail-generation extension puts the thumbnail URL on the message at send time but creates the
+// image a few seconds later, so an early load of it fails. The sender's own device shows its local
+// first-frame thumbnail meanwhile — only when that URL exists, so the dashboard setting still decides.
+// Anyone else (another of the sender's devices, a very fast receiver) re-checks the URL with back-off.
+// Older messages never retry — their thumbnail exists or never will.
+const THUMBNAIL_RETRY_DELAYS_MS = [1000, 2000, 4000, 8000, 15000];
+const THUMBNAIL_RETRY_WINDOW_SECS = 120;
+
 const VideoCell = ({
   attachment,
   aspectRatio = 1,
@@ -71,6 +81,7 @@ const VideoCell = ({
   testID,
   overflowCount,
   thumbnailUrl,
+  retryThumbnail,
   cellStyle,
   playButtonStyle,
   playIconStyle,
@@ -81,6 +92,29 @@ const VideoCell = ({
 }: VideoCellProps) => {
   const theme = useTheme();
   const duration = getDuration(attachment);
+  // Only stand in for a server thumbnail that is on its way: no `thumbnailUrl` means the Thumbnail
+  // Generation extension is off in the dashboard (or failed for this file), and then no thumbnail shows.
+  const localThumbnail = useLocalVideoThumbnail({ remoteUrl: thumbnailUrl ? attachment.getUrl?.() : undefined });
+  // Bumped once a retried thumbnail is fetched, to remount the <Image> onto the now-cached file.
+  const [thumbnailKey, setThumbnailKey] = useState(0);
+  const retry = useRef<{ attempt: number; timer?: ReturnType<typeof setTimeout> }>({ attempt: 0 });
+  useEffect(() => {
+    retry.current = { attempt: 0 };
+    return () => clearTimeout(retry.current.timer);
+  }, [thumbnailUrl]);
+  const onThumbnailError = () => {
+    if (!retryThumbnail || localThumbnail || !thumbnailUrl) return;
+    const check = () => {
+      Image.prefetch(thumbnailUrl)
+        .then((ok) => (ok ? setThumbnailKey((k) => k + 1) : scheduleNext()))
+        .catch(scheduleNext);
+    };
+    const scheduleNext = () => {
+      const delay = THUMBNAIL_RETRY_DELAYS_MS[retry.current.attempt++];
+      if (delay != null) retry.current.timer = setTimeout(check, delay);
+    };
+    scheduleNext();
+  };
   // A VIDEO bubble previews videos only. Anything else (image / audio / file) is unsupported here →
   // a "no preview" placeholder cell (tapping it opens the "No preview available" fullscreen). Gate on a
   // KNOWN non-video kind (a proper "type/subtype" mime that isn't video/*): an empty / bare-extension
@@ -108,7 +142,7 @@ const VideoCell = ({
       >
         <View
           testID="grid-cell-nopreview"
-          style={[StyleSheet.absoluteFillObject, borderStyle, { backgroundColor: theme.color.neutral200, justifyContent: 'center', alignItems: 'center' }]}
+          style={[StyleSheet.absoluteFill, borderStyle, { backgroundColor: theme.color.neutral200, justifyContent: 'center', alignItems: 'center' }]}
         >
           <Icon name="unknown-file-type" size={theme.spacing.spacing.s12} />
         </View>
@@ -116,7 +150,7 @@ const VideoCell = ({
           <View
             testID="grid-overflow"
             pointerEvents="none"
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.color.mediaOverlay, justifyContent: 'center', alignItems: 'center' }, overflowOverlayStyle]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: theme.color.mediaOverlay, justifyContent: 'center', alignItems: 'center' }, overflowOverlayStyle]}
           >
             <Text style={[{ ...theme.typography.heading1.bold, color: theme.color.staticWhite, letterSpacing: -0.5 }, overflowTextStyle]}>{`+${overflowCount}`}</Text>
           </View>
@@ -134,13 +168,24 @@ const VideoCell = ({
       accessibilityRole="button"
       accessibilityLabel={attachment.getName()}
     >
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.color.mediaScrim }, borderStyle]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.color.mediaScrim }, borderStyle]} />
+      {localThumbnail ? (
+        <Image source={{ uri: localThumbnail }} style={[StyleSheet.absoluteFill, borderStyle]} resizeMode="cover" />
+      ) : null}
+      {/* The server thumbnail draws over the local one once it loads; until then (or if it fails)
+          the local thumbnail shows through. */}
       {thumbnailUrl ? (
-        <Image source={{ uri: thumbnailUrl }} style={[StyleSheet.absoluteFillObject, borderStyle]} resizeMode="cover" />
+        <Image
+          key={thumbnailKey}
+          source={{ uri: thumbnailUrl }}
+          style={[StyleSheet.absoluteFill, borderStyle]}
+          resizeMode="cover"
+          onError={onThumbnailError}
+        />
       ) : null}
 
       {!overflowCount && (
-        <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
           <View style={styles.centerFill}>
             <View
               style={[{
@@ -182,7 +227,7 @@ const VideoCell = ({
         <View
           testID="grid-overflow"
           pointerEvents="none"
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.color.mediaOverlay, justifyContent: 'center', alignItems: 'center' }, overflowOverlayStyle]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: theme.color.mediaOverlay, justifyContent: 'center', alignItems: 'center' }, overflowOverlayStyle]}
         >
           <Text style={[{ ...theme.typography.heading1.bold, color: theme.color.staticWhite, letterSpacing: -0.5 }, overflowTextStyle]}>{`+${overflowCount}`}</Text>
         </View>
@@ -196,6 +241,7 @@ const VideoCell = ({
 const VideoGrid = ({
   attachments,
   thumbnailUrls,
+  retryThumbnail,
   onAttachmentPress,
   containerStyle,
   cellStyle,
@@ -208,6 +254,7 @@ const VideoGrid = ({
 }: {
   attachments: CometChat.Attachment[];
   thumbnailUrls?: string[];
+  retryThumbnail?: boolean;
   onAttachmentPress: (attachment: CometChat.Attachment, index: number) => void;
   containerStyle?: StyleProp<ViewStyle>;
   cellStyle?: StyleProp<ViewStyle>;
@@ -232,6 +279,7 @@ const VideoGrid = ({
       radii={radii}
       overflowCount={overflowCount}
       thumbnailUrl={thumbnailUrls?.[i]}
+      retryThumbnail={retryThumbnail}
       onPress={() => onAttachmentPress(attachments[i], i)}
       cellStyle={cellStyle}
       playButtonStyle={playButtonStyle}
@@ -354,28 +402,6 @@ export function CometChatVideosBubble({
     });
   }, [message, allAttachments]);
 
-  // §8.7 — refresh the local copy when the server edits the message in (async thumbnails).
-  useEffect(() => {
-    const listenerId = `VideosBubble_${message.getId?.() ?? message.getMuid?.() ?? Date.now()}`;
-    CometChatMessageEvents.addListener(
-      CometChatMessageEvents.messageEdited,
-      listenerId,
-      (edited: CometChat.BaseMessage) => {
-        const editedId = edited.getId?.();
-        const editedMuid = edited.getMuid?.();
-        const myId = message.getId?.();
-        const myMuid = message.getMuid?.();
-        if (
-          edited instanceof CometChat.MediaMessage &&
-          ((myId && editedId && myId === editedId) || (myMuid && editedMuid && myMuid === editedMuid))
-        ) {
-          setMessage(edited);
-        }
-      }
-    );
-    return () => CometChatMessageEvents.removeListener(CometChatMessageEvents.messageEdited, listenerId);
-  }, []);
-
   useEffect(() => {
     setMessage(initialMessage);
   }, [initialMessage]);
@@ -387,6 +413,7 @@ export function CometChatVideosBubble({
       <VideoGrid
         attachments={allAttachments}
         thumbnailUrls={thumbnailUrls}
+        retryThumbnail={Date.now() / 1000 - (message.getSentAt?.() ?? 0) < THUMBNAIL_RETRY_WINDOW_SECS}
         containerStyle={s.containerStyle}
         cellStyle={s.cellStyle}
         playButtonStyle={s.playButtonStyle}

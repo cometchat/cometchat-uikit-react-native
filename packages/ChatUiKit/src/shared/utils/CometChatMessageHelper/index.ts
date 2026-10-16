@@ -48,6 +48,9 @@ export const getUnixTimestampInMilliseconds = () => {
   return Math.round(+new Date());
 };
 
+/** A muid that stays unique for messages created in the same second (or millisecond). */
+export const uniqueMuid = () => `${getUnixTimestampInMilliseconds()}${ID()}`;
+
 export const formatBytes = (bytes: number, decimals = 2) => {
   if (bytes === 0) return "0 Bytes";
 

@@ -53,6 +53,16 @@ static NSString *const FIELD_SIZE = @"size";
     hasListeners = YES;
 }
 
+// The pickers share one `callback` slot, so a picker must TAKE it the moment it finishes (and clear the
+// slot) rather than read it later. Otherwise a slow pick (PHPicker loading several videos) fires whatever
+// callback a NEWER pick stored in the meantime — invoking that block twice, which RN aborts on
+// ("Callback arg cannot be called more than once").
+- (RCTResponseSenderBlock)takeCallback {
+    RCTResponseSenderBlock cb = callback;
+    callback = nil;
+    return cb;
+}
+
 - (void)stopObserving {
     hasListeners = NO;
 }
@@ -371,6 +381,52 @@ RCT_EXPORT_METHOD(openFileChooser:(NSString *)type callback:(RCTResponseSenderBl
     });
 }
 
+
+// Small JPEG of a local video's first frame, so a picked/sent video has a thumbnail without waiting for
+// the server's thumbnail-generation extension (which publishes its URL before the image exists).
+// Cached in Caches/ by source path, so repeat calls for the same file are instant.
+RCT_EXPORT_METHOD(getVideoThumbnail:(NSString *)uri maxSize:(nonnull NSNumber *)maxSize resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSURL *videoURL = [uri hasPrefix:@"/"] ? [NSURL fileURLWithPath:uri] : [NSURL URLWithString:uri];
+        if (!videoURL) {
+            reject(@"invalid_uri", @"Invalid video uri", nil);
+            return;
+        }
+        NSString *dir = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject
+                          stringByAppendingPathComponent:@"cometchat-video-thumbnails"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+        NSString *key = [NSString stringWithFormat:@"%lu_%lu_%@", (unsigned long)videoURL.path.hash,
+                         (unsigned long)videoURL.path.length, maxSize];
+        NSString *thumbPath = [dir stringByAppendingPathComponent:[key stringByAppendingPathExtension:@"jpg"]];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:thumbPath]) {
+            resolve([NSURL fileURLWithPath:thumbPath].absoluteString);
+            return;
+        }
+
+        AVURLAsset *asset = [AVURLAsset URLAssetWithURL:videoURL options:nil];
+        AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+        generator.appliesPreferredTrackTransform = YES; // keep portrait videos upright
+        CGFloat side = maxSize.doubleValue > 0 ? maxSize.doubleValue : 320;
+        generator.maximumSize = CGSizeMake(side, side);
+        // Nearest keyframe is fine for a preview and much faster than an exact frame.
+        generator.requestedTimeToleranceBefore = kCMTimePositiveInfinity;
+        generator.requestedTimeToleranceAfter = kCMTimePositiveInfinity;
+
+        NSError *error = nil;
+        CGImageRef cgImage = [generator copyCGImageAtTime:CMTimeMakeWithSeconds(0.1, 600) actualTime:NULL error:&error];
+        if (!cgImage) {
+            reject(@"thumbnail_failed", error.localizedDescription ?: @"Could not read a video frame", error);
+            return;
+        }
+        NSData *jpeg = UIImageJPEGRepresentation([UIImage imageWithCGImage:cgImage], 0.8);
+        CGImageRelease(cgImage);
+        if (![jpeg writeToFile:thumbPath atomically:YES]) {
+            reject(@"thumbnail_failed", @"Could not write the thumbnail", nil);
+            return;
+        }
+        resolve([NSURL fileURLWithPath:thumbPath].absoluteString);
+    });
+}
 
 RCT_EXPORT_METHOD(openFileChooserMulti:(NSString *)type maxSelection:(nonnull NSNumber *)maxSelection callback:(RCTResponseSenderBlock)call) {
     callback = call;
@@ -1104,6 +1160,11 @@ RCT_EXPORT_METHOD(clearSegments:(RCTResponseSenderBlock)callback) {
 
 - (void)imagePickerController:(UIImagePickerController *)picker
 didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> *)info {
+    RCTResponseSenderBlock callback = [self takeCallback];
+    if (!callback) {
+        [picker dismissViewControllerAnimated:TRUE completion:nil];
+        return;
+    }
     switch (picker.sourceType) {
         case UIImagePickerControllerSourceTypeCamera: {
             UIImage *image = [info valueForKey:UIImagePickerControllerOriginalImage];
@@ -1180,7 +1241,12 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
 // PHPickerViewControllerDelegate — handles multi-select from Photos library (images and videos)
 - (void)picker:(PHPickerViewController *)picker didFinishPicking:(NSArray<PHPickerResult *> *)results {
     [picker dismissViewControllerAnimated:YES completion:nil];
+    RCTResponseSenderBlock callback = [self takeCallback];
+    if (!callback) {
+        return;
+    }
     if (results.count == 0) {
+        callback(@[@[]]);
         return;
     }
 
@@ -1229,9 +1295,7 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
     }
 
     dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-        if (fileInfoArray.count > 0) {
-            callback(@[fileInfoArray]);
-        }
+        callback(@[fileInfoArray]);
     });
 }
 
@@ -1248,6 +1312,11 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
 }
 
 - (void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray<NSURL *> *)urls {
+    RCTResponseSenderBlock callback = [self takeCallback];
+    if (!callback) {
+        _multipleSelection = NO;
+        return;
+    }
     if (_multipleSelection) {
         _multipleSelection = NO;
         NSMutableArray *results = [NSMutableArray array];
@@ -1273,6 +1342,11 @@ didFinishPickingMediaWithInfo:(NSDictionary<UIImagePickerControllerInfoKey, id> 
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
     NSLog(@"document pick cancelled");
+    if (_multipleSelection) {
+        _multipleSelection = NO;
+        RCTResponseSenderBlock callback = [self takeCallback];
+        if (callback) callback(@[@[]]);
+    }
     [controller dismissViewControllerAnimated:TRUE completion:nil];
 }
 

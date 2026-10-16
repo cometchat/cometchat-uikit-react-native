@@ -15,6 +15,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {CometChat} from '@cometchat/chat-sdk-react-native';
 import {
@@ -61,6 +62,21 @@ const LoginScreen: React.FC = () => {
     setUserUID('');
   };
 
+  // The SDK rejects with a code; the user needs to know which of these to fix.
+  const loginErrorMessage = (error: any): string => {
+    switch (error?.code) {
+      case 'FAILED_TO_FETCH':
+      case 'ERR_NETWORK':
+        return 'Check your internet connection and try again.';
+      case 'ERR_UID_NOT_FOUND':
+        return 'No user with this UID exists in this app.';
+      case 'AUTH_ERR_INVALID_APPID':
+        return `${error.message ?? 'Invalid App ID.'} Check the App ID and region on the App Credentials screen.`;
+      default:
+        return error?.message ?? 'Something went wrong. Please try again.';
+    }
+  };
+
   const handleContinue = async () => {
     if ((!selectedUser && !userUID.trim()) || isLoading) return;
     setIsLoading(true);
@@ -74,6 +90,7 @@ const LoginScreen: React.FC = () => {
       });
     } catch (error: any) {
       console.log('Login failed with exception:', error);
+      Alert.alert('Could not log in', loginErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

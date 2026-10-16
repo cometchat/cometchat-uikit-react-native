@@ -5,10 +5,14 @@ import ReactAppDependencyProvider
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
+  // SceneDelegate creates and owns the window, but this property must stay:
+  // React Native still reads `application.delegate.window` directly, in
+  // RCTDeviceInfo.interfaceOrientationDidChange and RCTLogBoxView. SceneDelegate assigns it.
   var window: UIWindow?
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   func application(
     _ application: UIApplication,
@@ -21,15 +25,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-    window = UIWindow(frame: UIScreen.main.bounds)
-
-    factory.startReactNative(
-      withModuleName: "ai_sample_app",
-      in: window,
-      launchOptions: launchOptions
-    )
+    // React Native is started by SceneDelegate once a UIWindowScene exists.
+    self.launchOptions = launchOptions
 
     return true
+  }
+
+  // MARK: - UIScene Life Cycle
+
+  func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let configuration = UISceneConfiguration(
+      name: "Default Configuration",
+      sessionRole: connectingSceneSession.role
+    )
+    configuration.delegateClass = SceneDelegate.self
+    return configuration
   }
 }
 

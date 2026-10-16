@@ -5,6 +5,7 @@ import {
   ImageSourcePropType,
   ImageStyle,
   ImageURISource,
+  StyleProp,
   TextStyle,
   ViewStyle,
 } from "react-native";
@@ -38,6 +39,10 @@ type DoNotPartial =
   | ViewStyle
   | ImageURISource
   | ImageStyle
+  // StyleProp is a recursive alias (ReadonlyArray<StyleProp<T>>); mapping over it never terminates
+  | StyleProp<TextStyle>
+  | StyleProp<ViewStyle>
+  | StyleProp<ImageStyle>
   | ColorValue
   | DimensionValue
   | ImageSourcePropType

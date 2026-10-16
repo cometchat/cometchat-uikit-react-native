@@ -397,8 +397,12 @@ public class CometChatSoundModule
     }
   }
 
+  // `invalidate()`, not the deprecated onCatalystInstanceDestroy(): bridgeless RN (0.82+ is
+  // New-Architecture-only) tears modules down through invalidate(), so the old hook can be
+  // skipped and every pooled MediaPlayer would leak.
   @Override
-  public void onCatalystInstanceDestroy() {
+  public void invalidate() {
+    super.invalidate();
     java.util.Iterator it = this.playerPool.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry entry = (Map.Entry) it.next();

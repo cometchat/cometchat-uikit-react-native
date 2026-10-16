@@ -1,9 +1,8 @@
 import React, { JSX, RefObject } from "react";
 import {
   ColorValue,
-  NativeSyntheticEvent,
   TextInput,
-  TextInputSelectionChangeEventData,
+  TextInputProps,
   TextStyle,
   View,
   ViewStyle,
@@ -79,9 +78,9 @@ export interface CometChatMessageInputInterface {
   /**
    * Callback for when the text selection changes.
    *
-   * @param {NativeSyntheticEvent<TextInputSelectionChangeEventData>} event - The selection change event.
+   * @param {NativeSyntheticEvent} event - The selection change event.
    */
-  onSelectionChange?: (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void;
+  onSelectionChange?: TextInputProps["onSelectionChange"];
   /**
    * Reference for the TextInput component.
    *

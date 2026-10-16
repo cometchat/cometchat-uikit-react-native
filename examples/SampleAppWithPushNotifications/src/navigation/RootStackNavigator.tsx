@@ -48,16 +48,12 @@ const RootStackNavigator = ({isLoggedIn, hasValidAppCredentials: _hasValidAppCre
   };
 
   const isDark = useColorScheme() === 'dark';
-  const backgroundColor = theme.color.background2;
   const barStyle = isDark ? 'light-content' : 'dark-content';
 
   return (
     <>
-      <StatusBar
-        backgroundColor={backgroundColor}
-        barStyle={barStyle}
-        translucent={false}
-      />
+      {/* No backgroundColor/translucent: RN 0.87 removed them (Android is edge-to-edge). */}
+      <StatusBar barStyle={barStyle} />
       <NavigationContainer
         ref={navigationRef}
         onReady={() => {

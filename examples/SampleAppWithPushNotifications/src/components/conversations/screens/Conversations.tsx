@@ -44,7 +44,7 @@ const Conversations: React.FC<{}> = ({}) => {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const selectedConversation = useRef<CometChat.Conversation | null>(null);
   const navigation = useNavigation<ChatNavigationProp>();
-  const avatarContainerRef = useRef<View>(null);
+  const avatarContainerRef = useRef<React.ComponentRef<typeof View>>(null);
   const loggedInUser = useRef<CometChat.User>(
     CometChatUIKit.loggedInUser,
   ).current;

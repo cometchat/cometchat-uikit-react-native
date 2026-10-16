@@ -2,7 +2,7 @@
  * Utility functions for markdown text processing.
  */
 import { stripColorTags } from "../formatters/richTextWireFormat";
-import { urlPattern, emailPattern } from "../constants/textPatterns";
+import { urlPattern, emailPattern, markdownLinkPattern } from "../constants/textPatterns";
 
 /**
  * Strips markdown syntax characters from text, returning clean readable content.
@@ -39,9 +39,16 @@ export function stripMarkdown(text: string, keepColorTags = false): string {
       protectedUrls.push(match);
       return `\x00U${protectedUrls.length - 1}\x00`;
     };
-    // Emails first — the url pattern matches only an address's domain, leaving the local
+    // Markdown links first, each half on its own — see CometChatRichTextFormatter. The url
+    // pattern accepts `[ ] ( )`, so `[https://x/p](https://x/p)` was stashed as ONE url and
+    // step 1.5 never saw a link: the conversation row showed the raw markdown.
+    const urlRegex = new RegExp(urlPattern, "gi");
+    staged = text.replace(new RegExp(markdownLinkPattern, "g"), (_m, label: string, url: string) =>
+      `[${label.replace(urlRegex, keep)}](${keep(url)})`
+    );
+    // Emails next — the url pattern matches only an address's domain, leaving the local
     // part's underscores exposed to the markdown rules below.
-    staged = text.replace(new RegExp(emailPattern, "gi"), keep);
+    staged = staged.replace(new RegExp(emailPattern, "gi"), keep);
     staged = staged.replace(new RegExp(urlPattern, "gi"), keep);
   } catch {
     // A bad pattern must not cost the caller their text; fall back to stripping unprotected.
@@ -58,7 +65,7 @@ export function stripMarkdown(text: string, keepColorTags = false): string {
   });
 
   // 1.5. Convert markdown links [text](url) → text
-  result = result.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  result = result.replace(new RegExp(markdownLinkPattern, "g"), '$1');
 
   // 2. Remove inline code backticks (normal and escaped)
   result = result.replace(/\\`([^`]*?)\\`/g, '$1'); // escaped \`code\`

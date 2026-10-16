@@ -1958,6 +1958,10 @@ export const CometChatConversations = (props: ConversationInterface) => {
           });
       },
       ccCallEnded: ({ call }: any) => {
+        // CometChatIncomingCall emits ccCallEnded with no call when the session ends. The SDK
+        // throws inside getConversationFromMessage(undefined) without rejecting the promise it
+        // returns, so the .catch below never runs and the error surfaces as an unhandled rejection.
+        if (!call) return;
         CometChat.CometChatHelper.getConversationFromMessage(call)
           .then((conversation) => {
             if (!CometChatUIKit.getConversationUpdateSettings().shouldUpdateOnCallActivities()) {

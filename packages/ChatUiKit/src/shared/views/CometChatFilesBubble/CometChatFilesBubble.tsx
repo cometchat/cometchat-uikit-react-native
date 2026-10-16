@@ -83,7 +83,8 @@ export function CometChatFilesBubble({
   const pendingOpensRef = useRef<Record<string, { url: string; name: string; key: string }>>({});
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    const sub = fileEventEmitter.addListener('downloadComplete', (data: { downloadId: number }) => {
+    const sub = fileEventEmitter.addListener('downloadComplete', (event) => {
+      const data = event as { downloadId: number };
       const pending = pendingOpensRef.current[String(data?.downloadId)];
       if (pending) {
         FileManager?.openFile?.(pending.url, pending.name, () => {});

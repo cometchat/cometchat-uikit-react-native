@@ -24,6 +24,7 @@ import { useCometChatTranslation } from "../resources/CometChatLocalizeNew";
 import { getCometChatTranslation } from "../resources/CometChatLocalizeNew/LocalizationManager";
 import { useTheme } from "../../theme";
 import { isPinned, isSaved } from "./PinSaveHelper";
+import { unescapeTypedMentionTokensInTree } from "./mentionTokens";
 
 /** Module-scope translator — getStatusInfoView is a plain function, not a component. */
 const translate = getCometChatTranslation();
@@ -75,9 +76,9 @@ const getOverridenBubbleStyles = (theme: CometChatTheme) => {
    * copies of this map are a standing hazard.
    */
   const fileIncoming = deepMerge(incomingBubbleStyles, incomingBubbleStyles.fileBubbleStyles ?? {});
-  if (fileIncoming.containerStyle) fileIncoming.containerStyle.height = undefined;
+  if (fileIncoming.containerStyle) Object.assign(fileIncoming.containerStyle, { height: undefined });
   const fileOutgoing = deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.fileBubbleStyles ?? {});
-  if (fileOutgoing.containerStyle) fileOutgoing.containerStyle.height = undefined;
+  if (fileOutgoing.containerStyle) Object.assign(fileOutgoing.containerStyle, { height: undefined });
 
   styleCache.set(MessageTypeConstants.file, {
     incoming: fileIncoming,
@@ -88,12 +89,12 @@ const getOverridenBubbleStyles = (theme: CometChatTheme) => {
     incomingBubbleStyles,
     incomingBubbleStyles.audioBubbleStyles ?? {}
   );
-  if (audioIncoming.containerStyle) audioIncoming.containerStyle.height = undefined;
+  if (audioIncoming.containerStyle) Object.assign(audioIncoming.containerStyle, { height: undefined });
   const audioOutgoing = deepMerge(
     outgoingBubbleStyles,
     outgoingBubbleStyles.audioBubbleStyles ?? {}
   );
-  if (audioOutgoing.containerStyle) audioOutgoing.containerStyle.height = undefined;
+  if (audioOutgoing.containerStyle) Object.assign(audioOutgoing.containerStyle, { height: undefined });
 
   styleCache.set(MessageTypeConstants.audio, {
     incoming: audioIncoming,
@@ -480,7 +481,8 @@ export const applyMentionsFormatting = (
 ): string | JSX.Element => {
   const containsAllAlias = /<@all:(.*?)>/.test(rawText);
   if (!message.getMentionedUsers?.().length && !containsAllAlias) {
-    return content;
+    // No real mentions to resolve, but typed token text (stored escaped) still reads as typed.
+    return unescapeTypedMentionTokensInTree(content);
   }
 
   try {

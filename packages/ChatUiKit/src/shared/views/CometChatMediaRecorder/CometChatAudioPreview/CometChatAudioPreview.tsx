@@ -80,7 +80,8 @@ export const CometChatAudioPreview = ({
   }, [audioUrl]);
 
   useEffect(() => {
-    listener = eventEmitter.addListener("soundPlayStatus", (data) => {
+    listener = eventEmitter.addListener("soundPlayStatus", (event) => {
+      const data = event as { url?: string };
       if (audioUrl === data.url) {
         // playback ended for this url — reset to idle, clear interval and reset time
         setStatus("");

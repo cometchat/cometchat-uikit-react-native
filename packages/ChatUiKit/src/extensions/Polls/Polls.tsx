@@ -2,7 +2,6 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   NativeModules,
@@ -21,6 +20,7 @@ import { useCometChatTranslation } from "../../shared/resources/CometChatLocaliz
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { CometChatMessageEvents } from "../../shared/events/CometChatMessageEvents";
 import { messageStatus } from "../../shared/utils/CometChatMessageHelper";
+import { runAfterInteractions } from "../../shared/utils/runAfterInteractions";
 
 const { CommonUtil } = NativeModules;
 
@@ -147,7 +147,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
   const loggedInUser = useRef<CometChat.User | null>(null);
   const theme = useTheme();
   const { t } = useCometChatTranslation();
-  const answerRefs = useRef<(TextInput | null)[]>([]);
+  const answerRefs = useRef<(React.ComponentRef<typeof TextInput> | null)[]>([]);
   const [lastRemovedIndex, setLastRemovedIndex] = useState<number | null>(null);
   const [newlyAddedIndex, setNewlyAddedIndex] = useState<number | null>(null);
   const flatListRef = useRef<FlatList>(null);
@@ -425,7 +425,7 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
 
   useEffect(() => {
     if (answers.length) {
-      InteractionManager.runAfterInteractions(() => {
+      runAfterInteractions(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       });
     }
@@ -588,10 +588,10 @@ export const CometChatCreatePoll = (props: CometChatCreatePollInterface) => {
           style={{
             paddingHorizontal: 20,
             backgroundColor: theme.color.background1,
-            paddingBottom: Platform.select({
-              ios: Math.max(insets.bottom, 10),
-              android: 10,
-            }),
+            // Both platforms: an edge-to-edge Android window (RN 0.86+ Modals, targetSdk 35+)
+            // draws under the navigation bar, so the fixed 10 left Create hidden behind it.
+            // Non-edge-to-edge Android reports a 0 inset, so this stays 10 there.
+            paddingBottom: Math.max(insets.bottom, 10),
           }}
         >
           {error && <ErrorView />}

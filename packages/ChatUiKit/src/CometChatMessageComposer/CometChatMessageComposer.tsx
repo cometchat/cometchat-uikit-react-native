@@ -1,12 +1,13 @@
 let __listenerIdCounter = 0;
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Keyboard } from "react-native";
+import { Keyboard,
+  StatusBar,
+} from "react-native";
 import {
   ColorValue,
   Dimensions,
   ImageSourcePropType,
   ImageStyle,
-  InteractionManager,
   KeyboardAvoidingView,
   KeyboardAvoidingViewProps,
   Modal,
@@ -57,8 +58,10 @@ import {
   messageStatus,
 } from "../shared/utils/CometChatMessageHelper";
 import { CommonUtils } from "../shared/utils/CommonUtils";
+import { runAfterInteractions } from "../shared/utils/runAfterInteractions";
 import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
 import { isCursorWithinMentionRange, getMentionRangeAtCursor } from "../shared/utils/MentionUtils";
+import { insertMentionTokens } from "../shared/utils/mentionTokens";
 import { permissionUtil } from "../shared/utils/PermissionUtil";
 import { CometChatMediaRecorder } from "../shared/views/CometChatMediaRecorder";
 import { useTheme } from "../theme";
@@ -949,6 +952,19 @@ export const CometChatMessageComposer = React.forwardRef(
           }
         });
 
+        // Token text the user TYPED is stored escaped (`&lt;@all:…`); it goes back into the
+        // input as the literal `<@all:…` they typed. No `user`, so it never enters mentionMap.
+        const typedToken = /&lt;(@(?:uid|all):)/g;
+        let typedMatch: RegExpExecArray | null;
+        while ((typedMatch = typedToken.exec(rawText)) !== null) {
+          edits.push({
+            startIndex: typedMatch.index,
+            endIndex: typedToken.lastIndex,
+            replacement: "<" + typedMatch[1],
+            user: null,
+          });
+        }
+
         // Sort edits by startIndex to apply them in order
         edits.sort((a: any, b: any) => a.startIndex - b.startIndex);
 
@@ -966,6 +982,7 @@ export const CometChatMessageComposer = React.forwardRef(
             edit.replacement +
             rawText.substring(edit.endIndex);
           offset += edit.replacement.length - (edit.endIndex - edit.startIndex);
+          if (!edit.user) return; // un-escaped typed text, not a mention
           const rangeKey = `${adjustedStartIndex}_${adjustedStartIndex + edit.replacement.length}`;
           hashMap.set(rangeKey, edit.user);
         });
@@ -1268,7 +1285,7 @@ export const CometChatMessageComposer = React.forwardRef(
       }
 
       if (Platform.OS === "ios" && messageInputRef.current) {
-        InteractionManager.runAfterInteractions(() => {
+        runAfterInteractions(() => {
           let textToProcess = plainTextInput.current;
           if (typeof inputMessage === 'string' && inputMessage.trim().length > 0) {
             textToProcess = inputMessage;
@@ -1343,7 +1360,7 @@ export const CometChatMessageComposer = React.forwardRef(
 
       // Clear the TextInput on iOS to remove auto-corrected text
       if (Platform.OS === "ios" && messageInputRef.current) {
-        InteractionManager.runAfterInteractions(() => {
+        runAfterInteractions(() => {
           try {
             messageInputRef.current?.setNativeProps?.({ text: "" });
             messageInputRef.current?.clear?.();
@@ -2253,24 +2270,9 @@ export const CometChatMessageComposer = React.forwardRef(
       }, 100);
     };
 
-    const getRegexString = (str: string) => {
-      // Get an array of the entries in the map using the spread operator
-      const entries = [...mentionMap.current.entries()].reverse();
-
-      let uidInput = str;
-
-      // Iterate over the array in reverse order
-      entries.forEach(([key, value]) => {
-        let [start, end] = key.split("_").map(Number);
-
-        let pre = uidInput.substring(0, start);
-        let post = uidInput.substring(end);
-
-        uidInput = pre + value.underlyingText + post;
-      });
-
-      return uidInput;
-    };
+    // Picked mentions become their tokens; token-looking text the user typed is escaped so it
+    // is stored — and rendered on every platform — as text, not a live mention.
+    const getRegexString = (str: string) => insertMentionTokens(str, mentionMap.current.entries());
 
     const getPlainString = (
       str: string,
@@ -2425,7 +2427,7 @@ export const CometChatMessageComposer = React.forwardRef(
       mentionMap.current = deletionMentionMap;
 
       const firstStart = overlaps[0].start;
-      InteractionManager.runAfterInteractions(() => {
+      runAfterInteractions(() => {
         messageInputRef.current?.setNativeProps({
           selection: { start: firstStart, end: firstStart },
         });
@@ -2606,9 +2608,9 @@ export const CometChatMessageComposer = React.forwardRef(
         (item.promptText?.length ?? 0) +
         1; // +1 for the space after mention
       
-      // On iOS, use InteractionManager to ensure selection is applied after UI updates
+      // On iOS, defer so selection is applied after UI updates
       if (Platform.OS === "ios") {
-        InteractionManager.runAfterInteractions(() => {
+        runAfterInteractions(() => {
           setSelectionPosition({
             start: newCursorPosition,
             end: newCursorPosition,
@@ -2742,8 +2744,13 @@ export const CometChatMessageComposer = React.forwardRef(
           {CustomView && CustomView}
         </Modal>
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.select({ ios: kbOffset })}
+          // "padding" on Android too: with edge-to-edge (always on from RN 0.87 / targetSdk 36) the window no
+          // longer resizes for the keyboard, and "height" squashes this composer instead of lifting it.
+          // When the window does resize (adjustResize), the keyboard overlap is 0 and padding adds nothing.
+          behavior="padding"
+          // The view is measured from its parent, the keyboard from the top of the screen: offset by
+          // what sits above the parent — the top safe area on iOS, the status bar on Android.
+          keyboardVerticalOffset={Platform.select({ ios: kbOffset, android: StatusBar.currentHeight ?? 0 })}
           {...keyboardAvoidingViewProps}
         >
           <View
@@ -2960,7 +2967,7 @@ export const CometChatMessageComposer = React.forwardRef(
                     targetPosition = mentionRange.end;
                   }
                   if (targetPosition !== cursorPos) {
-                    InteractionManager.runAfterInteractions(() => {
+                    runAfterInteractions(() => {
                       // Move the cursor IMPERATIVELY — the input is uncontrolled (the `selection`
                       // prop was removed). A controlled `selection` prop re-fires onSelectionChange
                       // on every re-render, which hard-freezes iOS once the attachment tray adds

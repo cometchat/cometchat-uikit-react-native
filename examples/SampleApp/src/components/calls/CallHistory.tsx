@@ -246,7 +246,7 @@ export const CallHistory = (props: { user?: any; group?: any }) => {
           >
             <ActivityIndicator size="large" color={theme.color.primary} />
           </View>
-        ) : null
+        ) : undefined
       }
     />
   );

@@ -12,6 +12,7 @@ import { SuggestionItem } from "../../views/CometChatSuggestionList";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
 import { CometChatTheme } from "../../../theme/type";
 import { deepMerge } from "../../helper/helperFunctions";
+import { unescapeTypedMentionTokensInTree } from "../../utils/mentionTokens";
 import { getCometChatTranslation } from "../../resources/CometChatLocalizeNew/LocalizationManager";
 
 const t = getCometChatTranslation();
@@ -544,7 +545,8 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
       return "";
     }
     let formattedText = this.addMentionsView(inputText, textStyle);
-    return formattedText;
+    // Only now, with every real mention resolved, may escaped typed text read as `<@all:…>`.
+    return unescapeTypedMentionTokensInTree(formattedText);
   }
 
   temp!: Function;
@@ -604,8 +606,10 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
             segments.push(inputText.slice(lastIndex, match.index));
           }
 
-          // Add UID segment
-          segments.push(match[1]);
+          // Add the whole token; it is resolved to its id below. Pushing only the id rendered an
+          // unresolved `<@uid:someone>` as just "someone", and let plain text that happened to
+          // equal a mentioned uid become a chip.
+          segments.push(match[0]);
 
           // Update lastIndex
           lastIndex = match.index + match[0].length;
@@ -618,12 +622,19 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
 
         // Now create an array of JSX elements from the segments
         const elements = segments.map((segment, index) => {
-          // Check if segment is a UID
-          if (userRegistry.hasOwnProperty(segment)) {
+          // A token segment resolves to its id; anything else is plain text.
+          const token = /^<@(?:uid|all):(.*?)>$/.exec(segment);
+          const id = token ? token[1] : undefined;
+          // `<@all:x>` resolves only to an @all alias and `<@uid:x>` only to a user.
+          if (
+            id !== undefined &&
+            userRegistry.hasOwnProperty(id) &&
+            aliasIdSet.has(id) === segment.startsWith("<@all:")
+          ) {
             let _loggedInUser = this.loggedInUser || CometChatUIKit.loggedInUser;
 
-            const isAlias = aliasIdSet.has(segment);
-            const isSelf = isAlias || _loggedInUser?.getUid() === segment;
+            const isAlias = aliasIdSet.has(id);
+            const isSelf = isAlias || _loggedInUser?.getUid() === id;
 
             const isOutgoing =
               this.messageObject?.getSender()?.getUid() === _loggedInUser?.getUid();
@@ -636,7 +647,7 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
 
             let onPressProp =
               this.temp && !isAlias
-                ? { onPress: (event: any) => this.onMentionClick(event, segment) }
+                ? { onPress: (event: any) => this.onMentionClick(event, id) }
                 : {}; // still suppress click for alias
 
             const mentionContainerStyle = backgroundColor ? {
@@ -648,20 +659,20 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
             if (this.target === MentionsTargetElement.textbubble) {
               return (
                 <Text suppressHighlighting={true} key={index} {...onPressProp} style={[textStyle, mentionContainerStyle]}>
-                  {userRegistry[segment]}
+                  {userRegistry[id]}
                 </Text>
               );
             }
 
             return (
               <Text suppressHighlighting={true} key={index} {...onPressProp} style={[textStyle, mentionContainerStyle]}>
-                {userRegistry[segment]}
+                {userRegistry[id]}
               </Text>
             );
           } else {
             // Handle group-wide alias formatting if present
             const aliasItem = this.SuggestionItems.find(
-              (it) => it.underlyingText === `<@all:${segment}>`
+              (it) => token !== null && it.underlyingText === segment
             );
             if (aliasItem) {
               const { textStyle: styleResolved, backgroundColor } = this.resolveStyle(true);

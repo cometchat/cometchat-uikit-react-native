@@ -322,7 +322,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     
     if (reducerState.state === 'recording') {
       // Listen for native amplitude events
-      subscription = FileManagerEmitter.addListener('audioAmplitude', (event: { amplitude: number }) => {
+      subscription = FileManagerEmitter.addListener('audioAmplitude', (data) => {
+        const event = data as { amplitude: number };
         const amplitude = event.amplitude;
         
         // WhatsApp-style amplitude processing:
@@ -371,7 +372,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     
     if (reducerState.state === 'playing') {
       // Listen for playback complete event from native
-      statusSubscription = FileManagerEmitter.addListener('status', (event: { state: string }) => {
+      statusSubscription = FileManagerEmitter.addListener('status', (data) => {
+        const event = data as { state: string };
         // Ignore playback complete during seeking - it might be stale
         if (event.state === 'playbackComplete' && !isSeekingRef.current) {
           dispatch({ type: 'PLAYBACK_COMPLETE' });

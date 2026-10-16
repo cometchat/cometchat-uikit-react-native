@@ -7,6 +7,7 @@
  * as "make a <product>" or "5 < 10" is preserved.
  */
 import { stripColorTags } from "../formatters/richTextWireFormat";
+import { markdownLinkPattern } from "../constants/textPatterns";
 
 export const stripRichText = (input?: string | null): string => {
   if (!input) return "";
@@ -41,7 +42,7 @@ export const stripRichText = (input?: string | null): string => {
     .replace(/(^|[^A-Za-z0-9_])_\s*(.+?)\s*_(?![A-Za-z0-9_])/g, "$1$2")   // _italic_
     .replace(/~~(.+?)~~/g, "$1")                  // ~~strikethrough~~
     .replace(/`([^`]+)`/g, "$1")                  // `inline code`
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");     // [label](url) -> label
+    .replace(new RegExp(markdownLinkPattern, "g"), "$1"); // [label](url) -> label
 
   // 3. Collapse leftover whitespace into a single clean line.
   return text.replace(/\s+/g, " ").trim();

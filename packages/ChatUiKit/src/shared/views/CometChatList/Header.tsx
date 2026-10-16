@@ -176,7 +176,7 @@ export default function Header({
 }: HeaderProps) {
   const theme = useTheme();
   const { t } = useCometChatTranslation();
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   // Callers that pass nothing used to get a hardcoded English "Search", which
   // is why the conversation list's search box stayed English in every locale.
   const searchPlaceholder = searchPlaceholderText ?? t("SEARCH");

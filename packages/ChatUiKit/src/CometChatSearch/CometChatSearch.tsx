@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useReducer, useRef, useState, useMemo, JSX } from 'react';
-import { View, TextInput, TouchableOpacity, Text, Image, ImageBackground, FlatList, ImageSourcePropType, StyleSheet } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, Image, ImageBackground, FlatList, ImageSourcePropType, StyleSheet, Platform } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import {
   CometChatAvatar,
@@ -18,6 +18,8 @@ import { deepMerge } from '../shared/helper/helperFunctions';
 import { DeepPartial } from '../shared/helper/types';
 import { getCometChatTranslation } from '../shared/resources/CometChatLocalizeNew/LocalizationManager';
 import { CommonUtils } from '../shared/utils/CommonUtils';
+import { selectLinkPreview } from "../shared/utils/linkPreviewSelection";
+import { unescapeTypedMentionTokens } from "../shared/utils/mentionTokens";
 import { stripMarkdown } from '../shared/utils/MarkdownUtils';
 import { CometChatRichTextFormatter } from '../shared/formatters/CometChatRichTextFormatter';
 import { CometChatTextFormatter } from '../shared/formatters/CometChatTextFormatter';
@@ -61,6 +63,9 @@ const formatPreviewText = (
   } catch (e) {
     console.log(e)
   }
+
+  // Tokens are resolved above; typed token text (stored escaped) now reads as typed.
+  text = unescapeTypedMentionTokens(text);
 
   return searchRichTextFormatter.getFormattedText(text) ?? text;
 };
@@ -761,7 +766,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
   const theme = useTheme();
   const errorHandler = useCometChatErrorHandler(onError);
   const timeoutIdRef = useRef<any | null>(null);
-  const searchInputRef = useRef<TextInput>(null);
+  const searchInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   // Merge theme styles with provided style overrides
   const mergedStyles = useMemo(() => {
@@ -1646,8 +1651,8 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         const metadata = textMessage.getMetadata();
         const linkPreview = metadata && (metadata as any)['@injected'] && (metadata as any)['@injected']['extensions'] && (metadata as any)['@injected']['extensions']['link-preview'];
 
-        if (linkPreview && linkPreview.links && linkPreview.links.length > 0) {
-          const firstLink = linkPreview.links[0];
+        const firstLink = selectLinkPreview(linkPreview?.links, textMessage.getText());
+        if (firstLink) {
           const thumbnailUrl = firstLink.image || firstLink.favicon;
 
           if (thumbnailUrl) {
@@ -2011,7 +2016,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         windowSize={10}
-        removeClippedSubviews={true}
+        removeClippedSubviews={Platform.OS !== 'android'} // ENG-40210: clipping crashes Fabric on Android
         updateCellsBatchingPeriod={100}
         onEndReached={() => {
           // Load more messages if we're at the end and messages section is visible

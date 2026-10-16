@@ -3,8 +3,9 @@ import React, { JSX } from "react";
 import { Text, TextStyle, ViewStyle, Platform, Linking, View } from "react-native";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
 import { COLOR_OPEN_TAG, HEX_COLOR_REGEX, findColorTag, stripColorTags } from "../richTextWireFormat";
+import { markCode } from "../codeElements";
 import { isTextElement, isViewElement } from "../../utils/elementType";
-import { urlPattern, emailPattern } from "../../constants/textPatterns";
+import { urlPattern, emailPattern, markdownLinkPattern } from "../../constants/textPatterns";
 
 /**
  * Style configuration for rich text formatting
@@ -30,7 +31,9 @@ export interface RichTextStyle {
 // Pre-compiled regex patterns — avoids recompilation on every call
 const ORDERED_LIST_REGEX = /^(\d+)\.(?:\s(.*))?$/;
 const ORDERED_LIST_DETECT_REGEX = /^\d+\.(\s|$)/;
-const LINK_REGEX = /\[([^\]]+)\]\(([^)]+)\)/;
+const LINK_REGEX = new RegExp(markdownLinkPattern);
+// Global form, for stashing each half of every markdown link before URLs are stashed.
+const LINK_REGEX_GLOBAL = new RegExp(markdownLinkPattern, "g");
 const URL_PROTOCOL_REGEX = /^(https?|mailto|tel):/i;
 // Patterns for detecting list items inside blockquote content (ENG-31998)
 const QUOTE_BULLET_REGEX = /^- (.*)$/;
@@ -289,7 +292,7 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
                     style here — but it must never reach the reader as literal markup either.
                     Messages sent before the serializer fix still carry the token inside the
                     fence, so strip rather than render (ENG-38253). */}
-                <Text style={[this.style.codeBlockStyle]}>{stripColorTags(content)}</Text>
+                {markCode(<Text style={[this.style.codeBlockStyle]}>{stripColorTags(content)}</Text>)}
               </View>
             );
             lineIndex++;
@@ -333,13 +336,15 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
               this.style.codeBlockContainerStyle,
             ]}
           >
-            <Text
-              style={[
-                this.style.codeBlockStyle,
-              ]}
-            >
-              {stripColorTags(codeLines.join("\n"))}
-            </Text>
+            {markCode(
+              <Text
+                style={[
+                  this.style.codeBlockStyle,
+                ]}
+              >
+                {stripColorTags(codeLines.join("\n"))}
+              </Text>
+            )}
           </View>
         );
         if (lineIndex < lines.length) {
@@ -580,6 +585,13 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
     };
     let sanitized = text.replace(MENTION_PATTERN_REGEX, stash);
     try {
+      // Markdown links first, one half at a time. The url pattern accepts `[ ] ( )`, so on a
+      // link whose label is itself an address — `[https://x/p](https://x/p)`, what a pasted or
+      // copied link is stored as — it matched `https://x/p](https://x/p` as ONE url. That hid
+      // the `](`, findLink never saw a link, and the bubble showed the raw markdown.
+      sanitized = sanitized.replace(LINK_REGEX_GLOBAL, (_m, label: string, url: string) =>
+        `[${label.replace(URL_PATTERN_REGEX, stash)}](${stash(url)})`
+      );
       sanitized = sanitized.replace(EMAIL_PATTERN_REGEX, stash);
       sanitized = sanitized.replace(URL_PATTERN_REGEX, stash);
     } catch {
@@ -644,19 +656,19 @@ export class CometChatRichTextFormatter extends CometChatTextFormatter {
           // Use a single Text element (not View) so inline code stays on the
           // same text baseline as surrounding content (mentions, plain text).
           // Text supports backgroundColor, borderRadius, and padding in RN.
-          elements.push(
+          elements.push(markCode(
             <Text key={`fmt-${keyCounter++}`} style={[this.style.inlineCodeContainerStyle, this.style.inlineCodeStyle]}>{innerContent}</Text>
-          );
+          ));
         } else if (match.type === "codeBlock") {
           // Inline ```text``` — render identically to single-backtick inline code
           // (compact pill with background, no block-level padding).
           // Block-level code block rendering with View container is handled in renderMarkdown.
-          elements.push(
+          elements.push(markCode(
             <Text
               key={`fmt-${keyCounter++}`}
               style={[this.style.inlineCodeContainerStyle, this.style.inlineCodeStyle]}
             >{restoredContent}</Text>
-          );
+          ));
         } else if (match.type === "textColor" && match.color) {
           // Re-validate at render time: the hex reaching here came off the wire, and an
           // unparseable value must fall back to the base style rather than reach RN.

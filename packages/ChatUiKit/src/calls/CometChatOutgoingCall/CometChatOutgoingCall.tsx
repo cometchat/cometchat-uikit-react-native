@@ -281,13 +281,16 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface): JS
       visible={isModalVisible}
       onRequestClose={handleModalClose}
     >
-      <SafeAreaView style={{ flex: 1 }}>
-        {isCallConnected ? (
-          <CometChatOngoingCall
-            sessionID={callSessionId.current!}
-            callSettingsBuilder={callSettings.current!}
-          />
-        ) : (
+      {/* The connected call handles its own safe area. Rendered outside the SafeAreaView below
+          so it gets the same geometry as an accepted incoming call: the Calls SDK keeps the size
+          of the first call in the session, so both directions must lay out the same way. */}
+      {isCallConnected ? (
+        <CometChatOngoingCall
+          sessionID={callSessionId.current!}
+          callSettingsBuilder={callSettings.current!}
+        />
+      ) : (
+        <SafeAreaView style={{ flex: 1 }}>
           <View style={outgoingCallStyle.containerStyle}>
             {TitleView ? (
               TitleView(call)
@@ -331,8 +334,8 @@ export const CometChatOutgoingCall = (props: CometChatOutgoingCallInterface): JS
               </TouchableOpacity>
             )}
           </View>
-        )}
-      </SafeAreaView>
+        </SafeAreaView>
+      )}
     </Modal>
   );
 };

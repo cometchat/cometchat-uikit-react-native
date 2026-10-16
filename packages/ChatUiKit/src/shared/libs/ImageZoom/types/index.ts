@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Animated, GestureResponderEvent, PanResponderGestureState, ViewProps } from "react-native";
 
 export enum SwipeDirection {
@@ -18,6 +19,7 @@ export interface ZoomableViewEvent {
 }
 
 export interface ReactNativeZoomableViewProps extends ViewProps {
+  children?: ReactNode;
   // options
   zoomEnabled?: boolean;
   panEnabled?: boolean;

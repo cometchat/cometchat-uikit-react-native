@@ -1,5 +1,6 @@
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import React, { JSX } from "react";
+import { View } from "react-native";
 import { AdditionalParams, MessageBubbleAlignmentType } from "../../shared/base/Types";
 import { DataSource, DataSourceDecorator } from "../../shared/framework";
 import { BubbleStyles, CometChatTheme } from "../../theme/type";
@@ -8,6 +9,7 @@ import { getExtensionData } from "../ExtensionModerator";
 import { LinkPreviewBubble } from "./LinkPreviewBubble";
 import { CometChatUIKit } from "../../shared";
 import { DeepPartial } from "../../shared/helper/types";
+import { previewImage, selectLinkPreviews, trimStrayParens } from "../../shared/utils/linkPreviewSelection";
 
 /**
  * Extension decorator for rendering link preview messages.
@@ -60,35 +62,40 @@ export class LinkPreviewExtensionDecorator extends DataSourceDecorator {
   ): JSX.Element {
     const loggedInUser = CometChatUIKit.loggedInUser;
     const linkData = getExtensionData(message, ExtensionConstants.linkPreview);
+    // One card per link the text goes TO (not every address the server scanned) — like React UI Kit.
+    const previews = selectLinkPreviews(linkData?.links, message.getText());
 
-    if (!linkData || linkData.links.length === 0) {
+    if (previews.length === 0) {
       return super.getTextMessageContentView(message, alignment, theme, additionalParams);
-    } else {
-      const _style: DeepPartial<BubbleStyles["linkPreviewBubbleStyles"]> =
-        message.getSender()?.getUid() === loggedInUser?.getUid()
-          ? theme.messageListStyles?.outgoingMessageBubbleStyles?.linkPreviewBubbleStyles
-          : theme.messageListStyles?.incomingMessageBubbleStyles?.linkPreviewBubbleStyles;
-      const { image, favicon, title, url, description } = linkData.links[0];
-      const img = image.length === 0 || image === favicon ? "" : image;
-      return (
-        <LinkPreviewBubble
-          link={url}
-          description={description}
-          image={img}
-          favicon={favicon}
-          ChildView={() =>
-            super.getTextMessageBubble(
-              (message as CometChat.TextMessage).getText(),
-              message as CometChat.TextMessage,
-              alignment,
-              theme,
-              additionalParams
-            )
-          }
-          title={title}
-          style={_style as CometChatTheme["linkPreviewBubbleStyles"]}
-        />
-      );
     }
+    const _style: DeepPartial<BubbleStyles["linkPreviewBubbleStyles"]> =
+      message.getSender()?.getUid() === loggedInUser?.getUid()
+        ? theme.messageListStyles?.outgoingMessageBubbleStyles?.linkPreviewBubbleStyles
+        : theme.messageListStyles?.incomingMessageBubbleStyles?.linkPreviewBubbleStyles;
+    const textView = () =>
+      super.getTextMessageBubble(
+        (message as CometChat.TextMessage).getText(),
+        message as CometChat.TextMessage,
+        alignment,
+        theme,
+        additionalParams
+      );
+    // Cards stack in link order with a small gap; the message text sits under the last one.
+    return (
+      <View style={{ gap: theme.spacing.padding.p2 }}>
+        {previews.map(({ image, favicon, title, url, description }, i) => (
+          <LinkPreviewBubble
+            key={`${i}-${url}`}
+            link={trimStrayParens(url)}
+            description={description}
+            image={previewImage(image, favicon)}
+            favicon={favicon}
+            ChildView={i === previews.length - 1 ? textView : undefined}
+            title={title}
+            style={_style as CometChatTheme["linkPreviewBubbleStyles"]}
+          />
+        ))}
+      </View>
+    );
   }
 }

@@ -28,6 +28,7 @@ import Video from 'react-native-video';
 import { Icon } from '../../icons/Icon';
 import { useTheme } from '../../../theme';
 import { useCometChatTranslation } from '../../resources/CometChatLocalizeNew';
+import { ReactNativeZoomableView } from '../../libs/ImageZoom';
 import { clampIndex, isImageMime, isVideoMime, nextIndexForSwipe } from './mediaViewerUtils';
 
 /** Default: an item is previewable if it's an image or a video. A per-kind bubble (ImagesBubble /
@@ -108,7 +109,14 @@ export const CometChatMediaViewer = ({
     mediaItemsRef.current = mediaItems;
   }, [mediaItems]);
 
+  // While an image is zoomed in, drags pan the image instead of paging.
+  const zoomedRef = useRef(false);
+  const onZoomChange = (_e: unknown, _gs: unknown, zoom: { zoomLevel: number }) => {
+    zoomedRef.current = zoom.zoomLevel > 1.01;
+  };
+
   const goTo = (idx: number) => {
+    zoomedRef.current = false;
     const clamped = clampIndex(idx, mediaItemsRef.current.length);
     currentIndexRef.current = clamped;
     setCurrentIndex(clamped);
@@ -122,7 +130,9 @@ export const CometChatMediaViewer = ({
     PanResponder.create({
       // Swipe-to-page only on IMAGE pages. On video pages the native controls own all gestures
       // (scrubbing is horizontal too), so we don't hijack them — page via the on-screen arrows (B3).
-      onMoveShouldSetPanResponder: (_, gs) => {
+      onMoveShouldSetPanResponder: (evt, gs) => {
+        // Never page during a pinch or while zoomed in.
+        if (zoomedRef.current || evt.nativeEvent.touches.length > 1) return false;
         const it = mediaItemsRef.current[currentIndexRef.current];
         const onVideo = it ? isVideoMime(it.getMimeType?.() ?? '') : false;
         return !onVideo && Math.abs(gs.dx) > 10 && Math.abs(gs.dx) > Math.abs(gs.dy);
@@ -288,13 +298,23 @@ export const CometChatMediaViewer = ({
               )}
             </View>
           ) : (
-            <Image
-              source={{ uri: current.getUrl() }}
-              style={styles.fullMedia}
-              resizeMode="contain"
-              onLoad={() => setMediaLoaded(true)}
-              onError={() => { setMediaError(true); setMediaLoaded(true); }}
-            />
+            // Pinch / double-tap to zoom. `key` resets the zoom on every page change. At 1x the zoom view
+            // hands a horizontal drag to the pager's PanResponder above; zoomed in, it keeps it to pan.
+            <ReactNativeZoomableView
+              key={currentIndex}
+              disablePanOnInitialZoom
+              onZoomAfter={onZoomChange}
+              onTransform={(z: { zoomLevel: number }) => onZoomChange(null, null, z)}
+              onPanResponderTerminationRequest={() => !zoomedRef.current}
+            >
+              <Image
+                source={{ uri: current.getUrl() }}
+                style={styles.fullMedia}
+                resizeMode="contain"
+                onLoad={() => setMediaLoaded(true)}
+                onError={() => { setMediaError(true); setMediaLoaded(true); }}
+              />
+            </ReactNativeZoomableView>
           )}
         </View>
 

@@ -115,7 +115,8 @@ export const CometChatVideoBubble = (props: CometChatVideoBubbleInterface) => {
   };
 
   useEffect(() => {
-    statusListener = eventEmitter.addListener("status", (data) => {
+    statusListener = eventEmitter.addListener("status", (event) => {
+      const data = event as { url?: string; state?: string };
       if (data["url"] == videoUrl && data["state"] == "downloading") {
         setOpening(true);
       }

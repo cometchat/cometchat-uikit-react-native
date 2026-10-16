@@ -18,6 +18,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -723,6 +724,57 @@ public class FileManager extends ReactContextBaseJavaModule {
             Log.e("TAG", "playAudio error: " + e.getMessage());
             callback.invoke("{\"success\": false, \"error\": \"" + e.getMessage() + "\"}");
         }
+    }
+
+    // Small JPEG of a local video's first frame, so a picked/sent video has a thumbnail without waiting
+    // for the server's thumbnail-generation extension (which publishes its URL before the image exists).
+    // Cached in cacheDir by source uri, so repeat calls for the same file are instant.
+    @ReactMethod
+    public void getVideoThumbnail(String uri, double maxSize, Promise promise) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+            try {
+                int side = maxSize > 0 ? (int) maxSize : 320;
+                File dir = new File(getReactApplicationContext().getCacheDir(), "cometchat-video-thumbnails");
+                if (!dir.exists()) dir.mkdirs();
+                File thumb = new File(dir, Integer.toHexString(uri.hashCode()) + "_" + uri.length() + "_" + side + ".jpg");
+                if (thumb.exists()) {
+                    promise.resolve(Uri.fromFile(thumb).toString());
+                    return;
+                }
+
+                Uri source = uri.startsWith("/") ? Uri.fromFile(new File(uri)) : Uri.parse(uri);
+                retriever.setDataSource(getReactApplicationContext(), source);
+                Bitmap frame;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                    frame = retriever.getScaledFrameAtTime(100_000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, side, side);
+                } else {
+                    Bitmap full = retriever.getFrameAtTime(100_000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                    frame = full == null ? null : scaleToFit(full, side);
+                }
+                if (frame == null) {
+                    promise.reject("thumbnail_failed", "Could not read a video frame");
+                    return;
+                }
+                try (FileOutputStream out = new FileOutputStream(thumb)) {
+                    frame.compress(Bitmap.CompressFormat.JPEG, 80, out);
+                }
+                frame.recycle();
+                promise.resolve(Uri.fromFile(thumb).toString());
+            } catch (Exception e) {
+                promise.reject("thumbnail_failed", e.getMessage(), e);
+            } finally {
+                try { retriever.release(); } catch (Exception ignored) { }
+            }
+        });
+    }
+
+    private static Bitmap scaleToFit(Bitmap source, int side) {
+        float scale = Math.min(1f, side / (float) Math.max(source.getWidth(), source.getHeight()));
+        if (scale >= 1f) return source;
+        Bitmap scaled = Bitmap.createScaledBitmap(source, Math.round(source.getWidth() * scale), Math.round(source.getHeight() * scale), true);
+        source.recycle();
+        return scaled;
     }
 
     @ReactMethod

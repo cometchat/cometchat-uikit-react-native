@@ -2,7 +2,7 @@
   "expo": {
     "name": "SampleAppExpo",
     "slug": "SampleAppExpo",
-    "version": "5.5.1",
+    "version": "5.5.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "newArchEnabled": true,
@@ -65,6 +65,17 @@
             "./assets/fonts/times_new_roman_medium.ttf",
             "./assets/fonts/times_new_roman_bold.ttf"
           ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPods": [
+              { "name": "SPTPersistentCache", "modular_headers": true },
+              { "name": "DVAssetLoaderDelegate", "modular_headers": true }
+            ]
+          }
         }
       ]
     ]

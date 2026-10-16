@@ -135,8 +135,10 @@ const AppCredentials: React.FC = () => {
         subscriptionType: CometChat.AppSettings
           .SUBSCRIPTION_TYPE_ALL_USERS as UIKitSettings['subscriptionType'],
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save credentials', error);
+      showToast(error?.message ?? 'Could not initialise with these credentials');
+      return;
     }
 
     // Navigate to the next screen.

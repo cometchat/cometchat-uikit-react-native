@@ -1,5 +1,6 @@
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { SelectedAttachment } from '../modals/SelectedAttachment';
+import { linkUploadedVideo } from '../utils/videoThumbnail';
 
 type CometChatException = InstanceType<typeof CometChat.CometChatException>;
 
@@ -52,6 +53,8 @@ export class UploadQueueService {
   private request: CometChat.UploadFileRequest | null = null;
   // Successes only — the set the send button reads. Keyed by tile id (== SDK fileId).
   private completed = new Map<string, CometChat.Attachment>();
+  // Local uri of each enqueued VIDEO, so its upload can be linked to a local thumbnail.
+  private localVideoUris = new Map<string, string>();
 
   // Kept for signature compatibility; the request API no longer exposes a presign buffer knob.
   constructor(callbacks: UploadQueueCallbacks, _opts?: { presignBufferMs?: number }) {
@@ -63,6 +66,7 @@ export class UploadQueueService {
       },
       onFileUploaded: (fileId: string, att: CometChat.Attachment) => {
         this.completed.set(fileId, att);
+        linkUploadedVideo(att?.getUrl?.(), this.localVideoUris.get(fileId));
         this.callbacks.onFileComplete(fileId, att);
       },
       onFileFailure: (fileId: string, error: CometChatException) => {
@@ -94,6 +98,7 @@ export class UploadQueueService {
    */
   enqueue(attachment: SelectedAttachment, target?: { receiver?: string; receiverType?: string }): void {
     const { fileId, file } = attachment;
+    if (file.type?.startsWith('video/')) this.localVideoUris.set(fileId, file.uri);
     if (!this.request) {
       this.request = CometChat.createUploadFileRequest(target?.receiver ?? '', target?.receiverType ?? '');
       this.request.setConcurrency(UPLOAD_CONCURRENCY);
@@ -111,6 +116,7 @@ export class UploadQueueService {
     // Aborts an in-flight upload or drops an already-uploaded file — either way its slot frees.
     this.request?.removeAttachment(tileId);
     this.completed.delete(tileId);
+    this.localVideoUris.delete(tileId);
   }
 
   retry(tileId: string, file: SelectedAttachment): void {
@@ -127,6 +133,7 @@ export class UploadQueueService {
     this.request?.clearAll();
     this.request = null;
     this.completed.clear();
+    this.localVideoUris.clear();
   }
 
   get completedAttachments(): CometChat.Attachment[] {

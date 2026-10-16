@@ -1,21 +1,19 @@
-buildscript {
-  repositories {
-      google()
-      mavenCentral()
-  }
-
-  dependencies {
-    classpath 'com.android.tools.build:gradle:4.2.0'
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22"
-  }
-}
+// AGP and the Kotlin Gradle plugin come from the host app's root project (as in every RN
+// template since 0.71). Pinning them here via a `buildscript` block fights the app's own
+// versions — AGP 9 / Gradle 9 (RN 0.87) will not build with the old pins at all.
 
 def isNewArchitectureEnabled() {
   return rootProject.hasProperty("newArchEnabled") &&  rootProject.getProperty("newArchEnabled") == "true"
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
+
+// AGP 9 can compile Kotlin itself ("built-in Kotlin"), and applying kotlin-android on top of
+// that fails. Apply it only when nothing has registered the `kotlin` extension yet, so this
+// works both on AGP 9 and on the AGP 8 apps of older RN versions.
+if (project.extensions.findByName("kotlin") == null) {
+  apply plugin: 'org.jetbrains.kotlin.android'
+}
 
 if (isNewArchitectureEnabled()) {
   apply plugin: 'com.facebook.react'
@@ -30,6 +28,7 @@ def getExtOrIntegerDefault(name) {
 }
 
 android {
+  namespace "com.reactnativecometchatuikit"
   compileSdkVersion getExtOrIntegerDefault('compileSdkVersion')
 
   defaultConfig {
@@ -37,102 +36,37 @@ android {
     targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
   }
+
+  buildFeatures {
+    buildConfig true
+  }
+
   buildTypes {
     release {
       minifyEnabled false
     }
   }
 
-  lintOptions {
+  lint {
     disable 'GradleCompatible'
   }
 
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_1_8
-    targetCompatibility JavaVersion.VERSION_1_8
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
   }
-
-           
 }
 
 repositories {
   mavenCentral()
   google()
-
-  def found = false
-  def defaultDir = null
-  def androidSourcesName = 'React Native sources'
-
-  if (rootProject.ext.has('reactNativeAndroidRoot')) {
-    defaultDir = rootProject.ext.get('reactNativeAndroidRoot')
-  } else {
-    defaultDir = new File(
-      projectDir,
-      '/../../../node_modules/react-native/android'
-    )
-  }
-
-  if (defaultDir.exists()) {
-    maven {
-      url defaultDir.toString()
-      name androidSourcesName
-    }
-
-    logger.info(":${project.name}:reactNativeAndroidRoot ${defaultDir.canonicalPath}")
-    found = true
-  } else {
-    def parentDir = rootProject.projectDir
-
-    1.upto(5, {
-      if (found) return true
-      parentDir = parentDir.parentFile
-
-      def androidSourcesDir = new File(
-        parentDir,
-        'node_modules/react-native'
-      )
-
-      def androidPrebuiltBinaryDir = new File(
-        parentDir,
-        'node_modules/react-native/android'
-      )
-
-      if (androidPrebuiltBinaryDir.exists()) {
-        maven {
-          url androidPrebuiltBinaryDir.toString()
-          name androidSourcesName
-        }
-
-        logger.info(":${project.name}:reactNativeAndroidRoot ${androidPrebuiltBinaryDir.canonicalPath}")
-        found = true
-      } else if (androidSourcesDir.exists()) {
-        maven {
-          url androidSourcesDir.toString()
-          name androidSourcesName
-        }
-
-        logger.info(":${project.name}:reactNativeAndroidRoot ${androidSourcesDir.canonicalPath}")
-        found = true
-      }
-    })
-  }
-
-  if (!found) {
-    throw new GradleException(
-      "${project.name}: unable to locate React Native android sources. " +
-      "Ensure you have you installed React Native as a dependency in your project and try again."
-    )
-  }
 }
 
-
 dependencies {
-    //noinspection GradleDynamicVersion
-  implementation "com.facebook.react:react-native:+"
-    implementation 'androidx.appcompat:appcompat:1.4.1'
-    implementation 'com.google.android.material:material:1.5.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
-// From node_modules
+  // Version is supplied by the React Native Gradle Plugin of the host app.
+  implementation "com.facebook.react:react-android"
+  implementation 'androidx.appcompat:appcompat:1.7.1'
+  implementation 'com.google.android.material:material:1.12.0'
 }
 
 if (isNewArchitectureEnabled()) {

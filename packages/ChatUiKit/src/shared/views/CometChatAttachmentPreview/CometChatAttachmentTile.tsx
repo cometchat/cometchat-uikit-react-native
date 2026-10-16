@@ -22,6 +22,7 @@ import { deepMerge } from '../../helper/helperFunctions';
 import { SelectedAttachment } from '../../modals/SelectedAttachment';
 import { Icon } from '../../icons/Icon';
 import { getFileTypeIcon } from '../../constants/UIKitConstants';
+import { useLocalVideoThumbnail } from '../../utils/videoThumbnail';
 
 const { SoundPlayer } = NativeModules;
 
@@ -459,6 +460,8 @@ export const CometChatAttachmentTile = ({
     style ?? {}
   );
   const { fileId, file, uploadState, uploadProgress } = attachment;
+  const isVideo = file.type.startsWith('video/');
+  const videoThumbnail = useLocalVideoThumbnail({ localUri: isVideo ? file.uri : undefined });
 
   // Audio (audio/*) renders as a player card (play/pause + seek + time), not the file card.
   if (file.type.startsWith('audio/')) {
@@ -670,24 +673,29 @@ export const CometChatAttachmentTile = ({
           borderColor: theme.color.error,
         }, s.mediaTileStyle]}
       >
-        {file.type.startsWith('video/') ? (
-          // A local video file can't render as an <Image>, so show its FIRST FRAME via a paused,
-          // muted react-native-video (no controls, never plays) as the thumbnail. The dark scrim
-          // sits behind it so the tile reads as a video before the frame decodes.
+        {isVideo ? (
+          // A local video file can't render as an <Image>: show its natively generated first-frame
+          // JPEG. Only if that isn't available, fall back to a paused, muted react-native-video
+          // (a full player per tile — heavy with several videos). The dark scrim sits behind so
+          // the tile reads as a video before either appears.
           <>
             <View
               pointerEvents="none"
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.color.mediaScrim }}
             />
-            <Video
-              source={{ uri: file.uri }}
-              paused
-              muted
-              repeat={false}
-              controls={false}
-              resizeMode="cover"
-              style={styles.fill}
-            />
+            {videoThumbnail ? (
+              <Image source={{ uri: videoThumbnail }} style={styles.fill} resizeMode="cover" />
+            ) : videoThumbnail === null ? (
+              <Video
+                source={{ uri: file.uri }}
+                paused
+                muted
+                repeat={false}
+                controls={false}
+                resizeMode="cover"
+                style={styles.fill}
+              />
+            ) : null}
           </>
         ) : (
           <Image

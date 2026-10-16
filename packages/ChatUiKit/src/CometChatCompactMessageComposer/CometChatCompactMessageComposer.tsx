@@ -18,12 +18,12 @@ import {
   Dimensions,
   ImageSourcePropType,
   ImageStyle,
-  InteractionManager,
   Keyboard,
   ColorValue,
   TouchableWithoutFeedbackProps,
   ScrollView,
   StyleSheet,
+  StatusBar,
 } from 'react-native';
 import { JSX } from 'react';
 import RichTextEditor, {
@@ -111,6 +111,7 @@ import {
   getUnixTimestampInMilliseconds,
   messageStatus,
 } from '../shared/utils/CometChatMessageHelper';
+import { runAfterInteractions } from '../shared/utils/runAfterInteractions';
 import { MessageTypeConstants, ReceiverTypeConstants, ConversationOptionConstants, MentionsVisibility, MentionsTargetElement, ViewAlignment, EnterKeyBehavior, DISABLED_BUTTON_OPACITY } from '../shared/constants/UIKitConstants';
 import { MessageEvents } from '../shared/events';
 import { CometChatUIEventHandler } from '../shared/events/CometChatUIEventHandler/CometChatUIEventHandler';
@@ -118,6 +119,7 @@ import { CometChatMessageEvents } from '../shared/events/CometChatMessageEvents'
 import { ICONS } from './resources';
 import { CommonUtils } from '../shared/utils/CommonUtils';
 import { isCursorWithinMentionRange, getMentionRangeAtCursor } from '../shared/utils/MentionUtils';
+import { escapeTypedMentionTokens, insertMentionTokens } from '../shared/utils/mentionTokens';
 import { stripMarkdown } from '../shared/utils/MarkdownUtils';
 import { commonVars } from '../shared/base/vars';
 import { permissionUtil } from '../shared/utils/PermissionUtil';
@@ -3042,7 +3044,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       // Update cursor position to the start of the first deleted mention
       const firstStart = overlaps[0].start;
       ignoreSelectionUntil.current = Date.now() + 500;
-      InteractionManager.runAfterInteractions(() => {
+      runAfterInteractions(() => {
         inputRef.current?.setSelection?.(firstStart);
         setSelectionPosition({ start: firstStart, end: firstStart });
         syncMentionRanges();
@@ -3198,7 +3200,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
           targetPosition = mentionRange.end;
         }
         if (targetPosition !== cursorPos) {
-          InteractionManager.runAfterInteractions(() => {
+          runAfterInteractions(() => {
             inputRef.current?.setSelection?.(targetPosition);
             setSelectionPosition({ start: targetPosition, end: targetPosition });
           });
@@ -3437,24 +3439,9 @@ export const CometChatCompactMessageComposer = React.forwardRef(
      * Convert mentions to underlying text format for sending
      * Iterates through mentionMap and replaces prompt text with underlying text
      */
-    const getRegexString = (str: string): string => {
-      // Get an array of the entries in the map using the spread operator
-      const entries = [...mentionMap.current.entries()].reverse();
-
-      let uidInput = str;
-
-      // Iterate over the array in reverse order
-      entries.forEach(([key, value]) => {
-        const [start, end] = key.split('_').map(Number);
-
-        const pre = uidInput.substring(0, start);
-        const post = uidInput.substring(end);
-
-        uidInput = pre + value.underlyingText + post;
-      });
-
-      return uidInput;
-    };
+    const getRegexString = (str: string): string =>
+      // Token-looking text the user typed is escaped so it is stored as text, not a live mention.
+      insertMentionTokens(str, mentionMap.current.entries());
 
     /**
      * Replace mention display names with underlying tokens in the given text.
@@ -3464,11 +3451,14 @@ export const CometChatCompactMessageComposer = React.forwardRef(
      * when the same display name appears multiple times.
      */
     const replaceMentionsWithTokens = (text: string): string => {
-      if (mentionMap.current.size === 0) return text;
+      // Escape token-looking text the user typed first; the picked mentions inserted below are
+      // the only real tokens.
+      const typed = escapeTypedMentionTokens(text);
+      if (mentionMap.current.size === 0) return typed;
       const entries = [...mentionMap.current.entries()].sort((a, b) => {
         return parseInt(a[0].split('_')[0]) - parseInt(b[0].split('_')[0]);
       });
-      let result = text;
+      let result = typed;
       let offset = 0;
       for (const [, value] of entries) {
         const displayName = value.promptText || '';
@@ -3514,8 +3504,10 @@ export const CometChatCompactMessageComposer = React.forwardRef(
             itemLookup.set(item.id, item);
           }
 
-          // Single-pass: collect matches, build resolved text via array join
-          const mentionRegex = /<@(?:uid|all):(.*?)>/g;
+          // Single-pass: collect matches, build resolved text via array join. The second
+          // alternative is token text the user TYPED, stored escaped (`&lt;@all:…`); it goes back
+          // into the editor as the literal `<@all:…` they typed, never as a mention.
+          const mentionRegex = /<@(?:uid|all):(.*?)>|&lt;(@(?:uid|all):)/g;
           let match: RegExpExecArray | null;
           const segments: string[] = [];
           let lastIndex = 0;
@@ -3527,6 +3519,13 @@ export const CometChatCompactMessageComposer = React.forwardRef(
             const before = rawText.substring(lastIndex, match.index);
             segments.push(before);
             resolvedLength += before.length;
+
+            if (match[2] !== undefined) {
+              segments.push("<" + match[2]);
+              resolvedLength += match[2].length + 1;
+              lastIndex = match.index + match[0].length;
+              continue;
+            }
 
             const item = itemLookup.get(match[1]);
             const displayText = item?.promptText ?? `@${match[1]}`;
@@ -4991,8 +4990,13 @@ export const CometChatCompactMessageComposer = React.forwardRef(
         {/* KeyboardAvoidingView wrapper */}
         <KeyboardAvoidingView
           key={id}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.select({ ios: kbOffset })}
+          // "padding" on Android too: with edge-to-edge (always on from RN 0.87 / targetSdk 36) the window no
+          // longer resizes for the keyboard, and "height" squashes this composer instead of lifting it.
+          // When the window does resize (adjustResize), the keyboard overlap is 0 and padding adds nothing.
+          behavior='padding'
+          // The view is measured from its parent, the keyboard from the top of the screen: offset by
+          // what sits above the parent — the top safe area on iOS, the status bar on Android.
+          keyboardVerticalOffset={Platform.select({ ios: kbOffset, android: StatusBar.currentHeight ?? 0 })}
           {...keyboardAvoidingViewProps}
         >
           {/* Outer wrapper with padding (matches Figma: Message Composer) */}

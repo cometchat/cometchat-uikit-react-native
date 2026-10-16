@@ -6,7 +6,6 @@ import { useTheme } from '../../../theme';
 import { useCompTheme } from '../../../theme/hook';
 import { deepMerge } from '../../helper/helperFunctions';
 import { CometChatUIKit } from '../../CometChatUiKit';
-import { CometChatMessageEvents } from '../../events/CometChatMessageEvents';
 import { CometChatMediaViewer } from '../CometChatMediaViewer';
 import { CometChatCaptionText } from '../CometChatCaptionText';
 import { Icon } from '../../icons/Icon';
@@ -81,14 +80,14 @@ const ImageCell = ({
       {showPlaceholder ? (
         <View
           testID="grid-cell-nopreview"
-          style={[StyleSheet.absoluteFillObject, borderStyle, { backgroundColor: theme.color.neutral200, justifyContent: 'center', alignItems: 'center' }]}
+          style={[StyleSheet.absoluteFill, borderStyle, { backgroundColor: theme.color.neutral200, justifyContent: 'center', alignItems: 'center' }]}
         >
           <Icon name="unknown-file-type" size={theme.spacing.spacing.s12} />
         </View>
       ) : (
         <Image
           source={{ uri: attachment.getUrl() }}
-          style={[StyleSheet.absoluteFillObject, borderStyle]}
+          style={[StyleSheet.absoluteFill, borderStyle]}
           resizeMode="cover"
           onError={() => setFailed(true)}
         />
@@ -98,7 +97,7 @@ const ImageCell = ({
         <View
           testID="grid-overflow"
           pointerEvents="none"
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.color.mediaOverlay, justifyContent: 'center', alignItems: 'center' }, overflowOverlayStyle]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: theme.color.mediaOverlay, justifyContent: 'center', alignItems: 'center' }, overflowOverlayStyle]}
         >
           {/* heading1.bold = { fontSize: 24, fontWeight: '700' }; letterSpacing -0.5 is a micro-adjust. */}
           <Text style={[{ ...theme.typography.heading1.bold, color: theme.color.staticWhite, letterSpacing: -0.5 }, overflowTextStyle]}>{`+${overflowCount}`}</Text>
@@ -243,28 +242,6 @@ export function CometChatImagesBubble({
   );
   const caption = message.getCaption() ?? '';
   const isSentByMe = message.getSender()?.getUid() === CometChatUIKit.loggedInUser?.getUid();
-
-  // §8.7 — refresh the local copy when the server edits the message in.
-  useEffect(() => {
-    const listenerId = `ImagesBubble_${message.getId?.() ?? message.getMuid?.() ?? Date.now()}`;
-    CometChatMessageEvents.addListener(
-      CometChatMessageEvents.messageEdited,
-      listenerId,
-      (edited: CometChat.BaseMessage) => {
-        const editedId = edited.getId?.();
-        const editedMuid = edited.getMuid?.();
-        const myId = message.getId?.();
-        const myMuid = message.getMuid?.();
-        if (
-          edited instanceof CometChat.MediaMessage &&
-          ((myId && editedId && myId === editedId) || (myMuid && editedMuid && myMuid === editedMuid))
-        ) {
-          setMessage(edited);
-        }
-      }
-    );
-    return () => CometChatMessageEvents.removeListener(CometChatMessageEvents.messageEdited, listenerId);
-  }, []);
 
   useEffect(() => {
     setMessage(initialMessage);

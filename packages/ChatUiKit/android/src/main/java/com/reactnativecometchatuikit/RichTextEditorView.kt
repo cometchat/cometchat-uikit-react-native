@@ -383,9 +383,14 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 changeStart = start
                 removedCount = count
                 addedCount = after
-                // Save selected text for URL-paste-over-selection detection.
-                // When count > 0 and after > 0, it's a replace (paste over selection).
-                if (count > 0 && after > 0 && s != null && start + count <= s.length) {
+                // Save selected text for URL-paste-over-selection detection: a replace counts only when
+                // the user had exactly that text highlighted. Keyboards also replace text while typing
+                // (rewriting "www" -> "Www.", autocorrect) but with a bare cursor, and those must not
+                // become links. No clipboard read here: Android 12+ toasts on every read.
+                val selStart = minOf(selectionStart, selectionEnd)
+                val selEnd = maxOf(selectionStart, selectionEnd)
+                if (count > 0 && after > 0 && s != null && start + count <= s.length &&
+                    selStart != selEnd && selStart == start && selEnd == start + count) {
                     savedSelectedTextForPaste = s.subSequence(start, start + count).toString()
                 } else {
                     savedSelectedTextForPaste = null
@@ -2924,8 +2929,16 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         if (j >= chars.size) return null
         if (j + 1 >= chars.size || chars[j + 1] != '(') return null
         val urlStart = j + 2
+        // Balanced: `(planet)` inside the address is kept and only an unmatched `)` closes the
+        // link. Stopping at the first `)` turned a pasted [Mercury](…/Mercury_(planet)) into
+        // "Mercury" linking to …/Mercury_(planet plus a stray ")".
         var k = urlStart
-        while (k < chars.size && chars[k] != ')') k++
+        var depth = 0
+        while (k < chars.size) {
+            if (chars[k] == '(') depth++
+            else if (chars[k] == ')') { if (depth == 0) break; depth-- }
+            k++
+        }
         if (k >= chars.size) return null
         val linkText = String(chars, from + 1, j - from - 1)
         val linkURL = String(chars, urlStart, k - urlStart)

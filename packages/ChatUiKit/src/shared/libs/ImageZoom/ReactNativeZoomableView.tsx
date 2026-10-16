@@ -3,7 +3,6 @@ import {
   Animated,
   Easing,
   GestureResponderEvent,
-  InteractionManager,
   PanResponder,
   PanResponderGestureState,
   StyleSheet,
@@ -18,6 +17,7 @@ import {
   ZoomableViewEvent,
 } from './types';
 import { applyPanBoundariesToOffset, calcGestureTouchDistance, calcNewScaledOffsetForZoomCentering, getBoundaryCrossedAnim, getPanMomentumDecayAnim, getZoomToAnimation } from './helper';
+import { runAfterInteractions } from "../../utils/runAfterInteractions";
 
 
 const initialState = {
@@ -54,7 +54,7 @@ class ReactNativeZoomableView extends Component<
   ReactNativeZoomableViewProps,
   ReactNativeZoomableViewState
 > {
-  zoomSubjectWrapperRef: RefObject<View | null>;
+  zoomSubjectWrapperRef: RefObject<React.ComponentRef<typeof View> | null>;
   gestureHandlers: any;
   doubleTapFirstTapReleaseTimestamp!: number | any;
 
@@ -152,7 +152,7 @@ class ReactNativeZoomableView extends Component<
         this.props.onMoveShouldSetPanResponderCapture?.(evt, gestureState),
     });
 
-    this.zoomSubjectWrapperRef = createRef<View>();
+    this.zoomSubjectWrapperRef = createRef<React.ComponentRef<typeof View>>();
 
     if (this.props.zoomAnimatedValue)
       this.zoomAnim = this.props.zoomAnimatedValue;
@@ -332,7 +332,7 @@ class ReactNativeZoomableView extends Component<
    */
   private grabZoomSubjectOriginalMeasurements = () => {
     // make sure we measure after animations are complete
-    InteractionManager.runAfterInteractions(() => {
+    runAfterInteractions(() => {
       // this setTimeout is here to fix a weird issue on iOS where the measurements are all `0`
       // when navigating back (react-navigation stack) from another view
       // while closing the keyboard at the same time

@@ -70,7 +70,10 @@ import { ChatConfigurator } from "../shared/framework/ChatConfigurator";
 import { deepClone, deepMerge } from "../shared/helper/helperFunctions";
 import { Icon, IconName } from "../shared/icons/Icon";
 import { CometChatMessageTemplate } from "../shared/modals/CometChatMessageTemplate";
-import { getUnixTimestamp, messageStatus } from "../shared/utils/CometChatMessageHelper";
+import { messageStatus } from "../shared/utils/CometChatMessageHelper";
+import { groupMemberAddedRows } from "../shared/utils/groupMemberAddedRows";
+import { selectLinkPreview } from "../shared/utils/linkPreviewSelection";
+import { unescapeTypedMentionTokens } from "../shared/utils/mentionTokens";
 import { CommonUtils } from "../shared/utils/CommonUtils";
 import { CometChatBatchMediaContext, BatchMediaResult } from "../shared/utils/batchMediaContext";
 import { CometChatUIKit } from "../shared/CometChatUiKit/CometChatUIKit";
@@ -965,9 +968,9 @@ export const CometChatMessageList = memo(
         });
 
         const fileIncoming = deepMerge(incomingBubbleStyles, incomingBubbleStyles.fileBubbleStyles ?? {});
-        if (fileIncoming.containerStyle) fileIncoming.containerStyle.height = undefined;
+        if (fileIncoming.containerStyle) Object.assign(fileIncoming.containerStyle, { height: undefined });
         const fileOutgoing = deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.fileBubbleStyles ?? {});
-        if (fileOutgoing.containerStyle) fileOutgoing.containerStyle.height = undefined;
+        if (fileOutgoing.containerStyle) Object.assign(fileOutgoing.containerStyle, { height: undefined });
 
         styleCache.set(MessageTypeConstants.file, {
           incoming: fileIncoming,
@@ -975,9 +978,9 @@ export const CometChatMessageList = memo(
         });
 
         const audioIncoming = deepMerge(incomingBubbleStyles, incomingBubbleStyles.audioBubbleStyles ?? {});
-        if (audioIncoming.containerStyle) audioIncoming.containerStyle.height = undefined;
+        if (audioIncoming.containerStyle) Object.assign(audioIncoming.containerStyle, { height: undefined });
         const audioOutgoing = deepMerge(outgoingBubbleStyles, outgoingBubbleStyles.audioBubbleStyles ?? {});
-        if (audioOutgoing.containerStyle) audioOutgoing.containerStyle.height = undefined;
+        if (audioOutgoing.containerStyle) Object.assign(audioOutgoing.containerStyle, { height: undefined });
 
         styleCache.set(MessageTypeConstants.audio, {
           incoming: audioIncoming,
@@ -3581,15 +3584,10 @@ export const CometChatMessageList = memo(
             message["action"] = "banned";
             newMessage(message, false);
           },
-          ccGroupMemberAdded: ({ message, usersAdded, userAddedIn }: any) => {
-            usersAdded.forEach((user: any) => {
-              message["message"] = `${loggedInUser.current?.getName()} added ${user.name}`;
-              message["muid"] = String(getUnixTimestamp());
-              message["sentAt"] = getUnixTimestamp();
-              message["actionOn"] = user;
-              message["action"] = "added";
-              newMessage(message, false);
-            });
+          ccGroupMemberAdded: (event: any) => {
+            groupMemberAddedRows(event, loggedInUser.current?.getName()).forEach((row) =>
+              newMessage(row, false)
+            );
           },
           ccGroupMemberKicked: ({ message }: any) => {
             message["action"] = "kicked";
@@ -3846,7 +3844,8 @@ export const CometChatMessageList = memo(
             }
             if (item.getType() === MessageTypeConstants.text) {
               let linkData = getExtensionData(item, ExtensionConstants.linkPreview);
-              if (linkData && linkData.links.length != 0) {
+              // Same choice as the bubble: no card (e.g. every address is in code) → text style.
+              if (selectLinkPreview(linkData?.links, (item as CometChat.TextMessage).getText())) {
                 return ExtensionConstants.linkPreview;
               }
             }
@@ -4493,7 +4492,7 @@ export const CometChatMessageList = memo(
         // getPlainString resolves mention tokens but leaves the rich-text wire format alone.
         // copyMessageText puts clean plain text on the clipboard for every other app and keeps
         // the colour in a private representation our own composer restores on paste.
-        ClipboardPasteHandler.copyMessageText(getPlainString(item["text"], item), textFormatters);
+        ClipboardPasteHandler.copyMessageText(unescapeTypedMentionTokens(getPlainString(item["text"], item)), textFormatters);
         // Defer modal dismiss to next frame to avoid Fabric race condition
         // where unmounting the Modal while Clipboard is still accessing views
         // causes EXC_BAD_ACCESS (SIGSEGV) at null pointer in mount phase.
@@ -4558,7 +4557,8 @@ export const CometChatMessageList = memo(
         // The app's own token becomes UI Kit markup BEFORE stripping, the same order the pinned
         // panel uses. Without it a consumer's `(#e11d48)text()` reaches the share sheet verbatim.
         let strippedText = stripMarkdown(applyRawFormatters(rawText, textFormatters));
-        let textMessage = getPlainString(strippedText, messageObject);
+        // Tokens become names; typed token text (stored escaped) reads as typed.
+        let textMessage = unescapeTypedMentionTokens(getPlainString(strippedText, messageObject));
         let fileUrl = messageObject.getData()["url"];
 
         const getFileName = () => {
@@ -5819,7 +5819,9 @@ export const CometChatMessageList = memo(
                   onViewableItemsChanged={handleViewableItemsChanged}
                   // Performance optimizations
                   windowSize={10}
-                  removeClippedSubviews={Platform.OS === 'android'}
+                  // ENG-40210: keep clipping off. On Android it attaches/detaches rows outside Fabric's
+                  // mount queue and crashes (addViewAt IndexOutOfBounds), after a push tap and on plain launch.
+                  removeClippedSubviews={false}
                   maxToRenderPerBatch={5}
                   updateCellsBatchingPeriod={100}
                   initialNumToRender={15}

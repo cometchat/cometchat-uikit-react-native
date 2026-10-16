@@ -3,6 +3,7 @@ import React, { JSX } from "react";
 import { ColorValue, Linking, Text, TextStyle } from "react-native";
 import { emailPattern, phoneNumPattern, urlPattern } from "../../constants/UIKitConstants";
 import { CometChatTextFormatter } from "../CometChatTextFormatter";
+import { isCode } from "../codeElements";
 
 export class CometChatUrlsFormatter extends CometChatTextFormatter {
   protected style: {
@@ -117,6 +118,13 @@ export class CometChatUrlsFormatter extends CometChatTextFormatter {
       return <Text>{str}</Text>;
     } else if (React.isValidElement(str)) {
       // str is a React element
+      if ((str as React.ReactElement<any>).props.onPress || isCode(str)) {
+        // Already a link (a markdown `[label](url)` from the rich-text formatter). Linkifying its
+        // label again nests a second link inside it, and the inner one wins the tap: the label
+        // of `[www.google.com](https://drive…)` opened google.com instead of the Drive address.
+        // Code is literal: an address inside `backticks` stays text.
+        return str;
+      }
       if ((str as React.ReactElement<any>).props.children) {
         // If the React element have children, we map over these children
         // and call addMentionsSpan recursively for each child.

@@ -18,6 +18,7 @@ import {
   CometChatUIEvents,
   CometChatUIKit,
   UIKitSettings,
+  useTheme,
 } from '@cometchat/chat-uikit-react-native';
 
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -300,8 +301,8 @@ const AppContent = (): React.ReactElement => {
 
   // Once initialization is complete, render the main app UI.
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
-      <CometChatThemeProvider>
+    <CometChatThemeProvider>
+      <ThemedSafeArea>
         {/* Render the incoming call UI if the user is logged in and a call is received */}
         {isLoggedIn && callReceived && incomingCall.current ? (
           <CometChatIncomingCall
@@ -323,7 +324,24 @@ const AppContent = (): React.ReactElement => {
           isLoggedIn={isLoggedIn}
           hasValidAppCredentials={hasValidAppCredentials}
         />
-      </CometChatThemeProvider>
+      </ThemedSafeArea>
+    </CometChatThemeProvider>
+  );
+};
+
+/**
+ * Paints the status- and navigation-bar insets with the theme background. Android is
+ * edge-to-edge since RN 0.87 / targetSdk 36 (StatusBar `backgroundColor` is gone and
+ * windowOptOutEdgeToEdgeEnforcement is ignored), so without this the insets showed the
+ * native window background — light even in dark mode, hiding the light status-bar icons.
+ */
+const ThemedSafeArea = ({children}: {children: React.ReactNode}) => {
+  const theme = useTheme();
+  return (
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={{flex: 1, backgroundColor: theme.color.background1}}>
+      {children}
     </SafeAreaView>
   );
 };

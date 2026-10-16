@@ -8,9 +8,13 @@ import react_native_cometchat_push_notifications
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-   var window: UIWindow?
+  // SceneDelegate creates and owns the window, but this property must stay:
+  // React Native still reads `application.delegate.window` directly, in
+  // RCTDeviceInfo.interfaceOrientationDidChange and RCTLogBoxView. SceneDelegate assigns it.
+  var window: UIWindow?
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   func application(
     _ application: UIApplication,
@@ -34,15 +38,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // (to honour showInForeground + emit notificationTapped), so the app does
     // not set one here.
 
-        window = UIWindow(frame: UIScreen.main.bounds)
-
-        factory.startReactNative(
-      withModuleName: "sampleapp",
-      in: window,
-      launchOptions: launchOptions
-    )
+    // React Native is started by SceneDelegate once a UIWindowScene exists.
+    self.launchOptions = launchOptions
 
     return true
+  }
+
+  // MARK: - UIScene Life Cycle
+
+  func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let configuration = UISceneConfiguration(
+      name: "Default Configuration",
+      sessionRole: connectingSceneSession.role
+    )
+    configuration.delegateClass = SceneDelegate.self
+    return configuration
   }
 
    // MARK: - Standard APNs Token Methods

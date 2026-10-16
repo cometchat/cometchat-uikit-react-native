@@ -1,8 +1,7 @@
-import { NativeModules, NativeEventEmitter } from 'react-native';
+import { Image, NativeModules, NativeEventEmitter } from 'react-native';
 const {CometChatSoundModule} = NativeModules ;
 var IsAndroid = CometChatSoundModule.IsAndroid;
 var IsWindows = CometChatSoundModule.IsWindows;
-import resolveAssetSource from "react-native/Libraries/Image/resolveAssetSource";
 var eventEmitter = new NativeEventEmitter(CometChatSoundModule);
 
 var nextKey = 0;
@@ -36,7 +35,7 @@ function setAndroidVolumes(sound) {
 
 class Sound {
   constructor(filename, basePath, onError, options) {
-    var asset = resolveAssetSource(filename);
+    var asset = Image.resolveAssetSource(filename);
     if (asset) {
       this._filename = asset.uri;
       onError = basePath;

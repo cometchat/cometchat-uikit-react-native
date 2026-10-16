@@ -9,6 +9,7 @@ import {
   LayoutChangeEvent,
   TextLayoutEvent,
   Platform,
+  StyleSheet,
 } from "react-native";
 import {
   CometChatMentionsFormatter,
@@ -47,6 +48,32 @@ export const CometChatTextBubble = (props: CometChatTextBubbleInterface) => {
     </View>
   );
 };
+
+const FONT_METRIC_KEYS = ["fontWeight", "fontStyle", "fontFamily", "fontSize"] as const;
+
+/** True when some element in the tree sets its own font (bold, italic, code, a mention chip…). */
+function hasNestedFontStyle(node: React.ReactNode): boolean {
+  if (Array.isArray(node)) return node.some(hasNestedFontStyle);
+  if (!React.isValidElement(node)) return false;
+  const props: any = node.props;
+  const style = StyleSheet.flatten(props.style) as TextStyle | undefined;
+  if (style && FONT_METRIC_KEYS.some((key) => style[key] != null)) return true;
+  return hasNestedFontStyle(props.children);
+}
+
+/**
+ * On Android a lineHeight makes the text a wrapping (non-boring) layout, and with nested font
+ * styles React Native sizes the Text a fraction narrower than the styled text draws: the last
+ * word of `**Tom & Jerry**` wraps onto a line the bubble has no room for and "Jerry" disappears.
+ * Such content uses the font's own line spacing instead; plain text keeps the theme's lineHeight.
+ */
+function withMeasurableLineHeight(
+  textStyle: StyleProp<TextStyle> | undefined,
+  content: React.ReactNode
+): StyleProp<TextStyle> | undefined {
+  if (Platform.OS !== "android" || !hasNestedFontStyle(content)) return textStyle;
+  return [textStyle, { lineHeight: undefined }];
+}
 
 /**
  * Recursively apply textStyle to all Text elements within a tree.
@@ -111,6 +138,11 @@ export const CometChatTextBubbleText = (
     }
     return finalText as string | JSX.Element;
   }, [text, textFormatters]);
+
+  const contentTextStyle = useMemo(
+    () => withMeasurableLineHeight(textStyle, formattedText),
+    [textStyle, formattedText]
+  );
 
   // Reset state only when text actually changes
   useLayoutEffect(() => {
@@ -192,9 +224,9 @@ export const CometChatTextBubbleText = (
     if (!viewChildren) return null;
     return viewChildren.map((child) => {
       if (!React.isValidElement(child)) return child;
-      return applyTextStyleDeep(child as React.ReactElement<any>, textStyle);
+      return applyTextStyleDeep(child as React.ReactElement<any>, contentTextStyle);
     });
-  }, [viewChildren, textStyle]);
+  }, [viewChildren, contentTextStyle]);
 
   // Only measure string content via onTextLayout — View-based uses child count instead
   const needsMeasurement = containerWidth !== null && !isViewBased && !measuredCacheRef.current[hiddenTextKey];
@@ -207,7 +239,7 @@ export const CometChatTextBubbleText = (
           key={hiddenTextKey}
           style={[
             { position: "absolute", left: 0, top: -10000, width: containerWidth!, opacity: 0 },
-            textStyle as any,
+            contentTextStyle as any,
           ]}
           onTextLayout={onMeasuredTextLayout}
           accessible={false}
@@ -224,7 +256,7 @@ export const CometChatTextBubbleText = (
         </View>
       ) : (
         <Text
-          style={textStyle}
+          style={contentTextStyle}
           numberOfLines={isExpanded ? undefined : collapseLines}
           ellipsizeMode='tail'
         >

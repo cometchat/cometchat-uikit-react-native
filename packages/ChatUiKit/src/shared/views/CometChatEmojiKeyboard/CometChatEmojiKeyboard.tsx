@@ -279,7 +279,7 @@ const CometChatEmojiKeyboard: React.FC<CometChatEmojiKeyboardProps> = ({
         showsVerticalScrollIndicator={false}
         style={styles.flatList}
         initialNumToRender={80}
-        removeClippedSubviews={true}
+        removeClippedSubviews={Platform.OS !== 'android'} // ENG-40210: clipping crashes Fabric on Android
       />
     );
   };

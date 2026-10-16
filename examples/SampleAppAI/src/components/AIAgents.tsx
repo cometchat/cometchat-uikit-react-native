@@ -18,7 +18,7 @@ type AIAgentNavigationProp = StackNavigationProp<RootStackParamList, 'Messages'>
 const AppBarOptions: React.FC<{
   onPress: () => void;
   loggedInUser: CometChat.User;
-  avatarContainerRef: React.RefObject<View | null>;
+  avatarContainerRef: React.RefObject<React.ComponentRef<typeof View> | null>;
 }> = ({ onPress, loggedInUser, avatarContainerRef }) => {
   return (
     <View ref={avatarContainerRef}>
@@ -57,7 +57,7 @@ const AIAgents: React.FC = () => {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const tooltipPosition = useRef({pageX: 0, pageY: 0});
-  const avatarContainerRef = useRef<View>(null);
+  const avatarContainerRef = useRef<React.ComponentRef<typeof View>>(null);
   const loggedInUser = useRef<CometChat.User>(
     CometChatUIKit.loggedInUser!,
   ).current;

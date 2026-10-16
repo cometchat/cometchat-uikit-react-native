@@ -58,7 +58,8 @@ const dispatchCommand = (
 ) => {
   const viewTag = findNodeHandle(ref.current);
   if (viewTag != null) {
-    UIManager.dispatchViewManagerCommand(viewTag, command, args);
+    // Newer RN typings declare commandID as number only; the native side accepts command names.
+    UIManager.dispatchViewManagerCommand(viewTag, command as unknown as number, args);
   }
 };
 

@@ -109,7 +109,7 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
       if (onPress) {
         onPress();
       } else {
-        const opened = await Linking.openURL(link);
+        const opened: unknown = await Linking.openURL(link);
         if (!opened) {
           Alert.alert(t("SOMETHING_WRONG"));
         }
@@ -212,15 +212,18 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
           </Text>
         </View>
       </View>
-      <View
-        style={{
-          paddingVertical: theme.spacing.padding.p3,
-          paddingHorizontal: style?.bodyStyle?.containerStyle.padding,
-          flexShrink: 0,
-        }}
-      >
-        {ChildView && <ChildView />}
-      </View>
+      {/* Only the card that carries the message text gets this padded row; the others would show an empty band. */}
+      {ChildView && (
+        <View
+          style={{
+            paddingVertical: theme.spacing.padding.p3,
+            paddingHorizontal: style?.bodyStyle?.containerStyle.padding,
+            flexShrink: 0,
+          }}
+        >
+          <ChildView />
+        </View>
+      )}
     </View>
   );
 };

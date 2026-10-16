@@ -45,7 +45,8 @@ export const CallRecordings = (props: {call: any}) => {
     if (Platform.OS == 'android') {
       listener.current = eventEmitter.addListener(
         'downloadComplete',
-        (data: {downloadId: number}) => {
+        event => {
+          const data = event as {downloadId: number};
           if (
             data.downloadId &&
             downloadIdRef.current &&

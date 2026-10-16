@@ -6323,8 +6323,16 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         guard j < chars.count else { return nil }
         guard j + 1 < chars.count && chars[j + 1] == "(" else { return nil }
         let urlStart = j + 2
+        // Balanced: `(planet)` inside the address is kept and only an unmatched `)` closes the
+        // link. Stopping at the first `)` turned a pasted [Mercury](…/Mercury_(planet)) into
+        // "Mercury" linking to …/Mercury_(planet plus a stray ")".
         var k = urlStart
-        while k < chars.count && chars[k] != ")" { k += 1 }
+        var depth = 0
+        while k < chars.count {
+            if chars[k] == "(" { depth += 1 }
+            else if chars[k] == ")" { if depth == 0 { break }; depth -= 1 }
+            k += 1
+        }
         guard k < chars.count else { return nil }
         let linkText = String(chars[(from + 1)..<j])
         let linkURL = String(chars[urlStart..<k])

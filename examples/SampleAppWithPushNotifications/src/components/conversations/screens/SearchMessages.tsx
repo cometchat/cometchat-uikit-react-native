@@ -145,7 +145,6 @@ const SearchMessages: React.FC<Props> = ({ route, navigation }) => {
           barStyle={
             theme.mode === 'light' ? 'dark-content' : 'light-content'
           }
-          backgroundColor={theme.color.background1}
         />
       )}
 

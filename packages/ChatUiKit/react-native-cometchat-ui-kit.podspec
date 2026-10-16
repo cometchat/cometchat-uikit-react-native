@@ -2,8 +2,6 @@ require "json"
 
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
-folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
-
 Pod::Spec.new do |s|
   s.name         = "react-native-cometchat-ui-kit"
   s.version      = package["version"]
@@ -12,14 +10,13 @@ Pod::Spec.new do |s|
   s.license      = package["license"]
   s.authors      = package["author"].is_a?(Hash) ? [package["author"]] : package["author"]
 
-  s.platforms    = { :ios => "11.0" }
+  s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/cometchat/cometchat-uikit-react-native.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.static_framework = true  # Set static_framework for the main spec if needed
   s.frameworks = ["PhotosUI"]
-  s.dependency "React-Core"
 
   s.subspec "Video" do |ss|
     ss.source_files  = "ios/Video/*.{h,m}"
@@ -33,19 +30,8 @@ Pod::Spec.new do |s|
     ss.source_files = "ios/VideoCaching/**/*.{h,m}"
   end
 
-  # Conditional compiler flags and dependencies for the new architecture
-  if ENV['RCT_NEW_ARCH_ENABLED'] == '1'
-    s.compiler_flags = "#{folly_compiler_flags} -DRCT_NEW_ARCH_ENABLED=1"
-    s.pod_target_xcconfig = {
-      "HEADER_SEARCH_PATHS" => "\"$(PODS_ROOT)/Header/Public/**\"",
-      "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
-    }
-    
-    # s.dependency "React-Codegen"
-    # s.dependency "RCT-Folly"
-    # s.dependency "RCTRequired"
-    # s.dependency "RCTTypeSafety"
-    # s.dependency "ReactCommon/turbomodule/core"
-    # s.dependency "RCTSlider"
-  end
+  # React Native's own helper wires up React-Core and the New Architecture
+  # dependencies and flags (RN 0.71+). It replaces the hand-rolled
+  # RCT_NEW_ARCH_ENABLED block, which stopped meaning anything in RN 0.82.
+  install_modules_dependencies(s)
 end
