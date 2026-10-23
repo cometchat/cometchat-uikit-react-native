@@ -228,6 +228,48 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
     // pendingStyles (rather than as independent fields) so they inherit its existing
     // caret-moved/cleared invalidation instead of needing a parallel copy of it.
     private var pendingExternalColor: Int? = null
+
+    /**
+     * Inline formatting carried over when the keyboard REPLACES a run of text — accepting a
+     * suggestion, autocorrect on space, or swapping a whole word. The styles are read from the
+     * first character of the run being replaced, before the text changes, and re-applied to
+     * whatever is inserted in its place.
+     *
+     * Without this the formatting dies with the text it was anchored to: a span records a
+     * character range, not the user's intent, so replacing those characters drops it.
+     */
+    private data class InlineStyleSnapshot(
+        val bold: Boolean,
+        val italic: Boolean,
+        val underline: Boolean,
+        val strikethrough: Boolean,
+        val externalColor: Int?,
+        val externalBackgroundColor: Int?,
+    ) {
+        val isEmpty: Boolean
+            get() = !bold && !italic && !underline && !strikethrough &&
+                externalColor == null && externalBackgroundColor == null
+
+        /**
+         * Drops whatever the user has explicitly switched off at the cursor.
+         *
+         * An explicit "off" outranks inheritance. Without this, clearing a colour and then
+         * letting the keyboard replace the word resurrects the colour from the replaced run —
+         * the opposite of what the user just asked for. The newly-typed path already honours
+         * [explicitlyOffStyles]; the replacement path has to as well.
+         */
+        fun minus(off: Set<String>): InlineStyleSnapshot = copy(
+            bold = bold && !off.contains("bold"),
+            italic = italic && !off.contains("italic"),
+            underline = underline && !off.contains("underline"),
+            strikethrough = strikethrough && !off.contains("strikethrough"),
+            externalColor = externalColor.takeIf { !off.contains("externalColor") },
+            externalBackgroundColor =
+                externalBackgroundColor.takeIf { !off.contains("externalBackgroundColor") },
+        )
+    }
+
+    private var inheritedStyles: InlineStyleSnapshot? = null
     private var pendingExternalBackgroundColor: Int? = null
 
     // Store selection for toolbar actions (selection might be lost when clicking toolbar)
@@ -387,6 +429,14 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                 // the user had exactly that text highlighted. Keyboards also replace text while typing
                 // (rewriting "www" -> "Www.", autocorrect) but with a bare cursor, and those must not
                 // become links. No clipboard read here: Android 12+ toasts on every read.
+                // A replacement is about to happen: remember the formatting of the text being
+                // replaced so the incoming text can inherit it (see InlineStyleSnapshot).
+                inheritedStyles = if (count > 0 && after > 0 && s != null && start < s.length) {
+                    captureInlineStylesAt(s, start)
+                } else {
+                    null
+                }
+
                 val selStart = minOf(selectionStart, selectionEnd)
                 val selEnd = maxOf(selectionStart, selectionEnd)
                 if (count > 0 && after > 0 && s != null && start + count <= s.length &&
@@ -465,6 +515,39 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                         }
                     }
 
+                    // The keyboard replaced a run of text (suggestion, autocorrect, word swap).
+                    // Give the incoming text the formatting the replaced text had, so the colour
+                    // follows the user's intent rather than the character range it was pinned to.
+                    if (removedCount > 0 && addedCount > 0 && s != null) {
+                        inheritedStyles?.let { captured ->
+                            // Anything the user explicitly switched off wins over what the
+                            // replaced run happened to carry.
+                            var snapshot = captured.minus(explicitlyOffStyles)
+                            // A colour ARMED at the caret is the user's newest intent, so it
+                            // outranks the colour of the text being replaced. Without this the
+                            // replaced run won: arm red over a blue word, accept a suggestion, and
+                            // the replacement came back blue while the armed red survived to
+                            // colour the next character — two colours in one word. The typed-text
+                            // path below already defers to pendingStyles; this one has to as well.
+                            if (pendingStyles.contains("externalColor")) {
+                                snapshot = snapshot.copy(externalColor = pendingExternalColor)
+                            }
+                            if (pendingStyles.contains("externalBackgroundColor")) {
+                                snapshot = snapshot.copy(
+                                    externalBackgroundColor = pendingExternalBackgroundColor
+                                )
+                            }
+                            val spanStart = changeStart
+                            val spanEnd = changeStart + addedCount
+                            if (!snapshot.isEmpty && spanStart < spanEnd && spanEnd <= s.length) {
+                                isInternalChange = true
+                                applyInlineStyleSnapshot(s, snapshot, spanStart, spanEnd)
+                                isInternalChange = false
+                            }
+                        }
+                        inheritedStyles = null
+                    }
+
                     // Apply pending styles to newly typed text
                     if (addedCount > 0 && removedCount == 0 && s != null) {
                         val spanStart = changeStart
@@ -534,6 +617,78 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                                             }
                                         }
                                     }
+                                }
+                            }
+
+                            // --- Insertion inherits from the character before the caret ---
+                            //
+                            // A colour applied over a SELECTION is frozen to that range, so text
+                            // typed straight after it does not join the run. That is what makes
+                            // "colour Hello, delete two characters, type p" come out as
+                            // <color>Hel</color>p. Inherit the colour from the preceding character
+                            // instead of relying on the span to grow.
+                            //
+                            // This covers the character styles too, not only the colours. The
+                            // earlier scoping to colours was wrong: pendingStyles carries a style
+                            // the user ARMED at the caret, but a style applied over a SELECTION
+                            // exists only as a frozen span and is in no Set, so typing on dropped
+                            // it. Measured on a Pixel: strike through "Doe", colour it, then let
+                            // the keyboard append the "s" of "Does" — the s came out coloured but
+                            // not struck, because only the colour was carried here (ENG-40419).
+                            //
+                            // pendingStyles wins (the user just picked a colour) and
+                            // explicitlyOffStyles wins (the user just cleared one); this only fills
+                            // the gap where neither has an opinion. At position 0, or with the
+                            // field empty, there is nothing to inherit and the text stays plain.
+                            //
+                            // Code is skipped wholesale: inline code and a code block own their
+                            // own foreground, so inheriting a consumer colour from the character
+                            // before the caret would paint over the code styling the user just
+                            // armed.
+                            val codeArmed = pendingStyles.contains("code") ||
+                                pendingStyles.contains("codeBlock")
+                            if (changeStart > 0 && !codeArmed) {
+                                val neighbour = captureInlineStylesAt(s, changeStart - 1)
+                                if (!pendingStyles.contains("externalColor") &&
+                                    !explicitlyOffStyles.contains("externalColor")
+                                ) {
+                                    neighbour?.externalColor?.let { inherited ->
+                                        clearInlineStyleSpans(s, "color", spanStart, spanEnd, keepColor = inherited)
+                                        s.setSpan(
+                                            ExternalForegroundColorSpan(inherited),
+                                            spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                                        )
+                                    }
+                                }
+                                if (!pendingStyles.contains("externalBackgroundColor") &&
+                                    !explicitlyOffStyles.contains("externalBackgroundColor")
+                                ) {
+                                    neighbour?.externalBackgroundColor?.let { inherited ->
+                                        clearInlineStyleSpans(s, "backgroundColor", spanStart, spanEnd, keepColor = inherited)
+                                        s.setSpan(
+                                            ExternalBackgroundColorSpan(inherited),
+                                            spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                                        )
+                                    }
+                                }
+
+                                // Carry bold/italic/underline/strikethrough the same way. Skipped
+                                // when the style is already armed — the pendingStyles block above
+                                // has applied it, and setting a second span over the same range
+                                // would leave two identical spans to no purpose. (Not a wire-format
+                                // problem: spannedToMarkdown segments by span boundary and
+                                // de-duplicates per segment, so a duplicate emits one tag.)
+                                if (neighbour != null) {
+                                    fun carry(key: String, present: Boolean, makeSpan: () -> Any) {
+                                        if (!present) return
+                                        if (pendingStyles.contains(key)) return
+                                        if (explicitlyOffStyles.contains(key)) return
+                                        s.setSpan(makeSpan(), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                    }
+                                    carry("bold", neighbour.bold) { StyleSpan(Typeface.BOLD) }
+                                    carry("italic", neighbour.italic) { StyleSpan(Typeface.ITALIC) }
+                                    carry("underline", neighbour.underline) { UnderlineSpan() }
+                                    carry("strikethrough", neighbour.strikethrough) { StrikethroughSpan() }
                                 }
                             }
 
@@ -1601,6 +1756,55 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
     }
 
     // Synchronous style detection - emits current active styles to JS
+    /** Inline formatting present at [pos] — used to let replacement text inherit it. */
+    private fun captureInlineStylesAt(s: CharSequence, pos: Int): InlineStyleSnapshot? {
+        val spanned = s as? Spanned ?: return null
+        if (pos < 0 || pos >= spanned.length) return null
+        val end = pos + 1
+
+        var bold = false
+        var italic = false
+        spanned.getSpans(pos, end, StyleSpan::class.java).forEach {
+            when (it.style) {
+                Typeface.BOLD -> bold = true
+                Typeface.ITALIC -> italic = true
+                Typeface.BOLD_ITALIC -> { bold = true; italic = true }
+            }
+        }
+
+        return InlineStyleSnapshot(
+            bold = bold,
+            italic = italic,
+            underline = spanned.getSpans(pos, end, UnderlineSpan::class.java).isNotEmpty(),
+            strikethrough = spanned.getSpans(pos, end, StrikethroughSpan::class.java).isNotEmpty(),
+            externalColor = spanned.getSpans(pos, end, ExternalForegroundColorSpan::class.java)
+                .firstOrNull()?.color,
+            externalBackgroundColor = spanned.getSpans(pos, end, ExternalBackgroundColorSpan::class.java)
+                .firstOrNull()?.color,
+        )
+    }
+
+    /** Re-applies [snapshot] over [start, end). Caller owns the isInternalChange guard. */
+    private fun applyInlineStyleSnapshot(
+        s: Editable,
+        snapshot: InlineStyleSnapshot,
+        start: Int,
+        end: Int,
+    ) {
+        if (snapshot.bold) s.setSpan(StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        if (snapshot.italic) s.setSpan(StyleSpan(Typeface.ITALIC), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        if (snapshot.underline) s.setSpan(UnderlineSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        if (snapshot.strikethrough) s.setSpan(StrikethroughSpan(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        snapshot.externalColor?.let {
+            clearInlineStyleSpans(s, "color", start, end, keepColor = it)
+            s.setSpan(ExternalForegroundColorSpan(it), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        snapshot.externalBackgroundColor?.let {
+            clearInlineStyleSpans(s, "backgroundColor", start, end, keepColor = it)
+            s.setSpan(ExternalBackgroundColorSpan(it), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+
     private fun emitActiveStyles() {
         val start = selectionStart
         val end = selectionEnd
@@ -4089,9 +4293,11 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
             if (key == "color") {
                 pendingExternalColor = color
                 pendingStyles.add("externalColor")
+                explicitlyOffStyles.remove("externalColor")
             } else {
                 pendingExternalBackgroundColor = color
                 pendingStyles.add("externalBackgroundColor")
+                explicitlyOffStyles.remove("externalBackgroundColor")
             }
             pendingStylesInsertPos = selectionStart
             return
@@ -4128,13 +4334,25 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         // No selection: cancel the pending type-ahead style instead of no-oping.
         val target = styleTargetRange()
         if (target == null) {
+            // Record the clear in explicitlyOffStyles, not just by dropping the pending value.
+            // Both inheritance rules ask that set whether the user has switched a style off, and
+            // until this line nothing ever put a colour key in it — so `minus(explicitlyOffStyles)`
+            // and the rule-2 guard were dead for colours and an explicit clear was ignored.
+            // Measured on a Pixel 9 Pro XL: colour "Doe", clear at the caret, type "s", and the
+            // "s" came out red. Using the existing set rather than a new flag also means the clear
+            // expires on a caret move for free, through the invalidation in onSelectionChanged.
             if (key == "color") {
                 pendingExternalColor = null
                 pendingStyles.remove("externalColor")
+                explicitlyOffStyles.add("externalColor")
             } else {
                 pendingExternalBackgroundColor = null
                 pendingStyles.remove("externalBackgroundColor")
+                explicitlyOffStyles.add("externalBackgroundColor")
             }
+            // That invalidation is gated on an anchor being set, so a clear has to set one too —
+            // otherwise the "off" would outlive the caret and silence colours elsewhere.
+            pendingStylesInsertPos = selectionStart
             // Clearing the pending colour is not enough. A colour span applied by type-ahead is
             // SPAN_EXCLUSIVE_INCLUSIVE so it grows with typing — a span ending exactly at the cursor
             // would keep swallowing everything typed after the user asked for NO colour. Pin it shut

@@ -1197,6 +1197,20 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     /// True when the colour was cleared with the caret parked, so the next typed character is
     /// `UIColor.label` rather than inheriting a neighbouring colour.
     private var pendingExternalForegroundCleared: Bool = false
+    /// The background equivalent. removeInlineStyle strips the background straight out of
+    /// typingAttributes rather than arming a pending value, so there is no sentinel in
+    /// `pendingStyles` to read — without this flag a keyboard replacing the word would lift the
+    /// background back off the run it replaced and undo the clear. Reset wherever
+    /// `pendingExternalForegroundCleared` is reset, so both decisions expire together.
+    private var pendingExternalBackgroundCleared: Bool = false
+
+    /// Colour to re-apply to text a keyboard just inserted, with the range it landed in.
+    /// Set in shouldChangeTextIn (before the text changes, while the old run is still
+    /// readable) and consumed in textViewDidChange. Going through typingAttributes does not
+    /// survive — many later sites in this file overwrite it before UIKit inserts.
+    private var pendingInheritColour: UIColor? = nil
+    private var pendingInheritBackground: UIColor? = nil
+    private var pendingInheritRange: NSRange? = nil
 
     /// Typing attributes to forcefully restore after all processing (including async
     /// JS bridge callbacks like syncMentionRanges) completes. Set by autoContinueListOnEnter
@@ -1245,7 +1259,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             return
         }
         pendingExternalForeground = color
-        pendingExternalForegroundCleared = false
+        pendingExternalForegroundCleared = false; pendingExternalBackgroundCleared = false
         pendingStyles.insert(ExternalColorPendingKey)
     }
 
@@ -1475,6 +1489,92 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         return true
     }
 
+    /// Drops every armed, cleared or deferred inline-style decision and returns typingAttributes
+    /// to plain. The composer is empty, so none of it has anything left to apply to.
+    ///
+    /// Called from two places, and it has to be: `textDidChange` runs only for edits the USER
+    /// made, because UIKit does not post `textDidChangeNotification` for a programmatic
+    /// assignment. Clearing the composer after a send is programmatic — `setTextContent("")` —
+    /// so relying on the notification left the colour armed and the NEXT message came out
+    /// coloured without the user asking. Android resets here because its `setText` does run its
+    /// TextWatcher; this is what gives iOS the same behaviour.
+    private func resetInlineStateForEmptyComposer() {
+        pendingStyles.removeAll()
+        explicitlyOffStyles.removeAll()
+        pendingStylesInsertPos = -1
+        lastKnownTextLength = 0
+        pendingExternalForeground = nil
+        pendingExternalForegroundCleared = false
+        pendingExternalBackgroundCleared = false
+        deferredTypingAttrs = nil
+        // A captured inheritance would otherwise be painted onto the first character of the
+        // next message, which is the same leak by a different route.
+        clearPendingInherit()
+        // Reset typingAttributes to plain so next typed text has no ghost formatting
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineHeightMultiple = RichTextEditorView.defaultLineHeightMultiple
+        textView.typingAttributes = [
+            .font: UIFont.systemFont(ofSize: 16),
+            .foregroundColor: UIColor.label,
+            .paragraphStyle: paragraphStyle
+        ]
+    }
+
+    private func clearPendingInherit() {
+        pendingInheritColour = nil
+        pendingInheritBackground = nil
+        pendingInheritRange = nil
+    }
+
+    /// Paints the colour captured in shouldChangeTextIn onto the text the keyboard just inserted.
+    ///
+    /// Called from textDidChange rather than from a textViewDidChange delegate method. Two reasons,
+    /// both learned the hard way:
+    ///
+    ///  - textView.insertText (list continuation) fires the delegate synchronously from inside an
+    ///    isInternalChange window, so a delegate implementation re-enters mid-edit and, by resetting
+    ///    the flag, makes the rest of that edit look like user typing. textDidChange already guards
+    ///    on isInternalChange, so it is re-entrancy-safe.
+    ///  - textDidChange owns saveToUndoStack and sendContentChange. Mutating here, ahead of both,
+    ///    means the inherited colour is in the text before it is emitted to JS or snapshotted for
+    ///    undo, rather than depending on UIKit's delegate/notification ordering.
+    private func applyPendingInheritedColour() {
+        guard let range = pendingInheritRange,
+              let attrText = textView.attributedText,
+              range.location >= 0, range.location + range.length <= attrText.length,
+              range.length > 0,
+              pendingInheritColour != nil || pendingInheritBackground != nil else {
+            clearPendingInherit()
+            return
+        }
+
+        // Add the attributes in place rather than assigning `textView.attributedText`.
+        //
+        // Assigning attributedText replaces the whole string, and UITextView ends any marked text
+        // when it does — marked text being the uncommitted, underlined run an input method shows
+        // while a word is still being composed. This method runs on every keystroke that inherits
+        // a colour, so with a Japanese, Chinese or Korean keyboard the composition was torn down
+        // character by character and the word could not be typed at all. Mutating textStorage
+        // leaves the string, the composition and the caret untouched, so none of that arises and
+        // the caret no longer has to be saved and restored either.
+        let storage = textView.textStorage
+        let wasInternal = isInternalChange
+        isInternalChange = true
+        storage.beginEditing()
+        if let colour = pendingInheritColour {
+            storage.addAttribute(ExternalForegroundKey, value: colour, range: range)
+            storage.addAttribute(.foregroundColor, value: colour, range: range)
+        }
+        if let background = pendingInheritBackground {
+            storage.addAttribute(ExternalBackgroundKey, value: background, range: range)
+            storage.addAttribute(.backgroundColor, value: background, range: range)
+        }
+        storage.endEditing()
+        isInternalChange = wasInternal
+
+        clearPendingInherit()
+    }
+
     func textViewDidChangeSelection(_ textView: UITextView) {
        let range = textView.selectedRange
         if range.length > 0 {
@@ -1498,8 +1598,12 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         // to avoid emitting stale style state before typingAttributes are restored.
         guard !isInternalChange else { return }
 
-        // Invalidate pending styles if cursor moved away from insert position
-        if pendingStylesInsertPos >= 0 && (!pendingStyles.isEmpty || !explicitlyOffStyles.isEmpty) {
+        // Invalidate pending styles if cursor moved away from insert position.
+        // The cleared-colour flags count as pending decisions in their own right: a background
+        // clear arms no sentinel and leaves both Sets empty, so without them in this condition it
+        // would never expire.
+        if pendingStylesInsertPos >= 0 && (!pendingStyles.isEmpty || !explicitlyOffStyles.isEmpty
+            || pendingExternalForegroundCleared || pendingExternalBackgroundCleared) {
             // Typing advances the caret by however many characters actually landed: one for a plain
             // keystroke, but several for autocorrect replacing a word, predictive text, a multi-scalar
             // emoji, a paste, or an IME commit. Comparing against a hardcoded +1 classified all of
@@ -1516,7 +1620,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 // Drop the caret-armed colour too — otherwise it leaks onto text typed at the
                 // new cursor position (the removeAll() above only drops the sentinel).
                 pendingExternalForeground = nil
-                pendingExternalForegroundCleared = false
+                pendingExternalForegroundCleared = false; pendingExternalBackgroundCleared = false
                 if hadCodeBlock {
                     pendingStyles.insert("codeBlock")
                     pendingStylesInsertPos = range.location
@@ -1772,6 +1876,93 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     }
 
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+
+        // --- Inline formatting follows the user's intent, not the character range ---
+        //
+        // Measured on iOS 26: accepting a suggestion arrives as ONE replacement —
+        //     loc=0 len=3 text='Respect'   (after typing "Res")
+        // so the styled characters are destroyed in a single call and the replacement is
+        // styled from typingAttributes, which knows nothing about them.
+        //
+        // This MUST run before the early returns further down (list prefixes, code blocks,
+        // blockquotes). Placed at the end it never executed, which is why the colour was lost
+        // even with the rules in place.
+        if !isInternalChange, let attrText = textView.attributedText {
+            // Reset first, unconditionally. Every `return false` path below handles its own text
+            // and suppresses UIKit's insertion, so textDidChange never runs and never consumes
+            // what we set here. Without this reset that stale range outlives the change and gets
+            // painted onto whatever text later occupies it.
+            clearPendingInherit()
+
+            var typing = textView.typingAttributes
+            var inheritFrom: [NSAttributedString.Key: Any]? = nil
+
+            // Inline code and a code block own their own foreground, so a consumer colour
+            // inherited from the neighbouring character would paint over the code styling the
+            // user just armed. Android skips the same way.
+            let codeArmed = pendingStyles.contains("code") || pendingStyles.contains("codeBlock")
+
+            if codeArmed {
+                inheritFrom = nil
+            } else if range.length > 0, !text.isEmpty, range.location < attrText.length {
+                // A replacement: inherit from the run being replaced, read before it is gone.
+                inheritFrom = attrText.attributes(at: range.location, effectiveRange: nil)
+            } else if range.length == 0, !text.isEmpty, range.location > 0,
+                      range.location - 1 < attrText.length,
+                      !pendingStyles.contains(ExternalColorPendingKey),
+                      !pendingExternalForegroundCleared {
+                // A plain insertion: inherit from the character before the caret, so text typed
+                // after a frozen run joins it. An armed or just-cleared colour wins over this.
+                inheritFrom = attrText.attributes(at: range.location - 1, effectiveRange: nil)
+            }
+
+            if let src = inheritFrom {
+                // An explicit CLEAR outranks inheritance on both rules: the user turned the
+                // colour off, so a keyboard replacing that word must not resurrect it.
+                //
+                // Only the clear, deliberately — not an armed colour. pendingStyles carries the
+                // sentinel for armed and cleared alike, so testing it here also suppressed
+                // inheritance while a colour was armed, and the armed colour alone does not
+                // survive a replacement: typingAttributes is overwritten before UIKit inserts,
+                // which is the whole reason this pendingInherit path exists. Measured on an
+                // iPhone 17 Pro: colour "Doe", accept the "Doesn't" suggestion, and the word
+                // came through black. explicitlyOffStyles is not consulted either — on iOS it
+                // only ever holds bold/italic/underline/strikethrough/code.
+                let colourCleared = pendingExternalForegroundCleared
+                let backgroundCleared = pendingExternalBackgroundCleared
+
+                // Remember where the incoming text will land so textDidChange can style it.
+                //
+                // An ARMED colour beats the replaced run's: it is the user's newest intent. Before
+                // this the run won, so arming red over a blue word and then accepting a suggestion
+                // gave a blue replacement, while the armed red survived to colour the next
+                // character — two colours in one word. Android has the same precedence at
+                // RichTextEditorView.kt:525.
+                pendingInheritColour = colourCleared
+                    ? nil
+                    : (pendingExternalForeground ?? src[ExternalForegroundKey] as? UIColor)
+                pendingInheritBackground = backgroundCleared ? nil : src[ExternalBackgroundKey] as? UIColor
+                pendingInheritRange = (pendingInheritColour != nil || pendingInheritBackground != nil)
+                    ? NSRange(location: range.location, length: (text as NSString).length)
+                    : nil
+
+                var changed = false
+                // Marker and paint move together: the marker is what the serializer reads.
+                // Read the already-filtered pending values, not `src`, so a cleared colour is not
+                // re-armed here after being suppressed above.
+                if let colour = pendingInheritColour {
+                    typing[ExternalForegroundKey] = colour
+                    typing[.foregroundColor] = colour
+                    changed = true
+                }
+                if let background = pendingInheritBackground {
+                    typing[ExternalBackgroundKey] = background
+                    typing[.backgroundColor] = background
+                    changed = true
+                }
+                if changed { textView.typingAttributes = typing }
+            }
+        }
 
         // --- Mention bleed-through prevention (iOS equivalent of Android SPAN_EXCLUSIVE_EXCLUSIVE) ---
         // Check if typingAttributes carry mention styling and strip it before insertion.
@@ -2431,6 +2622,10 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         }
 
         if !isInternalChange {
+            // Before anything reads or snapshots the text: give the characters the keyboard just
+            // inserted the formatting they inherited (see applyPendingInheritedColour).
+            applyPendingInheritedColour()
+
             // Clear pending styles after text was typed (typingAttributes already applied them).
             // Preserve inline styles (bold, italic, underline, strikethrough) — they persist
             // until the cursor moves to a different position (matching Android behavior where
@@ -2483,21 +2678,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
         // Reset pending styles and typingAttributes when text becomes empty
         if textView.text.isEmpty {
-            pendingStyles.removeAll()
-            explicitlyOffStyles.removeAll()
-            pendingStylesInsertPos = -1
-            lastKnownTextLength = 0
-            pendingExternalForeground = nil
-            pendingExternalForegroundCleared = false
-            deferredTypingAttrs = nil
-            // Reset typingAttributes to plain so next typed text has no ghost formatting
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.lineHeightMultiple = RichTextEditorView.defaultLineHeightMultiple
-            textView.typingAttributes = [
-                .font: UIFont.systemFont(ofSize: 16),
-                .foregroundColor: UIColor.label,
-                .paragraphStyle: paragraphStyle
-            ]
+            resetInlineStateForEmptyComposer()
         }
 
         // Skip applyListIndentation/renumberNumberedLists during internal changes
@@ -3795,7 +3976,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
                 return
             }
             pendingExternalForeground = color
-            pendingExternalForegroundCleared = false
+            pendingExternalForegroundCleared = false; pendingExternalBackgroundCleared = false
             pendingStyles.insert(ExternalColorPendingKey)
             pendingStylesInsertPos = range.location
             applyPendingStylesToTypingAttributes()
@@ -3825,6 +4006,18 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             guard attribute == .foregroundColor else {
                 textView.typingAttributes.removeValue(forKey: marker)
                 textView.typingAttributes.removeValue(forKey: attribute)
+                // Stripping typingAttributes stops the next TYPED character carrying the
+                // background, but a keyboard replacement reads the run it replaces, not
+                // typingAttributes — so record the decision for the inheritance rules too.
+                //
+                // The anchor goes in with it. The caret-move invalidation needs one to compare
+                // against, and this branch arms no sentinel, so without it a background-only
+                // clear never expired: clear after one highlighted word, tap into another, accept
+                // a suggestion there, and that second word silently lost its highlight.
+                if attribute == .backgroundColor {
+                    pendingExternalBackgroundCleared = true
+                    pendingStylesInsertPos = range.location
+                }
                 return
             }
             pendingExternalForeground = nil
@@ -4681,7 +4874,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // inline style, so the consumer colour goes with them rather than surviving alone.
             pendingStyles.remove(ExternalColorPendingKey)
             pendingExternalForeground = nil
-            pendingExternalForegroundCleared = false
+            pendingExternalForegroundCleared = false; pendingExternalBackgroundCleared = false
             explicitlyOffStyles.removeAll()
             // Reset typingAttributes to plain so list prefix doesn't inherit code block styling
             let plainParaStyle = NSMutableParagraphStyle()
@@ -5438,7 +5631,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // Drop an armed consumer colour, or the first character typed into the empty block
             // would come out coloured instead of the code block default.
             pendingExternalForeground = nil
-            pendingExternalForegroundCleared = false
+            pendingExternalForegroundCleared = false; pendingExternalBackgroundCleared = false
             pendingStyles.remove(ExternalColorPendingKey)
             pendingStylesInsertPos = textView.selectedRange.location
             isInternalChange = false
@@ -5507,7 +5700,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // A colour armed for type-ahead would otherwise colour the next character typed
             // inside the block.
             pendingExternalForeground = nil
-            pendingExternalForegroundCleared = false
+            pendingExternalForegroundCleared = false; pendingExternalBackgroundCleared = false
             pendingStyles.remove(ExternalColorPendingKey)
             // Set pendingStyles + typingAttributes so newly typed characters
             // inherit code block mode (matches empty-line activation path)
@@ -5670,6 +5863,15 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
 
         placeholderLabel.isHidden = !text.isEmpty
         isInternalChange = false
+
+        // The composer just became empty programmatically — a send, or a clear from JS. UIKit
+        // posts no change notification for that, so textDidChange never runs and the reset it
+        // owns would never happen: the colour stayed armed and the next message came out
+        // coloured on its own. Reset here instead, matching Android.
+        if (textView.text ?? "").isEmpty {
+            resetInlineStateForEmptyComposer()
+        }
+
         updateContentSize()
         if force {
             sendContentChange()

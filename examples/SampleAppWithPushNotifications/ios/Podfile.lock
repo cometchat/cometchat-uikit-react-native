@@ -1315,7 +1315,7 @@ PODS:
     - React-Core
   - react-native-cometchat-push-notifications (1.0.0):
     - React-Core
-  - react-native-cometchat-ui-kit (5.5.2):
+  - react-native-cometchat-ui-kit (5.5.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1328,8 +1328,8 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-cometchat-ui-kit/Video (= 5.5.2)
-    - react-native-cometchat-ui-kit/VideoCaching (= 5.5.2)
+    - react-native-cometchat-ui-kit/Video (= 5.5.3)
+    - react-native-cometchat-ui-kit/VideoCaching (= 5.5.3)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1339,7 +1339,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-cometchat-ui-kit/Video (5.5.2):
+  - react-native-cometchat-ui-kit/Video (5.5.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1361,7 +1361,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-cometchat-ui-kit/VideoCaching (5.5.2):
+  - react-native-cometchat-ui-kit/VideoCaching (5.5.3):
     - DVAssetLoaderDelegate (~> 0.3.1)
     - hermes-engine
     - RCTRequired
@@ -2602,7 +2602,7 @@ SPEC CHECKSUMS:
   React-mutationobservernativemodule: eac010f6dcd8fa461aa3d75db3a8f2ec6bcb8fbd
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
   react-native-cometchat-push-notifications: 8888495ee335776420e153e063d3644b48a41471
-  react-native-cometchat-ui-kit: 6aa9b21c6654c746114694bcf1d26ab3e22ef176
+  react-native-cometchat-ui-kit: eac836f5cfeab2db630969621b28cc52fa1f5ee1
   react-native-netinfo: 76dc2fda1e28f3b28422f9bb323f0a30910ca093
   react-native-safe-area-context: ffc410c82563bbd543724530896a52bce3a3cbd8
   react-native-video: 7ffb77da9c3c67f1aceec7126e9b277601a075fd
