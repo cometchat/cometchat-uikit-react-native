@@ -197,9 +197,11 @@ export interface CometChatMessageComposerInterface {
   group?: CometChat.Group;
 
   /**
-   * Flag to turn off sound for outgoing messages.
+   * Flag to turn off sound for outgoing messages. The composer owns the send sound;
+   * CometChatMessageList only plays incoming-message sounds.
    *
    * @type {boolean}
+   * @defaultValue false
    */
   disableSoundForOutgoingMessages?: boolean;
 
@@ -497,7 +499,7 @@ export const CometChatMessageComposer = React.forwardRef(
       id,
       user,
       group,
-      disableSoundForOutgoingMessages = true,
+      disableSoundForOutgoingMessages = false,
       customSoundForOutgoingMessage,
       disableTypingEvents: propDisableTypingEvents,
       initialComposertext,
@@ -1117,15 +1119,11 @@ export const CometChatMessageComposer = React.forwardRef(
       void launchPicker(fileType);
     };
 
+    // play() switches on the sound's NAME. Passing SoundOutput.outgoingMessage (the asset
+    // itself) matched no case, so the composer never made a sound and its sound props did
+    // nothing (GitHub #117). A missing custom sound falls back to the built-in one.
     const playAudio = () => {
-      if (customSoundForOutgoingMessage) {
-        CometChatSoundManager.play(
-          CometChatSoundManager.SoundOutput.outgoingMessage,
-          customSoundForOutgoingMessage
-        );
-      } else {
-        CometChatSoundManager.play(CometChatSoundManager.SoundOutput.outgoingMessage);
-      }
+      CometChatSoundManager.play('outgoingMessage', customSoundForOutgoingMessage);
     };
 
     const sendMultiAttachmentMediaMessage = useCallback(() => {
@@ -1237,14 +1235,7 @@ export const CometChatMessageComposer = React.forwardRef(
       setReplyMessage(null);
 
       if (!disableSoundForOutgoingMessages) {
-        if (customSoundForOutgoingMessage) {
-          CometChatSoundManager.play(
-            CometChatSoundManager.SoundOutput.outgoingMessage,
-            customSoundForOutgoingMessage
-          );
-        } else {
-          CometChatSoundManager.play(CometChatSoundManager.SoundOutput.outgoingMessage);
-        }
+        CometChatSoundManager.play('outgoingMessage', customSoundForOutgoingMessage);
       }
     }, [
       uploadQueue,
@@ -1465,7 +1456,6 @@ export const CometChatMessageComposer = React.forwardRef(
 
       inputValueRef.current = "";
       clearInputBox();
-      messageInputRef.current.textContent = "";
 
       setMessagePreview(null);
 
@@ -2108,6 +2098,23 @@ export const CometChatMessageComposer = React.forwardRef(
       replyMessage,
     ]);
 
+    // An agent chat that opens on its last conversation (CometChatMessageList's
+    // loadLastAgentConversation) announces that conversation through ccActiveChatChanged.
+    // Continue THAT conversation: without it the next question went out with no parent, the
+    // server started a new conversation the list doesn't track, and every later question was
+    // stamped with the new root and filtered out of the list until a reload (ENG-41058).
+    // Read through a ref so the once-registered listener sees current props.
+    const adoptAgentConversationRef = useRef<(item: any) => void>(() => {});
+    adoptAgentConversationRef.current = (item: any) => {
+      if (!isAgenticUser() || parentMessageId || parentMessageIdRef.current) return;
+      if (item?.parentMessageId) return; // a thread view's list, not the main agent chat
+      const msg = item?.message;
+      if (!msg || item?.user?.getUid?.() !== user?.getUid?.()) return;
+      const loadedParentId = Number(msg.getParentMessageId?.());
+      const rootId = loadedParentId > 0 ? loadedParentId : Number(msg.getId?.());
+      if (rootId > 0) parentMessageIdRef.current = String(rootId);
+    };
+
     useEffect(() => {
       CometChatUIEventHandler.addMessageListener(editMessageListenerID, {
         ccMessageEdited: (item: any) => {
@@ -2118,6 +2125,7 @@ export const CometChatMessageComposer = React.forwardRef(
             previewMessage(item);
           }
         },
+        ccActiveChatChanged: (item: any) => adoptAgentConversationRef.current(item),
       });
       CometChatMessageEvents.addListener(
         CometChatMessageEvents.ccReplyToMessage,

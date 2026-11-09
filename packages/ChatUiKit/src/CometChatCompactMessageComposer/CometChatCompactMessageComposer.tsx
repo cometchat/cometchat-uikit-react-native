@@ -640,13 +640,15 @@ export interface CometChatCompactMessageComposerInterface {
   onChangeText?: (text: string) => void;
 
   /**
-   * Flag to turn off sound for outgoing messages.
+   * Flag to turn off sound for outgoing messages. The composer owns the send sound;
+   * CometChatMessageList only plays incoming-message sounds.
    * @type {boolean}
+   * @defaultValue false
    */
   disableSoundForOutgoingMessages?: boolean;
 
   /**
-   * Flag to turn off sound for messages (alias for disableSoundForOutgoingMessages).
+   * Alias for disableSoundForOutgoingMessages, which takes precedence when both are set.
    * @type {boolean}
    */
   disableSoundForMessages?: boolean;
@@ -658,7 +660,7 @@ export interface CometChatCompactMessageComposerInterface {
   customSoundForOutgoingMessage?: any;
 
   /**
-   * Custom audio sound for messages (alias for customSoundForOutgoingMessage).
+   * Alias for customSoundForOutgoingMessage, which takes precedence when both are set.
    * @type {*}
    */
   customSoundForMessage?: any;
@@ -1188,7 +1190,9 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       parentMessageId,
       disableTypingEvents: propDisableTypingEvents,
       disableMentions: propDisableMentions,
-      disableSoundForMessages = true,
+      disableSoundForOutgoingMessages,
+      disableSoundForMessages,
+      customSoundForOutgoingMessage,
       customSoundForMessage,
       textFormatters,
       onError,
@@ -1243,6 +1247,12 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       // path (no staging tray, no multi-upload/fan-out). Default true = multi-attachment.
       enableMultipleAttachments = true,
     } = props;
+
+    // The documented names (…ForOutgoingMessage[s]) were declared but never read, so only the
+    // aliases had any effect. Honour both, documented name first. Sound is on by default:
+    // the composer owns the send sound now that the message list plays incoming sounds only.
+    const disableOutgoingSound = disableSoundForOutgoingMessages ?? disableSoundForMessages ?? false;
+    const outgoingSound = customSoundForOutgoingMessage ?? customSoundForMessage;
 
     // Auto-expand is always enabled (internal behavior)
     const autoExpand = true;
@@ -2218,10 +2228,28 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       }
     }, []);
 
+    // An agent chat that opens on its last conversation (CometChatMessageList's
+    // loadLastAgentConversation) announces that conversation through ccActiveChatChanged.
+    // Continue THAT conversation: without it the next question went out with no parent, the
+    // server started a new conversation the list doesn't track, and every later question was
+    // stamped with the new root and filtered out of the list until a reload (ENG-41058).
+    // Read through a ref so the once-registered listener sees current props.
+    const adoptAgentConversationRef = React.useRef<(item: any) => void>(() => {});
+    adoptAgentConversationRef.current = (item: any) => {
+      if (!isAgenticUser() || parentMessageId || parentMessageIdRef.current) return;
+      if (item?.parentMessageId) return; // a thread view's list, not the main agent chat
+      const msg = item?.message;
+      if (!msg || item?.user?.getUid?.() !== user?.getUid?.()) return;
+      const loadedParentId = Number(msg.getParentMessageId?.());
+      const rootId = loadedParentId > 0 ? loadedParentId : Number(msg.getId?.());
+      if (rootId > 0) parentMessageIdRef.current = rootId;
+    };
+
     // Add edit message event listener
     useEffect(() => {
       CometChatUIEventHandler.addMessageListener(editMessageListenerID, {
         ccMessageEdited: (item: { message: any; status: string }) => previewMessage(item),
+        ccActiveChatChanged: (item: any) => adoptAgentConversationRef.current(item),
       });
 
       return () => {
@@ -2550,14 +2578,11 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       setShowActionSheet(false);
       clearInputBox();
 
-      if (!disableSoundForMessages) {
-        CometChatSoundManager.play(
-          CometChatSoundManager.SoundOutput.outgoingMessage,
-          customSoundForMessage
-        );
+      if (!disableOutgoingSound) {
+        CometChatSoundManager.play('outgoingMessage', outgoingSound);
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [uploadQueue, parentMessageId, disableSoundForMessages, customSoundForMessage]);
+    }, [uploadQueue, parentMessageId, disableOutgoingSound, outgoingSound]);
 
     /**
      * Send media message (image, video, audio, file)
@@ -2672,7 +2697,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       });
 
       // Play sound if enabled
-      if (!disableSoundForMessages) {
+      if (!disableOutgoingSound) {
         playAudio();
       }
 
@@ -2695,19 +2720,13 @@ export const CometChatCompactMessageComposer = React.forwardRef(
     };
 
     /**
-     * Play outgoing message sound
+     * Play outgoing message sound.
+     * play() switches on the sound's NAME. Passing SoundOutput.outgoingMessage (the asset
+     * itself) matched no case, so the composer never made a sound (GitHub #117). A missing
+     * custom sound falls back to the built-in one.
      */
     const playAudio = () => {
-      if (customSoundForMessage) {
-        CometChatSoundManager.play(
-          CometChatSoundManager.SoundOutput.outgoingMessage,
-          customSoundForMessage
-        );
-      } else {
-        CometChatSoundManager.play(
-          CometChatSoundManager.SoundOutput.outgoingMessage
-        );
-      }
+      CometChatSoundManager.play('outgoingMessage', outgoingSound);
     };
 
     /**
@@ -4428,7 +4447,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       });
 
       // Play sound if enabled
-      if (!disableSoundForMessages) {
+      if (!disableOutgoingSound) {
         playAudio();
       }
 
@@ -4562,7 +4581,7 @@ export const CometChatCompactMessageComposer = React.forwardRef(
       }
 
       // Play sound if enabled
-      if (!disableSoundForMessages) {
+      if (!disableOutgoingSound) {
         playAudio();
       }
 

@@ -832,6 +832,11 @@ class RichTextView: UITextView {
                 return true
             }
         }
+        // Allow the spelling correction so tapping a floating spell-check suggestion replaces the
+        // misspelled word. Only this selector, not all of super (keeps Look Up/Share/system B/I/U hidden).
+        if action == NSSelectorFromString("replace:") {
+            return super.canPerformAction(action, withSender: sender)
+        }
         return false
     }
 
@@ -1188,6 +1193,9 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
     /// emoji, a paste, an IME commit — and without this the anchor below treats every one of those
     /// as "the user moved the caret" and disarms the pending colour mid-sentence (ENG-38257).
     private var lastKnownTextLength: Int = 0
+    /// The text as of the last keyboard edit, so colourEditThatBypassedInheritance can find what
+    /// the next edit changed.
+    private var lastEditSnapshot: NSAttributedString?
 
     /// Caret-armed consumer inline colour (no selection). A UIColor cannot live in a
     /// `Set<String>` cleanly, so the value lives here while `ExternalColorPendingKey` goes into
@@ -1510,6 +1518,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         // A captured inheritance would otherwise be painted onto the first character of the
         // next message, which is the same leak by a different route.
         clearPendingInherit()
+        lastEditSnapshot = nil
         // Reset typingAttributes to plain so next typed text has no ghost formatting
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineHeightMultiple = RichTextEditorView.defaultLineHeightMultiple
@@ -1575,6 +1584,78 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         clearPendingInherit()
     }
 
+    /// Colours a keyboard edit that bypassed the inheritance capture in shouldChangeTextIn.
+    ///
+    /// iOS makes the double-space full stop by swapping the space for ". " without that capture
+    /// taking effect, so the full stop and the space after it came out in the default colour and
+    /// broke the coloured run — at the end of the text and mid-text alike (ENG-40922). This diffs
+    /// the text against the last edit and gives the changed run the colour the shouldChangeTextIn
+    /// rules would have: an armed colour first, else the run it replaced, else the character before.
+    ///
+    /// Only keyboard-sized edits (a few characters) are considered, so a programmatic change that
+    /// slipped between two snapshots — a send, setText from JS — is never mistaken for one.
+    private func colourEditThatBypassedInheritance() {
+        guard let now = textView.attributedText else { return }
+        let before = lastEditSnapshot
+        lastEditSnapshot = NSAttributedString(attributedString: now)
+        // No snapshot yet means nothing was typed since the composer was last empty, so the old
+        // text is empty — the first keystroke still gets diffed rather than skipped.
+        let old = before ?? NSAttributedString()
+        guard !pendingExternalForegroundCleared,
+              !pendingStyles.contains("code"), !pendingStyles.contains("codeBlock") else { return }
+
+        let oldS = old.string as NSString, newS = now.string as NSString
+        let minLen = min(oldS.length, newS.length)
+        var prefix = 0
+        while prefix < minLen && oldS.character(at: prefix) == newS.character(at: prefix) { prefix += 1 }
+        var suffix = 0
+        while suffix < minLen - prefix &&
+              oldS.character(at: oldS.length - 1 - suffix) == newS.character(at: newS.length - 1 - suffix) { suffix += 1 }
+        let oldRun = NSRange(location: prefix, length: oldS.length - prefix - suffix)
+        var newRun = NSRange(location: prefix, length: newS.length - prefix - suffix)
+        guard newRun.length > 0, newRun.length <= 3, oldRun.length <= 3 else { return }
+
+        func isColoured(_ r: NSRange) -> Bool {
+            var found = false
+            now.enumerateAttribute(ExternalForegroundKey, in: r) { v, _, stop in
+                if v != nil { found = true; stop.pointee = true }
+            }
+            return found
+        }
+        // An insertion next to identical characters is ambiguous: a space typed beside an existing
+        // space diffs as if the existing one were new, and colouring that one recolours text the
+        // user did not touch. A keyboard insertion always ends at the caret, so among the equally
+        // valid positions (sliding left through equal characters) take the one ending there.
+        // Pure insertions only — a replacement has a definite position.
+        if oldRun.length == 0 {
+            var leftmost = newRun.location
+            while leftmost > 0,
+                  newS.character(at: leftmost - 1) == newS.character(at: leftmost - 1 + newRun.length) {
+                leftmost -= 1
+            }
+            let atCaret = textView.selectedRange.location - newRun.length
+            if textView.selectedRange.length == 0, atCaret >= leftmost, atCaret <= newRun.location {
+                newRun.location = atCaret
+            }
+        }
+        // Leave it alone if the run already carries a colour — the normal rules ran.
+        guard !isColoured(newRun) else { return }
+
+        let source: [NSAttributedString.Key: Any]? =
+            oldRun.length > 0 ? old.attributes(at: oldRun.location, effectiveRange: nil)
+            : (newRun.location > 0 ? now.attributes(at: newRun.location - 1, effectiveRange: nil) : nil)
+        let armed = pendingStyles.contains(ExternalColorPendingKey) ? pendingExternalForeground : nil
+        guard source?[MentionMarkerKey] == nil, source?[LinkURLAttributeKey] == nil,
+              let colour = armed ?? source?[ExternalForegroundKey] as? UIColor else { return }
+
+        let wasInternal = isInternalChange
+        isInternalChange = true
+        textView.textStorage.addAttribute(ExternalForegroundKey, value: colour, range: newRun)
+        textView.textStorage.addAttribute(.foregroundColor, value: colour, range: newRun)
+        isInternalChange = wasInternal
+        lastEditSnapshot = NSAttributedString(attributedString: textView.attributedText)
+    }
+
     func textViewDidChangeSelection(_ textView: UITextView) {
        let range = textView.selectedRange
         if range.length > 0 {
@@ -1609,7 +1690,12 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // emoji, a paste, or an IME commit. Comparing against a hardcoded +1 classified all of
             // those as a deliberate caret move and disarmed the colour, so text typed from the first
             // autocorrection onwards sent as plain (ENG-38257).
-            let isTypingAdvance = insertedCount > 0 && range.location == pendingStylesInsertPos + insertedCount
+            //
+            // Deleting at the anchor is editing too: a backspace moves the caret back by exactly the
+            // characters removed. Counting only forward moves read it as a caret jump and dropped the
+            // colour — accept a suggestion, backspace its trailing space, double-space for a full
+            // stop, and everything after it sent plain (ENG-40922).
+            let isTypingAdvance = insertedCount != 0 && range.location == pendingStylesInsertPos + insertedCount
             if range.location != pendingStylesInsertPos && !isTypingAdvance {
                 // Preserve "codeBlock" across cursor movements — it's a persistent
                 // block-level style that should survive until explicitly toggled off
@@ -2625,6 +2711,7 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
             // Before anything reads or snapshots the text: give the characters the keyboard just
             // inserted the formatting they inherited (see applyPendingInheritedColour).
             applyPendingInheritedColour()
+            colourEditThatBypassedInheritance()
 
             // Clear pending styles after text was typed (typingAttributes already applied them).
             // Preserve inline styles (bold, italic, underline, strikethrough) — they persist
@@ -6022,7 +6109,15 @@ class RichTextEditorView: UIView, UITextViewDelegate, UIGestureRecognizerDelegat
         
         isInternalChange = true
         let savedTypingAttrs = textView.typingAttributes
+        // Assigning attributedText moves the caret to the end. JS pushes mention ranges after
+        // every content change, so editing mid-text — a double-space full stop, for one — sent
+        // the caret to the end of the message (ENG-40922). The string is unchanged here, only
+        // its attributes, so the old caret is still valid.
+        let savedSelection = textView.selectedRange
         textView.attributedText = mutableAttr
+        if NSMaxRange(savedSelection) <= mutableAttr.length {
+            textView.selectedRange = savedSelection
+        }
         textView.typingAttributes = savedTypingAttrs
         // If a deferred restore is pending (from autoContinueListOnEnter),
         // use those attrs instead — they carry the user's active formatting.

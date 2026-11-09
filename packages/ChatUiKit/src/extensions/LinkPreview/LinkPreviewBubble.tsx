@@ -160,56 +160,57 @@ export const LinkPreviewBubble = (props: LinkPreviewBubbleInterface) => {
   );
 
   return (
-    <View 
-      onLayout={onLayoutHandler}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={onTouchMove}
-    >
-      {imageSource ? (
-        <View
-          style={style?.headerImageContainerStyle}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchMove={onTouchMove}
-        >
-          <Image
-            source={imageSource}
-            style={[{ height: imageHeight, width: imageWidth }, style?.headerImageStyle]}
-            onError={(err) => {
-              setImageSource(DefaultLinkPreview);
-            }}
-          />
-        </View>
-      ) : null}
+    <View onLayout={onLayoutHandler}>
+      {/* Only the preview card (image, title, description, link) opens the link. Raw touch
+          events reach every ancestor of the touched view, whichever child handles the press, so
+          these handlers on the outer view also fired for taps on the message text and its
+          "Read more" below, and the image container's second copy made an image tap open the
+          link twice (ENG-41080). */}
+      <View
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={onTouchMove}
+      >
+        {imageSource ? (
+          <View style={style?.headerImageContainerStyle}>
+            <Image
+              source={imageSource}
+              style={[{ height: imageHeight, width: imageWidth }, style?.headerImageStyle]}
+              onError={() => {
+                setImageSource(DefaultLinkPreview);
+              }}
+            />
+          </View>
+        ) : null}
 
-      <View style={style?.bodyStyle?.containerStyle}>
-        <View style={{ flexDirection: "row" }}>
-          <View style={style?.bodyStyle?.titleContainerStyle}>
-            <Text style={style?.bodyStyle?.titleStyle} ellipsizeMode='tail'>
-              {title}
+        <View style={style?.bodyStyle?.containerStyle}>
+          <View style={{ flexDirection: "row" }}>
+            <View style={style?.bodyStyle?.titleContainerStyle}>
+              <Text style={style?.bodyStyle?.titleStyle} ellipsizeMode='tail'>
+                {title}
+              </Text>
+            </View>
+
+            {!imageSource && !faviconError && (
+              <View style={style?.bodyStyle?.faviconContainerStyle}>
+                <Image
+                  source={faviconSource}
+                  style={style?.bodyStyle?.faviconStyle}
+                  onError={() => {
+                    setFaviconError(true);
+                  }}
+                />
+              </View>
+            )}
+          </View>
+          <View style={style?.bodyStyle?.subtitleContainerStyle}>
+            <Text style={style?.bodyStyle?.subtitleTitle} numberOfLines={2} ellipsizeMode='tail'>
+              {description}
+            </Text>
+            <Text style={style?.bodyStyle?.subtitleTitle} numberOfLines={2} ellipsizeMode='tail'>
+              {link}
             </Text>
           </View>
-
-          {!imageSource && !faviconError && (
-            <View style={style?.bodyStyle?.faviconContainerStyle}>
-              <Image
-                source={faviconSource}
-                style={style?.bodyStyle?.faviconStyle}
-                onError={(err) => {
-                  setFaviconError(true);
-                }}
-              />
-            </View>
-          )}
-        </View>
-        <View style={style?.bodyStyle?.subtitleContainerStyle}>
-          <Text style={style?.bodyStyle?.subtitleTitle} numberOfLines={2} ellipsizeMode='tail'>
-            {description}
-          </Text>
-          <Text style={style?.bodyStyle?.subtitleTitle} numberOfLines={2} ellipsizeMode='tail'>
-            {link}
-          </Text>
         </View>
       </View>
       {/* Only the card that carries the message text gets this padded row; the others would show an empty band. */}

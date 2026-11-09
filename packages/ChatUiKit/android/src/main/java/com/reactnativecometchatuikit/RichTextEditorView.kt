@@ -165,6 +165,8 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
     private var isInitialized = false
 
     private var previousText: String = ""
+    // Text length at the last onSelectionChanged, for telling typing apart from a caret move.
+    private var lastSelectionTextLength = 0
     private var pendingDelta: Map<String, Any>? = null
     private var pendingPrefixDeletion: Pair<Int, Int>? = null // (lineStart, prefixLength) for backspace-in-prefix
     // Saved selected text for URL-paste-over-selection detection in TextWatcher
@@ -548,6 +550,25 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                         inheritedStyles = null
                     }
 
+                    // A colour the user switched off at the caret must stay off for what they type
+                    // next — including inside an existing coloured run. A span that covers the
+                    // caret on both sides grows over inserted text on its own, whatever its flags,
+                    // so the clear was ignored the moment the caret sat mid-word: tap into red
+                    // text, clear, type, and the new text came out red (ENG-40922, found by
+                    // InlineColourFuzzTest). Strip the colour from the inserted range explicitly.
+                    if (addedCount > 0 && s != null && changeStart + addedCount <= s.length) {
+                        val start = changeStart
+                        val end = changeStart + addedCount
+                        isInternalChange = true
+                        if (explicitlyOffStyles.contains("externalColor")) {
+                            clearInlineStyleSpans(s, "color", start, end)
+                        }
+                        if (explicitlyOffStyles.contains("externalBackgroundColor")) {
+                            clearInlineStyleSpans(s, "backgroundColor", start, end)
+                        }
+                        isInternalChange = false
+                    }
+
                     // Apply pending styles to newly typed text
                     if (addedCount > 0 && removedCount == 0 && s != null) {
                         val spanStart = changeStart
@@ -880,6 +901,14 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                         s.getSpans(0, 0, StrikethroughSpan::class.java).forEach { s.removeSpan(it) }
                         s.getSpans(0, 0, InlineCodeSpan::class.java).forEach { s.removeSpan(it) }
                         s.getSpans(0, 0, ForegroundColorSpan::class.java).forEach { s.removeSpan(it) }
+                        // ExternalForegroundColorSpan is not a ForegroundColorSpan, so the line above
+                        // missed it: delete everything and the next character came back in the old
+                        // colour, while iOS correctly started plain (ENG-40922, found by
+                        // InlineColourFuzzTest).
+                        s.getSpans(0, 0, ExternalForegroundColorSpan::class.java).forEach { s.removeSpan(it) }
+                        s.getSpans(0, 0, ExternalBackgroundColorSpan::class.java).forEach { s.removeSpan(it) }
+                        pendingExternalColor = null
+                        pendingExternalBackgroundColor = null
                         s.getSpans(0, 0, AbsoluteSizeSpan::class.java).forEach { s.removeSpan(it) }
                         s.getSpans(0, 0, CodeBlockBorderSpan::class.java).forEach { s.removeSpan(it) }
                         s.getSpans(0, 0, TypefaceSpan::class.java).forEach { s.removeSpan(it) }
@@ -1387,13 +1416,27 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
         // Skip if not initialized yet (during construction)
         if (!isInitialized) return
 
+        // How many characters landed since the last selection change, measured against the length
+        // recorded here rather than previousText. A keyboard (Gboard, composing mid-word) can run
+        // afterTextChanged — which refreshes previousText — before this callback, so measuring
+        // against previousText read every keystroke as "nothing typed" and disarmed the colour on
+        // the first character (ENG-40922). Tracked unconditionally, as iOS does (ENG-38248).
+        val currentLen = text?.length ?: 0
+        val insertedCount = currentLen - lastSelectionTextLength
+        lastSelectionTextLength = currentLen
+
         // Clear pending/explicitly-off styles when cursor moves WITHOUT text changing
         // (i.e., user tapped somewhere else or used arrow keys)
         if ((pendingStyles.isNotEmpty() || explicitlyOffStyles.isNotEmpty()) && pendingStylesInsertPos >= 0) {
             if (selStart != pendingStylesInsertPos) {
-                val currentLen = text?.length ?: 0
-                // Allow cursor to advance by 1 (typing) — don't clear in that case
-                if (selStart != pendingStylesInsertPos + 1 || currentLen == previousText.length) {
+                // Typing advances the caret by however many characters landed: one for a plain
+                // keystroke, more when the keyboard commits an autocorrection or suggestion (which
+                // "." and space both do). A hardcoded +1 read those as a caret move and disarmed
+                // the colour, so text after a full stop sent plain (ENG-40922). Mirrors iOS.
+                // A backspace at the anchor moves the caret back by exactly what it removed — that is
+                // editing, not a caret jump, so the colour follows it (ENG-40922).
+                val isTypingAdvance = insertedCount != 0 && selStart == pendingStylesInsertPos + insertedCount
+                if (!isTypingAdvance) {
                     // Preserve "codeBlock" across cursor movements — it's a persistent
                     // block-level style that should survive until explicitly toggled off
                     // or exited via triple-Enter. Without this, the clear-and-re-add
@@ -1408,7 +1451,7 @@ class RichTextEditorView(context: Context) : androidx.appcompat.widget.AppCompat
                         pendingStylesInsertPos = selStart
                     }
                 } else {
-                    // Cursor advanced by 1 due to typing — update insert pos
+                    // Text was typed at the anchor — follow it, however many characters landed
                     pendingStylesInsertPos = selStart
                 }
             }

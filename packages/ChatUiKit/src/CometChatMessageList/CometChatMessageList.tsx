@@ -270,11 +270,12 @@ export interface CometChatMessageListProps {
    */
   receiptsVisibility?: boolean;
   /**
-   * Flag to disable sound for incoming messages.
+   * Flag to disable sound for incoming messages. The send sound belongs to the composer
+   * (its disableSoundForOutgoingMessages / customSoundForOutgoingMessage props).
    */
   disableSoundForMessages?: boolean;
   /**
-   * Custom sound URL for messages.
+   * Custom sound URL for incoming messages.
    */
   customSoundForMessages?: string;
   /**
@@ -1514,10 +1515,15 @@ export const CometChatMessageList = memo(
             return;
           }
 
-          // Create request builder for next messages (messages after the target)  
+          // Create request builder for next messages (messages after the target).
+          // Same types/categories filter as the main list: without it the server also returns
+          // the hidden edit/delete records (category "action", type "message"), which no
+          // template renders, so each one became an empty padded row after the jump.
           let nextMessagesRequest = new CometChat.MessagesRequestBuilder()
             .setLimit(15)
-            .setMessageId(targetMessageId);
+            .setMessageId(targetMessageId)
+            .setTypes(ChatConfigurator.dataSource.getAllMessageTypes())
+            .setCategories(ChatConfigurator.dataSource.getAllMessageCategories());
 
           if (user) {
             nextMessagesRequest = nextMessagesRequest.setUID(user.getUid());
@@ -1618,9 +1624,13 @@ export const CometChatMessageList = memo(
                     const lastReadMsgId = conversation.getLastReadMessageId();
 
                     if (lastReadMsgId) {
+                      // Filtered like the main list, so the "New messages" marker lands on the
+                      // first unread message that is actually shown, not on a hidden edit/delete record.
                       let request = new CometChat.MessagesRequestBuilder()
                         .setLimit(1)
-                        .setMessageId(Number(lastReadMsgId));
+                        .setMessageId(Number(lastReadMsgId))
+                        .setTypes(ChatConfigurator.dataSource.getAllMessageTypes())
+                        .setCategories(ChatConfigurator.dataSource.getAllMessageCategories());
 
                       if (user) request = request.setUID(user.getUid());
                       if (group) request = request.setGUID(group.getGuid());
@@ -1994,26 +2004,23 @@ export const CometChatMessageList = memo(
         return _plainString;
       };
 
-      const playNotificationSound = useCallback((message: any) => {
-        if (disableSoundForMessages) return;
+      // Read through a ref: playNotificationSound reaches the SDK/UI listeners, which are
+      // registered once, so with [] deps it kept the sound props from the FIRST render and a
+      // later change to them never took effect.
+      const soundPropsRef = useRef({ disableSoundForMessages, customSoundForMessages });
+      soundPropsRef.current = { disableSoundForMessages, customSoundForMessages };
 
-        if (message?.category === MessageCategoryConstants.message) {
-          if (customSoundForMessages) {
-            CometChatSoundManager.play(
-              loggedInUser.current?.getUid() == message["sender"]["uid"]
-                ? "outgoingMessage"
-                : "incomingMessage",
-              customSoundForMessages
-            );
-          } else {
-            CometChatSoundManager.play(
-              // "incomingMessage"
-              loggedInUser.current?.getUid() == message["sender"]["uid"]
-                ? "outgoingMessage"
-                : "incomingMessage"
-            );
-          }
-        }
+      // Incoming messages only, as documented. The composer owns the send sound: playing
+      // 'outgoingMessage' here as well made the composer's sound props ineffective, made this
+      // list's "incoming" switch mute sends too, and would double the chime now that the
+      // composer's own sound works (GitHub #117).
+      const playNotificationSound = useCallback((message: any) => {
+        const soundProps = soundPropsRef.current;
+        if (soundProps.disableSoundForMessages) return;
+        if (message?.category !== MessageCategoryConstants.message) return;
+        if (loggedInUser.current?.getUid() === message?.sender?.uid) return;
+
+        CometChatSoundManager.play("incomingMessage", soundProps.customSoundForMessages);
       }, []);
 
       const markMessageAsRead = (message: any) => {
@@ -2988,6 +2995,17 @@ export const CometChatMessageList = memo(
                       setMessagesList(uniqueMsgs);
                       onLoad && onLoad([...uniqueMsgs].reverse());
                       setListState("loaded");
+                      // Announce the conversation now shown, as getPreviousMessages does for the
+                      // first page of any chat. This path fetched on its own and never did, so the
+                      // composer never learned it: its next question started a new conversation the
+                      // list doesn't track, and later questions were filtered out (ENG-41058).
+                      CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccActiveChatChanged, {
+                        message: lastMsg,
+                        user: user,
+                        group: group,
+                        theme: mergedTheme,
+                        parentMessageId: parentMessageId,
+                      });
                     } else {
                       setListState("loaded");
                       onEmpty && onEmpty();
@@ -3359,6 +3377,19 @@ export const CometChatMessageList = memo(
                 message.getType() === MessageTypeConstants.text &&
                 message.getCategory() === MessageCategoryConstants.message
               ) {
+                agenticParentMessageIdRef.current = String(message.getId());
+              } else if (
+                isAgenticUser &&
+                !parentMessageId &&
+                agenticParentMessageIdRef.current !== undefined &&
+                !(Number(message.getParentMessageId?.()) > 0) &&
+                message.getType() === MessageTypeConstants.text &&
+                message.getCategory() === MessageCategoryConstants.message
+              ) {
+                // A question sent with no parent starts a NEW agent conversation on the server
+                // (for example one sent before this list announced the conversation it loaded).
+                // Follow it, or its reply and every later question in it are filtered out of
+                // the list until a reload (ENG-41058).
                 agenticParentMessageIdRef.current = String(message.getId());
               }
               if (isAgenticUser && agenticParentMessageIdRef.current !== undefined) {
@@ -5422,9 +5453,13 @@ export const CometChatMessageList = memo(
         loadingMessagesRef.current = true;
 
         try {
+          // Filtered like the main list (see getMessagesAroundId): scrolling down after a jump
+          // must not pull in hidden edit/delete records as empty rows either.
           let nextMessagesRequest = new CometChat.MessagesRequestBuilder()
             .setLimit(30)
-            .setMessageId(newestMessageId);
+            .setMessageId(newestMessageId)
+            .setTypes(ChatConfigurator.dataSource.getAllMessageTypes())
+            .setCategories(ChatConfigurator.dataSource.getAllMessageCategories());
 
           if (user) {
             nextMessagesRequest = nextMessagesRequest.setUID(user.getUid());

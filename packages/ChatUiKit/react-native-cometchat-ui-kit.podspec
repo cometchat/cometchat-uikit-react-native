@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 
   s.static_framework = true  # Set static_framework for the main spec if needed
-  s.frameworks = ["PhotosUI"]
+  s.frameworks = ["PhotosUI", "WebKit"]
 
   s.subspec "Video" do |ss|
     ss.source_files  = "ios/Video/*.{h,m}"
