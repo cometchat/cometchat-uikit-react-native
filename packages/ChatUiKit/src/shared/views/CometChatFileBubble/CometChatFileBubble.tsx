@@ -6,8 +6,6 @@ import {
   ImageStyle,
   NativeEventEmitter,
   NativeModules,
-  NativeSyntheticEvent,
-  NativeTouchEvent,
   Platform,
   Text,
   TextStyle,
@@ -127,6 +125,15 @@ export const CometChatFileBubble = ({
         }
       } else {
         if (downloadAndOpenFile) {
+          if (Platform.OS == "ios") {
+            // native openFile downloads without the share sheet that checkAndDownload shows
+            setProcessing(true);
+            FileManager.openFile(fileUrl, fileName, (result: string) => {
+              setProcessing(false);
+              if (JSON.parse(result).success == true) setFileExists(true);
+            });
+            return;
+          }
           openFileAfterDownloading.current = true;
           downloadFile();
         }
@@ -135,7 +142,7 @@ export const CometChatFileBubble = ({
   };
 
   /**
-   * Initiates the file download if it is not already processed or exists.
+   * Starts an Android DownloadManager download if not already processing or downloaded.
    */
   const downloadFile = () => {
     if (processing || fileExists) return; // Do not process if file already exists
@@ -144,19 +151,9 @@ export const CometChatFileBubble = ({
 
     setProcessing(true);
     FileManager.checkAndDownload(fileUrl, getFileName(), (result: string) => {
-      if (Platform.OS == "ios") {
-        let parsedResult = JSON.parse(result);
-        if (parsedResult.success == true) {
-          setProcessing(false);
-          setFileExists(true);
-        }
-        if (openFileAfterDownloading.current) {
-          openFile();
-          openFileAfterDownloading.current = false;
-        }
-      } else if (Platform.OS == "android") {
-        downloadIdRef.current = JSON.parse(result).downloadId;
-      }
+      // Android only (iOS downloads through openFile in checkFileExists); the
+      // downloadComplete listener opens the file once this downloadId finishes.
+      downloadIdRef.current = JSON.parse(result).downloadId;
     });
   };
 
@@ -223,17 +220,6 @@ export const CometChatFileBubble = ({
         }
       : {};
   }, []);
-
-  /**
-   * Handler to download the file when the download icon is pressed.
-   *
-   * @param {NativeSyntheticEvent<NativeTouchEvent>} e - The touch event.
-   */
-  const shouldDownload = (e: NativeSyntheticEvent<NativeTouchEvent>) => {
-    e.stopPropagation();
-    setProcessing(true);
-    downloadFile();
-  };
 
   return (
     <View {...viewProps} style={{ flexDirection: "row", gap: 8 }}>

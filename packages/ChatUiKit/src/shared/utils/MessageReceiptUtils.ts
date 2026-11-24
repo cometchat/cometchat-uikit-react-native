@@ -1,6 +1,8 @@
 import { MessageReceipt } from "../constants/UIKitConstants";
 import { CometChat } from "@cometchat/chat-sdk-react-native";
 import { getModerationStatus } from "./MessageUtils";
+import { isOfflineUnsent, isOutboxFailed } from "../offline/identity";
+import { OfflineHub } from "../offline/OfflineHub";
 
 /**
  * Utility helper for deriving a message receipt status from a BaseMessage instance.
@@ -8,6 +10,12 @@ import { getModerationStatus } from "./MessageUtils";
 export const MessageReceiptUtils = {
   getReceiptStatus(message: CometChat.BaseMessage | undefined): MessageReceipt {
     if (!message) return MessageReceipt.WAIT;
+
+    // Offline: an own unsent message shows the clock or the failed mark, never a receipt
+    // (BEH-SEND-32). Only the offline SDK produces such messages.
+    const directFailure = OfflineHub.getInstance().directFailureOf(message) !== undefined;
+    if (directFailure || isOutboxFailed(message)) return MessageReceipt.ERROR;
+    if (isOfflineUnsent(message)) return MessageReceipt.WAIT;
 
     // Moderation status (if available)
     const moderationStatus = getModerationStatus(message);

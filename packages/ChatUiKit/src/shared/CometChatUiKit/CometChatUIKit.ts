@@ -20,6 +20,9 @@ import { CometChatSoundManager } from "../resources";
 import { getUnixTimestampInMilliseconds, messageStatus } from "../utils/CometChatMessageHelper";
 import { permissionUtil } from "../utils/PermissionUtil";
 import { CometChatUIKitHelper } from "./CometChatUIKitHelper";
+import { applyOfflineSetting, prepareOfflineSupport, startOfflineSupport } from "../offline";
+import { isOfflineOn } from "../offline/gate";
+import { sendWithStatePromise } from "../offline/send";
 import { UIKitSettings } from "./UIKitSettings";
 
 export class CometChatUIKit {
@@ -57,14 +60,21 @@ export class CometChatUIKit {
       appSetting.roles = uiKitSettings.roles;
     }
 
+    // Offline: pass-through only (absent ⇒ no call; SDK without offline ⇒ no call).
+    applyOfflineSetting(appSetting, uiKitSettings.offline);
+
     CometChatUIKit.attachListener();
+    prepareOfflineSupport();
 
     return CometChat.init(uiKitSettings.appId, appSetting.build()).then(
       async() => {
         CometChat.setSource("uikit-v5", Platform.OS, "react-native");
         ListenerInitializer.attachListeners();
+        // After the SDK's own init: register the offline hub once (inert while offline is off).
+        startOfflineSupport();
         try {
           const user = await CometChat.getLoggedinUser();
+          if (user) startOfflineSupport(user);
           CometChatUIKit.setLoggedInUser(user);
           if (user) {
             this.enableExtensions();
@@ -92,8 +102,25 @@ export class CometChatUIKit {
    * File-based init for AI agent skills.
    * Calls CometChat.initFromSettings(settings) which writes
    * integrationSource = "ai-agent" to persistent storage.
+   *
+   * Offline works the same as on init(): pass `offline` (the value `UIKitSettings.offline`
+   * takes — `true`, an options object, or an SDK `OfflineConfig`) and it reaches the SDK as
+   * `chatSDK.offline`, replacing any value in the settings file. Without it, the file's
+   * `chatSDK.offline` reaches the SDK unchanged.
+   *
+   * @param settings The parsed cometchat-settings.json object.
+   * @param offline Optional offline messaging settings for the Chat SDK.
    */
-  static initFromSettings(settings: CometChat.CometChatSettings) {
+  static initFromSettings(settings: CometChat.CometChatSettings, offline?: UIKitSettings["offline"]) {
+    // Offline: a code-level setting wins over the file's; the caller's object is left as is.
+    // Read and written untyped: an SDK before offline support has no `chatSDK.offline` in its typings.
+    if (offline !== undefined && offline !== null) {
+      settings = {
+        ...settings,
+        chatSDK: { ...settings.chatSDK, offline } as CometChat.CometChatSettings["chatSDK"],
+      };
+    }
+
     // Extract authKey from credentials (UIKit uses this for login — SDK ignores it)
     const authKey = settings.credentials?.authKey;
 
@@ -110,20 +137,26 @@ export class CometChatUIKit {
       subscriptionType: subscribePresence
         ? CometChat.AppSettings.SUBSCRIPTION_TYPE_ALL_USERS as UIKitSettings["subscriptionType"]
         : undefined,
+      // Same as init(): the kit's settings carry the offline setting the SDK was given.
+      offline: (settings.chatSDK as { offline?: UIKitSettings["offline"] } | undefined)?.offline,
     };
 
     // Capture raw settings so the Calls SDK routes through initFromSettings (ai-agent).
     CometChatUIKit.callsInitSettings = settings;
 
     CometChatUIKit.attachListener();
+    prepareOfflineSupport();
 
     // CRITICAL: Call initFromSettings — NOT init(). Only initFromSettings writes "ai-agent".
+    // `settings.chatSDK.offline` (from the file or `offline`) reaches the SDK: initFromSettings reads it itself.
     return CometChat.initFromSettings(settings).then(
       async () => {
         CometChat.setSource("uikit-v5", Platform.OS, "react-native");
         ListenerInitializer.attachListeners();
+        startOfflineSupport();
         await CometChat.getLoggedinUser()
-          .then((user: any) => {
+          .then(async (user: any) => {
+            if (user) startOfflineSupport(user);
             CometChatUIKit.setLoggedInUser(user);
             if (user) {
               this.enableExtensions();
@@ -377,6 +410,8 @@ export class CometChatUIKit {
   static sendCustomMessage(
     message: CometChat.CustomMessage
   ): Promise<CometChat.CustomMessage | CometChat.BaseMessage> {
+    // Gate read once per send. OFF: today's code below, unchanged.
+    if (isOfflineOn()) return CometChatUIKit.sendOnOfflinePath(message, "custom");
     return new Promise((resolve, reject) => {
       if (!message.getMuid()) {
         message.setMuid(String(getUnixTimestampInMilliseconds()));
@@ -406,6 +441,7 @@ export class CometChatUIKit {
   static sendMediaMessage(
     message: CometChat.MediaMessage
   ): Promise<CometChat.MediaMessage | CometChat.BaseMessage> {
+    if (isOfflineOn()) return CometChatUIKit.sendOnOfflinePath(message, "media");
     return new Promise((resolve, reject) => {
       if (!message.getMuid()) {
         message.setMuid(String(getUnixTimestampInMilliseconds()));
@@ -461,6 +497,7 @@ export class CometChatUIKit {
   static sendTextMessage(
     message: CometChat.TextMessage
   ): Promise<CometChat.TextMessage | CometChat.BaseMessage> {
+    if (isOfflineOn()) return CometChatUIKit.sendOnOfflinePath(message, "text");
     return new Promise((resolve, reject) => {
       if (!message?.getMuid()) {
         message.setMuid(String(getUnixTimestampInMilliseconds()));
@@ -484,6 +521,52 @@ export class CometChatUIKit {
           reject(err);
         });
     });
+  }
+
+  /**
+   * The statics on the offline (ON) path (README §3.4): the same compose-time preparation and
+   * `inprogress` announcement as today, then the kit's one send helper. Resolves on the server's
+   * ack (also after the message was queued), rejects on a final failure, a direct error or a
+   * discard, and never because the message was queued. When the session ends (logout, user
+   * switch) or a cache reset loses the queued send, it rejects once, quietly, with
+   * `ERROR_OFFLINE_MESSAGE_DISCARDED`, as Android does: no error event, no toast. The SDK's state
+   * comes from callbacks; the kit never stamps `metadata.error` here.
+   */
+  private static sendOnOfflinePath(message: any, kind: "text" | "media" | "custom"): Promise<any> {
+    try {
+      if (!message?.getMuid?.()) message.setMuid(String(getUnixTimestampInMilliseconds()));
+      if (!message?.getSender?.() && this.loggedInUser) message.setSender(this.loggedInUser);
+      if (kind === "media") {
+        let hasAttachment;
+        try {
+          hasAttachment = message.getAttachment();
+        } catch (error) {
+          hasAttachment = undefined;
+        }
+        if (hasAttachment == undefined) {
+          const file = message["files"]?.[0];
+          if (file == undefined) {
+            return Promise.reject(
+              new CometChat.CometChatException({
+                code: "Invalid Media message object",
+                message: "file object not found.",
+              })
+            );
+          }
+          const attachmentObject: CometChat.Attachment = new CometChat.Attachment(file);
+          attachmentObject.setName(file["name"]);
+          attachmentObject.setExtension((file["name"].lastIndexOf(".") + 1).toString());
+          attachmentObject.setMimeType(file["type"]);
+          attachmentObject.setSize(0);
+          attachmentObject.setUrl(file["uri"]);
+          message.setAttachment(attachmentObject);
+        }
+      }
+    } catch (error) {
+      return Promise.reject(error);
+    }
+    CometChatUIKitHelper.onMessageSent(message, messageStatus.inprogress);
+    return sendWithStatePromise(message, kind);
   }
 
   static getDataSource() {

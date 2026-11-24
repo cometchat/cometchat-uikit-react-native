@@ -5,7 +5,12 @@ export const AppConstants = {
   appId: '',
   region: '',
   subscriptionType: 'ALL_USERS',
-  versionNumber: 'V5.5.4',
+  versionNumber: 'V5.6.0',
+  /**
+   * The sample app turns offline support ON (the kit itself keeps it OFF unless the app passes
+   * `UIKitSettings.offline`). Set to `false` to run the sample with offline off.
+   */
+  offlineEnabled: true,
   webClientId:
     '',
   iosClientId:

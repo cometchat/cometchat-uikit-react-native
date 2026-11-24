@@ -123,6 +123,7 @@ export const CometChatMessageInput = (props: CometChatMessageInputInterface) => 
   return (
     <View style={style?.containerStyle as ViewStyle}>
       <TextInput
+        testID="cc-composer-input"
         ref={messageInputRef}
         style={style?.textStyle as TextStyle}
         onChangeText={onChangeText}

@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, ImageStyle, StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CometChatTheme } from '../../../theme/type';
+import { isOfflineUnsent } from '../../offline/identity';
+import { isMediaOutOfReach, requestMediaDownload } from '../../offline/media';
+import { MediaOutOfReachNote } from '../../offline/OfflineMediaBubble';
+import { useMediaOutOfReach } from '../../offline/useOfflineMediaUri';
 import { useTheme } from '../../../theme';
 import { useCompTheme } from '../../../theme/hook';
 import { deepMerge } from '../../helper/helperFunctions';
@@ -54,6 +58,8 @@ interface VideoCellProps {
   testID?: string;
   overflowCount?: number;
   thumbnailUrl?: string;
+  /** Own message the server has not acked (offline queue): no server thumbnail can exist yet. */
+  unsent?: boolean;
   /** Retry a failed server thumbnail — only for a just-sent message, whose thumbnail may not exist yet. */
   retryThumbnail?: boolean;
   cellStyle?: StyleProp<ViewStyle>;
@@ -73,6 +79,8 @@ interface VideoCellProps {
 const THUMBNAIL_RETRY_DELAYS_MS = [1000, 2000, 4000, 8000, 15000];
 const THUMBNAIL_RETRY_WINDOW_SECS = 120;
 
+const isRemoteUrl = (url?: string) => /^https?:\/\//i.test(url ?? '');
+
 const VideoCell = ({
   attachment,
   aspectRatio = 1,
@@ -81,6 +89,7 @@ const VideoCell = ({
   testID,
   overflowCount,
   thumbnailUrl,
+  unsent,
   retryThumbnail,
   cellStyle,
   playButtonStyle,
@@ -94,7 +103,14 @@ const VideoCell = ({
   const duration = getDuration(attachment);
   // Only stand in for a server thumbnail that is on its way: no `thumbnailUrl` means the Thumbnail
   // Generation extension is off in the dashboard (or failed for this file), and then no thumbnail shows.
-  const localThumbnail = useLocalVideoThumbnail({ remoteUrl: thumbnailUrl ? attachment.getUrl?.() : undefined });
+  // The exception is an own message still queued/sending (offline): it has no `thumbnailUrl` yet, and
+  // its video is a local file (or an upload this device linked), so the local frame stands in until it is acked.
+  const attachmentUrl = attachment.getUrl?.();
+  const localThumbnail = useLocalVideoThumbnail(
+    unsent
+      ? { localUri: isRemoteUrl(attachmentUrl) ? undefined : attachmentUrl || undefined, remoteUrl: attachmentUrl }
+      : { remoteUrl: thumbnailUrl ? attachmentUrl : undefined }
+  );
   // Bumped once a retried thumbnail is fetched, to remount the <Image> onto the now-cached file.
   const [thumbnailKey, setThumbnailKey] = useState(0);
   const retry = useRef<{ attempt: number; timer?: ReturnType<typeof setTimeout> }>({ attempt: 0 });
@@ -129,6 +145,14 @@ const VideoCell = ({
     borderBottomLeftRadius: radii.bottomLeft ?? 0,
     borderBottomRightRadius: radii.bottomRight ?? 0,
   };
+  const outOfReach = useMediaOutOfReach(attachment);
+  const handlePress = () => {
+    // Offline ON: no copy on the device and no connection, so the player has nothing to play.
+    if (isMediaOutOfReach(attachment)) return;
+    // Online with no copy: ask the SDK for one; the viewer streams the URL meanwhile (AC-12.3).
+    requestMediaDownload(attachment);
+    onPress?.();
+  };
 
   if (unsupported) {
     return (
@@ -162,7 +186,7 @@ const VideoCell = ({
   return (
     <TouchableOpacity
       testID={testID}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.85}
       style={[{ flex: 1, aspectRatio, overflow: 'hidden' }, borderStyle, cellStyle]}
       accessibilityRole="button"
@@ -205,6 +229,12 @@ const VideoCell = ({
         </View>
       )}
 
+      {outOfReach && !overflowCount ? (
+        <View pointerEvents="none" style={{ position: 'absolute', top: theme.spacing.spacing.s2, left: theme.spacing.spacing.s2, right: theme.spacing.spacing.s2 }}>
+          <MediaOutOfReachNote attachment={attachment} color={theme.color.staticWhite} />
+        </View>
+      ) : null}
+
       {!overflowCount && duration && (
         <View
           pointerEvents="none"
@@ -241,6 +271,7 @@ const VideoCell = ({
 const VideoGrid = ({
   attachments,
   thumbnailUrls,
+  unsent,
   retryThumbnail,
   onAttachmentPress,
   containerStyle,
@@ -254,6 +285,7 @@ const VideoGrid = ({
 }: {
   attachments: CometChat.Attachment[];
   thumbnailUrls?: string[];
+  unsent?: boolean;
   retryThumbnail?: boolean;
   onAttachmentPress: (attachment: CometChat.Attachment, index: number) => void;
   containerStyle?: StyleProp<ViewStyle>;
@@ -279,6 +311,7 @@ const VideoGrid = ({
       radii={radii}
       overflowCount={overflowCount}
       thumbnailUrl={thumbnailUrls?.[i]}
+      unsent={unsent}
       retryThumbnail={retryThumbnail}
       onPress={() => onAttachmentPress(attachments[i], i)}
       cellStyle={cellStyle}
@@ -413,6 +446,7 @@ export function CometChatVideosBubble({
       <VideoGrid
         attachments={allAttachments}
         thumbnailUrls={thumbnailUrls}
+        unsent={isOfflineUnsent(message)}
         retryThumbnail={Date.now() / 1000 - (message.getSentAt?.() ?? 0) < THUMBNAIL_RETRY_WINDOW_SECS}
         containerStyle={s.containerStyle}
         cellStyle={s.cellStyle}

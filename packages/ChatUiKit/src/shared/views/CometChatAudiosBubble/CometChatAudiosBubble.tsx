@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useOfflineMediaUri } from '../../offline/useOfflineMediaUri';
+import { isMediaOutOfReach, requestMediaDownload } from '../../offline/media';
+import { MediaOutOfReachNote } from '../../offline/OfflineMediaBubble';
 import {
   GestureResponderEvent,
   ImageStyle,
@@ -80,7 +83,8 @@ const AudioFilePlayer = ({
   timeTextStyle,
   downloadIconStyle,
 }: AudioFilePlayerProps) => {
-  const url = attachment.getUrl();
+  // Offline ON: play the SDK's cached copy (with an extension AVFoundation accepts); else the URL.
+  const url = useOfflineMediaUri(attachment, { playable: true });
   // Dimension tokens (theme spacing): CIRCLE 56 = s14, THUMB 12 = s3, TRACK_H = s2 (8) — a proper
   // seek-bar thickness (s1/4 read as a thin hairline). No raw pixel literals — everything derives
   // from the theme scale.
@@ -201,6 +205,9 @@ const AudioFilePlayer = ({
   };
 
   const togglePlay = () => {
+    // Offline ON: no copy and no connection, so nothing to play; online, the SDK caches one too.
+    if (isMediaOutOfReach(attachment)) return;
+    requestMediaDownload(attachment);
     if (status === 'playing') {
       // User pause — the native player is still ours, so a plain resume works later.
       wasInterruptedRef.current = false;
@@ -275,7 +282,7 @@ const AudioFilePlayer = ({
   // Reuse the same native download path as the file/media bubbles.
   const download = () => {
     if (!url) return;
-    FileManager?.checkAndDownload?.(url, attachment.getName(), () => {});
+    FileManager?.checkAndDownload?.(attachment.getUrl() ?? url, attachment.getName(), () => {});
   };
 
   // All colors are theme tokens (no hardcoded literals). Sent = purple bubble, received = neutral.
@@ -333,6 +340,7 @@ const AudioFilePlayer = ({
         >
           {attachment.getName()}
         </Text>
+        <MediaOutOfReachNote attachment={attachment} color={timeColor} />
 
         {/* Seek track (draggable) with the download button on its right — design §8.1a */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: S.s2, marginTop: S.s0_5 }}>

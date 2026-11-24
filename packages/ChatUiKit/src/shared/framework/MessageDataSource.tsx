@@ -37,6 +37,8 @@ import {
 import { CometChatMessageOption } from "../modals/CometChatMessageOption";
 import { CometChatMessageTemplate } from "../modals/CometChatMessageTemplate";
 import { CometChatConversationUtils, attachmentCountLabel } from "../utils/conversationUtils";
+import { downloadAttachments, shouldUseCachedMedia } from "../offline/media";
+import { OfflineMediaBubble } from "../offline/OfflineMediaBubble";
 import { CometChatAudioBubble } from "../views/CometChatAudioBubble";
 import { CometChatDeletedBubble } from "../views/CometChatDeletedBubble";
 import { CometChatFileBubble } from "../views/CometChatFileBubble";
@@ -828,9 +830,7 @@ export class MessageDataSource implements DataSource {
       onPress: (message: CometChat.BaseMessage) => {
         const mediaMsg = message as CometChat.MediaMessage;
         const attachments = mediaMsg.getAttachments?.() ?? [];
-        attachments.forEach((att) => {
-          FileManager?.checkAndDownload(att.getUrl(), att.getName(), () => {});
-        });
+        downloadAttachments(attachments, (uri, name) => FileManager?.checkAndDownload(uri, name, () => {}));
       },
     };
   }
@@ -1923,9 +1923,12 @@ export class MessageDataSource implements DataSource {
     // DD §9 — enableMultipleAttachments=false on the message list → deprecated single-attachment bubble.
     if (additionalParams?.enableMultipleAttachments === false) {
       const attachment = message.getAttachment();
-      return ChatConfigurator.dataSource.getAudioMessageBubble(
-        attachment.getUrl(), attachment.getName(), {}, message, theme
+      const bubble = (url: string) => ChatConfigurator.dataSource.getAudioMessageBubble(
+        url, attachment?.getName() ?? "", {}, message, theme
       );
+      return shouldUseCachedMedia() && attachment
+        ? <OfflineMediaBubble attachment={attachment} playable>{bubble}</OfflineMediaBubble>
+        : bubble(attachment?.getUrl());
     }
     // §8.1a — audio rendering matches WhatsApp:
     //  • SHARED / picked audio file (no audioType) → the headphone-chip + filename player
@@ -1946,13 +1949,20 @@ export class MessageDataSource implements DataSource {
       return <CometChatVoiceNoteBubble message={message} theme={theme} additionalParams={additionalParams} />;
     }
     const attachment = message.getAttachment();
-    return ChatConfigurator.dataSource.getAudioMessageBubble(
-      attachment.getUrl(),
-      attachment.getName(),
+    const bubble = (url: string) => ChatConfigurator.dataSource.getAudioMessageBubble(
+      url,
+      attachment?.getName() ?? "",
       {},
       message,
       theme
     );
+    // A message just sent with offline support on is the SDK's pending copy of the composed message,
+    // which has no attachment until the upload is acknowledged (getAttachment() is null). Draw it as
+    // the optimistic bubble is drawn with offline off (no source yet), not through the offline media
+    // wrapper; the acknowledged message replaces it. Same guard on every single-attachment bubble.
+    return shouldUseCachedMedia() && attachment
+      ? <OfflineMediaBubble attachment={attachment} playable>{bubble}</OfflineMediaBubble>
+      : bubble(attachment?.getUrl());
   }
   getVideoMessageContentView(
     message: CometChat.MediaMessage,
@@ -1963,9 +1973,12 @@ export class MessageDataSource implements DataSource {
     // DD §9 — enableMultipleAttachments=false → deprecated single-attachment video bubble.
     if (additionalParams?.enableMultipleAttachments === false) {
       const attachment = message.getAttachment();
-      return ChatConfigurator.dataSource.getVideoMessageBubble(
-        attachment.getUrl(), attachment.getUrl(), message, theme
+      const bubble = (url: string) => ChatConfigurator.dataSource.getVideoMessageBubble(
+        url, attachment?.getUrl(), message, theme
       );
+      return shouldUseCachedMedia() && attachment
+        ? <OfflineMediaBubble attachment={attachment} playable>{bubble}</OfflineMediaBubble>
+        : bubble(attachment?.getUrl());
     }
     // A VIDEO message ALWAYS renders the video grid — no fallback to a file list. Any attachment that
     // isn't a video (image / audio / file) shows a "no preview" placeholder cell inside the grid, and
@@ -1982,9 +1995,12 @@ export class MessageDataSource implements DataSource {
     // DD §9 — enableMultipleAttachments=false → deprecated single-attachment image bubble.
     if (additionalParams?.enableMultipleAttachments === false) {
       const attachment = message.getAttachment();
-      return ChatConfigurator.dataSource.getImageMessageBubble(
-        attachment.getUrl(), caption, message, theme
+      const bubble = (url: string) => ChatConfigurator.dataSource.getImageMessageBubble(
+        url, caption, message, theme
       );
+      return shouldUseCachedMedia() && attachment
+        ? <OfflineMediaBubble attachment={attachment}>{bubble}</OfflineMediaBubble>
+        : bubble(attachment?.getUrl());
     }
     // An IMAGE message ALWAYS renders the image grid — no fallback to a file list. Any attachment that
     // can't be previewed (unsupported format / load error) shows a "no preview" placeholder cell inside
@@ -2000,9 +2016,13 @@ export class MessageDataSource implements DataSource {
     // DD §9 — enableMultipleAttachments=false → deprecated single-attachment file bubble.
     if (additionalParams?.enableMultipleAttachments === false) {
       const attachment = message.getAttachment();
-      return ChatConfigurator.dataSource.getFileMessageBubble(
-        attachment.getUrl(), attachment.getName(), {}, message, theme
+      const bubble = (url: string) => ChatConfigurator.dataSource.getFileMessageBubble(
+        url, attachment?.getName() ?? "", {}, message, theme
       );
+      // The file bubble names its download after the URL, so it keeps the URL (no cached source).
+      return shouldUseCachedMedia() && attachment
+        ? <OfflineMediaBubble attachment={attachment}>{() => bubble(attachment.getUrl())}</OfflineMediaBubble>
+        : bubble(attachment?.getUrl());
     }
     // DD §9 (flag=true, default): the new FilesBubble renders 1..N — including a single file.
     return <CometChatFilesBubble message={message} theme={theme} additionalParams={additionalParams} />;

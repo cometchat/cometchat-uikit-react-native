@@ -28,6 +28,7 @@ import {
 import { CometChatStatusIndicatorInterface } from "../shared/views/CometChatStatusIndicator";
 import { CometChatTooltipMenu } from "../shared/views/CometChatTooltipMenu";
 import { ErrorEmptyView } from "../shared/views/ErrorEmptyView/ErrorEmptyView";
+import { OFFLINE_STRING_KEYS } from "../shared/offline/notices";
 import { useTheme } from "../theme";
 import { Skeleton } from "./Skeleton";
 import { GroupMemberStyle } from "./style";
@@ -658,7 +659,10 @@ export const CometChatGroupMembers = (props: CometChatGroupMembersInterface) => 
               : () => <Skeleton />
         }
         EmptyView={EmptyView ? EmptyView : () => <EmptyStateView />}
+        customEmptyView={!!EmptyView}
+        connectToLoadKey={OFFLINE_STRING_KEYS.connectToLoadMembers}
         ErrorView={ErrorView ? ErrorView : () => <ErrorStateView />}
+        customErrorView={!!ErrorView}
         statusIndicatorType={(user: CometChat.User) =>
           usersStatusVisibility
             ? (user?.getStatus() as CometChatStatusIndicatorInterface["type"])

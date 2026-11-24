@@ -538,6 +538,23 @@ export interface CometChatTheme {
     callActionBubbleStyles: DeepPartial<CallActionBubbleStyles>;
     messageInformationStyles: DeepPartial<CometChatTheme["messageInformationStyles"]>;
     messageOptionsStyles: DeepPartial<ActionSheetStyle>;
+    /**
+     * Offline states (message list, conversation list and media bubbles). Only drawn with the
+     * SDK's offline on. Optional: anything left out derives from today's error and date tokens.
+     */
+    offlineStyles?: {
+      /** The tappable "Not sent. Tap to retry" row of a failed message; no tint by default. */
+      failedRowStyle?: ViewStyle;
+      failedIconStyle?: ImageStyle;
+      retryTextStyle?: TextStyle;
+      notSentYetTextStyle?: TextStyle;
+      /** The "Available when online" stand-in for media the device never downloaded. */
+      mediaPlaceholderStyle?: { containerStyle?: ViewStyle; textStyle?: TextStyle };
+      /** The "Connect to load more" list footer. */
+      footerStyle?: { containerStyle?: ViewStyle; textStyle?: TextStyle };
+      /** The one-line notice ("1 unsent message was removed"). */
+      noticeStyle?: { containerStyle?: ViewStyle; textStyle?: TextStyle; actionTextStyle?: TextStyle };
+    };
   };
   avatarStyle: Partial<AvatarStyle>;
   statusIndicatorStyle: StatusIndicatorStyles;

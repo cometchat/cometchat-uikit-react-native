@@ -51,6 +51,16 @@ type MessageUIEvents = {
 };
 export class MessageUIEventListener {
   ccMessageSent?: Function = undefined;
+  /**
+   * Offline (additive): an own message's send state changed — `{ message, state, reason? }` with
+   * `state` one of "sending" | "sent" | "failed" | "discarded". Never emitted with offline off.
+   */
+  ccMessageSendStateChanged?: Function = undefined;
+  /**
+   * Offline (additive): the SDK rebuilt its offline cache — `{ reason, pendingMessagesLost }`
+   * (`null` when the count is unknown). Never emitted with offline off.
+   */
+  ccOfflineCacheReset?: Function = undefined;
   ccMessageEdited?: Function = undefined;
   ccMessageDeleted?: Function = undefined;
   ccMessageRead?: Function = undefined;

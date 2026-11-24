@@ -23,6 +23,7 @@ import { CometChatStickerKeyboard } from "./CometChatStickerKeyboard";
 import { CometChatStickerBubble } from "./StickersBubble";
 import { StickerConfigurationInterface } from "./StickerConfiguration";
 import { AdditionalAuxiliaryOptionsParams } from "../../shared/base/Types";
+import { isQuietRejection } from "../../shared/offline/send";
 import { getCometChatTranslation } from "../../shared/resources/CometChatLocalizeNew/LocalizationManager"
 
 const t = getCometChatTranslation();
@@ -161,6 +162,7 @@ const StickerButton = ({ user, group, id, stickerIconStyle, stickerIcon, replyTo
         }
       })
       .catch((err) => {
+        if (isQuietRejection(err)) return; // the session ended or the cache was reset: nothing to report
         console.error("Failed to send sticker:", err);
       });
   };

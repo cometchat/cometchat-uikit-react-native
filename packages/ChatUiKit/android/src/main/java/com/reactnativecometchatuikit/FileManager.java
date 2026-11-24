@@ -47,6 +47,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableNativeMap;
@@ -306,7 +307,11 @@ public class FileManager extends ReactContextBaseJavaModule {
                 if (fileName == null) {
                     fileName = String.valueOf(System.currentTimeMillis());
                 }
-                File destFile = new File(dir, fileName);
+                String safeName = SafeFileName.of(fileName);
+                if (safeName == null) {
+                    throw new IOException("unsafe file name");
+                }
+                File destFile = new File(dir, safeName);
                 Uri copyPath = copyFile(context, uri, destFile);
                 map.putString(FIELD_FILE_COPY_URI, copyPath.toString());
             } catch (Exception e) {
@@ -445,10 +450,19 @@ public class FileManager extends ReactContextBaseJavaModule {
     }
 
     public static void downloadFileInNewThread(Context context, String fileUrl, String fileName, String mimeType) {
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        String safeName = SafeFileName.of(fileName);
+        if (safeName == null) {
+            handleDownloadFailure(context);
+            return;
+        }
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), safeName);
         Thread downloadThread = new Thread(() -> {
             try {
-                if (!file.exists()) {
+                if (!file.exists() && SafeFileName.isFileUri(fileUrl)) {
+                    // A file already on the device: copied only from the offline media cache, no fetch.
+                    copyLocalFile(context, fileUrl, file);
+                    handleDownloadSuccess(context, mimeType, file);
+                } else if (!file.exists()) {
                     URL url = new URL(fileUrl);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.connect();
@@ -483,6 +497,37 @@ public class FileManager extends ReactContextBaseJavaModule {
             }
         });
         downloadThread.start();
+    }
+
+    /**
+     * Where the offline Chat SDK keeps media (MediaFileStore): `<dataDir>/no_backup/cometchat/media`
+     * (the folder op-sqlite reports as ANDROID_FILES_PATH, one level up, then `no_backup`), or
+     * `<files>/cometchat/media` without op-sqlite and before the SDK's one-time move to no_backup.
+     * Its database (`no_backup/databases`) and every other private file are outside both.
+     */
+    private static File[] offlineMediaRoots(Context context) {
+        File files = context.getFilesDir();
+        return new File[] {
+            new File(files.getParentFile(), "no_backup/cometchat/media"),
+            new File(files, "cometchat/media"),
+        };
+    }
+
+    private static void copyLocalFile(Context context, String fileUri, File dest) throws IOException {
+        // A file:// source is the message's data: copy it only when it resolves inside the offline
+        // media cache, never any other file the app can read.
+        File source = SafeFileName.confinedLocalFile(fileUri, offlineMediaRoots(context));
+        if (source == null) {
+            throw new IOException("source is not in the offline media cache");
+        }
+        try (InputStream in = new FileInputStream(source); OutputStream out = new FileOutputStream(dest)) {
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            out.flush();
+        }
     }
 
     private static void handleDownloadSuccess(Context context, String mimeType, final File file) {
@@ -1805,10 +1850,29 @@ public class FileManager extends ReactContextBaseJavaModule {
     @ReactMethod
     public void checkAndDownload(String url, String name, Callback callback) {
         try {
+            name = SafeFileName.of(name);
+            if (name == null) {
+                callback.invoke("{\"success\": false, \"error\": \"Invalid file name\"}");
+                return;
+            }
             if (fileExists(name)) {
                 // Already downloaded — open it and report done
                 openFileWithOption(name, ignored -> {});
                 callback.invoke("{\"success\": true, \"alreadyExists\": true}");
+                return;
+            }
+            if (SafeFileName.isFileUri(url)) {
+                // A file already on the device: copied into Downloads only from the offline media cache.
+                File dest = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), name);
+                try {
+                    copyLocalFile(getReactApplicationContext(), url, dest);
+                } catch (IOException e) {
+                    Log.w(TAG, "checkAndDownload: refused a local file outside the offline media cache");
+                    UiThreadUtil.runOnUiThread(() -> Toast.makeText(getReactApplicationContext(), "File download failed.", Toast.LENGTH_SHORT).show());
+                    callback.invoke("{\"success\": false, \"error\": \"File is not available\"}");
+                    return;
+                }
+                callback.invoke("{\"success\": true, \"alreadyExists\": false}");
                 return;
             }
             Long downloadId = downloadFile(name, url);
@@ -1837,6 +1901,11 @@ public class FileManager extends ReactContextBaseJavaModule {
     @ReactMethod
     public void openFileWithOption(String fileName, Callback callback) {
         try {
+            fileName = SafeFileName.of(fileName);
+            if (fileName == null) {
+                callback.invoke("{\"success\": false, \"error\": \"Invalid file name\"}");
+                return;
+            }
             // Get the Downloads directory path
             File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             File file = new File(downloadsDir, fileName);
@@ -1910,12 +1979,18 @@ public class FileManager extends ReactContextBaseJavaModule {
     }
 
     private boolean fileExists(String fileName) {
+        fileName = SafeFileName.of(fileName);
+        if (fileName == null) return false;
         File f = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
         return f.exists();
     }
 
     private Long downloadFile(String fileName, String url){
         try {
+            fileName = SafeFileName.of(fileName);
+            if (fileName == null) {
+                return null;
+            }
             if (fileExists(fileName)) {
                 return null;
             }

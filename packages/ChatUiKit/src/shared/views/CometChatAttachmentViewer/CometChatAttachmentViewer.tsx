@@ -13,6 +13,10 @@ import {
 } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { Icon } from '../../icons/Icon';
+import { useMediaOutOfReach, useOfflineMediaUri } from '../../offline/useOfflineMediaUri';
+import { mediaActionSource, notifyMediaUnavailable } from '../../offline/media';
+import { MediaOutOfReachLabel } from '../../offline/OfflineViews';
+import { useCometChatTranslation } from '../../resources/CometChatLocalizeNew';
 
 export interface CometChatAttachmentViewerProps {
   attachments: CometChat.Attachment[];
@@ -23,7 +27,7 @@ export interface CometChatAttachmentViewerProps {
   visible?: boolean;
 }
 
-type DownloadState = 'IDLE' | 'DOWNLOADING' | 'DONE' | 'FAILED';
+type DownloadState = 'IDLE' | 'DOWNLOADING' | 'DONE' | 'FAILED' | 'OUT_OF_REACH';
 
 const { FileManager } = NativeModules;
 
@@ -54,6 +58,11 @@ export const CometChatAttachmentViewer = ({
   const [downloadState, setDownloadState] = useState<DownloadState>('IDLE');
 
   const current = attachments[currentIndex];
+  const { t } = useCometChatTranslation();
+  // Offline ON: the saved file for display, download and Share; the URL as today otherwise.
+  const currentUri = useOfflineMediaUri(current);
+  const outOfReachRaw = useMediaOutOfReach(current);
+  const outOfReach = !!current && outOfReachRaw;
   const senderName = message.getSender?.()?.getName?.() ?? '';
   const sentAtStr = message.getSentAt ? formatSentAt(message.getSentAt()) : '';
 
@@ -77,8 +86,15 @@ export const CometChatAttachmentViewer = ({
 
   const handleDownload = () => {
     if (downloadState === 'DOWNLOADING' || downloadState === 'DONE') return;
+    const source = mediaActionSource(current);
+    if (source.kind === 'unavailable') {
+      // Say so, as Share does: without the notice the Download button looks like it does nothing.
+      setDownloadState('OUT_OF_REACH');
+      notifyMediaUnavailable();
+      return;
+    }
     setDownloadState('DOWNLOADING');
-    const url = current.getUrl();
+    const url = source.uri;
     const name = current.getName();
     FileManager?.checkAndDownload(url, name, (result: string) => {
       try {
@@ -96,7 +112,13 @@ export const CometChatAttachmentViewer = ({
 
   const handleShare = async () => {
     try {
-      await Share.share({ url: current.getUrl(), message: current.getName() });
+      const source = mediaActionSource(current);
+      if (source.kind === 'unavailable') {
+        setDownloadState('OUT_OF_REACH');
+        notifyMediaUnavailable();
+        return;
+      }
+      await Share.share({ url: source.uri, message: current.getName() });
     } catch {
       // share cancelled
     }
@@ -167,15 +189,22 @@ export const CometChatAttachmentViewer = ({
 
         {/* Media area */}
         <View style={styles.mediaArea} {...panResponder.panHandlers}>
-          {!imageLoaded && (
+          {/* Out of reach, the image never loads, so the spinner would run under the label for
+              ever. Same rule as CometChatMediaViewer (line 231). */}
+          {!imageLoaded && !outOfReach && (
             <ActivityIndicator
               color="#fff"
               size="large"
               style={StyleSheet.absoluteFill}
             />
           )}
+          {outOfReach ? (
+            <View style={[StyleSheet.absoluteFill, { justifyContent: 'center', alignItems: 'center' }]}>
+              <MediaOutOfReachLabel t={t} textStyle={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }} />
+            </View>
+          ) : null}
           <Image
-            source={{ uri: current.getUrl() }}
+            source={{ uri: currentUri }}
             style={styles.image}
             resizeMode="contain"
             onLoad={() => setImageLoaded(true)}

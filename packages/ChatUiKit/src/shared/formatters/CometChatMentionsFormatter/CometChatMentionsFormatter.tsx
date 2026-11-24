@@ -14,6 +14,7 @@ import { CometChatTheme } from "../../../theme/type";
 import { deepMerge } from "../../helper/helperFunctions";
 import { unescapeTypedMentionTokensInTree } from "../../utils/mentionTokens";
 import { getCometChatTranslation } from "../../resources/CometChatLocalizeNew/LocalizationManager";
+import { readListPage } from "../../offline/twoPhase";
 
 const t = getCometChatTranslation();
 
@@ -395,10 +396,11 @@ export class CometChatMentionsFormatter extends CometChatTextFormatter {
 
   fetchNext(freshCall?: boolean): void | null {
     if (this.getUniqueUsersList().size >= this.limit) return;
+    // Offline ON: two-phase (cached people without a keyword; a keyword has no cache, so offline
+    // it answers empty, never an error). Offline OFF: today's Promise fetch.
     this.searchRequest?.fetchNext &&
-      this.searchRequest
-        ?.fetchNext()
-        .then((users: CometChat.User[]) => {
+      readListPage<CometChat.User>(this.searchRequest, "next")
+        .then(({ rows: users }) => {
           let structuredData = this.convertCCUsersToSuggestionsItem(users);
           // Deduplicate: only add items whose id is not already present
           const existingIds = new Set(this.searchData.map((item) => item.id));

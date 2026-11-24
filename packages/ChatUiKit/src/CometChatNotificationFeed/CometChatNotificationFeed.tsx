@@ -38,6 +38,14 @@ import { Skeleton } from "./Skeleton";
 import Header from "../shared/views/CometChatList/Header";
 import { ErrorEmptyView } from "../shared/views/ErrorEmptyView/ErrorEmptyView";
 import NotificationEmptyIcon from "../shared/icons/components/notification-empty";
+import { readListPage } from "../shared/offline/twoPhase";
+import { useOfflineSessionEnded } from "../shared/offline/useOfflineSessionEnded";
+import { useOfflineReconnect } from "../shared/offline/useOfflineReconnect";
+import { isOfflineOn, sdkConnected } from "../shared/offline/gate";
+import { isNotConnectedError } from "../shared/offline/reconcile";
+import { ConnectStateView } from "../shared/offline/OfflineViews";
+import { OFFLINE_STRING_KEYS } from "../shared/offline/notices";
+import { CONTRACT_IDS } from "../shared/offline/stateContract";
 
 // ───────────────────────────────────────────────────────────────
 // Module-level constants (hoisted — no GC churn)
@@ -148,6 +156,16 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
   // ─── State ───────────────────────────────────────────────────
   const [screenState, setScreenState] = useState<ScreenState>("loading");
   const [feedItems, setFeedItems] = useState<NotificationFeedItem[]>([]);
+  // Offline ON: nothing of the old session stays on screen (UIK-LIFE-01).
+  useOfflineSessionEnded(() => {
+    setFeedItems([]);
+    setScreenState("empty");
+  });
+  // Offline ON (D84): the device was not connected and has nothing saved: "Connect to load
+  // notifications" shows (the app's own ErrorView instead, if it passed one) and the feed loads
+  // again once, by itself, when the connection is back. Any other error is not loaded again.
+  const [offlineMiss, setOfflineMiss] = useState(false);
+  const reloadOnConnectRef = useRef(false);
   const [categories, setCategories] = useState<NotificationCategory[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [totalUnreadCount, setTotalUnreadCount] = useState<number>(0);
@@ -243,8 +261,22 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
     feedRequestRef.current = builder;
 
     try {
-      const items = await builder.fetchNext();
-      
+      // Offline ON: two-phase; offline past the cache the device's feed shows (U6).
+      const page = await readListPage<any>(builder, "next");
+      const items = page.rows;
+      if (page.offline && items.length === 0) {
+        // Nothing on the device and not connected: the offline state and onError once (D84 rule 3),
+        // not an empty feed; it loads again once on reconnect.
+        reloadOnConnectRef.current = true;
+        setOfflineMiss(true);
+        setScreenState("error");
+        onError?.(page.error as CometChat.CometChatException);
+        return;
+      }
+      reloadOnConnectRef.current = false;
+      setOfflineMiss(false);
+      // The device's rows are shown and the server read could not be reached: the rows stay and
+      // nothing is reported (D84 rule 2).
       if (!items || items.length === 0) {
         setScreenState("empty");
         setFeedItems([]);
@@ -273,6 +305,8 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
         }
       }
     } catch (err: any) {
+      reloadOnConnectRef.current = false;
+      setOfflineMiss(false);
       setScreenState("error");
       onError?.(err);
     } finally {
@@ -290,13 +324,20 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
     setIsLoadingMore(true);
     setLoadMoreError(false);
     try {
-      const items = await feedRequestRef.current.fetchNext();
-      
-      if (!items || items.length === 0) {
+      const page = await readListPage<any>(feedRequestRef.current, "next");
+      const items = page.rows;
+      if (page.offline && items.length === 0) {
+        // A cached page never ends the feed (BEH-READ-09b): "load more" errors, retry reads on.
+        setLoadMoreError(true);
+      } else if (!items || items.length === 0) {
         setHasMorePages(false);
         hasMorePagesRef.current = false;
       } else {
-        setFeedItems((prev) => [...prev, ...items]);
+        // Reading past the last page can repeat items (SDK known issue): dedupe by id.
+        setFeedItems((prev) => {
+          const seen = new Set(prev.map((i: any) => String(i?.id ?? i?.getId?.() ?? "")));
+          return [...prev, ...items.filter((i: any) => !seen.has(String(i?.id ?? i?.getId?.() ?? "")))];
+        });
         markItemsAsDelivered(items);
       }
     } catch (err: any) {
@@ -327,7 +368,8 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
         markItemsAsDelivered(items);
       }
     } catch (err: any) {
-      onError?.(err);
+      // D84 rule 2: not connected over the rows on screen is not an error. A real one is reported (rule 5).
+      if (!(isOfflineOn() && (isNotConnectedError(err) || sdkConnected() === false))) onError?.(err);
     } finally {
       setIsRefreshing(false);
     }
@@ -468,6 +510,13 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
   useEffect(() => {
     fetchInitialItems();
   }, [activeCategory]);
+
+  // D84 rule 8: the one load again of the offline state.
+  useOfflineReconnect(() => {
+    if (!reloadOnConnectRef.current) return;
+    reloadOnConnectRef.current = false;
+    void fetchInitialItems();
+  });
 
   // ─── Lifecycle: WebSocket Listener ───────────────────────────
   useEffect(() => {
@@ -748,6 +797,21 @@ export const CometChatNotificationFeed = (props: CometChatNotificationFeedInterf
         <View style={mergedStyles.containerStyle}>
           {renderHeader()}
           <ErrorView />
+        </View>
+      );
+    }
+    if (offlineMiss) {
+      // D84 rule 3: offline with nothing saved: the offline state, no Retry.
+      return (
+        <View style={mergedStyles.containerStyle}>
+          {renderHeader()}
+          <ConnectStateView
+            testID={CONTRACT_IDS.emptyConnectToLoad}
+            title={t(OFFLINE_STRING_KEYS.connectToLoadNotifications)}
+            containerStyle={mergedStyles.errorStateStyle?.containerStyle}
+            titleStyle={mergedStyles.errorStateStyle?.titleStyle}
+            subtitleStyle={mergedStyles.errorStateStyle?.subTitleStyle}
+          />
         </View>
       );
     }

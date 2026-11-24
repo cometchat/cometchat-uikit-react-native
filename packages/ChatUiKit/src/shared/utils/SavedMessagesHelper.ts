@@ -216,7 +216,24 @@ export const sourceLabelFor = (
 };
 
 /**
- * A fresh request for the logged-in user's saved messages, newest save first.
+ * The Saved list's order: newest message first, by when it was *sent*, as the React UI Kit
+ * does (`sentAtDesc` in its saved-messages reducer). Pages arrive in the request's own order
+ * (oldest first within a page) and a later page can hold a message newer than anything
+ * already shown, so the order is re-established on every merge. Ties break on id so equal
+ * timestamps don't shuffle between renders. Guarded: a row from an event is not guaranteed
+ * to be a fully hydrated SDK instance, and an ordering helper must never throw.
+ */
+export const sentAtDesc = (a: CometChat.BaseMessage, b: CometChat.BaseMessage): number => {
+  const at = typeof a?.getSentAt === "function" ? Number(a.getSentAt()) || 0 : 0;
+  const bt = typeof b?.getSentAt === "function" ? Number(b.getSentAt()) || 0 : 0;
+  if (bt !== at) return bt - at;
+  const aid = typeof a?.getId === "function" ? Number(a.getId()) || 0 : 0;
+  const bid = typeof b?.getId === "function" ? Number(b.getId()) || 0 : 0;
+  return bid - aid;
+};
+
+/**
+ * A fresh request for the logged-in user's saved messages, newest message first by send time.
  *
  * The ordinary messages request, filtered to saved rows. Deliberately carries NO
  * uid/guid: `saved=1` is account-wide, and scoping it to a conversation would turn

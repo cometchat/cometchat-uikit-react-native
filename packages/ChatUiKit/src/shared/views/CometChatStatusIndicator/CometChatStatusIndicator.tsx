@@ -4,6 +4,7 @@ import { Image, View } from "react-native";
 import { useTheme } from "../../../theme";
 import { useCompTheme } from "../../../theme/hook";
 import { deepMerge } from "../../helper/helperFunctions";
+import { usePresenceHidden } from "../../offline/usePresenceHidden";
 import { StatusIndicatorStyles } from "./styles";
 
 /**
@@ -34,11 +35,14 @@ export const CometChatStatusIndicator = ({
 }: CometChatStatusIndicatorInterface) => {
   const theme = useTheme();
   const compTheme = useCompTheme();
+  // Offline ON, SDK not connected: no presence anywhere (groups' private / protected badges stay).
+  const presenceHidden = usePresenceHidden();
   const statusIndicatorStyles = useMemo(() => {
     return deepMerge(theme.statusIndicatorStyle, compTheme.statusIndicatorStyle ?? {}, style ?? {});
   }, [theme, compTheme, style]);
 
   if (type === CometChat.USER_STATUS.ONLINE) {
+    if (presenceHidden) return null;
     return (
       <View
         style={[ statusIndicatorStyles.containerStyleOnline]}

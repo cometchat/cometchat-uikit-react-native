@@ -79,6 +79,28 @@ PODS:
   - hermes-engine/Pre-built (250829098.0.17)
   - JitsiWebRTC (124.0.2)
   - leveldb-library (1.22.6)
+  - op-sqlite (19.0.6):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RCT-Folly (2024.11.18.00):
     - RCT-Folly/Default (= 2024.11.18.00)
     - ReactNativeDependencies
@@ -1315,7 +1337,7 @@ PODS:
     - React-Core
   - react-native-cometchat-push-notifications (1.0.0):
     - React-Core
-  - react-native-cometchat-ui-kit (5.5.4):
+  - react-native-cometchat-ui-kit (5.6.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1328,8 +1350,8 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-cometchat-ui-kit/Video (= 5.5.4)
-    - react-native-cometchat-ui-kit/VideoCaching (= 5.5.4)
+    - react-native-cometchat-ui-kit/Video (= 5.6.0)
+    - react-native-cometchat-ui-kit/VideoCaching (= 5.6.0)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1339,7 +1361,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-cometchat-ui-kit/Video (5.5.4):
+  - react-native-cometchat-ui-kit/Video (5.6.0):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1361,7 +1383,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-cometchat-ui-kit/VideoCaching (5.5.4):
+  - react-native-cometchat-ui-kit/VideoCaching (5.6.0):
     - DVAssetLoaderDelegate (~> 0.3.1)
     - hermes-engine
     - RCTRequired
@@ -2205,6 +2227,7 @@ DEPENDENCIES:
   - fmt (from `build/rndeps-facades/fmt`)
   - glog (from `build/rndeps-facades/glog`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - "op-sqlite (from `../node_modules/@op-engineering/op-sqlite`)"
   - RCT-Folly (from `build/rndeps-facades/RCT-Folly`)
   - RCTDeprecation (from `build/rncore-facades/RCTDeprecation`)
   - RCTRequired (from `build/rncore-facades/RCTRequired`)
@@ -2342,6 +2365,8 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-v250829098.0.17
+  op-sqlite:
+    :path: "../node_modules/@op-engineering/op-sqlite"
   RCT-Folly:
     :path: build/rndeps-facades/RCT-Folly
   RCTDeprecation:
@@ -2560,6 +2585,7 @@ SPEC CHECKSUMS:
   hermes-engine: 63c5db7d529c36335fada6582fd293ae2a105d77
   JitsiWebRTC: b47805ab5668be38e7ee60e2258f49badfe8e1d0
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
+  op-sqlite: eadcf5c63397f9736a7a62b9d8e9932482c6e9ba
   RCT-Folly: 82921e585c0400eda46fac1068297aa9dfb035e4
   RCTDeprecation: 5cc865306ce4974b7a57ddbc575fd1f3fef41957
   RCTRequired: ea6f2c41f2670961ce9a48a4bf17a190dd53e493
@@ -2602,7 +2628,7 @@ SPEC CHECKSUMS:
   React-mutationobservernativemodule: eac010f6dcd8fa461aa3d75db3a8f2ec6bcb8fbd
   react-native-background-timer: 4638ae3bee00320753647900b21260b10587b6f7
   react-native-cometchat-push-notifications: 8888495ee335776420e153e063d3644b48a41471
-  react-native-cometchat-ui-kit: 6cb9ccd42609c01039454584bab20a1637fb9d8e
+  react-native-cometchat-ui-kit: 677f045fc40e64aac193e987cd2cfb9ad6dfc320
   react-native-netinfo: 76dc2fda1e28f3b28422f9bb323f0a30910ca093
   react-native-safe-area-context: ffc410c82563bbd543724530896a52bce3a3cbd8
   react-native-video: 7ffb77da9c3c67f1aceec7126e9b277601a075fd

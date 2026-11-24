@@ -26,6 +26,16 @@ import { CometChatTextFormatter } from '../shared/formatters/CometChatTextFormat
 import { applyRawFormatters } from '../shared/formatters/applyRawFormatters';
 import { ExtensionConstants } from '../extensions/ExtensionConstants';
 import { getExtensionData } from '../extensions/ExtensionModerator';
+import { readListPage } from "../shared/offline/twoPhase";
+import { useOfflineSessionEnded } from "../shared/offline/useOfflineSessionEnded";
+import { useOfflineReconnect } from "../shared/offline/useOfflineReconnect";
+import { isOfflineOn } from "../shared/offline/gate";
+import { ConnectStateView } from "../shared/offline/OfflineViews";
+import { searchOfflineOutcome, type SearchRead } from "../shared/offline/searchOutcome";
+import { OFFLINE_STRING_KEYS } from "../shared/offline/notices";
+import { CONTRACT_IDS } from "../shared/offline/stateContract";
+import { ErrorEmptyView } from "../shared/views/ErrorEmptyView/ErrorEmptyView";
+import { CometChatRetryButton } from "../shared/views/CometChatRetryButton/CometChatRetryButton";
 
 
 /** Module-level formatter for search previews — reused across renders (no GC churn). */
@@ -121,6 +131,85 @@ function hasValidMessageSearchCriteria(searchKeyword: string, filters: CometChat
   }
 
   return filters.some(filter => validMessageFilters.includes(filter));
+}
+
+const CONVERSATION_SCOPE_FILTERS = [CometChatSearchFilter.Unread, CometChatSearchFilter.Groups];
+const MESSAGE_SCOPE_FILTERS = [
+  CometChatSearchFilter.Photos,
+  CometChatSearchFilter.Videos,
+  CometChatSearchFilter.Documents,
+  CometChatSearchFilter.Audio,
+  CometChatSearchFilter.Links
+];
+
+interface SearchScopeContext {
+  searchText: string;
+  activeFilters: CometChatSearchFilter[];
+  searchIn: CometChatSearchScope[];
+  uid?: string;
+  guid?: string;
+}
+
+/**
+ * Whether the conversations scope is part of the search. It decides both what is shown and what is read,
+ * so a scope that is not shown is never read and cannot leave a stale state behind (as Android's
+ * getSearchMode: a keyword with only message filters searches messages only).
+ */
+function isConversationScopeActive({ searchText, activeFilters, searchIn, uid, guid }: SearchScopeContext): boolean {
+  // If searchIn is empty, search in both conversations and messages
+  const effectiveSearchIn = searchIn.length === 0
+    ? [CometChatSearchScope.Conversations, CometChatSearchScope.Messages]
+    : searchIn;
+
+  // Don't render conversations if searchIn doesn't include conversations scope
+  if (!effectiveSearchIn.includes(CometChatSearchScope.Conversations)) {
+    return false;
+  }
+
+  // Don't render conversations if uid or guid is present (searching within specific user/group)
+  if (uid || guid) {
+    return false;
+  }
+
+  if (searchText && searchText.trim() !== "" && activeFilters.length === 0) {
+    return true;
+  }
+
+  if (activeFilters.length > 0) {
+    return activeFilters.some(filter => CONVERSATION_SCOPE_FILTERS.includes(filter));
+  }
+
+  return false;
+}
+
+/** Whether the messages scope is part of the search; see isConversationScopeActive. */
+function isMessageScopeActive({ searchText, activeFilters, searchIn, uid, guid }: SearchScopeContext): boolean {
+  // If searchIn is empty, search in both conversations and messages
+  const effectiveSearchIn = searchIn.length === 0
+    ? [CometChatSearchScope.Conversations, CometChatSearchScope.Messages]
+    : searchIn;
+
+  // Don't render messages if searchIn doesn't include messages scope
+  if (!effectiveSearchIn.includes(CometChatSearchScope.Messages)) {
+    return false;
+  }
+
+  // Always render messages if uid or guid is present (searching within specific user/group)
+  if (uid || guid) {
+    return true;
+  }
+
+  if (searchText && searchText.trim() !== "" && activeFilters.length === 0) {
+    return true;
+  }
+
+  if (activeFilters.length > 0) {
+    // Show messages if any message filter is selected and no conversation filter is selected
+    return activeFilters.some(filter => MESSAGE_SCOPE_FILTERS.includes(filter)) &&
+      !activeFilters.some(filter => CONVERSATION_SCOPE_FILTERS.includes(filter));
+  }
+
+  return false;
 }
 
 interface SearchState {
@@ -1048,6 +1137,22 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
   // ============================================================================
   // CONVERSATIONS SEARCH LOGIC (moved from useCometChatSearchConversationsList.ts)
   // ============================================================================
+  // Offline ON (D84 rule 7, as Android's updateFinalStateIfCompleted): a scope whose read ended not connected
+  // with nothing saved for it. Whether that shows "Connect to search" depends on both scopes (see
+  // searchOfflineOutcome): a keyword that could not reach the server, or both scopes failed. A keyword
+  // has no cache (BEH-SNAP-04); a filter may. `keyword` = the read carried one. Never set with offline off.
+  type OfflineMiss = { keyword: boolean } | null;
+  const [offlineSearchError, setOfflineSearchError] = useState<{ conversations: OfflineMiss; messages: OfflineMiss }>({
+    conversations: null,
+    messages: null,
+  });
+  // Offline ON: a real failure's onError is held until both scopes have ended, because Android reports it
+  // only when both scopes failed or results stay on screen; one failing scope with nothing shown is the plain
+  // empty state with no onError. Never filled with offline off (onError fires at once, as before).
+  const pendingSearchErrorsRef = useRef<{
+    conversations: { error: unknown; context: string } | null;
+    messages: { error: unknown; context: string } | null;
+  }>({ conversations: null, messages: null });
   const [conversationState, setConversationState] = useState({
     conversationList: [] as CometChat.Conversation[],
     fetchState: States.loaded,
@@ -1058,6 +1163,9 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
   const lastConversationSearchKeyword = useRef<string>(searchState.searchText);
   const lastConversationActiveFilters = useRef<CometChatSearchFilter[]>(searchState.activeFilters);
   const isConversationMoreResultsLoading = useRef<boolean>(false);
+  // Bumped by every new conversation search (and a session end): a read for an older keyword or filter
+  // that answers late is dropped, so it never replaces or extends the newer search's results.
+  const conversationSearchGenRef = useRef(0);
 
   // ============================================================================
   // MESSAGES SEARCH LOGIC (moved from useCometChatSearchMessagesList.ts)
@@ -1067,11 +1175,22 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     fetchState: States.loaded,
     hasMoreResults: false,
   });
+  // Offline ON: nothing of the old session stays on screen (UIK-LIFE-01).
+  useOfflineSessionEnded(() => {
+    conversationSearchGenRef.current++;
+    messageSearchGenRef.current++;
+    conversationRequestRef.current = null;
+    messageRequestRef.current = null;
+    setOfflineSearchError({ conversations: null, messages: null });
+    setConversationState({ conversationList: [], fetchState: States.loaded, hasMoreResults: false });
+    setMessageState({ messageList: [], fetchState: States.loaded, hasMoreResults: false });
+  });
 
   const messageRequestRef = useRef<CometChat.MessagesRequest | null>(null);
   const lastMessageSearchKeyword = useRef<string>(searchState.searchText);
   const lastMessageActiveFilters = useRef<CometChatSearchFilter[]>(searchState.activeFilters);
   const isMessageMoreResultsLoading = useRef<boolean>(false);
+  const messageSearchGenRef = useRef(0); // as conversationSearchGenRef, for message results
 
   // ============================================================================
   // CONVERSATION SEARCH FUNCTIONS
@@ -1105,9 +1224,14 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       return;
     }
 
+    const searchGen = conversationSearchGenRef.current;
     try {
       isConversationMoreResultsLoading.current = true;
-      const moreConversations = await conversationRequestRef.current.fetchNext();
+      // Offline ON: two-phase (a filter is answered from the device); OFF: today's fetch.
+      const page = await readListPage<CometChat.Conversation>(conversationRequestRef.current, "next");
+      if (searchGen !== conversationSearchGenRef.current) return; // the search changed while it read
+      const moreConversations = page.rows;
+      if (page.offline && moreConversations.length === 0) return;
 
       if (moreConversations.length > 0) {
         setConversationState(prev => ({
@@ -1124,15 +1248,22 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     } catch (error) {
       errorHandler(error, "loadMoreConversations");
     } finally {
-      isConversationMoreResultsLoading.current = false;
+      // A newer search reset the flag for its own reads: this stale one must not clear it.
+      if (searchGen === conversationSearchGenRef.current) isConversationMoreResultsLoading.current = false;
     }
   }, [errorHandler, conversationState.hasMoreResults]);
 
   const searchConversations = useCallback(async () => {
+    const searchGen = ++conversationSearchGenRef.current;
+    isConversationMoreResultsLoading.current = false; // a load-more of the old search is dropped when it lands
+    setOfflineSearchError(prev => (prev.conversations ? { ...prev, conversations: null } : prev));
+    pendingSearchErrorsRef.current.conversations = null;
     try {
       setConversationState(prev => ({ ...prev, fetchState: States.loading }));
 
-      if (!hasValidConversationSearchCriteria(searchState.searchText, searchState.activeFilters)) {
+      // A scope that is not part of this search (not shown) is not read, as on Android.
+      if (!isConversationScopeActive({ searchText: searchState.searchText, activeFilters: searchState.activeFilters, searchIn, uid, guid }) ||
+        !hasValidConversationSearchCriteria(searchState.searchText, searchState.activeFilters)) {
         setConversationState(prev => ({
           ...prev,
           conversationList: [],
@@ -1144,7 +1275,23 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
 
       const request = buildConversationsRequest();
       conversationRequestRef.current = request;
-      const conversations = await request.fetchNext();
+      // Offline ON: two-phase, so a filter is answered from the device; a keyword has no cache.
+      // OFF: today's fetch.
+      const page = await readListPage<CometChat.Conversation>(request, "next");
+      if (searchGen !== conversationSearchGenRef.current) return; // a newer search owns the results
+      const conversations = page.rows;
+      // D84 rule 7 (as Android): not connected with nothing saved is a failed read when it carried a keyword
+      // (no cache) or the SDK gave no cached phase. A filter read answered by its (empty) cached phase found
+      // nothing: not a failure, so it falls through to the empty list below. What a failed read shows (no
+      // onError) is decided across both scopes in searchOfflineOutcome.
+      const conversationKeyword = searchState.searchText.trim() !== "";
+      if (page.offline && conversations.length === 0 && (conversationKeyword || !page.cachedDelivered)) {
+        setOfflineSearchError(prev => ({ ...prev, conversations: { keyword: conversationKeyword } }));
+        setConversationState({ conversationList: [], fetchState: States.error, hasMoreResults: false });
+        return;
+      }
+      // D84 rule 2: saved rows are shown and the server read could not be reached: the rows stay,
+      // nothing is reported (not connected is not an error).
 
       if (conversations.length > 0) {
         const limit = (guid || uid || searchState.activeFilters.length > 0) ? 30 : 3;
@@ -1161,10 +1308,17 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         });
       }
     } catch (error) {
-      errorHandler(error, "searchConversations");
-      setConversationState(prev => ({ ...prev, fetchState: States.error }));
+      if (isOfflineOn() && searchGen === conversationSearchGenRef.current) {
+        // Offline ON: onError waits until both scopes have ended (see the flush effect below).
+        pendingSearchErrorsRef.current.conversations = { error, context: "searchConversations" };
+      } else {
+        errorHandler(error, "searchConversations");
+      }
+      if (searchGen === conversationSearchGenRef.current) {
+        setConversationState(prev => ({ ...prev, fetchState: States.error }));
+      }
     }
-  }, [searchState.searchText, searchState.activeFilters, buildConversationsRequest, guid, uid, errorHandler]);
+  }, [searchState.searchText, searchState.activeFilters, buildConversationsRequest, guid, uid, searchIn, errorHandler]);
 
   // ============================================================================
   // MESSAGE SEARCH FUNCTIONS
@@ -1228,9 +1382,14 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       return;
     }
 
+    const searchGen = messageSearchGenRef.current;
     try {
       isMessageMoreResultsLoading.current = true;
-      const moreMessages = await messageRequestRef.current.fetchPrevious();
+      // Offline ON: two-phase (a filter is answered from the device); OFF: today's fetch.
+      const page = await readListPage<CometChat.BaseMessage>(messageRequestRef.current, "previous");
+      if (searchGen !== messageSearchGenRef.current) return; // the search changed while it read
+      const moreMessages = page.rows;
+      if (page.offline && moreMessages.length === 0) return;
 
       if (moreMessages.length > 0) {
         
@@ -1254,15 +1413,21 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     } catch (error) {
       errorHandler(error, "loadMoreMessages");
     } finally {
-      isMessageMoreResultsLoading.current = false;
+      if (searchGen === messageSearchGenRef.current) isMessageMoreResultsLoading.current = false;
     }
   }, [errorHandler, messageState.hasMoreResults]);
 
   const searchMessages = useCallback(async () => {
+    const searchGen = ++messageSearchGenRef.current;
+    isMessageMoreResultsLoading.current = false; // a load-more of the old search is dropped when it lands
+    setOfflineSearchError(prev => (prev.messages ? { ...prev, messages: null } : prev));
+    pendingSearchErrorsRef.current.messages = null;
     try {
       setMessageState(prev => ({ ...prev, fetchState: States.loading }));
 
-      if (!hasValidMessageSearchCriteria(searchState.searchText, searchState.activeFilters)) {
+      // A scope that is not part of this search (not shown) is not read, as on Android.
+      if (!isMessageScopeActive({ searchText: searchState.searchText, activeFilters: searchState.activeFilters, searchIn, uid, guid }) ||
+        !hasValidMessageSearchCriteria(searchState.searchText, searchState.activeFilters)) {
         setMessageState(prev => ({
           ...prev,
           messageList: [],
@@ -1274,7 +1439,17 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
 
       const request = buildMessagesRequest();
       messageRequestRef.current = request;
-      const messages = await request.fetchPrevious();
+      // Offline ON: as for conversations above. OFF: today's fetch.
+      const page = await readListPage<CometChat.BaseMessage>(request, "previous");
+      if (searchGen !== messageSearchGenRef.current) return; // a newer search owns the results
+      const messages = page.rows;
+      const messageKeyword = searchState.searchText.trim() !== "";
+      if (page.offline && messages.length === 0 && (messageKeyword || !page.cachedDelivered)) {
+        setOfflineSearchError(prev => ({ ...prev, messages: { keyword: messageKeyword } }));
+        setMessageState({ messageList: [], fetchState: States.error, hasMoreResults: false });
+        return;
+      }
+      // D84 rule 2: saved rows stay, nothing is reported offline.
 
       if (messages.length > 0) {
         const reversedList = messages.reverse();
@@ -1299,10 +1474,16 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
         });
       }
     } catch (error) {
-      errorHandler(error, "searchMessages");
-      setMessageState(prev => ({ ...prev, fetchState: States.error }));
+      if (isOfflineOn() && searchGen === messageSearchGenRef.current) {
+        pendingSearchErrorsRef.current.messages = { error, context: "searchMessages" };
+      } else {
+        errorHandler(error, "searchMessages");
+      }
+      if (searchGen === messageSearchGenRef.current) {
+        setMessageState(prev => ({ ...prev, fetchState: States.error }));
+      }
     }
-  }, [searchState.searchText, searchState.activeFilters, buildMessagesRequest, guid, uid, errorHandler]);
+  }, [searchState.searchText, searchState.activeFilters, buildMessagesRequest, guid, uid, searchIn, errorHandler]);
 
   // ============================================================================
   // SEARCH EFFECTS - Trigger searches when search text or filters change
@@ -1329,76 +1510,62 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     }
   }, [searchState.searchText, searchState.activeFilters, searchMessages]);
 
-  const shouldRenderConversations = useCallback(() => {
-    // If searchIn is empty, search in both conversations and messages
-    const effectiveSearchIn = searchIn.length === 0
-      ? [CometChatSearchScope.Conversations, CometChatSearchScope.Messages]
-      : searchIn;
+  // D84 rule 8: a search showing "Connect to search" runs again once, by itself, when the
+  // connection is back. Only offline ON listens; any other error is not re-run.
+  const searchConversationsRef = useRef(searchConversations);
+  searchConversationsRef.current = searchConversations;
+  const searchMessagesRef = useRef(searchMessages);
+  searchMessagesRef.current = searchMessages;
+  // Which scopes to read again: set on every render from what the screen shows (see renderResults).
+  // "Connect to search" runs the whole search again, as Android's reconnect re-run does; an error view
+  // that has a not-connected scope runs that scope again (as before); the plain empty state of a
+  // filter-only search runs nothing.
+  const reconnectRerunRef = useRef({ conversations: false, messages: false });
+  useOfflineReconnect(() => {
+    const rerun = reconnectRerunRef.current;
+    if (rerun.conversations) void searchConversationsRef.current();
+    if (rerun.messages) void searchMessagesRef.current();
+  });
 
-    // Don't render conversations if searchIn doesn't include conversations scope
-    if (!effectiveSearchIn.includes(CometChatSearchScope.Conversations)) {
-      return false;
+  /** The error view's Retry: both searches again. */
+  const retrySearch = () => {
+    void searchConversations();
+    void searchMessages();
+  };
+
+  const shouldRenderConversations = useCallback(
+    () => isConversationScopeActive({ searchText: searchState.searchText, activeFilters: searchState.activeFilters, searchIn, uid, guid }),
+    [searchState.activeFilters, searchState.searchText, uid, guid, searchIn]
+  );
+
+  const shouldRenderMessages = useCallback(
+    () => isMessageScopeActive({ searchText: searchState.searchText, activeFilters: searchState.activeFilters, searchIn, uid, guid }),
+    [searchState.activeFilters, searchState.searchText, uid, guid, searchIn]
+  );
+
+  /**
+   * Offline ON: report the held real failures once both scopes have ended (Android updateFinalStateIfCompleted).
+   * One scope failed and nothing is on screen: the plain empty state, nothing reported. Both scopes failed, or
+   * rows stay on screen: onError, as before.
+   */
+  useEffect(() => {
+    const pending = pendingSearchErrorsRef.current;
+    if (!pending.conversations && !pending.messages) return;
+    if (conversationState.fetchState === States.loading || messageState.fetchState === States.loading) return;
+    const conversationsRendered = shouldRenderConversations();
+    const messagesRendered = shouldRenderMessages();
+    const nothingShown = conversationState.conversationList.length === 0 && messageState.messageList.length === 0;
+    const failedScopes =
+      (conversationsRendered && conversationState.fetchState === States.error ? 1 : 0) +
+      (messagesRendered && messageState.fetchState === States.error ? 1 : 0);
+    const report = !(nothingShown && failedScopes < 2);
+    const held = [pending.conversations, pending.messages];
+    pendingSearchErrorsRef.current = { conversations: null, messages: null };
+    if (!report) return;
+    for (const entry of held) {
+      if (entry) errorHandler(entry.error, entry.context);
     }
-
-    // Don't render conversations if uid or guid is present (searching within specific user/group)
-    if (uid || guid) {
-      return false;
-    }
-
-    // Define conversation filters
-    const conversationFilters = [CometChatSearchFilter.Unread, CometChatSearchFilter.Groups];
-
-    if (searchState.searchText && searchState.searchText.trim() !== "" && searchState.activeFilters.length === 0) {
-      return true;
-    }
-
-    if (searchState.activeFilters.length > 0) {
-      return searchState.activeFilters.some(filter => conversationFilters.includes(filter));
-    }
-
-    return false;
-  }, [searchState.activeFilters, searchState.searchText, uid, guid, searchIn]);
-
-  const shouldRenderMessages = useCallback(() => {
-    // If searchIn is empty, search in both conversations and messages
-    const effectiveSearchIn = searchIn.length === 0
-      ? [CometChatSearchScope.Conversations, CometChatSearchScope.Messages]
-      : searchIn;
-
-    // Don't render messages if searchIn doesn't include messages scope
-    if (!effectiveSearchIn.includes(CometChatSearchScope.Messages)) {
-      return false;
-    }
-
-    // Always render messages if uid or guid is present (searching within specific user/group)
-    if (uid || guid) {
-      return true;
-    }
-
-    // Define message filters
-    const messageFilters = [
-      CometChatSearchFilter.Photos,
-      CometChatSearchFilter.Videos,
-      CometChatSearchFilter.Documents,
-      CometChatSearchFilter.Audio,
-      CometChatSearchFilter.Links
-    ];
-
-    // Define conversation filters
-    const conversationFilters = [CometChatSearchFilter.Unread, CometChatSearchFilter.Groups];
-
-    if (searchState.searchText && searchState.searchText.trim() !== "" && searchState.activeFilters.length === 0) {
-      return true;
-    }
-
-    if (searchState.activeFilters.length > 0) {
-      // Show messages if any message filter is selected and no conversation filter is selected
-      return searchState.activeFilters.some(filter => messageFilters.includes(filter)) &&
-        !searchState.activeFilters.some(filter => conversationFilters.includes(filter));
-    }
-
-    return false;
-  }, [searchState.activeFilters, searchState.searchText, uid, guid, searchIn]);
+  });
 
   // Handle scroll-based fetching for messages
   const handleScrollEnd = useCallback((event: any) => {
@@ -1767,9 +1934,69 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
     return new Date(timestamp * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }, []);
 
+  /** "No results found": the app's own empty view, or the kit's. */
+  const renderNoResults = () => {
+    if (emptyView) {
+      return emptyView();
+    }
+
+    return (
+      <View style={[mergedStyles.emptyStateStyle?.containerStyle]}>
+        <Icon
+          name="empty-search"
+          size={120}
+          height={120}
+          width={120}
+          imageStyle={mergedStyles.emptyStateStyle?.iconStyle}
+          containerStyle={mergedStyles.emptyStateStyle?.iconContainerStyle}
+        />
+        <Text style={[mergedStyles.emptyStateStyle?.titleStyle]}>
+          {t("SEARCH_NO_RESULTS_FOUND_TITLE") || "No Results Found"}
+        </Text>
+        <Text style={[mergedStyles.emptyStateStyle?.subtitleStyle]}>
+          {t("SEARCH_NO_RESULTS_FOUND_SUBTITLE") || "We couldn't find any matches. Please try a different search keyword."}
+        </Text>
+      </View>
+    );
+  };
+
   const renderResults = () => {
     const conversationsRendered = shouldRenderConversations();
     const messagesRendered = shouldRenderMessages();
+
+    // Offline ON, nothing to show and a scope that ended in an error (D84): what shows is decided across both
+    // scopes, as Android does (searchOfflineOutcome). "Connect to search" (rule 7): a keyword that could not
+    // reach the server, or both scopes failed, and every failure was not-connected: an offline state, not an
+    // error (no onError). A filter-only search where only one scope failed is the plain empty state. Any real
+    // failure (rule 4) is the error view. The app's own empty / error view wins over the kit's. Never over rows.
+    const nothingShown = conversationState.conversationList.length === 0 && messageState.messageList.length === 0;
+    const readOf = (
+      rendered: boolean,
+      fetchState: States,
+      miss: OfflineMiss
+    ): SearchRead => ({
+      ran: rendered,
+      failure: rendered && fetchState === States.error ? (miss ? "notConnected" : "error") : null,
+      keyword: !!miss?.keyword,
+    });
+    const searchActive = searchState.searchText.trim() !== "" || searchState.activeFilters.length > 0;
+    const offlineOutcome = searchOfflineOutcome({
+      offlineOn: isOfflineOn() && searchActive,
+      nothingShown,
+      conversations: readOf(conversationsRendered, conversationState.fetchState, offlineSearchError.conversations),
+      messages: readOf(messagesRendered, messageState.fetchState, offlineSearchError.messages),
+    });
+    // Read again once on reconnect (D84 rule 8): the whole search for "Connect to search"; a not-connected
+    // scope of an error view; nothing for the plain empty state.
+    reconnectRerunRef.current =
+      offlineOutcome === "connectToSearch"
+        ? { conversations: conversationsRendered, messages: messagesRendered }
+        : offlineOutcome === "error"
+          ? {
+              conversations: conversationsRendered && !!offlineSearchError.conversations,
+              messages: messagesRendered && !!offlineSearchError.messages,
+            }
+          : { conversations: false, messages: false };
 
     // Initial empty state - no search text and no filters
     if ((!searchState.searchText || searchState.searchText.trim() === "") && searchState.activeFilters.length === 0) {
@@ -1805,6 +2032,52 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       return loadingView ? loadingView() : <Skeleton />;
     }
 
+    if (offlineOutcome === "connectToSearch") {
+      if (emptyView) {
+        return emptyView();
+      }
+      return (
+        <ConnectStateView
+          testID={CONTRACT_IDS.emptyConnectToSearch}
+          title={t(OFFLINE_STRING_KEYS.connectToSearchMessages)}
+          subtitle={t(OFFLINE_STRING_KEYS.connectToSearchSubtitle)}
+          containerStyle={mergedStyles.errorStateStyle?.containerStyle}
+          titleStyle={mergedStyles.errorStateStyle?.titleStyle}
+          subtitleStyle={mergedStyles.errorStateStyle?.subtitleStyle}
+        />
+      );
+    }
+    if (offlineOutcome === "empty") {
+      return renderNoResults();
+    }
+    if (offlineOutcome === "error") {
+      if (errorView) {
+        return errorView();
+      }
+
+      return (
+        <ErrorEmptyView
+          testID="CometChatSearch.error"
+          title={t("OOPS")}
+          subTitle={t("SOMETHING_WENT_WRONG")}
+          tertiaryTitle={t("WRONG_TEXT_TRY_AGAIN")}
+          Icon={
+            <Icon
+              name="error-state"
+              size={theme.spacing.margin.m15 << 1}
+              icon={mergedStyles.errorStateStyle?.icon}
+              imageStyle={mergedStyles.errorStateStyle?.iconStyle}
+              containerStyle={mergedStyles.errorStateStyle?.iconContainerStyle}
+            />
+          }
+          containerStyle={mergedStyles.errorStateStyle?.containerStyle}
+          titleStyle={mergedStyles.errorStateStyle?.titleStyle}
+          subTitleStyle={mergedStyles.errorStateStyle?.subtitleStyle}
+          RetryView={<CometChatRetryButton onPress={retrySearch} />}
+        />
+      );
+    }
+
     // Check if we have search text or filters but no actual results
     if ((searchState.searchText.trim() !== "" || searchState.activeFilters.length > 0) &&
       conversationState.conversationList.length === 0 &&
@@ -1814,28 +2087,7 @@ export const CometChatSearch: React.FC<CometChatSearchProps> = ({
       conversationState.fetchState !== States.error &&
       messageState.fetchState !== States.error) {
       // No results found state
-      if (emptyView) {
-        return emptyView();
-      }
-
-      return (
-        <View style={[mergedStyles.emptyStateStyle?.containerStyle]}>
-          <Icon
-            name="empty-search"
-            size={120}
-            height={120}
-            width={120}
-            imageStyle={mergedStyles.emptyStateStyle?.iconStyle}
-            containerStyle={mergedStyles.emptyStateStyle?.iconContainerStyle}
-          />
-          <Text style={[mergedStyles.emptyStateStyle?.titleStyle]}>
-            {t("SEARCH_NO_RESULTS_FOUND_TITLE") || "No Results Found"}
-          </Text>
-          <Text style={[mergedStyles.emptyStateStyle?.subtitleStyle]}>
-            {t("SEARCH_NO_RESULTS_FOUND_SUBTITLE") || "We couldn't find any matches. Please try a different search keyword."}
-          </Text>
-        </View>
-      );
+      return renderNoResults();
     }
 
     // Show search results with actual item lists - USING SINGLE FLATLIST FOR VIRTUALIZATION

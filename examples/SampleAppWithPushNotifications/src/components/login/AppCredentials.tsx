@@ -23,7 +23,7 @@ import {
   useTheme,
 } from '@cometchat/chat-uikit-react-native';
 import { navigate, navigationRef } from '../../navigation/NavigationService';
-import { SCREEN_CONSTANTS } from '../../utils/AppConstants';
+import { AppConstants, SCREEN_CONSTANTS } from '../../utils/AppConstants';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -166,6 +166,8 @@ const AppCredentials: React.FC = () => {
         region: newRegion,
         subscriptionType: CometChat.AppSettings
           .SUBSCRIPTION_TYPE_ALL_USERS as UIKitSettings['subscriptionType'],
+        // Offline support is on in the sample app (see AppConstants.offlineEnabled).
+        offline: AppConstants.offlineEnabled ? true : undefined,
       });
     } catch (error: any) {
       console.error('Failed to save credentials', error);

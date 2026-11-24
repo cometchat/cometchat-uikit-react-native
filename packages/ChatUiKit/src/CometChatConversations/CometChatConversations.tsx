@@ -68,6 +68,21 @@ import { useTheme } from "../theme";
 import { Skeleton } from "./Skeleton";
 import { ConversationStyle, Style } from "./style";
 import MessageReceiptUtils from "../shared/utils/MessageReceiptUtils";
+import { OfflineHub } from "../shared/offline/OfflineHub";
+import {
+  failStrandedPreviews,
+  forgetStrandedPreview,
+  isFilteredConversationRequest,
+  refreshPreviewAfterDiscard,
+  routeIncomingMessage,
+  strandedPreviewsToRestore,
+} from "../shared/offline/conversations";
+import { dispatchSweptGroupAction } from "../shared/offline/groupActions";
+import { resolveTwoPhase } from "../shared/offline/twoPhase";
+import { isOfflineOn, offlineSdk } from "../shared/offline/gate";
+import { conversationRowTestID } from "../shared/offline/stateContract";
+import { onRemotePinEvent } from "../shared/offline/conversationPins";
+import { OfflineNoticeView, useOfflineNotice } from "../shared/offline/OfflineViews";
 import { deepMerge } from "../shared/helper/helperFunctions";
 import Delete from "../shared/icons/components/delete";
 import { DeepPartial } from "../shared/helper/types";
@@ -186,6 +201,11 @@ export interface ConversationInterface {
    */
   hideError?: boolean;
   /**
+   * Offline support: hide the one-line notices (cache rebuilt, unsent messages lost). Has no
+   * effect with offline off. Default `false`.
+   */
+  hideOfflineNotices?: boolean;
+  /**
    * Callback for when a conversation item is pressed.
    */
   onItemPress?: (item: CometChat.Conversation) => void;
@@ -299,6 +319,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
     SubtitleView,
     TrailingView,
     hideError = false,
+    hideOfflineNotices = false,
     onItemPress,
     onItemLongPress,
     onError,
@@ -766,7 +787,11 @@ export const CometChatConversations = (props: ConversationInterface) => {
    * Updates the conversation with a new message and moves it to the top of the list.
    * @param newMessage - The new message to update.
    */
-  const updateLastMessage = (newMessage: CometChat.BaseMessage) => {
+  /**
+   * @param countUnread false for a message the SDK's catch-up sweep delivered (offline ON): the
+   *        synced conversation counts already include it (UIK-SYNC-02).
+   */
+  const updateLastMessage = (newMessage: CometChat.BaseMessage, countUnread: boolean = true) => {
     CometChat.CometChatHelper.getConversationFromMessage(newMessage)
       .then((conversation) => {
         if (newMessage.getCategory() === MessageCategoryConstants.interactive) {
@@ -780,6 +805,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
           CometChat.CometChatHelper.getConversationFromMessage(newMessage)
             .then((newConversation) => {
               if (
+                countUnread &&
                 newConversation?.getLastMessage().getSender().getUid() !==
                 loggedInUser.current?.getUid()
               )
@@ -814,7 +840,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
         }
         // Update last message and unread count.
         oldConversation.setLastMessage(newMessage);
-        if (newMessage.getSender().getUid() != loggedInUser.current?.getUid())
+        if (countUnread && newMessage.getSender().getUid() != loggedInUser.current?.getUid())
           oldConversation.setUnreadMessageCount(oldConversation.getUnreadMessageCount() + 1);
         placeConversation(CommonUtils.clone(oldConversation));
       })
@@ -1498,6 +1524,108 @@ export const CometChatConversations = (props: ConversationInterface) => {
     return oldConversation;
   };
 
+  // Offline (ON path): an own pending send moves its chat to the top with that preview
+  // (BEH-CONV-01); a failed one keeps the preview with its failed mark. Private hub channel,
+  // inert while offline is off.
+  const offlineSendStateRef = React.useRef<(event: any) => void>(() => {});
+  // Kill switch (UIK-LIFE-03): previews the SDK dropped when offline turned off.
+  const strandedPreviewsRef = React.useRef(new Map<string, any>());
+  const usedOfflineRef = React.useRef(false);
+  const failStrandedPreviewsRef = React.useRef<() => void>(() => {});
+  failStrandedPreviewsRef.current = () => {
+    const hub = OfflineHub.getInstance();
+    const rows = conversationListRef.current?.getAllListItems?.() ?? [];
+    const count = failStrandedPreviews(rows, strandedPreviewsRef.current, hub);
+    if (count > 0) hub.notify({ kind: "messages_not_sent", count, previewsOnly: true });
+  };
+  offlineSendStateRef.current = (event: any) => {
+    if (event.gen !== OfflineHub.getInstance().gen) return;
+    if (event.state === "sent" || event.state === "discarded") forgetStrandedPreview(strandedPreviewsRef.current, event.message);
+    if (event.state === "discarded") {
+      // The SDK moved this chat's preview back (or removed a local-only chat): show its answer.
+      void refreshPreviewAfterDiscard(event.message, {
+        rows: () => conversationListRef.current?.getAllListItems?.() ?? [],
+        fetchConversation: (withId: string, type: string) =>
+          resolveTwoPhase<CometChat.Conversation>(
+            (listener) => offlineSdk().getConversation(withId, type, listener),
+            "Conversation"
+          ).catch((e: any) => {
+            if (e?.code === "ERR_CONVERSATION_NOT_ACCESSIBLE" || e?.code === "ERR_CONVERSATION_NOT_FOUND") return null;
+            throw e;
+          }),
+        update: (row: any) => conversationListRef.current?.updateList(CommonUtils.clone(row)),
+        remove: (id: string) => conversationListRef.current?.removeItemFromList(id),
+      });
+      return;
+    }
+    if (event.state !== "sending" && event.state !== "failed") return;
+    const message = event.message;
+    if (!message || message.getParentMessageId?.()) return;
+    if (!shouldUpdateLastMessageAndUnreadCount(message)) return;
+    updateLastMessage(message, false);
+  };
+  React.useEffect(() => {
+    const hub = OfflineHub.getInstance();
+    usedOfflineRef.current = isOfflineOn();
+    const subscriptions = [
+      hub.sendState$.subscribe((e) => {
+        usedOfflineRef.current = true;
+        offlineSendStateRef.current(e);
+      }),
+      hub.connected$.subscribe(() => {
+        if (isOfflineOn()) {
+          usedOfflineRef.current = true;
+          return;
+        }
+        // Offline was on and is off now. A list that never used offline does nothing at all.
+        if (!usedOfflineRef.current) return;
+        // After this tick's other connection listeners: an open chat counts its own rows first.
+        setTimeout(() => failStrandedPreviewsRef.current(), 0);
+      }),
+      hub.session$.subscribe(() => strandedPreviewsRef.current.clear()),
+    ];
+    return () => subscriptions.forEach((s) => s.unsubscribe());
+  }, []);
+  // Offline (ON path): a pin or unpin made on another device or by an admin moves the row
+  // (UIK-CONV-01). The gate is read per event; with offline off the event is ignored, as the
+  // release before it did. Own pins keep updating from the pin call's onSuccess.
+  const remotePinRef = React.useRef<(event: any) => void>(() => {});
+  remotePinRef.current = (event: any) => {
+    onRemotePinEvent(event, {
+      rows: () => conversationListRef.current?.getAllListItems?.() ?? [],
+      place: placeConversation,
+      clone: (row: any) => CommonUtils.clone(row),
+      loggedInUid: () => loggedInUser.current?.getUid?.(),
+      filtered: () => !!searchText || isFilteredConversationRequest(conversationsRequestBuilder),
+      fetchConversation: (withId: string, type: string) => CometChat.getConversation(withId, type),
+    });
+  };
+  React.useEffect(() => {
+    const subscription = OfflineHub.getInstance().conversationPin$.subscribe((e) => remotePinRef.current(e));
+    return () => subscription.unsubscribe();
+  }, []);
+  const { notice: offlineNotice, dismiss: dismissOfflineNotice } = useOfflineNotice(
+    !hideOfflineNotices,
+    // Session-wide notices (cache rebuilt, sends lost) belong on the chat list.
+    (n) => !n.conversationId && !n.message
+  );
+
+  /**
+   * Every incoming message, whatever its category: a swept (SYNC, offline ON) message updates
+   * the preview only (no sound, no unread +1, no receipt; UIK-SYNC-02); a live one runs today's
+   * handling.
+   */
+  const onIncomingMessage = (message: any) => {
+    routeIncomingMessage(message, {
+      accepts: shouldUpdateLastMessageAndUnreadCount,
+      previewOnly: (m: any) => updateLastMessage(m, false),
+      live: (m: any) => {
+        messageEventHandler(m);
+        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+      },
+    });
+  };
+
   // Set up event listeners for user, call, group and message events.
   React.useEffect(() => {
     // Get logged in user.
@@ -1584,83 +1712,88 @@ export const CometChatConversations = (props: ConversationInterface) => {
     );
 
     // Listen for group events.
-    CometChat.addGroupListener(
-      groupListenerId,
-      new CometChat.GroupListener({
-        onGroupMemberScopeChanged: (
-          message: CometChat.Action,
-          changedUser: CometChat.GroupMember,
-          newScope: CometChat.GroupMemberScope,
-          oldScope: CometChat.GroupMemberScope,
-          changedGroup: CometChat.Group
-        ) => {
+    const groupListenerHandlers = {
+      onGroupMemberScopeChanged: (
+        message: CometChat.Action,
+        changedUser: CometChat.GroupMember,
+        newScope: CometChat.GroupMemberScope,
+        oldScope: CometChat.GroupMemberScope,
+        changedGroup: CometChat.Group
+      ) => {
+        groupHandler(message, {
+          action: "scopeChange",
+          actionOn: changedUser,
+          newScope: newScope,
+          oldScope: oldScope,
+          group: changedGroup,
+        });
+      },
+      onGroupMemberKicked: (
+        message: CometChat.Action,
+        kickedUser: CometChat.User,
+        kickedBy: CometChat.User,
+        kickedFrom: CometChat.Group
+      ) => {
+        groupHandler(message, {
+          action: "kicked",
+          actionOn: kickedUser,
+          actionBy: kickedBy,
+          group: kickedFrom,
+        });
+      },
+      onGroupMemberLeft: (
+        message: CometChat.Action,
+        leavingUser: CometChat.User,
+        group: CometChat.Group
+      ) => {
+        groupHandler(message, { action: "left", actionOn: leavingUser, group });
+      },
+      onGroupMemberUnbanned: (message: CometChat.Action) => {
+        groupHandler(message);
+      },
+      onGroupMemberBanned: (
+        message: CometChat.Action,
+        bannedUser: CometChat.User,
+        bannedBy: CometChat.User,
+        bannedFrom: CometChat.Group
+      ) => {
+        groupHandler(message, {
+          action: "banned",
+          actionOn: bannedUser,
+          actionBy: bannedBy,
+          group: bannedFrom,
+        });
+      },
+      onMemberAddedToGroup: (
+        message: CometChat.Action,
+        userAdded: CometChat.User,
+        userAddedBy: CometChat.User,
+        userAddedIn: CometChat.Group
+      ) => {
+        if (onMemberAddedToGroupDebounceTimer.current) {
+          clearTimeout(onMemberAddedToGroupDebounceTimer.current);
+        }
+        onMemberAddedToGroupDebounceTimer.current = setTimeout(() => {
           groupHandler(message, {
-            action: "scopeChange",
-            actionOn: changedUser,
-            newScope: newScope,
-            oldScope: oldScope,
-            group: changedGroup,
+            action: "joined",
+            actionOn: userAdded,
+            actionBy: userAddedBy,
+            group: userAddedIn,
           });
-        },
-        onGroupMemberKicked: (
-          message: CometChat.Action,
-          kickedUser: CometChat.User,
-          kickedBy: CometChat.User,
-          kickedFrom: CometChat.Group
-        ) => {
-          groupHandler(message, {
-            action: "kicked",
-            actionOn: kickedUser,
-            actionBy: kickedBy,
-            group: kickedFrom,
-          });
-        },
-        onGroupMemberLeft: (
-          message: CometChat.Action,
-          leavingUser: CometChat.User,
-          group: CometChat.Group
-        ) => {
-          groupHandler(message, { action: "left", actionOn: leavingUser, group });
-        },
-        onGroupMemberUnbanned: (message: CometChat.Action) => {
-          groupHandler(message);
-        },
-        onGroupMemberBanned: (
-          message: CometChat.Action,
-          bannedUser: CometChat.User,
-          bannedBy: CometChat.User,
-          bannedFrom: CometChat.Group
-        ) => {
-          groupHandler(message, {
-            action: "banned",
-            actionOn: bannedUser,
-            actionBy: bannedBy,
-            group: bannedFrom,
-          });
-        },
-        onMemberAddedToGroup: (
-          message: CometChat.Action,
-          userAdded: CometChat.User,
-          userAddedBy: CometChat.User,
-          userAddedIn: CometChat.Group
-        ) => {
-          if (onMemberAddedToGroupDebounceTimer.current) {
-            clearTimeout(onMemberAddedToGroupDebounceTimer.current);
-          }
-          onMemberAddedToGroupDebounceTimer.current = setTimeout(() => {
-            groupHandler(message, {
-              action: "joined",
-              actionOn: userAdded,
-              actionBy: userAddedBy,
-              group: userAddedIn,
-            });
-          }, 50);
-        },
-        onGroupMemberJoined: (message: CometChat.Action) => {
-          groupHandler(message);
-        },
-      })
-    );
+        }, 50);
+      },
+      onGroupMemberJoined: (message: CometChat.Action) => {
+        groupHandler(message);
+      },
+    };
+    CometChat.addGroupListener(groupListenerId, new CometChat.GroupListener(groupListenerHandlers));
+    // Offline (ON path): a group action the catch-up sweep delivered while the device was offline
+    // (me kicked, banned or removed) fires no GroupListener callback; run the same handlers for it,
+    // so that conversation leaves the list as it would have live (UIT-SYNC-13). Inert with offline off.
+    const sweptGroupActions = OfflineHub.getInstance().groupActionSwept$.subscribe((event) => {
+      if (event.gen !== OfflineHub.getInstance().gen) return;
+      dispatchSweptGroupAction(event.message, groupListenerHandlers);
+    });
 
     // Listen for conversation deletion events.
     CometChatUIEventHandler.addConversationListener(conversationListenerId, {
@@ -1704,25 +1837,13 @@ export const CometChatConversations = (props: ConversationInterface) => {
         checkAndUpdateLastMessage(message);
       },
       onTextMessageReceived: (textMessage: CometChat.TextMessage) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(textMessage)) {
-          return;
-        }
-        messageEventHandler(textMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(textMessage);
       },
       onMediaMessageReceived: (mediaMessage: CometChat.MediaMessage) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(mediaMessage)) {
-          return;
-        }
-        messageEventHandler(mediaMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(mediaMessage);
       },
       onCustomMessageReceived: (customMessage: CometChat.CustomMessage) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(customMessage)) {
-          return;
-        }
-        messageEventHandler(customMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(customMessage);
       },
       onMessageDeleted: (deletedMessage: CometChat.BaseMessage) => {
         // Skip thread replies — they don't affect conversation unread count
@@ -1751,41 +1872,21 @@ export const CometChatConversations = (props: ConversationInterface) => {
         typingEventHandler(typingIndicator, false);
       },
       onFormMessageReceived: (formMessage: any) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(formMessage)) {
-          return;
-        }
-        messageEventHandler(formMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(formMessage);
       },
       onCardMessageReceived: (cardMessage: any) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(cardMessage)) {
-          return;
-        }
-        messageEventHandler(cardMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(cardMessage);
       },
       onSchedulerMessageReceived: (schedulerMessage: any) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(schedulerMessage)) {
-          return;
-        }
-        messageEventHandler(schedulerMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(schedulerMessage);
       },
       onCustomInteractiveMessageReceived: (customInteractiveMessage: any) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(customInteractiveMessage)) {
-          return;
-        }
-        messageEventHandler(customInteractiveMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(customInteractiveMessage);
       },
       // Agent (agentic/assistant) reply — update the conversation's last message + unread
       // count in real time, otherwise the subtitle only refreshes after a re-fetch.
       onAIAssistantMessageReceived: (aiAssistantMessage: any) => {
-        if (!shouldUpdateLastMessageAndUnreadCount(aiAssistantMessage)) {
-          return;
-        }
-        messageEventHandler(aiAssistantMessage);
-        !disableSoundForMessages && CometChatSoundManager.play("incomingMessage");
+        onIncomingMessage(aiAssistantMessage);
       },
       onMessageModerated: (moderatedMessage: CometChat.BaseMessage) => {
         checkAndUpdateLastMessage(moderatedMessage);
@@ -1981,6 +2082,7 @@ export const CometChatConversations = (props: ConversationInterface) => {
       CometChat.removeUserListener(userListenerId);
       CometChat.removeCallListener(callListenerId);
       CometChat.removeGroupListener(groupListenerId);
+      sweptGroupActions.unsubscribe();
       CometChatUIEventHandler.removeMessageListener(messageListenerId);
       CometChatUIEventHandler.removeConversationListener(conversationListenerId);
       CometChatUIEventHandler.removeGroupListener(groupListenerId);
@@ -2123,10 +2225,15 @@ export const CometChatConversations = (props: ConversationInterface) => {
               }
             }}
             listItemKey={"conversationId"}
+            // The id carries the peer's uid/guid: built only with offline support on, so a release build
+            // with it off has rows exactly as before the offline work.
+            itemTestID={isOfflineOn() ? conversationRowTestID : undefined}
             LoadingView={LoadingView ?? (() => <Skeleton style={mergedStyles.skeletonStyle} />)}
             ItemView={ItemView}
             EmptyView={EmptyView ? EmptyView : () => <EmptyStateView />}
+            customEmptyView={!!EmptyView}
             ErrorView={ErrorView ? ErrorView : () => <ErrorStateView />}
+            customErrorView={!!ErrorView}
             onBack={onBack}
             hideBackButton={hideBackButton}
             onSelection={onSelection}
@@ -2134,6 +2241,12 @@ export const CometChatConversations = (props: ConversationInterface) => {
             selectionMode={selectionMode}
             hideError={hideError}
             onListFetched={(conversations: CometChat.Conversation[]) => {
+              // Kill switch: a refetch with offline off must not take a failed preview back.
+              if (strandedPreviewsRef.current.size > 0) {
+                strandedPreviewsToRestore(conversations, strandedPreviewsRef.current).forEach((m) =>
+                  updateLastMessage(m, false)
+                );
+              }
               if (conversations.length === 0) {
                 onEmpty?.();
               } else {
@@ -2253,6 +2366,16 @@ export const CometChatConversations = (props: ConversationInterface) => {
       {/* Without this the useToast hook runs but nothing ever appears — the
           conversation pin/unpin toasts and every error message are invisible. */}
       {ToastElement}
+      {offlineNotice && !hideOfflineNotices ? (
+        <OfflineNoticeView
+          notice={offlineNotice}
+          t={t}
+          onDismiss={dismissOfflineNotice}
+          containerStyle={theme.messageListStyles?.offlineStyles?.noticeStyle?.containerStyle}
+          textStyle={theme.messageListStyles?.offlineStyles?.noticeStyle?.textStyle}
+          actionTextStyle={theme.messageListStyles?.offlineStyles?.noticeStyle?.actionTextStyle}
+        />
+      ) : null}
     </View>
   );
 };

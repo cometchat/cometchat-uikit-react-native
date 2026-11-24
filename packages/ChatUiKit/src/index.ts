@@ -78,6 +78,7 @@ import {
   MessageBubbleAlignmentType,
   MessageDataSource,
   MessageEvents,
+  OfflineMessageEvents,
   MessageListAlignmentType,
   MessageTimeAlignmentType,
   RecorderState,
@@ -326,6 +327,7 @@ export {
   MentionTextStyle,
   MessageDataSource,
   MessageEvents,
+  OfflineMessageEvents,
   MessageTranslationBubble,
   MessageTranslationExtension,
   PollsExtension,
@@ -483,6 +485,10 @@ export type {
 
 // Rich Text Editor
 export { default as RichTextEditor } from './CometChatRichTextEditor';
+// Offline support (additive): event payload and settings types.
+export type { MessageSendState, MessageSendStateChangedEvent, OfflineCacheResetEvent } from "./shared/events";
+export type { UIKitOfflineSettings } from "./shared/CometChatUiKit/UIKitSettings";
+
 export type {
   RichTextEditorRef,
   ContentChangeEvent,

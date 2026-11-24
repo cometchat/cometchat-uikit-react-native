@@ -18,7 +18,9 @@ export {
   CometChatUIEventHandler,
   CometChatUIEvents,
   MessageEvents,
+  OfflineMessageEvents,
 } from "./events";
+export type { MessageSendState, MessageSendStateChangedEvent, OfflineCacheResetEvent } from "./events";
 
 export type { DataSource } from "./framework";
 

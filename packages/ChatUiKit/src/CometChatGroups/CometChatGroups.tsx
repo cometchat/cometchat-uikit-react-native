@@ -20,6 +20,8 @@ import { Skeleton } from "./Skeleton";
 import { Style } from "./style";
 import { JSX } from "react";
 import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNew";
+import { OfflineHub } from "../shared/offline/OfflineHub";
+import { dispatchSweptGroupAction } from "../shared/offline/groupActions";
 
 // Unique listener IDs for group events and UI events.
 const groupListenerId = "grouplist_" + Date.now() + "_" + (++__listenerIdCounter);
@@ -418,58 +420,62 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
    * Set up group listeners when the component mounts.
    */
   useEffect(() => {
-    CometChat.addGroupListener(
-      groupListenerId,
-      new CometChat.GroupListener({
-        onGroupMemberScopeChanged: (
-          message: CometChat.Action,
-          changedUser: CometChat.User,
-          newScope: CometChat.GroupMemberScope,
-          oldScope: CometChat.GroupMemberScope,
-          changedGroup: CometChat.Group
-        ) => {
-          handleGroupMemberScopeChange(message, changedUser, newScope, oldScope, changedGroup);
-        },
-        onGroupMemberKicked: (
-          message: CometChat.Action,
-          kickedUser: CometChat.User,
-          kickedBy: CometChat.User,
-          kickedFrom: CometChat.Group
-        ) => {
-          handleGroupMemberRemoval(message, kickedUser, kickedBy, kickedFrom);
-        },
-        onGroupMemberLeft: (
-          message: CometChat.Action,
-          leavingUser: CometChat.User,
-          group: CometChat.Group
-        ) => {
-          handleGroupMemberRemoval(message, leavingUser, null, group);
-        },
-        onGroupMemberBanned: (
-          message: CometChat.Action,
-          bannedUser: CometChat.User,
-          bannedBy: CometChat.User,
-          bannedFrom: CometChat.Group
-        ) => {
-          handleGroupMemberBan(message, bannedUser, bannedBy, bannedFrom);
-        },
-        onMemberAddedToGroup: (
-          message: CometChat.Action,
-          userAdded: CometChat.User,
-          userAddedBy: CometChat.User,
-          userAddedIn: CometChat.Group
-        ) => {
-          handleGroupMemberAddition(message, userAdded, userAddedBy, userAddedIn);
-        },
-        onGroupMemberJoined: (
-          message: CometChat.Action,
-          joinedUser: CometChat.User,
-          joinedGroup: CometChat.Group
-        ) => {
-          handleGroupMemberAddition(message, joinedUser, null, joinedGroup);
-        },
-      })
-    );
+    const groupListenerHandlers = {
+      onGroupMemberScopeChanged: (
+        message: CometChat.Action,
+        changedUser: CometChat.User,
+        newScope: CometChat.GroupMemberScope,
+        oldScope: CometChat.GroupMemberScope,
+        changedGroup: CometChat.Group
+      ) => {
+        handleGroupMemberScopeChange(message, changedUser, newScope, oldScope, changedGroup);
+      },
+      onGroupMemberKicked: (
+        message: CometChat.Action,
+        kickedUser: CometChat.User,
+        kickedBy: CometChat.User,
+        kickedFrom: CometChat.Group
+      ) => {
+        handleGroupMemberRemoval(message, kickedUser, kickedBy, kickedFrom);
+      },
+      onGroupMemberLeft: (
+        message: CometChat.Action,
+        leavingUser: CometChat.User,
+        group: CometChat.Group
+      ) => {
+        handleGroupMemberRemoval(message, leavingUser, null, group);
+      },
+      onGroupMemberBanned: (
+        message: CometChat.Action,
+        bannedUser: CometChat.User,
+        bannedBy: CometChat.User,
+        bannedFrom: CometChat.Group
+      ) => {
+        handleGroupMemberBan(message, bannedUser, bannedBy, bannedFrom);
+      },
+      onMemberAddedToGroup: (
+        message: CometChat.Action,
+        userAdded: CometChat.User,
+        userAddedBy: CometChat.User,
+        userAddedIn: CometChat.Group
+      ) => {
+        handleGroupMemberAddition(message, userAdded, userAddedBy, userAddedIn);
+      },
+      onGroupMemberJoined: (
+        message: CometChat.Action,
+        joinedUser: CometChat.User,
+        joinedGroup: CometChat.Group
+      ) => {
+        handleGroupMemberAddition(message, joinedUser, null, joinedGroup);
+      },
+    };
+    CometChat.addGroupListener(groupListenerId, new CometChat.GroupListener(groupListenerHandlers));
+    // Offline (ON path): a group action the catch-up sweep delivered fires no GroupListener
+    // callback; run the same handlers for it (UIT-SYNC-13). Inert with offline off.
+    const sweptGroupActions = OfflineHub.getInstance().groupActionSwept$.subscribe((event) => {
+      if (event.gen !== OfflineHub.getInstance().gen) return;
+      dispatchSweptGroupAction(event.message, groupListenerHandlers);
+    });
 
     CometChatUIEventHandler.addGroupListener(uiEventListener, {
       ccGroupCreated: ({ group }: { group: CometChat.Group }) => {
@@ -509,6 +515,7 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
     });
 
     return () => {
+      sweptGroupActions.unsubscribe();
       CometChat.removeGroupListener(groupListenerId);
       CometChatUIEventHandler.removeGroupListener(uiEventListener);
     };
@@ -567,7 +574,9 @@ export const CometChatGroups = React.forwardRef((props: CometChatGroupsInterface
               : () => <Skeleton style={mergedStyle.skeletonStyle} />
         }
         EmptyView={EmptyView ? EmptyView : () => <EmptyStateView />}
+        customEmptyView={!!EmptyView}
         ErrorView={ErrorView ? ErrorView : () => <ErrorStateView />}
+        customErrorView={!!ErrorView}
         searchPlaceholderText={searchPlaceholderText}
         ref={groupListRef}
         listItemKey='guid'

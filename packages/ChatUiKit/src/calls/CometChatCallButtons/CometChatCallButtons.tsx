@@ -24,6 +24,8 @@ import { CometChatOutgoingCall, OutgoingCallConfiguration } from "../CometChatOu
 import { CallButtonStyle } from "./style";
 import { DeepPartial } from "../../shared/helper/types";
 import { CallingPackage } from "../CallingPackage";
+import { isQuietRejection } from "../../shared/offline/send";
+import { isOfflineOn, sdkConnected } from "../../shared/offline/gate";
 import { JSX } from "react";
 
 const CometChatCalls = CallingPackage.CometChatCalls;
@@ -142,6 +144,22 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface): JSX.
       var callType = type;
       // For group calls, send a custom meeting message.
       if (group) {
+        // A call invite is worth nothing once it is late, so it never joins the offline queue.
+        // Queued, the send stays unanswered until the connection returns, and the `.then` below
+        // would then open the outgoing-call screen and invite the whole group minutes after the
+        // tap, with a push, without the user asking. Refuse it now instead, the way a refused
+        // `initiateCall` is refused. (Android 6.3.0 queues it - parity gap recorded on purpose.)
+        if (isOfflineOn() && sdkConnected() === false) {
+          const offlineError = new CometChat.CometChatException({
+            code: "ERROR_NO_INTERNET",
+            name: "ERROR_NO_INTERNET",
+            message: "A call cannot be started without a connection.",
+          });
+          // `{ error }`, the shape the kit's own `ccCallFailed` listener takes (CometChatOutgoingCall.tsx:198).
+          CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccCallFailed, { error: offlineError });
+          onError && onError(offlineError);
+          return;
+        }
         let customData = {
           callType: callType,
           sessionId: receiverID,
@@ -171,6 +189,7 @@ export const CometChatCallButtons = (props: CometChatCallButtonsInterface): JSX.
             CometChatUIEventHandler.emitCallEvent(CallUIEvents.ccOutgoingCall, { call: res });
           })
           .catch((rej) => {
+            if (isQuietRejection(rej)) return; // the session ended or the cache was reset: nothing to report
             console.log("custom msg error", rej);
             onError && onError(rej);
           });

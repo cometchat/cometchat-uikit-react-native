@@ -27,6 +27,9 @@ import { CometChat } from '@cometchat/chat-sdk-react-native';
 import Video from 'react-native-video';
 import { Icon } from '../../icons/Icon';
 import { useTheme } from '../../../theme';
+import { useMediaOutOfReach, useOfflineMediaUri } from '../../offline/useOfflineMediaUri';
+import { mediaActionSource } from '../../offline/media';
+import { MediaOutOfReachLabel } from '../../offline/OfflineViews';
 import { useCometChatTranslation } from '../../resources/CometChatLocalizeNew';
 import { ReactNativeZoomableView } from '../../libs/ImageZoom';
 import { clampIndex, isImageMime, isVideoMime, nextIndexForSwipe } from './mediaViewerUtils';
@@ -52,7 +55,7 @@ export interface CometChatMediaViewerProps {
   canPreview?: (att: CometChat.Attachment) => boolean;
 }
 
-type DownloadState = 'IDLE' | 'DOWNLOADING' | 'DONE' | 'FAILED';
+type DownloadState = 'IDLE' | 'DOWNLOADING' | 'DONE' | 'FAILED' | 'OUT_OF_REACH';
 
 const { FileManager } = NativeModules;
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -102,6 +105,11 @@ export const CometChatMediaViewer = ({
   // previewable → they render the "No preview available" page instead of the image/video.
   const previewable = current ? canPreview(current) : false;
   const isVideo = previewable && current ? isVideoMime(current.getMimeType?.() ?? '') : false;
+  // Offline ON: the SDK's cached copy (a playable copy for video), else the URL as today.
+  const currentUri = useOfflineMediaUri(current, { playable: isVideo });
+  // Offline ON, no saved copy, no connection: nothing to show or download (BEH-MEDIA-18).
+  const outOfReachRaw = useMediaOutOfReach(current);
+  const outOfReach = !!current && outOfReachRaw;
 
   const mediaItemsRef = useRef(mediaItems);
   // Keep the ref in sync outside render (not during it) so the PanResponder closure reads the latest list.
@@ -147,8 +155,14 @@ export const CometChatMediaViewer = ({
 
   const handleDownload = () => {
     if (!current || downloadState === 'DOWNLOADING' || downloadState === 'DONE') return;
+    // Offline ON: the saved file, never the URL; offline with no copy there is nothing to download.
+    const source = mediaActionSource(current);
+    if (source.kind === 'unavailable') {
+      setDownloadState('OUT_OF_REACH');
+      return;
+    }
     setDownloadState('DOWNLOADING');
-    FileManager?.checkAndDownload(current.getUrl(), current.getName(), (result: string) => {
+    FileManager?.checkAndDownload(source.uri, current.getName(), (result: string) => {
       try {
         const parsed = JSON.parse(result);
         setDownloadState(parsed.success ? 'DONE' : 'FAILED');
@@ -214,7 +228,7 @@ export const CometChatMediaViewer = ({
 
         {/* Media area — swipeable */}
         <View style={styles.mediaArea} {...panResponder.panHandlers}>
-          {previewable && !mediaLoaded && !mediaError && (
+          {previewable && !mediaLoaded && !mediaError && !outOfReach && (
             <ActivityIndicator
               color="#fff"
               size="large"
@@ -259,6 +273,14 @@ export const CometChatMediaViewer = ({
                     : t('DOWNLOAD') || 'Download'}
                 </Text>
               </TouchableOpacity>
+              {downloadState === 'OUT_OF_REACH' ? (
+                <MediaOutOfReachLabel t={t} textStyle={styles.errorText} />
+              ) : null}
+            </View>
+          ) : outOfReach ? (
+            // "Available when online": the file is not on the device and there is no connection.
+            <View style={styles.errorBox}>
+              <MediaOutOfReachLabel t={t} textStyle={styles.errorText} />
             </View>
           ) : mediaError ? (
             <View style={styles.errorBox}>
@@ -272,7 +294,7 @@ export const CometChatMediaViewer = ({
             // fight the control taps (B3).
             <View style={styles.videoWrapper}>
               <Video
-                source={{ uri: current.getUrl() }}
+                source={{ uri: currentUri }}
                 controls={true}
                 // The <Modal> keeps its children mounted when hidden, so without this the video would
                 // keep playing (audio too) after the viewer closes. Pause whenever the viewer isn't visible.
@@ -308,7 +330,7 @@ export const CometChatMediaViewer = ({
               onPanResponderTerminationRequest={() => !zoomedRef.current}
             >
               <Image
-                source={{ uri: current.getUrl() }}
+                source={{ uri: currentUri }}
                 style={styles.fullMedia}
                 resizeMode="contain"
                 onLoad={() => setMediaLoaded(true)}

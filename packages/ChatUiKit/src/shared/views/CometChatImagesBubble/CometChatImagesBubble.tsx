@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CometChatTheme } from '../../../theme/type';
+import { useMediaOutOfReach, useOfflineMediaUri } from '../../offline/useOfflineMediaUri';
+import { isMediaOutOfReach, requestMediaDownload, shouldUseCachedMedia } from '../../offline/media';
+import { MediaOutOfReachLabel } from '../../offline/OfflineViews';
+import { t as translate } from '../../resources/CometChatLocalizeNew/LocalizationManager';
 import { useTheme } from '../../../theme';
 import { useCompTheme } from '../../../theme/hook';
 import { deepMerge } from '../../helper/helperFunctions';
@@ -51,10 +55,24 @@ const ImageCell = ({
   overflowTextStyle,
 }: ImageCellProps) => {
   const theme = useTheme();
+  // Offline ON: the SDK's cached copy when it has one, else the URL (exactly today's with offline off).
+  const imageUri = useOfflineMediaUri(attachment);
   // An IMAGE bubble previews images only. A non-image attachment (video/audio/file) OR an image that
   // can't be decoded (unsupported format / dead URL → onError) shows a "no preview" placeholder cell
   // instead of a broken/blank tile.
   const [failed, setFailed] = useState(false);
+  // Offline ON: a reconnect or a finished download gets another try at the image.
+  const outOfReach = useMediaOutOfReach(attachment);
+  useEffect(() => {
+    if (!outOfReach && shouldUseCachedMedia()) setFailed(false);
+  }, [outOfReach, imageUri]);
+  const handlePress = () => {
+    // Offline ON: no copy on the device and no connection, so the viewer would only show an error.
+    if (isMediaOutOfReach(attachment)) return;
+    // Offline ON, online, no copy on the device: ask the SDK for one (AC-12.3).
+    if (requestMediaDownload(attachment)) setFailed(false);
+    onPress?.();
+  };
   const mime = attachment.getMimeType?.() ?? '';
   // Placeholder only for a KNOWN non-image kind (a proper "type/subtype" mime that isn't image/*) or a
   // genuine decode failure (onError). An empty / bare-extension mime — e.g. an optimistic OUTGOING
@@ -71,7 +89,7 @@ const ImageCell = ({
   return (
     <TouchableOpacity
       testID={testID}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.85}
       style={[{ flex: 1, aspectRatio, overflow: 'hidden' }, borderStyle, cellStyle]}
       accessibilityRole="button"
@@ -83,10 +101,17 @@ const ImageCell = ({
           style={[StyleSheet.absoluteFill, borderStyle, { backgroundColor: theme.color.neutral200, justifyContent: 'center', alignItems: 'center' }]}
         >
           <Icon name="unknown-file-type" size={theme.spacing.spacing.s12} />
+          {failed && shouldUseCachedMedia() ? (
+            // Offline ON: never downloaded and not reachable now (AC-12.3).
+            <MediaOutOfReachLabel
+              t={translate}
+              textStyle={{ color: theme.color.textSecondary }}
+            />
+          ) : null}
         </View>
       ) : (
         <Image
-          source={{ uri: attachment.getUrl() }}
+          source={{ uri: imageUri }}
           style={[StyleSheet.absoluteFill, borderStyle]}
           resizeMode="cover"
           onError={() => setFailed(true)}

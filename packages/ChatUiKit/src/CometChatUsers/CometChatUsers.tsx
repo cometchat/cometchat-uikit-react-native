@@ -510,7 +510,9 @@ export const CometChatUsers = React.forwardRef<
               : () => <Skeleton style={mergedStyle.skeletonStyle} />
         }
         EmptyView={EmptyView ? EmptyView : () => <EmptyStateView />}
+        customEmptyView={!!EmptyView}
         ErrorView={ErrorView ? ErrorView : () => <ErrorStateView />}
+        customErrorView={!!ErrorView}
         statusIndicatorType={(user: CometChat.User) =>
           usersStatusVisibility
             ? user?.getBlockedByMe()

@@ -56,6 +56,7 @@ import {
   sourceLabelFor,
   subtitlePrefixNameFor,
   SavedMessageSource,
+  sentAtDesc,
 } from "../shared/utils/SavedMessagesHelper";
 import {
   carryPinSaveAttrs,
@@ -67,6 +68,12 @@ import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandle
 import { MessageEvents } from "../shared/events/messages";
 import { CometChatTextFormatter } from "../shared/formatters/CometChatTextFormatter";
 import { applyRawFormatters } from "../shared/formatters/applyRawFormatters";
+import { readListPage } from "../shared/offline/twoPhase";
+import { useOfflineSessionEnded } from "../shared/offline/useOfflineSessionEnded";
+import { useOfflineReconnect } from "../shared/offline/useOfflineReconnect";
+import { ConnectStateView } from "../shared/offline/OfflineViews";
+import { OFFLINE_STRING_KEYS } from "../shared/offline/notices";
+import { CONTRACT_IDS } from "../shared/offline/stateContract";
 
 /**
  * Module-level rich text formatter — reused across renders (no GC churn), mirroring
@@ -181,6 +188,11 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
     value => { if (mounted.current) setStateRaw(value); },
     []
   );
+  // Offline ON: nothing of the old session stays on screen (UIK-LIFE-01).
+  useOfflineSessionEnded(() => {
+    setMessages([]);
+    setState("empty");
+  });
 
   /**
    * Long-press menu state. Anchored at the touch point via CometChatTooltipMenu —
@@ -208,6 +220,14 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
    * can only come back empty again.
    */
   const exhausted = useRef(false);
+  /**
+   * Offline ON (D84): "Connect to load messages" is up because the device was not connected and nothing is
+   * saved: the panel reads again once, by itself, when the connection is back. Any other error
+   * is not read again.
+   */
+  const reloadOnConnect = useRef(false);
+  /** Offline ON (D84 rule 3): the error state is "Connect to load messages" (not the error view) while this is set. */
+  const [offlineMiss, setOfflineMiss] = useState(false);
 
   if (request.current === null) {
     request.current = buildSavedMessagesRequest(limit, messagesRequestBuilder);
@@ -219,14 +239,39 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
     try {
       // fetchPrevious(), not fetchNext() — "previous" is older, which is the direction
       // this list scrolls. Same call CometChatMessageList makes to load history.
-      const rows = await request.current.fetchPrevious();
+      // Offline ON: the SDK's two-phase read; offline past the cache it answers with the
+      // device's page instead of an error (U6). Offline OFF: today's Promise fetch.
+      const { rows, offline } = await readListPage<CometChat.BaseMessage>(request.current, "previous");
+      if (offline) {
+        // A cached page never ends the list (BEH-READ-09b, BEH-PIN-02); a retry reads on.
+        if (rows.length > 0) {
+          setMessages(prev => {
+            const seen = new Set(prev.map(m => String(m.getId())));
+            return [...prev, ...rows.filter(r => !seen.has(String(r.getId())))].sort(sentAtDesc);
+          });
+          setState("loaded");
+          reloadOnConnect.current = false;
+          setOfflineMiss(false);
+        } else {
+          // Nothing on the device and not connected: the offline state (D84), not an empty panel.
+          setState(prev => {
+            if (prev !== "loading") return prev;
+            reloadOnConnect.current = true;
+            return "error";
+          });
+          setOfflineMiss(true);
+        }
+        return;
+      }
+      reloadOnConnect.current = false;
+      setOfflineMiss(false);
       if (rows.length > 0) {
         // Dedupe on append (ENG-38891). A realtime pin/save PREPENDS its row the moment the
         // event lands; the same message then comes back inside a later fetched page, and a
         // plain concat lists it twice — which is how a five-pin cap rendered six rows.
         setMessages(prev => {
           const seen = new Set(prev.map(m => String(m.getId())));
-          return [...prev, ...rows.filter(r => !seen.has(String(r.getId())))];
+          return [...prev, ...rows.filter(r => !seen.has(String(r.getId())))].sort(sentAtDesc);
         });
         setState("loaded");
       } else {
@@ -239,6 +284,8 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
       // rejected client-side before any request) was unreachable from outside a debugger.
       console.error("CometChatSavedMessages: failed to fetch saved messages", e);
       // An empty first page is "empty", not "error" — only a real rejection is.
+      reloadOnConnect.current = false;
+      setOfflineMiss(false);
       setState(prev => (prev === "loading" ? "error" : prev));
     } finally {
       fetching.current = false;
@@ -281,6 +328,13 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
     // the request from the builder captured at mount.
   }, [limit, messagesRequestBuilder, loadNext]);
 
+  // D84 rule 8: the one read again of the offline state.
+  useOfflineReconnect(() => {
+    if (!reloadOnConnect.current) return;
+    reloadOnConnect.current = false;
+    reload();
+  });
+
   useEffect(() => {
     CometChat.getLoggedinUser()
       .then(user => {
@@ -320,7 +374,8 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
       if (!message) return;
       setMessages(prev => {
         if (prev.some(m => sameMessageId(m.getId(), message.getId()))) return prev;
-        return [message, ...prev];
+        // By sentAt, not at the top: saving an old message must not make it look newest.
+        return [message, ...prev].sort(sentAtDesc);
       });
       setState("loaded");
     };
@@ -431,7 +486,7 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
           showToast(t("MESSAGE_NO_LONGER_AVAILABLE") ?? "This message is no longer available.");
           return;
         }
-        setMessages(prev => [message, ...prev]);
+        setMessages(prev => [message, ...prev].sort(sentAtDesc));
         setState("loaded");
         showToast(t("PIN_SAVE_GENERIC_ERROR") ?? "Something went wrong. Please try again.");
       });
@@ -735,6 +790,16 @@ export const CometChatSavedMessages = (props: CometChatSavedMessagesInterface) =
           }
         />
       ) : state === "error" ? (
+        offlineMiss ? (
+          // D84 rule 3: offline with nothing saved: the offline state, no Retry; it loads by itself on reconnect.
+          <ConnectStateView
+            testID={CONTRACT_IDS.emptyConnectToLoad}
+            title={t(OFFLINE_STRING_KEYS.connectToLoadMessages)}
+            containerStyle={styles.errorStateStyle?.containerStyle}
+            titleStyle={styles.errorStateStyle?.titleStyle}
+            subtitleStyle={styles.errorStateStyle?.subTitleStyle}
+          />
+        ) :
         // The house error state, same as the conversation list: error-state illustration,
         // Oops! / went wrong / try again, and a Retry button. A bare sentence in the
         // default text style was the only thing here before, which read as a broken

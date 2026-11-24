@@ -10,6 +10,10 @@ import {
 } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { CometChatTheme } from '../../../theme/type';
+import { cachedPathOf, isMediaOutOfReach, requestMediaDownload, shouldUseCachedMedia } from '../../offline/media';
+import { sdkConnected } from '../../offline/gate';
+import { MediaOutOfReachNote } from '../../offline/OfflineMediaBubble';
+import { OFFLINE_STRING_KEYS } from '../../offline/notices';
 import { deepMerge } from '../../helper/helperFunctions';
 import { useCompTheme } from '../../../theme/hook';
 import { Icon } from '../../icons/Icon';
@@ -33,7 +37,7 @@ const fileEventEmitter = new NativeEventEmitter(FileManager);
 // now-retired multi-section gallery bubble.)
 // ---------------------------------------------------------------------------
 
-type DownloadState = 'IDLE' | 'DOWNLOADING' | 'DONE' | 'FAILED';
+type DownloadState = 'IDLE' | 'DOWNLOADING' | 'DONE' | 'FAILED' | 'OUT_OF_REACH';
 
 function formatFileSize(bytes?: number): string {
   // Missing/invalid size (e.g. an attachment reconstructed without a size field) → no label,
@@ -79,7 +83,7 @@ export function CometChatFilesBubble({
   const [expanded, setExpanded] = useState(false);
   const [downloadStates, setDownloadStates] = useState<Record<string, DownloadState>>({});
   // Android's DownloadManager is async — map each downloadId to the file to OPEN once its
-  // `downloadComplete` event fires (iOS resolves synchronously in the checkAndDownload callback).
+  // `downloadComplete` event fires (iOS downloads and opens in one native openFile call).
   const pendingOpensRef = useRef<Record<string, { url: string; name: string; key: string }>>({});
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -119,11 +123,49 @@ export function CometChatFilesBubble({
   const hiddenCount = files.length - ATTACHMENT_COLLAPSED_LIMIT;
   const showExpandButton = files.length > ATTACHMENT_COLLAPSED_LIMIT;
 
+  /**
+   * A copy this kit downloaded earlier opens as usual. The SDK's own copy opens on iOS, where the
+   * native module takes a file URL; Android's needs a content URI and the kit has no native code for
+   * one, so there it waits for a connection. Nothing to open: "Available when online".
+   */
+  const openFileOffline = (file: CometChat.Attachment, key: string) => {
+    const name = file.getName();
+    const cached = cachedPathOf(file);
+    const outOfReach = () => setDownloadStates(prev => ({ ...prev, [key]: 'OUT_OF_REACH' }));
+    const opened = () => setDownloadStates(prev => ({ ...prev, [key]: 'DONE' }));
+    FileManager?.doesFileExist?.(name, (existResult: string) => {
+      let exists = false;
+      try { exists = !!JSON.parse(existResult)?.exists; } catch {}
+      if (exists) {
+        if (Platform.OS === 'android') FileManager?.openFileWithOption?.(name, () => {});
+        else FileManager?.openFile?.(file.getUrl(), name, () => {});
+        opened();
+      } else if (cached && Platform.OS === 'ios') {
+        FileManager?.openFile?.(cached, name, (result: string) => {
+          let ok = false;
+          try { ok = !!JSON.parse(result)?.success; } catch {}
+          if (ok) opened();
+          else outOfReach();
+        });
+      } else {
+        outOfReach();
+      }
+    });
+  };
+
   const handleDownload = (file: CometChat.Attachment) => {
     const url = file.getUrl();
     const name = file.getName();
     const key = url;
     if ((downloadStates[key] ?? 'IDLE') === 'DOWNLOADING') return;
+
+    // Offline ON, online, no copy on the device: the SDK caches one too, for later (AC-12.3).
+    requestMediaDownload(file);
+    // Offline ON, no connection: only what is on the device can open (README §3.8).
+    if (shouldUseCachedMedia() && sdkConnected() === false) {
+      openFileOffline(file, key);
+      return;
+    }
 
     // Tap = OPEN the document (mirror CometChatFileBubble — the multi bubble previously only
     // downloaded and never opened, so multi-doc messages "didn't open" after sending). If a local
@@ -138,18 +180,19 @@ export function CometChatFilesBubble({
       }
 
       setDownloadStates(prev => ({ ...prev, [key]: 'DOWNLOADING' }));
+      if (Platform.OS === 'ios') {
+        // native openFile downloads without the share sheet that checkAndDownload shows
+        FileManager?.openFile?.(url, name, (result: string) => {
+          let ok = false;
+          try { ok = !!JSON.parse(result)?.success; } catch {}
+          setDownloadStates(prev => ({ ...prev, [key]: ok ? 'DONE' : 'FAILED' }));
+        });
+        return;
+      }
       FileManager?.checkAndDownload?.(url, name, (result: string) => {
         try {
           const parsed = JSON.parse(result);
-          if (Platform.OS === 'ios') {
-            // iOS resolves the download in this callback — open on success.
-            if (parsed.success) {
-              FileManager?.openFile?.(url, name, () => {});
-              setDownloadStates(prev => ({ ...prev, [key]: 'DONE' }));
-            } else {
-              setDownloadStates(prev => ({ ...prev, [key]: 'FAILED' }));
-            }
-          } else if (parsed.downloadId != null) {
+          if (parsed.downloadId != null) {
             // Android: DownloadManager is async — the downloadComplete listener opens it.
             pendingOpensRef.current[String(parsed.downloadId)] = { url, name, key };
           } else {
@@ -220,6 +263,12 @@ export function CometChatFilesBubble({
               >
                 {sizeLabel}
               </Text>
+              {dlState === 'OUT_OF_REACH' && !isMediaOutOfReach(file) ? (
+                <Text style={{ ...theme.typography.caption2.regular, color: subtextColor, marginTop: S.margin.m0_5 }}>
+                  {t(OFFLINE_STRING_KEYS.mediaAvailableWhenOnline)}
+                </Text>
+              ) : null}
+              <MediaOutOfReachNote attachment={file} color={subtextColor} />
               {dlState === 'FAILED' && (
                 <Text
                   style={{ ...theme.typography.caption2.regular, color: theme.color.error, marginTop: S.margin.m0_5 }}

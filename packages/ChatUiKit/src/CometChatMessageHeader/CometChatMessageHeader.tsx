@@ -11,6 +11,7 @@ import { deepMerge } from "../shared/helper/helperFunctions";
 import { Icon } from "../shared/icons/Icon";
 import { CometChatAvatar } from "../shared/views/CometChatAvatar";
 import { CometChatStatusIndicator } from "../shared/views/CometChatStatusIndicator";
+import { usePresenceHidden } from "../shared/offline/usePresenceHidden";
 import { useTheme } from "../theme";
 import { MessageHeaderStyle } from "./styles";
 import { CommonUtils } from "../shared/utils/CommonUtils";
@@ -230,6 +231,8 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
   const [userObj, setUserObj] = useState<CometChat.User | undefined>(user);
   const [userStatus, setUserStatus] = useState(user && user.getStatus ? user.getStatus() : "");
   const [typingText, setTypingText] = useState("");
+  // Offline ON, SDK not connected: no presence subtitle and no typing text (nothing can arrive).
+  const presenceHidden = usePresenceHidden();
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ pageX: 0, pageY: 0 });
   const receiverTypeRef = useRef(
@@ -450,7 +453,7 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
    */
   const SubtitleViewFnc = useCallback(() => {
     try {
-      if (typingText !== "")
+      if (typingText !== "" && !presenceHidden)
         return (
           <Text
             numberOfLines={1}
@@ -473,7 +476,8 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
         userObj &&
         !(userObj.getBlockedByMe() || userObj.getHasBlockedMe()) &&
         usersStatusVisibility &&
-        userStatus
+        userStatus &&
+        !presenceHidden
       ) {
         subtitle =
           userStatus === UserStatusConstants.online
@@ -490,7 +494,7 @@ export const CometChatMessageHeader = (props: CometChatMessageHeaderInterface) =
       errorHandler(error);
       return <></>;
     }
-  }, [userObj, groupObj, messageHeaderStyles, usersStatusVisibility, userStatus]);
+  }, [userObj, groupObj, messageHeaderStyles, usersStatusVisibility, userStatus, presenceHidden]);
 
   /**
    * Error handler to call onError with a proper CometChatException.

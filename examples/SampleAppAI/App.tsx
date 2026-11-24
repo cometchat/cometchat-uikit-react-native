@@ -84,6 +84,8 @@ const AppContent = (): React.ReactElement => {
           region: finalRegion,
           subscriptionType: CometChat.AppSettings
             .SUBSCRIPTION_TYPE_ALL_USERS as UIKitSettings['subscriptionType'],
+          // Offline support is on in the sample app (see AppConstants.offlineEnabled).
+          offline: AppConstants.offlineEnabled ? true : undefined,
         });
 
         // If a user is already logged in, update the state.

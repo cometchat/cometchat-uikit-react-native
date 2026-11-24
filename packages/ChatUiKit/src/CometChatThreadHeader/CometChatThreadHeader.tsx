@@ -23,6 +23,8 @@ import { useCometChatTranslation } from "../shared/resources/CometChatLocalizeNe
 import { ExtensionConstants } from "../extensions";
 import { getExtensionData } from "../shared/helper/functions";
 import { urlPattern } from "../shared/constants/UIKitConstants";
+import { OfflineHub } from "../shared/offline/OfflineHub";
+import { createThreadReplyTracker } from "../shared/offline/threadReplies";
 
 /**
  * Unique UI event identifier for CometChatUIEventHandler.
@@ -129,6 +131,17 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
   } = props;
   const [message, setMessage] = useState<CometChat.BaseMessage>(parentMessage);
   const [replyCount, setReplyCount] = useState<number>(parentMessage.getReplyCount() || 0);
+  // Offline (ON path) reply-count adjustments (README §3.9); inert with offline off.
+  const parentIdRef = React.useRef<any>(parentMessage.getId());
+  parentIdRef.current = message.getId();
+  const replyTracker = React.useRef(
+    createThreadReplyTracker(
+      () => parentIdRef.current,
+      () => OfflineHub.getInstance().gen,
+      (delta) => setReplyCount((prev) => Math.max(0, prev + delta)),
+      (count) => setReplyCount(count)
+    )
+  );
 
   const theme = useTheme();
   const { t } = useCometChatTranslation();
@@ -161,8 +174,11 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
    * @param {{ message: CometChat.BaseMessage, status: string }} param0 - The message and its status.
    */
   const ccMessageSentFunc = ({ message: msg, status }: any): void => {
+    // Offline (ON path): an own reply is counted once, at its pending; its ack adds nothing.
+    replyTracker.current.onPublicSent(msg, status, () => {
+      if (status === messageStatus.success) checkAndUpdateRepliesCount(msg);
+    });
     if (status === messageStatus.success) {
-      checkAndUpdateRepliesCount(msg);
       if (message.getId() == msg.id) setMessage(message);
     }
   };
@@ -243,8 +259,14 @@ export const CometChatThreadHeader = (props: CometChatThreadHeaderInterface): JS
       },
     });
 
+    const hub = OfflineHub.getInstance();
+    const sendStates = hub.sendState$.subscribe((event) => replyTracker.current.onSendState(event));
+    const updates = hub.messagesUpdated$.subscribe((event) => replyTracker.current.onMessagesUpdated(event));
+
     return () => {
       CometChatUIEventHandler.removeMessageListener(uiEventId);
+      sendStates.unsubscribe();
+      updates.unsubscribe();
     };
   }, []);
 

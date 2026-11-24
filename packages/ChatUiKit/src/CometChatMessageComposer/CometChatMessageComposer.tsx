@@ -48,6 +48,10 @@ import {
   ViewAlignment,
 } from "../shared/constants/UIKitConstants";
 import { MessageEvents } from "../shared/events";
+import { afterFirstAnswer, quietAwareOnError, routeSend } from "../shared/offline/send";
+import { isOfflineOn } from "../shared/offline/gate";
+import { useOfflineThreadTrayReset, useOfflineUploadTray } from "../shared/offline/useOfflineUploadTray";
+import { offlineMutationErrorText } from "../shared/offline/notices";
 import { CometChatUIEventHandler } from "../shared/events/CometChatUIEventHandler/CometChatUIEventHandler";
 import { CometChatMessageEvents } from "../shared/events/CometChatMessageEvents";
 import { CometChatMessageComposerAction, DeepPartial } from "../shared/helper/types";
@@ -753,10 +757,10 @@ export const CometChatMessageComposer = React.forwardRef(
         // RBAC/SBAC presign authorization. Read the refs fresh here (uploadQueue is memoized at mount,
         // the refs are not) — constructor-time capture would be stale.
         newAttachments.forEach(a =>
-          uploadQueue.enqueue(a, { receiver: chatWithId.current, receiverType: chatWith.current })
+          uploadQueue.enqueue(a, { receiver: chatWithId.current, receiverType: chatWith.current, parentMessageId })
         );
       },
-      [selectedAttachments, uploadQueue]
+      [selectedAttachments, uploadQueue, parentMessageId]
     );
 
     const handleRemoveAttachment = useCallback(
@@ -820,7 +824,8 @@ export const CometChatMessageComposer = React.forwardRef(
         if (sendButtonDelayTimer.current) {
           clearTimeout(sendButtonDelayTimer.current);
         }
-        uploadQueue.cancelAll();
+        // Offline OFF: destroy the batch as today; ON: detach so it can be restored.
+        uploadQueue.leave();
       };
     }, []);
 
@@ -1198,31 +1203,46 @@ export const CometChatMessageComposer = React.forwardRef(
 
         // §7/§12.1 — independent per-message send: one kind can fail while others deliver.
         const outgoing = buildMessage(group, index, muid);
-        CometChat.sendMediaMessage(outgoing)
-          .then((msg: any) => {
-            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
-              message: msg,
-              status: messageStatus.success,
+        // Gate read once, at send: OFF runs today's code unchanged; ON goes through the
+        // kit's one send helper (hub reports state and the public events, once).
+        const routed = routeSend(outgoing, "media", () => {
+            CometChat.sendMediaMessage(outgoing)
+            .then((msg: any) => {
+              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+                message: msg,
+                status: messageStatus.success,
+              });
+              if (replyMessageId) {
+                CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
+                  message: msg,
+                  status: messageStatus.success,
+                });
+              }
+            })
+            .catch((error: any) => {
+              // Preserve the batch metadata; just flag this message's optimistic echo as failed.
+              const currentData = localMessage.getData() || {};
+              localMessage.setData({ ...currentData, metaData: { error: true } });
+              const md = (localMessage.getMetadata?.() as Record<string, unknown>) || {};
+              localMessage.setMetadata({ ...md, error: true });
+              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+                message: localMessage,
+                status: messageStatus.error,
+              });
+              onError && onError(error);
             });
+        }, {
+          onSent: (msg: any) => {
             if (replyMessageId) {
               CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
                 message: msg,
                 status: messageStatus.success,
               });
             }
-          })
-          .catch((error: any) => {
-            // Preserve the batch metadata; just flag this message's optimistic echo as failed.
-            const currentData = localMessage.getData() || {};
-            localMessage.setData({ ...currentData, metaData: { error: true } });
-            const md = (localMessage.getMetadata?.() as Record<string, unknown>) || {};
-            localMessage.setMetadata({ ...md, error: true });
-            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
-              message: localMessage,
-              status: messageStatus.error,
-            });
-            onError && onError(error);
-          });
+          },
+          onFailed: quietAwareOnError(onError),
+        });
+        void routed;
       });
 
       // Clear composer state immediately
@@ -1384,8 +1404,36 @@ export const CometChatMessageComposer = React.forwardRef(
         }, 1000);
       }
 
-      CometChat.sendMessage(textMessage)
-        .then((message: any) => {
+      // Gate read once, at send: OFF runs today's code unchanged; ON goes through the
+      // kit's one send helper (hub reports state and the public events, once).
+      const routed = routeSend(textMessage, "text", () => {
+          CometChat.sendMessage(textMessage)
+          .then((message: any) => {
+            if (isAgenticUser() && !parentMessageId && message?.getId) {
+              const messageId = typeof message.getId() === 'string' ? Number(message.getId()) : message.getId();
+              if (!isNaN(messageId) && !parentMessageIdRef.current) {
+                parentMessageIdRef.current = messageId;
+              }
+              if (messageId && !isNaN(messageId)) {
+                startStreamingForRunId(String(messageId));
+              }
+            }
+
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+              message: message,
+              status: messageStatus.success,
+            });
+          })
+          .catch((error: any) => {
+            onError && onError(error);
+            textMessage.setMetadata({ error: true });
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+              message: textMessage,
+              status: messageStatus.error,
+            });
+          });
+      }, {
+        onSent: (message: any) => {
           if (isAgenticUser() && !parentMessageId && message?.getId) {
             const messageId = typeof message.getId() === 'string' ? Number(message.getId()) : message.getId();
             if (!isNaN(messageId) && !parentMessageIdRef.current) {
@@ -1395,20 +1443,10 @@ export const CometChatMessageComposer = React.forwardRef(
               startStreamingForRunId(String(messageId));
             }
           }
-
-          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
-            message: message,
-            status: messageStatus.success,
-          });
-        })
-        .catch((error: any) => {
-          onError && onError(error);
-          textMessage.setMetadata({ error: true });
-          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
-            message: textMessage,
-            status: messageStatus.error,
-          });
-        });
+        },
+        onFailed: quietAwareOnError(onError),
+      });
+      void routed;
     };
 
     /** edit message */
@@ -1454,6 +1492,11 @@ export const CometChatMessageComposer = React.forwardRef(
         outgoing = textMessage;
       }
 
+      // The composer is cleared and leaves edit mode before the request, offline on or off. A failed
+      // edit goes to onError (plus the offline error notice below); the text is not put back, as on
+      // the Android UI Kit.
+      const offlineOn = isOfflineOn();
+
       inputValueRef.current = "";
       clearInputBox();
 
@@ -1477,6 +1520,9 @@ export const CometChatMessageComposer = React.forwardRef(
         })
         .catch((error: any) => {
           onError && onError(error);
+          // Offline ON: today's error notice too (ENG-41199).
+          const errorText = offlineMutationErrorText(offlineOn, t);
+          if (errorText) showToast(errorText);
         });
     };
 
@@ -1611,25 +1657,40 @@ export const CometChatMessageComposer = React.forwardRef(
       });
 
       if (!disableSoundForOutgoingMessages) playAudio();
-      CometChat.sendMediaMessage(mediaMessage)
-        .then((message: any) => {
-          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
-            message: message,
-            status: messageStatus.success,
-          });
-          if (replyMessageId) {
-            CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
+      // Gate read once, at send: OFF runs today's code unchanged; ON goes through the
+      // kit's one send helper (hub reports state and the public events, once).
+      const routed = routeSend(mediaMessage, "media", () => {
+          CometChat.sendMediaMessage(mediaMessage)
+          .then((message: any) => {
+            CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
               message: message,
               status: messageStatus.success,
             });
-          }
-          setReplyMessage(null);
-          setWarningMessage("");
-          setShowRecordAudio(false);
-        })
-        .catch((error: any) => {
-          setShowRecordAudio(false);
-          if (error?.code === "ERR_PERMISSION_DENIED") {
+            if (replyMessageId) {
+              CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
+                message: message,
+                status: messageStatus.success,
+              });
+            }
+            setReplyMessage(null);
+            setWarningMessage("");
+            setShowRecordAudio(false);
+          })
+          .catch((error: any) => {
+            setShowRecordAudio(false);
+            if (error?.code === "ERR_PERMISSION_DENIED") {
+              onError && onError(error);
+              // Set error in data.metaData where the message list receipt logic checks
+              const currentData = localMessage.getData() || {};
+              localMessage.setData({ ...currentData, metaData: { error: true } });
+              localMessage.setMetadata({ error: true });
+              CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
+                message: localMessage,
+                status: messageStatus.error,
+              });
+              setReplyMessage(null);
+              return;
+            }
             onError && onError(error);
             // Set error in data.metaData where the message list receipt logic checks
             const currentData = localMessage.getData() || {};
@@ -1640,19 +1701,19 @@ export const CometChatMessageComposer = React.forwardRef(
               status: messageStatus.error,
             });
             setReplyMessage(null);
-            return;
-          }
-          onError && onError(error);
-          // Set error in data.metaData where the message list receipt logic checks
-          const currentData = localMessage.getData() || {};
-          localMessage.setData({ ...currentData, metaData: { error: true } });
-          localMessage.setMetadata({ error: true });
-          CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageSent, {
-            message: localMessage,
-            status: messageStatus.error,
           });
-          setReplyMessage(null);
-        });
+      }, {
+        onSent: (message: any) => {
+          if (replyMessageId) {
+            CometChatMessageEvents.emit(CometChatMessageEvents.ccReplyToMessage, {
+              message: message,
+              status: messageStatus.success,
+            });
+          }
+        },
+        onFailed: quietAwareOnError(onError),
+      });
+      afterFirstAnswer(routed, () => { setReplyMessage(null); setWarningMessage(""); setShowRecordAudio(false); });
     };
 
     const startTyping = (endTypingTimeout?: any, typingMetadata?: any) => {
@@ -1875,6 +1936,7 @@ export const CometChatMessageComposer = React.forwardRef(
         : sendTextMessage;
       return (
         <TouchableOpacity
+          testID="CometChatComposer.send"
           onPress={handleSendPress}
           style={[
             {
@@ -1954,7 +2016,9 @@ export const CometChatMessageComposer = React.forwardRef(
       // for the SAME conversation doesn't wipe a tray the user is mid-staging. Skip the first
       // assignment (chatWithId.current === null → nothing staged yet).
       if (chatWithId.current != null && chatWithId.current !== newChatWithId) {
-        uploadQueue.cancelAll();
+        // Offline OFF: destroy the batch as today. Offline ON: detach; the SDK keeps it for a
+        // restore when the user comes back (BEH-UPLOAD-14).
+        uploadQueue.leave();
         setSelectedAttachments([]);
         selectedAttachmentsRef.current = [];
       }
@@ -1976,6 +2040,22 @@ export const CometChatMessageComposer = React.forwardRef(
         chatWithId.current = group.getGuid();
       }
     }, [user, group, chatRef]);
+
+    // Offline ON: a thread switch in the same chat lets go of the previous thread's tray. The
+    // receiver guard above only sees chat switches. Offline OFF: nothing.
+    useOfflineThreadTrayReset(uploadQueue, parentMessageId, selectedAttachmentsRef, setSelectedAttachments);
+
+    // Offline ON: restore this chat's tray and clear it with the session. Offline OFF: nothing.
+    useOfflineUploadTray(
+      uploadQueue,
+      {
+        receiver: user?.getUid?.() ?? group?.getGuid?.(),
+        receiverType: user?.getUid?.() ? ReceiverTypeConstants.user : group?.getGuid?.() ? ReceiverTypeConstants.group : undefined,
+        parentMessageId,
+      },
+      selectedAttachmentsRef,
+      setSelectedAttachments
+    );
 
     const handleOnClick = (CustomView: any) => {
       let view = CustomView(

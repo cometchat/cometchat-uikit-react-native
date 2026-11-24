@@ -16,7 +16,7 @@ RCT_EXPORT_MODULE(VideoManager);
                 QLPreviewController* previewCtrl = [[QLPreviewController alloc] init];
                 [previewCtrl setDataSource: self];
                 [[previewCtrl navigationController] setTitle:@""];
-                [previewCtrl setModalPresentationStyle:UIModalPresentationPopover];
+                [previewCtrl setModalPresentationStyle:UIModalPresentationFullScreen];
                 UIViewController *presentedViewController = RCTPresentedViewController();
                 [presentedViewController presentViewController:previewCtrl animated:YES completion:nil];
             });

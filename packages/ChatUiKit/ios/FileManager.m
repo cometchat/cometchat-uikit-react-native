@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <React/RCTBridgeModule.h>
 #import "FileManager.h"
+#import "CCLocalFileGuard.h"
 #import <QuickLook/QuickLook.h>
 #import <React/RCTUtils.h>
 #import <React/RCTConvert.h>
@@ -21,6 +22,22 @@ static NSString *const FIELD_COPY_ERR = @"copyError";
 static NSString *const FIELD_NAME = @"name";
 static NSString *const FIELD_TYPE = @"type";
 static NSString *const FIELD_SIZE = @"size";
+
+// The base name of a file name, so a ".." or a path separator can never leave the destination folder,
+// or nil when there is no usable name. Same rule as the Android UI Kit (File(displayName).name).
+static NSString *CCSafeFileName(NSString *name) {
+    if (name.length == 0 || [name containsString:@"\0"]) return nil;
+    NSString *base = name.lastPathComponent;
+    if (base.length == 0 || [base isEqualToString:@"/"] || [base isEqualToString:@"."] || [base isEqualToString:@".."]) return nil;
+    return base;
+}
+
+// The file behind a file:// URL taken from a message, when it lies inside the offline media cache
+// (CCLocalFileGuard.h), else nil. Stricter than the Android UI Kit's MediaViewerSource.localFile, which
+// only checks that the file exists.
+static NSString *CCOfflineMediaFilePath(NSURL *url) {
+    return CCUIKitConfinedLocalFilePath(url, CCUIKitOfflineMediaRoots());
+}
 
 
 @interface CometChatFileManager () <UIDocumentPickerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, AVAudioRecorderDelegate, AVAudioPlayerDelegate, UIDocumentInteractionControllerDelegate, PHPickerViewControllerDelegate>
@@ -80,10 +97,31 @@ RCT_EXPORT_MODULE(FileManager)
 - (void)downloadToDocuments:(NSString *)urlToDownload name:(NSString *)name callback:(RCTResponseSenderBlock)callback {
     NSURL *url = [NSURL URLWithString:urlToDownload];
     if (url == nil) { callback(@[@"{\"success\": false, \"error\": \"invalid url\"}"]); return; }
+    name = CCSafeFileName(name);
+    if (name == nil) { callback(@[@"{\"success\": false, \"error\": \"invalid file name\"}"]); return; }
 
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *destPath = [[paths objectAtIndex:0] stringByAppendingPathComponent:name];
     NSURL *destinationFileURL = [NSURL fileURLWithPath:destPath];
+
+    // A file already on the device: copied only from the offline media cache, never fetched.
+    if (CCUIKitIsFileURL(url)) {
+        NSString *source = CCOfflineMediaFilePath(url);
+        if (source == nil) {
+            callback(@[@"{\"success\": false, \"error\": \"file is not available\"}"]);
+            return;
+        }
+        NSFileManager *fm = [NSFileManager defaultManager];
+        [fm removeItemAtURL:destinationFileURL error:nil];
+        NSError *copyErr = nil;
+        if (![fm copyItemAtURL:[NSURL fileURLWithPath:source] toURL:destinationFileURL error:&copyErr]) {
+            callback(@[@"{\"success\": false, \"error\": \"could not save file\"}"]);
+            return;
+        }
+        self->_url = [NSString stringWithFormat:@"file://%@", destPath];
+        callback(@[@"{\"success\": true}"]);
+        return;
+    }
 
     NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL:url
         completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
@@ -109,7 +147,9 @@ RCT_EXPORT_MODULE(FileManager)
 // Files / Save to Photos / AirDrop — the sandbox-legal equivalent of Android's visible DownloadManager
 // save (iOS apps cannot write to a shared public "Downloads" folder). Previously this saved into the
 // app's PRIVATE Documents dir with no UI, so on iOS the download appeared to do nothing.
-RCT_EXPORT_METHOD(checkAndDownload:(NSString *) urlToDownload name:(NSString *) name callback:(RCTResponseSenderBlock) callback) {
+RCT_EXPORT_METHOD(checkAndDownload:(NSString *) urlToDownload name:(NSString *) rawName callback:(RCTResponseSenderBlock) callback) {
+    NSString *name = CCSafeFileName(rawName);
+    if (name == nil) { callback(@[@"{\"success\": false, \"error\": \"invalid file name\"}"]); return; }
     [self downloadToDocuments:urlToDownload name:name callback:^(NSArray *response) {
         NSString *res = response.firstObject ?: @"";
         if ([res containsString:@"\"success\": true"]) {
@@ -134,13 +174,15 @@ RCT_EXPORT_METHOD(checkAndDownload:(NSString *) urlToDownload name:(NSString *) 
         QLPreviewController* previewCtrl = [[QLPreviewController alloc] init];
         [previewCtrl setDataSource: self];
         [[previewCtrl navigationController] setTitle:@""];
-        [previewCtrl setModalPresentationStyle:UIModalPresentationPopover];
+        [previewCtrl setModalPresentationStyle:UIModalPresentationFullScreen];
         UIViewController *presentedViewController = RCTPresentedViewController();
         [presentedViewController presentViewController:previewCtrl animated:YES completion:nil];
     });
 }
 
-RCT_EXPORT_METHOD(doesFileExist:(NSString *)fileName callback:(RCTResponseSenderBlock)callback) {
+RCT_EXPORT_METHOD(doesFileExist:(NSString *)rawFileName callback:(RCTResponseSenderBlock)callback) {
+    NSString *fileName = CCSafeFileName(rawFileName);
+    if (fileName == nil) { callback(@[@"{\"exists\": false}"]); return; }
     // Get the document directory path
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
     NSString *documentsDirectory = [paths objectAtIndex:0];
@@ -158,7 +200,9 @@ RCT_EXPORT_METHOD(doesFileExist:(NSString *)fileName callback:(RCTResponseSender
 }
 
 
-RCT_EXPORT_METHOD(openFile:(NSString *) url name:(NSString *) fileName myCallback:(RCTResponseSenderBlock)callback) {
+RCT_EXPORT_METHOD(openFile:(NSString *) url name:(NSString *) rawFileName myCallback:(RCTResponseSenderBlock)callback) {
+    NSString *fileName = CCSafeFileName(rawFileName);
+    if (fileName == nil) { callback(@[@"{\"success\": false}"]); return; }
     //new way
     @try {
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
@@ -194,7 +238,9 @@ RCT_EXPORT_METHOD(openFile:(NSString *) url name:(NSString *) fileName myCallbac
     }
 }
 
-RCT_EXPORT_METHOD(openFileWithOption:(NSString *)fileName callback:(RCTResponseSenderBlock)callback) {
+RCT_EXPORT_METHOD(openFileWithOption:(NSString *)rawFileName callback:(RCTResponseSenderBlock)callback) {
+    NSString *fileName = CCSafeFileName(rawFileName);
+    if (fileName == nil) { callback(@[@"{\"success\": false, \"error\": \"invalid file name\"}"]); return; }
     @try {
         // Get the Downloads directory path
         NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
@@ -480,7 +526,25 @@ RCT_EXPORT_METHOD(shareMessage: (NSDictionary *) shareObj myCallback:(RCTRespons
     } else {
         if (fileUrl) {
             NSURL *url = [NSURL URLWithString:fileUrl];
-            if (url) {
+            if (url && CCUIKitIsFileURL(url)) {
+                // A file already on the device: shared only from the offline media cache, under its own
+                // name (the cached file has none), never fetched.
+                NSString *shareName = CCSafeFileName(mediaName.length > 0 ? mediaName : url.lastPathComponent);
+                NSString *source = CCOfflineMediaFilePath(url);
+                if (shareName == nil || source == nil) {
+                    callback(@[@"{\"success\": false}"]);
+                    return;
+                }
+                NSURL *shareUrl = [[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:shareName];
+                NSFileManager *fm = [NSFileManager defaultManager];
+                [fm removeItemAtURL:shareUrl error:nil];
+                if ([fm copyItemAtURL:[NSURL fileURLWithPath:source] toURL:shareUrl error:nil]) {
+                    [self shareMedia:shareUrl];
+                    callback(@[@"{\"success\": true}"]);
+                } else {
+                    callback(@[@"{\"success\": false}"]);
+                }
+            } else if (url) {
                 [self downloadMediaMessage:url completion:^(NSURL *fileLocation) {
                     if (fileLocation) {
                         [self shareMedia:fileLocation];

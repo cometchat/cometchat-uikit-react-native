@@ -18,6 +18,11 @@ import { Icon } from "../../icons/Icon";
 import { CometChatUIEventHandler, MessageEvents } from "../../events";
 import { messageStatus } from "../../utils/CometChatMessageHelper";
 import { useCometChatTranslation } from "../../resources/CometChatLocalizeNew";
+import { readListPage } from "../../offline/twoPhase";
+import { useOfflineReconnect } from "../../offline/useOfflineReconnect";
+import { ConnectStateView } from "../../offline/OfflineViews";
+import { OFFLINE_STRING_KEYS } from "../../offline/notices";
+import { CONTRACT_IDS } from "../../offline/stateContract";
 
 /**
  * Props for the CometChatReactionList component.
@@ -84,6 +89,11 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
   const [currentSelectedReaction, setCurrentSelectedReaction] = useState(selectedReaction || "All");
   const [reactionList, setReactionList] = useState<CometChat.Reaction[]>();
   const [state, setState] = useState<"loading" | "error" | "done" | "fetchNextOnScroll">("loading");
+  // Offline ON (D84): the device was not connected and has no saved reactions: "Connect to load
+  // reactions" shows (the app's own error view instead, if it passed one) and the reactions load
+  // again once, by themselves, when the connection is back. Any other error is not loaded again.
+  const reloadOnConnectRef = useRef(false);
+  const [offlineMiss, setOfflineMiss] = useState(false);
   const loggedInUser = useRef<CometChat.User | null>(undefined);
   const newMessageObj = useRef<CometChat.BaseMessage>(CommonUtils.clone(message));
 
@@ -107,6 +117,13 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
   useEffect(() => {
     showReactions();
   }, [currentSelectedReaction]);
+
+  // D84 rule 8: the one reload of the offline state.
+  useOfflineReconnect(() => {
+    if (!reloadOnConnectRef.current) return;
+    reloadOnConnectRef.current = false;
+    void showReactions();
+  });
 
   const _setAllReactions = (_messageReactions: any) => {
     let totalCount = _messageReactions.reduce((acc: any, curr: any) => acc + curr.count, 0);
@@ -152,13 +169,26 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
     }
 
     try {
-      const list = await requestBuilder.fetchNext();
+      // Offline ON: two-phase; offline past the cache the device's reactions show (U6).
+      const page = await readListPage<any>(requestBuilder, "next");
+      if (page.offline && page.rows.length === 0) {
+        // Nothing on the device and not connected: the offline state, loaded again on reconnect (D84 rule 3).
+        reloadOnConnectRef.current = true;
+        setOfflineMiss(true);
+        setState("error");
+        return [];
+      }
+      reloadOnConnectRef.current = false;
+      setOfflineMiss(false);
+      const list = page.rows;
       reactionListMap.current[reaction] = list;
       setState("done");
       return list;
     } catch (error: any) {
       //console.log("error while fetching reactions", error);
       if (error?.code === "REQUEST_IN_PROGRESS") return null;
+      reloadOnConnectRef.current = false;
+      setOfflineMiss(false);
       setState("error");
       return [];
     }
@@ -170,11 +200,12 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
       if (reactionListMap.current[currentSelectedReaction]?.length === 0) {
         return;
       } else {
-        const newList = await requestBuilder.fetchNext();
-        reactionListMap.current[currentSelectedReaction] = [
-          ...(reactionListMap.current?.[currentSelectedReaction] || []),
-          ...newList,
-        ];
+        const page = await readListPage<any>(requestBuilder, "next");
+        // A cached page can repeat rows past the last page (SDK known issue): dedupe by id.
+        const shown = reactionListMap.current?.[currentSelectedReaction] || [];
+        const seen = new Set(shown.map((r: any) => String(r?.getReactionId?.() ?? r?.id ?? "")));
+        const newList = page.rows.filter((r: any) => !seen.has(String(r?.getReactionId?.() ?? r?.id ?? "")));
+        reactionListMap.current[currentSelectedReaction] = [...shown, ...newList];
         setReactionList(reactionListMap.current[currentSelectedReaction]);
       }
       setState("done");
@@ -189,6 +220,9 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
     (emoji: string) => {
       const msgObj = CommonUtils.clone(messageObject);
 
+      // The untouched copy a failed write rolls back to (UIK-MUT-01). The optimistic update below
+      // mutates msgObj's own reaction objects, so rolling back to msgObj left the change on screen.
+      const rollbackMessage = CommonUtils.clone(msgObj);
       const messageId = msgObj?.getId();
       const reactions = msgObj?.getReactions() || [];
       const emojiObject = reactions?.find((reaction: any) => {
@@ -221,7 +255,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
           .then((message: any) => {})
           .catch((error: any) => {
             CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
-              message: msgObj,
+              message: rollbackMessage,
               status: messageStatus.success,
             });
             //console.log(error);
@@ -259,7 +293,7 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
           .catch((error: any) => {
             //console.log(error);
             CometChatUIEventHandler.emitMessageEvent(MessageEvents.ccMessageEdited, {
-              message: msgObj,
+              message: rollbackMessage,
               status: messageStatus.success,
             });
           });
@@ -375,6 +409,17 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
 
   const ErrorView = () => {
     if (ErrorStateView) return <ErrorStateView />;
+    if (offlineMiss) {
+      return (
+        <ConnectStateView
+          testID={CONTRACT_IDS.emptyConnectToLoad}
+          title={t(OFFLINE_STRING_KEYS.connectToLoadReactions)}
+          containerStyle={theme.reactionListStyles.errorStateStyle?.containerStyle}
+          titleStyle={theme.reactionListStyles.errorStateStyle?.titleStyle}
+          subtitleStyle={theme.reactionListStyles.errorStateStyle?.subtitleStyle}
+        />
+      );
+    }
     return (
       <ErrorEmptyView
         title={errorStateText ?? "Oops!"}
@@ -413,8 +458,9 @@ export const CometChatReactionList = (props: CometChatReactionListInterface) => 
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Slider for reactions */}
-      {state != "error" && (
+      {/* Slider for reactions. Offline with nothing loaded (D84), the tabs stay with the message's
+          own counts above "Connect to load reactions", as on Android; other errors hide them. */}
+      {(state != "error" || offlineMiss) && (
         <View>
           <ScrollView
             showsHorizontalScrollIndicator={false}

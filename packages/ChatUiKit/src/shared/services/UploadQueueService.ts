@@ -1,6 +1,7 @@
 import { CometChat } from '@cometchat/chat-sdk-react-native';
 import { SelectedAttachment } from '../modals/SelectedAttachment';
 import { linkUploadedVideo } from '../utils/videoThumbnail';
+import { isOfflineOn, offlineSdk } from '../offline/gate';
 
 type CometChatException = InstanceType<typeof CometChat.CometChatException>;
 
@@ -22,6 +23,17 @@ export interface UploadBatchResult {
   failed:    { fileId: string; error: CometChatException }[];
   /** Hard rejections — not retryable (onFileError: size / plan / presign denial). */
   rejected:  { fileId: string; error: CometChatException }[];
+}
+
+/** The destination of one batch: (receiver, type, thread parent) — the durable batch's identity. */
+export interface UploadTarget {
+  receiver?: string;
+  receiverType?: string;
+  parentMessageId?: string | number;
+}
+
+function hasParent(parentMessageId: unknown): parentMessageId is string | number {
+  return parentMessageId !== undefined && parentMessageId !== null && parentMessageId !== '' && parentMessageId !== 0;
 }
 
 export type UploadQueueCallbacks = {
@@ -55,6 +67,11 @@ export class UploadQueueService {
   private completed = new Map<string, CometChat.Attachment>();
   // Local uri of each enqueued VIDEO, so its upload can be linked to a local thumbnail.
   private localVideoUris = new Map<string, string>();
+  // Offline ON only: files restored from the SDK's durable batch (BEH-UPLOAD-14). Their picker
+  // handles are gone, so a retry streams the SDK's own copy (`retryAttachment`).
+  private restoredIds = new Set<string>();
+  // Bumped on every detach / destroy so a restore that lands late is dropped.
+  private restoreToken = 0;
 
   // Kept for signature compatibility; the request API no longer exposes a presign buffer knob.
   constructor(callbacks: UploadQueueCallbacks, _opts?: { presignBufferMs?: number }) {
@@ -96,12 +113,17 @@ export class UploadQueueService {
    *   composer's conversation refs at enqueue time; only the first enqueue creates the request (the batch
    *   is fixed to one destination), later picks add to the same batch.
    */
-  enqueue(attachment: SelectedAttachment, target?: { receiver?: string; receiverType?: string }): void {
+  enqueue(attachment: SelectedAttachment, target?: UploadTarget): void {
     const { fileId, file } = attachment;
     if (file.type?.startsWith('video/')) this.localVideoUris.set(fileId, file.uri);
     if (!this.request) {
       this.request = CometChat.createUploadFileRequest(target?.receiver ?? '', target?.receiverType ?? '');
       this.request.setConcurrency(UPLOAD_CONCURRENCY);
+      // Offline ON: the thread parent is part of the durable batch's identity, so a thread
+      // composer never adopts the main chat's batch (UIT-UP-02). Offline OFF: today's request.
+      if (hasParent(target?.parentMessageId) && isOfflineOn()) {
+        (this.request as any).setParentMessageId?.(target!.parentMessageId);
+      }
     }
     // Pass the tile id as the SDK fileId, and the per-call listener (deduped into the batch's listener
     // set) so this one listener drives every file's events + the whole-batch onComplete.
@@ -122,6 +144,11 @@ export class UploadQueueService {
   retry(tileId: string, file: SelectedAttachment): void {
     // DD §12/§13 — retry = re-upload the SAME fileId through the request (re-presigns if needed).
     this.completed.delete(tileId);
+    // A restored tile has no live file: the SDK streams its own copy (offline ON only).
+    if (this.restoredIds.has(tileId) && typeof (this.request as any)?.retryAttachment === 'function') {
+      (this.request as any).retryAttachment(tileId, this.listener);
+      return;
+    }
     this.request?.uploadAttachment(
       tileId,
       { uri: file.file.uri, name: file.file.name, type: file.file.type, size: file.file.size },
@@ -130,10 +157,88 @@ export class UploadQueueService {
   }
 
   cancelAll(): void {
+    this.restoreToken++;
     this.request?.clearAll();
     this.request = null;
     this.completed.clear();
     this.localVideoUris.clear();
+    this.restoredIds.clear();
+  }
+
+  /**
+   * Let go of the batch WITHOUT clearing it: the SDK keeps it (offline ON) so the tray can be
+   * restored when the user comes back to this chat. Nothing is aborted or deleted.
+   */
+  detach(): void {
+    this.restoreToken++;
+    this.request = null;
+    this.completed.clear();
+    this.localVideoUris.clear();
+    this.restoredIds.clear();
+  }
+
+  /**
+   * The composer leaves its (receiver, type, parent) triple — chat switch or unmount. The gate is
+   * read now: offline ON detaches (the batch survives for restore, BEH-UPLOAD-14); offline OFF
+   * destroys the batch exactly as today (`cancelAll`, UIT-OFF-08).
+   */
+  leave(): void {
+    if (isOfflineOn()) this.detach();
+    else this.cancelAll();
+  }
+
+  /**
+   * BEH-UPLOAD-14 restore, offline ON only: read back the durable batch of `target`
+   * (`getExistingUploadFileRequest`) and return the tray's tiles, keyed by the SDK fileId:
+   * `UPLOADED` → done, `REJECTED` → rejected, anything else → failed with retry. Nothing uploads
+   * as a result. Resolves `null` (and changes nothing) with offline off, on an SDK without the
+   * call, when there is no batch, when the tray already has a request (the user picked), or when
+   * the composer moved on before the answer.
+   */
+  async restore(target: UploadTarget): Promise<SelectedAttachment[] | null> {
+    if (this.request || !target?.receiver || !target?.receiverType || !isOfflineOn()) return null;
+    const sdk = offlineSdk();
+    if (typeof sdk?.getExistingUploadFileRequest !== 'function') return null;
+    const token = ++this.restoreToken;
+    let restored: any;
+    try {
+      restored = await sdk.getExistingUploadFileRequest(
+        target.receiver,
+        target.receiverType,
+        hasParent(target.parentMessageId) ? target.parentMessageId : undefined,
+      );
+    } catch {
+      return null;
+    }
+    if (!restored || token !== this.restoreToken || this.request) return null;
+    const read = typeof restored.getItems === 'function' ? restored.getItems : restored.getFiles;
+    const items: any[] = typeof read === 'function' ? read.call(restored) : [];
+    if (!Array.isArray(items) || items.length === 0) return null;
+    this.request = restored;
+    return items
+      .filter((item) => item && typeof item.fileId === 'string' && item.fileId)
+      .map((item) => {
+        const fileId: string = item.fileId;
+        this.restoredIds.add(fileId);
+        const state = String(item.state ?? '');
+        const attachment = item.attachment;
+        const file = {
+          uri: item.localCopyPath ?? item.localUri ?? attachment?.getUrl?.() ?? '',
+          name: item.name ?? attachment?.getName?.() ?? '',
+          type: item.mimeType ?? attachment?.getMimeType?.() ?? '',
+          size: Number(item.size ?? attachment?.getSize?.() ?? 0) || 0,
+        };
+        if (state === 'UPLOADED' && attachment) {
+          this.completed.set(fileId, attachment);
+          return { fileId, file, uploadState: 'COMPLETED', uploadProgress: 100, uploadedAttachment: attachment } as SelectedAttachment;
+        }
+        if (state === 'REJECTED') {
+          const code = item.error?.code ?? item.error?.getCode?.();
+          return { fileId, file, uploadState: 'REJECTED', uploadProgress: 0, errorKey: 'ATTACHMENT_UPLOAD_UNAVAILABLE', errorCode: code, rawError: item.error } as SelectedAttachment;
+        }
+        // FAILED, or a file still in flight when the app died: retryable, never resumed by itself.
+        return { fileId, file, uploadState: 'FAILED', uploadProgress: 0, errorKey: 'UPLOAD_FAILED', rawError: item.error } as SelectedAttachment;
+      });
   }
 
   get completedAttachments(): CometChat.Attachment[] {

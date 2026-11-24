@@ -1,3 +1,5 @@
+import { shouldUseCachedMedia } from '../../offline/media';
+import { OfflineMediaBubble } from '../../offline/OfflineMediaBubble';
 import React from 'react';
 import { View } from 'react-native';
 import { CometChat } from '@cometchat/chat-sdk-react-native';
@@ -48,18 +50,28 @@ export function CometChatVoiceNoteBubble({
 
   return (
     <View style={[{ width: '100%' }, s.containerStyle]}>
-      {audioAttachments.map((att, i) => (
-        <CometChatAudioBubble
-          key={att.getUrl() ?? String(i)}
-          audioUrl={att.getUrl()}
-          playViewContainerStyle={s.playViewContainerStyle}
-          playIconStyle={s.playIconStyle}
-          playIconContainerStyle={s.playIconContainerStyle}
-          waveStyle={s.waveStyle}
-          waveContainerStyle={s.waveContainerStyle}
-          playProgressTextStyle={s.playProgressTextStyle}
-        />
-      ))}
+      {audioAttachments.map((att, i) => {
+        const bubble = (audioUrl: string) => (
+          <CometChatAudioBubble
+            key={att.getUrl() ?? String(i)}
+            audioUrl={audioUrl}
+            playViewContainerStyle={s.playViewContainerStyle}
+            playIconStyle={s.playIconStyle}
+            playIconContainerStyle={s.playIconContainerStyle}
+            waveStyle={s.waveStyle}
+            waveContainerStyle={s.waveContainerStyle}
+            playProgressTextStyle={s.playProgressTextStyle}
+          />
+        );
+        // Offline ON: the SDK's cached copy when it has one. OFF: today's bubble with the URL.
+        return shouldUseCachedMedia() ? (
+          <OfflineMediaBubble key={att.getUrl() ?? String(i)} attachment={att} playable>
+            {bubble}
+          </OfflineMediaBubble>
+        ) : (
+          bubble(att.getUrl())
+        );
+      })}
       {/* §7 — caption rides on the (last) message of the batch */}
       {Boolean(caption) && (
         <CometChatCaptionText
